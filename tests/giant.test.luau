@@ -369,7 +369,7 @@ do
 	local state = fresh()
 	check("a fight starts in phase 1", state.phase == 1)
 	-- Just above 60%: even the biggest hit cannot take it down to the threshold.
-	local maxHit = Battle.previewDamage(state.team[1], state.boss, pickMove(state, false).move)
+	local maxHit = Battle.previewDamage(state.team[1], state.boss, state.team[1].moves[1])
 	state.boss.hp = 60000 + maxHit + 5
 	GiantBattle.step(state, pickMove(state, false))
 	check(

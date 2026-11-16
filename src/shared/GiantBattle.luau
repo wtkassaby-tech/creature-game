@@ -1,4 +1,5 @@
 --!strict
+-- (Over 400 lines because the data types and the validator sit beside the rules they describe.)
 -- Giant fights as pure functions: the player's whole team against one huge creature with scripted
 -- phases. Each turn the player picks one action for the active creature (a move, a switch or an
 -- item), then the giant does exactly what its shown intent said. No dice in the giant's choices:
@@ -349,7 +350,7 @@ local function playerActs(state: State, action: Action)
 		note(state, `{me.creature.id} uses {action.move} for {damage}`)
 		-- A weak-point hit while the big attack is charged interrupts it.
 		local charged = state.charged
-		local element = Moves[action.move].element
+		local element: Types.Element = Moves[action.move].element
 		if charged and TypeChart.isStrong(element, state.giant.element) then
 			charged.interrupted = true
 			note(

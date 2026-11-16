@@ -75,7 +75,7 @@ local EconomyConfig = {}
 ------------------------------------------------------------------------------------------------
 
 -- Coin multiplier per biome: equal to Breeding.cost's biome tier (the biome number).
-local BIOME_MULT: { number } = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }
+local BIOME_MULT: { number } = { 1, 2.5, 4, 5.5, 7, 8.5, 10, 11.5, 13, 14.5, 16 }
 EconomyConfig.BIOME_MULT = BIOME_MULT
 
 -- Opponent level band per biome, used only to scale rewards. Ten levels per biome.
@@ -118,9 +118,9 @@ EconomyConfig.GIANT_FIELD_ITEM_CAP = 5
 ------------------------------------------------------------------------------------------------
 
 EconomyConfig.QUEST_LINE_COINS = 500 -- per completed quest line, x BIOME_MULT; once per line
-EconomyConfig.DAILY_TASK_COINS = 100 -- per easy daily task, x BIOME_MULT of the player's furthest biome
-EconomyConfig.DAILY_HARD_TASK_COINS = 250 -- per hard daily task, same scaling
-EconomyConfig.WEEKLY_CHALLENGE_COINS = 1000 -- once a week, same scaling
+EconomyConfig.DAILY_TASK_COINS = 150 -- per easy daily task, x BIOME_MULT of the player's furthest biome
+EconomyConfig.DAILY_HARD_TASK_COINS = 300 -- per hard daily task, same scaling
+EconomyConfig.WEEKLY_CHALLENGE_COINS = 1500 -- once a week, same scaling
 
 -- Casual PvP (built later; the cap belongs here). Created by the game, never taken from a player.
 -- Paid only for matchmade wins, the first few a day, nothing for a repeat opponent within a day,
@@ -182,7 +182,7 @@ EconomyConfig.ITEMS = {
 	},
 	GiantCall = {
 		name = "Giant Horn",
-		price = 400,
+		price = 900,
 		scalesWithBiome = true,
 		fieldItem = false,
 		note = "Needed to start a giant fight; used up win or lose",

@@ -833,7 +833,7 @@ end
 type FightResult = "Won" | "Lost" | "Poor"
 local function giantFight(sim: Sim, biome: number, rematch: boolean): FightResult
 	local cost = prepTopUpCost(sim, biome)
-	if sim.bal.coins < cost then
+	if sim.bal.coins < cost + Economy.itemPrice("Basic", 1) * 3 + Economy.itemPrice("Tonic", 1) then
 		return "Poor"
 	end
 	if not rematch and sim.giantAttempts[biome] == 0 then
