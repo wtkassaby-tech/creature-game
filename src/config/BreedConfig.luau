@@ -29,15 +29,15 @@ BreedConfig.RARE_MUTATION_PIPS = 2
 -- Fit factor clamp (stress test, research/market/09): a low floor so light legs on a heavy body
 -- really are slow, and a modest ceiling. Safe because fit is worked out fresh and never saved.
 BreedConfig.FIT_MIN = 0.60
-BreedConfig.FIT_MAX = 1.15
+BreedConfig.FIT_MAX = 1.00
 
 -- Shared stat budget: no mix of parts may exceed this multiple of its body plan's budget.
 -- Without it, "the best part from every species" beats every pure species by 40% or more.
--- The budget score is Hp / 4 + Attack + Defence + Speed at quality 5, before level and rarity.
+-- The budget score is Hp x BUDGET_HP_WEIGHT + Attack + Defence + Speed at quality 5, before level and rarity.
 BreedConfig.BUDGET_CAP = 1.15
 BreedConfig.PLAN_BUDGET =
-	{ Quad = 165, Biped = 165, Winged = 165, Serpent = 165 } :: Types.ByPlan<number>
-BreedConfig.BUDGET_HP_WEIGHT = 0.25
+	{ Quad = 200, Biped = 200, Winged = 200, Serpent = 200 } :: Types.ByPlan<number>
+BreedConfig.BUDGET_HP_WEIGHT = 0.6
 
 -- Size gene. A bigger body is heavier (slower legs) but its torso gives more Hp and Defence,
 -- so size is a trade and not free Speed.

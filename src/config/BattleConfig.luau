@@ -20,7 +20,7 @@ BattleConfig.PVE_VARIANCE_MIN = 0.96
 --  2. Tempo: each turn the faster creature fills a Tempo meter by (its Speed / the other's - 1) x TEMPO_GAIN.
 --     When the meter is full it strikes again at TEMPO_POWER. Twice as fast means an extra strike
 --     about every other turn; 1% faster means one after a hundred turns. No dice involved.
-BattleConfig.SPEED_BAND = 0.10
+BattleConfig.SPEED_BAND = 0.35
 BattleConfig.TEMPO_GAIN = 1.0
 BattleConfig.TEMPO_POWER = 0.5
 
