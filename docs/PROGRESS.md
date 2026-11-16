@@ -14,7 +14,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | Breeding rules | Tested (31 checks) | `src/shared/Breeding.luau`, `Stats.luau` |
 | Battle rules and the type chart | Tested (10) | `src/shared/Battle.luau`, `TypeChart.luau` |
 | Opponent behaviour: wild, tamer, rival | Tested (10) | `src/shared/BattleAi.luau` |
-| Giant fights and the first giant, Hollowbough | Tested (67); being retuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giants/` |
+| Giant fights and the first giant, Hollowbough | Tested; tuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giants/` |
 | Lasso catching | Tested (51) | `src/shared/Lasso.luau` |
 | XP, levels and level caps | Tested (43) | `src/shared/Xp.luau` |
 | Saved data: shape, safe upgrades, checks | Tested (54). Nothing saves yet | `src/shared/Profile.luau` |

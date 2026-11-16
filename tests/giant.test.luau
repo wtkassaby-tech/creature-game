@@ -2,6 +2,7 @@
 -- Checks and measurements for giant fights. Run from the project folder:  lune run tests/giant.test
 
 local Battle = require("../src/shared/Battle")
+local Breeding = require("../src/shared/Breeding")
 local BattleConfig = require("../src/config/BattleConfig")
 local GiantBattle = require("../src/shared/GiantBattle")
 local GiantConfig = require("../src/config/GiantConfig")
@@ -83,9 +84,9 @@ local function makeTeam(
 		local moves: { string }? = nil
 		if plain then
 			local pool = {}
-			for _, move in Stats.movePool(c, level) do
-				if not table.find(weak, Moves[move].element) then
-					table.insert(pool, move)
+			for _, candidate in Stats.movePool(c, level) do
+				if not table.find(weak, Moves[candidate].element) then
+					table.insert(pool, candidate)
 				end
 			end
 			moves = pool
@@ -497,7 +498,7 @@ do
 		earlyBefore - lost(early) > 0
 	)
 
-	-- Halve: Bough Sweep (team attack)
+	-- Halve: Gale Sweep (team attack)
 	local halved = toRelease(GREENWOOD, "sweep")
 	local halvedBefore = lost(halved)
 	local raw = 0
@@ -511,7 +512,7 @@ do
 	GiantBattle.step(full, pickMove(full, false))
 	local fullLoss = fullBefore - lost(full)
 	check(
-		"a weak-type hit halves Bough Sweep",
+		"a weak-type hit halves Gale Sweep",
 		halvedLoss > 0
 			and halvedLoss <= raw * GiantConfig.HALVE_SHARE
 			and halvedLoss >= raw * GiantConfig.HALVE_SHARE * 0.9 - 3,
@@ -643,7 +644,11 @@ do
 	)
 	check(
 		"the multiplier follows the config numbers",
-		math.abs(GiantBattle.enrageMultiplier(GREENWOOD, 30) - 1.15) < 1e-9
+		math.abs(
+			GiantBattle.enrageMultiplier(GREENWOOD, 30)
+				- (1 + (GREENWOOD.enrage :: GiantBattle.Enrage).step)
+		)
+				< 1e-9
 			and GiantBattle.enrageMultiplier(GREENWOOD, 29) == 1
 	)
 	local note = GiantBattle.new(GREENWOOD, makeTeam(15, false, "Leaf"), 4)
@@ -733,18 +738,65 @@ do
 end
 
 ------------------------------------------------------------------------------------------------
-print("\n== Balance: Hollowbough against placeholder teams of three ==")
-local SEEDS = 200
+print("\n== Balance: Hollowbough against teams of three from the real Greenwood roster ==")
+local ROSTER = {
+	"Burlhorn",
+	"Gorsling",
+	"Mossmitt",
+	"Sloshcalf",
+	"Spadesnout",
+	"Splashjack",
+	"Stiltbark",
+	"Stumpwarden",
+}
+
+-- A random team of three from the eight species, each with wild part qualities, so a team may hold
+-- the Sand starter (Spadesnout, the strongest Sand attacker) or a Water creature whose torso brings
+-- Mud Slap or Silt Surge. "Sand": a team whose best four moves include a move of a type the giant is
+-- weak to (drawn again until one does). "Plain": any random team with every such move taken away.
+-- The creatures are not placed to suit the fight: the first one drawn leads.
+local function realTeam(level: number, sand: boolean, seed: number): { Fighter }
+	local rng = Rng.new(seed)
+	local weak = GiantBattle.weakTypes(GREENWOOD.element)
+	while true do
+		local team: { Fighter } = {}
+		local brings = false
+		for index = 1, 3 do
+			local name = Rng.pick(rng, ROSTER)
+			local c = Breeding.wild(name, `{name}{index}`, level, "Common", "Moss", rng)
+			local moves: { string }? = nil
+			if not sand then
+				local pool = {}
+				for _, candidate in Stats.movePool(c, level) do
+					if not table.find(weak, Moves[candidate].element) then
+						table.insert(pool, candidate)
+					end
+				end
+				moves = pool
+			end
+			local fighter = Battle.fighter(c, moves, level)
+			brings = brings or hasWeakMove(fighter)
+			table.insert(team, fighter)
+		end
+		if brings == sand then
+			return team
+		end
+	end
+end
+
+local SEEDS = 300
 local rates: { [string]: number } = {}
 local meanWinTurns: { [string]: number } = {}
-for _, plain in { false, true } do
+for _, sand in { true, false } do
 	print(
-		`  Team {if plain then "without a Sand or Fire move" else "with Sand moves"}  (policy: best move, switch when about to faint, heal when low, five items)`
+		`  Team {if sand
+			then "with the Sand starter and its Sand moves"
+			else "without a Sand or Fire move"}  (policy: best move, switch when about to faint, heal when low, five items; {SEEDS} seeded teams per row)`
 	)
 	for _, level in { 9, 12, 15, 18 } do
 		local wins, turnsWon, turnsAll, items = 0, 0, 0, 0
 		for seed = 1, SEEDS do
-			local state = play(GREENWOOD, makeTeam(level, plain, "Leaf", seed), seed * 7919)
+			local state = play(GREENWOOD, realTeam(level, sand, seed), seed * 7919)
 			turnsAll += state.turn
 			items += state.itemsUsed
 			if state.winner == "Player" then
@@ -752,7 +804,7 @@ for _, plain in { false, true } do
 				turnsWon += state.turn
 			end
 		end
-		local key = `{if plain then "plain" else "weak"}{level}`
+		local key = `{if sand then "sand" else "plain"}{level}`
 		rates[key] = wins / SEEDS
 		meanWinTurns[key] = if wins > 0 then turnsWon / wins else 0
 		print(
@@ -766,26 +818,105 @@ for _, plain in { false, true } do
 		)
 	end
 end
+local function pct(x: number): string
+	return string.format("%.0f%%", x * 100)
+end
 check(
-	"an on-level team (15) with items wins most of the time",
-	rates.weak15 >= 0.6,
-	`{rates.weak15 * 100}%`
+	"an on-level team (15) with a Sand attacker wins 70 to 90%",
+	rates.sand15 >= 0.70 and rates.sand15 <= 0.90,
+	pct(rates.sand15)
 )
 check(
 	"in roughly 15 to 25 turns",
-	meanWinTurns.weak15 >= 15 and meanWinTurns.weak15 <= 25,
-	string.format("%.1f", meanWinTurns.weak15)
+	meanWinTurns.sand15 >= 15 and meanWinTurns.sand15 <= 25,
+	string.format("%.1f", meanWinTurns.sand15)
 )
-check("a level 9 team nearly always loses", rates.weak9 <= 0.05, `{rates.weak9 * 100}%`)
+check(
+	"an on-level team (15) with no Sand or Fire move wins 25 to 50%",
+	rates.plain15 >= 0.25 and rates.plain15 <= 0.50,
+	pct(rates.plain15)
+)
+check(
+	"a level 9 team nearly always loses, with or without Sand",
+	rates.sand9 <= 0.05 and rates.plain9 <= 0.05,
+	`{pct(rates.sand9)} and {pct(rates.plain9)}`
+)
+check(
+	"a level 18 team wins most of the time either way",
+	rates.sand18 >= 0.75 and rates.plain18 >= 0.6,
+	`{pct(rates.sand18)} and {pct(rates.plain18)}`
+)
 check(
 	"a higher level does better than a lower one",
-	rates.weak18 >= rates.weak15 and rates.weak15 >= rates.weak12 and rates.weak12 >= rates.weak9
+	rates.sand18 >= rates.sand15
+		and rates.sand15 >= rates.sand12
+		and rates.sand12 >= rates.sand9
+		and rates.plain18 >= rates.plain15
+		and rates.plain15 >= rates.plain12
+		and rates.plain12 >= rates.plain9
 )
 check(
-	"a team with a weak-type move does clearly better",
-	rates.weak15 - rates.plain15 >= 0.25,
-	`{rates.weak15 * 100}% against {rates.plain15 * 100}%`
+	"bringing Sand helps clearly at level 15",
+	rates.sand15 - rates.plain15 >= 0.25,
+	`{pct(rates.sand15)} against {pct(rates.plain15)}`
 )
+
+-- The template's guideline: a neutral creature survives two of the giant's big hits, and a
+-- high-Defence creature survives more. The biggest single-target hit of the fight is a phase 3
+-- Thorn Gale at full strength (before any enrage); Heartwood Slam is the biggest hit that a Sand or
+-- Fire move can cancel. Level 15 creatures at full health, every part quality 5.
+print("  Hits of the giant a level 15 creature survives from full health (quality 5):")
+do
+	local state = GiantBattle.new(GREENWOOD, realTeam(15, true, 1), 1)
+	state.phase = #GREENWOOD.phases
+	local rng = Rng.new(5)
+	local parts: { string } = {}
+	local worst, best, bestName = math.huge, 0, ""
+	local neutral, tank = 0, 0
+	for _, name in ROSTER do
+		local c = Breeding.wild(name, name, 15, "Common", "Moss", rng)
+		for _, slot in { "Head", "Torso", "FrontLimbs", "Legs", "Tail" } do
+			c.parts[slot :: Types.Slot].quality = 5
+		end
+		local fighter = Battle.fighter(c, nil, 15)
+		local big, slam = 0, GiantBattle.previewAttack(state, "slam", fighter)
+		for id, attack in GREENWOOD.attacks do
+			if attack.target == "Front" then
+				big = math.max(big, GiantBattle.previewAttack(state, id, fighter))
+			end
+		end
+		local hits, slamHits = fighter.stats.Hp / big, fighter.stats.Hp / slam
+		worst = math.min(worst, hits)
+		if hits > best then
+			best, bestName = hits, name
+		end
+		if fighter.element == "Water" and name == "Sloshcalf" then
+			neutral = hits
+		end
+		if name == "Burlhorn" then
+			tank = hits
+		end
+		table.insert(
+			parts,
+			`{name} ({fighter.element}, Def {fighter.stats.Defence}) {string.format("%.1f", hits)} big, {string.format(
+				"%.1f",
+				slamHits
+			)} slam`
+		)
+	end
+	print(`    {table.concat(parts, "; ")}`)
+	check("every creature survives at least two big hits", worst >= 2, string.format("%.1f", worst))
+	check(
+		"the sturdiest survives clearly more than two",
+		best >= 3,
+		`{bestName} {string.format("%.1f", best)}`
+	)
+	check(
+		"a high-Defence Leaf creature (Burlhorn) survives more big hits than a neutral one (Sloshcalf)",
+		tank > neutral,
+		`{string.format("%.1f", tank)} against {string.format("%.1f", neutral)}`
+	)
+end
 
 ------------------------------------------------------------------------------------------------
 print(`\n{passed} passed, {failed} failed`)
