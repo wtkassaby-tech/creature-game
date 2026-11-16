@@ -45,6 +45,7 @@ local function build(id: string, choice: { string }, quality: number?): Creature
 		colour = { shown = "Moss", carried = "Moss" },
 		rarity = "Common",
 		level = LEVEL,
+		xp = 0,
 		generation = 0,
 		parents = nil,
 		breedCount = 0,

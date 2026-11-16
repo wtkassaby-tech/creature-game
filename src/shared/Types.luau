@@ -47,6 +47,7 @@ export type Creature = {
 	colour: Colour,
 	rarity: Rarity,
 	level: number,
+	xp: number, -- progress toward the next level; keeps building while the level cap holds it
 	generation: number, -- 0 for wild-caught
 	parents: { string }?, -- { idA, idB } or nil for wild-caught
 	breedCount: number,

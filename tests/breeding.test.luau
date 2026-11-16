@@ -372,6 +372,7 @@ do
 			colour = { shown = "Moss", carried = "Moss" },
 			rarity = "Common",
 			level = 50,
+			xp = 0,
 			generation = 0,
 			parents = nil,
 			breedCount = 0,
