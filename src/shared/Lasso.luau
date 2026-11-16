@@ -25,6 +25,7 @@ export type Pattern = {
 	slowMode: boolean,
 	connectionAssist: boolean, -- true: the round trip was over the cap and the sweep was slowed
 	speedScale: number, -- the assist's slowing factor (1 when there is no assist)
+	roundTripMs: number, -- the server's own reading, fixed when the attempt was made; the judge uses this
 }
 
 export type AttemptInput = {
@@ -106,10 +107,11 @@ function Lasso.createAttempt(input: AttemptInput): Pattern
 		width = math.max(width * LassoConfig.GIANT_WIDTH, LassoConfig.MIN_WIDTH)
 	end
 	local assist = Lasso.assistScale(input.roundTripMs)
-	local baseSpeed = LassoConfig.BASE_SPEED * LassoConfig.TIER_SPEED[input.tier] * assist
-	if input.slowMode then
-		baseSpeed *= LassoConfig.SLOW_MODE_SPEED
-	end
+	-- Slow mode and the assist stack, but only down to a floor, so the two cannot be combined
+	-- into a crawl.
+	local slowing = assist * (if input.slowMode then LassoConfig.SLOW_MODE_SPEED else 1)
+	slowing = math.max(slowing, LassoConfig.MIN_TOTAL_SPEED)
+	local baseSpeed = LassoConfig.BASE_SPEED * LassoConfig.TIER_SPEED[input.tier] * slowing
 
 	local zones: { Zone } = {}
 	local count = Lasso.zoneCount(input.rarity, input.lassoDifficulty, input.isGiant)
@@ -134,6 +136,7 @@ function Lasso.createAttempt(input: AttemptInput): Pattern
 		slowMode = input.slowMode,
 		connectionAssist = assist < 1,
 		speedScale = assist,
+		roundTripMs = input.roundTripMs,
 	}
 end
 
@@ -196,15 +199,35 @@ local function isFiniteNumber(value: any): boolean
 	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
 end
 
+-- The round trip to trust for a player, from the server's own readings during the battle.
+-- The smallest reading is used: a delayed reply can raise a reading but nothing can lower one.
+function Lasso.trustedRoundTripMs(readingsMs: { number }): number
+	local smallest = math.huge
+	local good = 0
+	for _, reading in readingsMs do
+		if isFiniteNumber(reading) and reading >= 0 then
+			good += 1
+			smallest = math.min(smallest, reading)
+		end
+	end
+	if good < LassoConfig.ROUND_TRIP_MIN_SAMPLES then
+		return LassoConfig.ROUND_TRIP_DEFAULT_MS
+	end
+	return smallest
+end
+
 -- Judge a throw. `claimedMs[i]` is the phone's time for zone i since the pattern started;
 -- `serverElapsedMs[i]` is the server's own clock when that tap arrived.
--- A claim outside the lag window is Invalid, which is not a miss.
+-- The lag allowance comes from the pattern, so it is the same reading the sweep was built with.
+-- A claim outside the lag window is Invalid. The caller must treat Invalid exactly like a miss
+-- (the lasso stays spent and it counts toward fleeing), or a player could turn every miss into
+-- a free retry by sending an impossible time.
 function Lasso.judge(
 	pattern: Pattern,
 	claimedMs: { number },
-	serverElapsedMs: { number },
-	roundTripMs: number
+	serverElapsedMs: { number }
 ): Judgement
+	local roundTripMs = pattern.roundTripMs
 	local count = #pattern.zones
 	if #claimedMs ~= count or #serverElapsedMs ~= count then
 		return invalid("wrong number of taps")

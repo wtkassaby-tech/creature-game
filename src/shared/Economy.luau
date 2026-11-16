@@ -149,8 +149,15 @@ function Economy.releasePayout(rarity: Types.Rarity, originBiome: number): Relea
 		materials, materialWorth = 0, 0
 	end
 	local raw = EconomyConfig.RELEASE_COINS[rarity] * Economy.biomeMult(originBiome)
-	local coins = math.max(EconomyConfig.RELEASE_MIN_COINS, math.min(raw, math.floor(ceiling - materialWorth)))
-	return { coins = coins, material = if materials > 0 then material else nil, materials = materials }
+	local coins = math.max(
+		EconomyConfig.RELEASE_MIN_COINS,
+		math.min(raw, math.floor(ceiling - materialWorth))
+	)
+	return {
+		coins = coins,
+		material = if materials > 0 then material else nil,
+		materials = materials,
+	}
 end
 
 -- Candy the next claim from a source grants.
@@ -179,7 +186,9 @@ function Economy.dailyTaskCoins(hard: boolean, furthestBiome: number, claimedTod
 	if claimedToday >= EconomyConfig.CANDY[source].cap then
 		return 0
 	end
-	local base = if hard then EconomyConfig.DAILY_HARD_TASK_COINS else EconomyConfig.DAILY_TASK_COINS
+	local base = if hard
+		then EconomyConfig.DAILY_HARD_TASK_COINS
+		else EconomyConfig.DAILY_TASK_COINS
 	return base * Economy.biomeMult(furthestBiome)
 end
 
@@ -191,8 +200,16 @@ function Economy.weeklyChallengeCoins(furthestBiome: number, claimedThisWeek: nu
 end
 
 -- Coins for a casual PvP win: only the first few matchmade wins a day, never a repeat opponent.
-function Economy.casualPvpCoins(paidWinsToday: number, repeatOpponent: boolean, matchmade: boolean): number
-	if repeatOpponent or not matchmade or paidWinsToday >= EconomyConfig.CASUAL_PVP_PAID_WINS_PER_DAY then
+function Economy.casualPvpCoins(
+	paidWinsToday: number,
+	repeatOpponent: boolean,
+	matchmade: boolean
+): number
+	if
+		repeatOpponent
+		or not matchmade
+		or paidWinsToday >= EconomyConfig.CASUAL_PVP_PAID_WINS_PER_DAY
+	then
 		return 0
 	end
 	return EconomyConfig.CASUAL_PVP_WIN_COINS

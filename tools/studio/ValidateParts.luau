@@ -77,6 +77,7 @@ local FRONT_LIMB_TO_LEG_QUAD = { min = 0.85, max = 1.15 }
 local TOLERANCE_POSITION = 0.02 -- studs, for pivots and mirrored sockets
 local TOLERANCE_ANGLE = 0.5 -- degrees, for attachment orientation
 local RADIUS_MIRROR_TOLERANCE = 0.01 -- fraction
+local OWN_FIT_TOLERANCE = 0.05 -- fraction
 
 -- Assembler scale clamp. Read from shared/AssemblyMath when the project is synced into the place.
 local SCALE_MIN = 0.6
@@ -729,7 +730,29 @@ local function validateSpecies(name: string): (Report, Measured?)
 	end
 	finish(report, "R13", "WARN", "limb lengths in proportion", problems)
 
-	-- R14: triangle budgets
+	-- R14: the species' own parts fit its own torso at scale 1 (socket radius equals the matching plug radius)
+	problems = {}
+	for _, entry in SOCKETS do
+		local own = plugRadiusByTemplate[entry.template]
+		for _, socketName in entry.sockets do
+			local socket = socketRadiusByName[socketName]
+			if math.abs(socket / own - 1) > OWN_FIT_TOLERANCE then
+				table.insert(
+					problems,
+					string.format(
+						"%s radius %.2f vs own %s plug %.2f",
+						socketName,
+						socket,
+						entry.template,
+						own
+					)
+				)
+			end
+		end
+	end
+	finish(report, "R14", "WARN", "own parts fit own torso at scale 1 (within 5 percent)", problems)
+
+	-- R15: triangle budgets
 	problems = {}
 	local notMeasured: { string } = {}
 	local triangles: { [string]: number } = {}
@@ -777,7 +800,7 @@ local function validateSpecies(name: string): (Report, Measured?)
 		record(
 			report,
 			"WARN",
-			"R14",
+			"R15",
 			"triangles NOT MEASURED for "
 				.. table.concat(notMeasured, ", ")
 				.. " (enable Mesh and Image APIs, or count by hand; see PART_SPEC section 8)"
@@ -797,7 +820,7 @@ local function validateSpecies(name: string): (Report, Measured?)
 					CREATURE_TRIANGLES_HARD
 				)
 			)
-			finish(report, "R14", "FAIL", "triangle budgets", problems)
+			finish(report, "R15", "FAIL", "triangle budgets", problems)
 		elseif #problems > 0 or total > CREATURE_TRIANGLES_MAX then
 			if total > CREATURE_TRIANGLES_MAX then
 				table.insert(
@@ -816,12 +839,12 @@ local function validateSpecies(name: string): (Report, Measured?)
 					isFail = true
 				end
 			end
-			finish(report, "R14", if isFail then "FAIL" else "WARN", "triangle budgets", problems)
+			finish(report, "R15", if isFail then "FAIL" else "WARN", "triangle budgets", problems)
 		else
 			record(
 				report,
 				"PASS",
-				"R14",
+				"R15",
 				string.format(
 					"triangle budgets (whole creature %d of %d)",
 					total,

@@ -170,6 +170,23 @@ do
 	local resting = table.clone(a)
 	resting.breedReadyAt = 500
 	check("a resting creature cannot breed", not Breeding.canBreed(resting, b, 499))
+	local boundParent = table.clone(a)
+	boundParent.bound = true
+	check(
+		"a child of a bound parent is bound, and of two free parents is free",
+		Breeding.breed(boundParent, b, rng, { childId = newId(), now = 0 }).child.bound
+			and not Breeding.breed(a, b, rng, { childId = newId(), now = 0 }).child.bound
+	)
+	local parsed = Breeding.parseCharm("Legs", "B")
+	check(
+		"a charm request is only accepted for a real slot and side",
+		parsed ~= nil
+			and parsed.slot == "Legs"
+			and parsed.favour == "B"
+			and Breeding.parseCharm("Wings", "A") == nil
+			and Breeding.parseCharm("Legs", "C") == nil
+			and Breeding.parseCharm(5, nil) == nil
+	)
 	local lateParent = table.clone(a)
 	lateParent.originBiome = 7
 	local lateChild = Breeding.breed(lateParent, b, rng, { childId = newId(), now = 0 }).child

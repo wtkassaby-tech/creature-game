@@ -132,10 +132,10 @@ do
 		"the marker is at the centre at the computed time",
 		math.abs(Lasso.markerPosition(pattern, 1, t) - zone.centre) < 1e-9
 	)
-	check("a tap at the centre hits", Lasso.judge(pattern, { t }, { t }, 80).verdict == "Hit")
+	check("a tap at the centre hits", Lasso.judge(pattern, { t }, { t }).verdict == "Hit")
 	-- Tap just outside: shift by enough time to move the marker half a width plus a little.
 	local outsideMs = (zone.width / 2 + 0.01) / zone.speed * 1000
-	local miss = Lasso.judge(pattern, { t + outsideMs }, { t + outsideMs }, 80)
+	local miss = Lasso.judge(pattern, { t + outsideMs }, { t + outsideMs })
 	check(
 		"a tap just outside misses",
 		miss.verdict == "Miss",
@@ -144,7 +144,7 @@ do
 	local insideMs = (zone.width / 2 - 0.01) / zone.speed * 1000
 	check(
 		"a tap just inside hits",
-		Lasso.judge(pattern, { t + insideMs }, { t + insideMs }, 80).verdict == "Hit"
+		Lasso.judge(pattern, { t + insideMs }, { t + insideMs }).verdict == "Hit"
 	)
 	check("the centre tap has a near-zero timing error", Lasso.timingErrorMs(pattern, 1, t) < 0.001)
 	check(
@@ -160,11 +160,11 @@ do
 	end
 	check(
 		"a giant throw with every tap centred hits",
-		Lasso.judge(giant, good, good, 80).verdict == "Hit"
+		Lasso.judge(giant, good, good).verdict == "Hit"
 	)
 	local bad = table.clone(good)
 	bad[2] += (giant.zones[2].width / 2 + 0.02) / giant.zones[2].speed * 1000
-	local verdict = Lasso.judge(giant, bad, bad, 80)
+	local verdict = Lasso.judge(giant, bad, bad)
 	check(
 		"one missed zone misses the throw",
 		verdict.verdict == "Miss" and verdict.zoneHits[1] and not verdict.zoneHits[2]
@@ -175,8 +175,11 @@ print("\n== Lag window ==")
 do
 	local pattern = Lasso.createAttempt(input())
 	local now = 2000
+	-- The lag allowance is fixed in the pattern when the attempt is made, so each reading
+	-- gets its own pattern here (same seed, so the same zones unless the assist slows it).
 	local function judgeAt(claimed: number, rtt: number): string
-		return Lasso.judge(pattern, { claimed }, { now }, rtt).verdict
+		local made = Lasso.createAttempt(input({ roundTripMs = rtt }))
+		return Lasso.judge(made, { claimed }, { now }).verdict
 	end
 	check("a claim equal to the server clock is accepted", judgeAt(now, 80) ~= "Invalid")
 	check("a claim one round trip behind is accepted", judgeAt(now - 80, 80) ~= "Invalid")
@@ -196,16 +199,13 @@ do
 	)
 	check(
 		"a wrong number of taps is invalid",
-		Lasso.judge(pattern, { now, now }, { now, now }, 80).verdict == "Invalid"
+		Lasso.judge(pattern, { now, now }, { now, now }).verdict == "Invalid"
 	)
-	check(
-		"a NaN claim is invalid",
-		Lasso.judge(pattern, { 0 / 0 }, { now }, 80).verdict == "Invalid"
-	)
+	check("a NaN claim is invalid", Lasso.judge(pattern, { 0 / 0 }, { now }).verdict == "Invalid")
 	check("a negative claim is invalid", judgeAt(-5, 80) == "Invalid")
 	check(
 		"a claim after the attempt expires is invalid",
-		Lasso.judge(pattern, { 20000 }, { 20000 }, 80).verdict == "Invalid"
+		Lasso.judge(pattern, { 20000 }, { 20000 }).verdict == "Invalid"
 	)
 end
 
@@ -224,6 +224,19 @@ do
 		string.format("%.3f", laggy.zones[1].speed / normal.zones[1].speed)
 	)
 	check("the assist leaves the zone width alone", laggy.zones[1].width == normal.zones[1].width)
+	local crawl = Lasso.createAttempt(input({ slowMode = true, roundTripMs = 2000 }))
+	check(
+		"slow mode and the assist together never go below the floor",
+		math.abs(crawl.zones[1].speed / normal.zones[1].speed - LassoConfig.MIN_TOTAL_SPEED) < 1e-9
+	)
+	check(
+		"the trusted round trip is the smallest reading",
+		Lasso.trustedRoundTripMs({ 310, 95, 400, 120 }) == 95
+	)
+	check(
+		"with too few readings a default is used, however large they are",
+		Lasso.trustedRoundTripMs({ 900, 900 }) == LassoConfig.ROUND_TRIP_DEFAULT_MS
+	)
 	local slow = Lasso.createAttempt(input({ slowMode = true }))
 	local fast = Lasso.createAttempt(input())
 	check(
@@ -281,7 +294,7 @@ do
 				local aim = Lasso.nextCentreTimeMs(pattern, i, zone.startMs + 600)
 				table.insert(claims, math.max(zone.startMs, aim + gaussian() * SPREAD_MS))
 			end
-			if Lasso.judge(pattern, claims, claims, 80).verdict == "Hit" then
+			if Lasso.judge(pattern, claims, claims).verdict == "Hit" then
 				hits += 1
 			end
 		end

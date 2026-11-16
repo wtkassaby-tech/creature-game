@@ -224,6 +224,69 @@ do
 	check("more creatures than the stable holds", has(Profile.validate(p), "stable holds"))
 
 	p = sample()
+	table.insert(p.Eggs, { child = p.Eggs[1].child, hatchAt = 0, seed = 1 })
+	p.Pens = 2
+	check("the same creature in two eggs", has(Profile.validate(p), "in two eggs"))
+
+	p = sample()
+	p.Creatures.a.parts.Tail.species = "Nonesuch"
+	check("a part from a species that does not exist", has(Profile.validate(p), "unknown species"))
+
+	p = sample()
+	p.Creatures.a.bodyPlan = "Biped"
+	check("parts that do not match the body plan", has(Profile.validate(p), "wrong body plan"))
+
+	p = sample()
+	p.Creatures.a.isGiant = true
+	check("a giant that is not bound", has(Profile.validate(p), "not bound"))
+
+	p = sample()
+	p.Creatures.a.serial = 7
+	p.Creatures.c = Breeding.wild("Brindle", "c", 5, "Common", "Moss", Rng.new(9))
+	p.Creatures.c.serial = 7
+	check(
+		"the same serial number on two creatures of a kind",
+		has(Profile.validate(p), "repeats serial")
+	)
+
+	p = sample()
+	p.Creatures.a.serial = 7
+	p.Creatures.b.serial = 7
+	check("the same number on two different kinds is fine", #Profile.validate(p) == 0)
+
+	p = sample();
+	(p.Creatures.a :: any).rarity = "Legendary"
+	check("an unknown rarity", has(Profile.validate(p), "unknown rarity"))
+
+	p = sample()
+	p.Creatures.a.size = 3
+	check("a size outside the allowed range", has(Profile.validate(p), "size outside"))
+
+	p = sample()
+	p.Creatures.a.colour.carried = "Plaid"
+	check("an unknown colour", has(Profile.validate(p), "unknown colour"))
+
+	p = sample()
+	p.Creatures.a.generation = -1
+	check("a bad generation", has(Profile.validate(p), "bad generation"))
+
+	p = sample();
+	(p.Purchases.receiptIds :: any)[1] = 12345
+	check("a purchase id that is not text", has(Profile.validate(p), "purchase id"))
+
+	p = sample()
+	table.insert(p.Pending, { source = "Quest", ref = "greenwood-line" })
+	check("a waiting gift is allowed", #Profile.validate(p) == 0)
+
+	p = sample();
+	(p.Creatures.a :: any).parts = nil
+	local broken = Profile.validate(p)
+	check(
+		"a save too broken to check is reported, not an error",
+		#broken == 1 and has(broken, "unreadable save")
+	)
+
+	p = sample()
 	p.Creatures.a.size = 0 / 0
 	check("a value that cannot be saved", has(Profile.validate(p), "cannot be saved"))
 end
@@ -237,6 +300,10 @@ do
 	local mixed: any = { 1, 2 }
 	mixed.name = "x"
 	check("a table mixing list entries and names is refused", not Profile.isStorable(mixed))
+	local loop: any = { child = {} }
+	loop.child.parent = loop
+	check("a table that contains itself is refused, not a crash", not Profile.isStorable(loop))
+	check("text that is not valid UTF-8 is refused", not Profile.isStorable({ name = "\255\254" }))
 	check("infinity is refused", not Profile.isStorable({ value = math.huge }))
 	check("a function is refused", not Profile.isStorable({ run = function() end } :: any))
 	check(

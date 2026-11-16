@@ -56,6 +56,13 @@ LassoConfig.CLAIM_MARGIN_MS = 60
 -- Above the cap the sweep slows by cap / roundTrip (never below this floor) and the screen shows
 -- a "connection assist" note.
 LassoConfig.ASSIST_MIN_SPEED = 0.4
+-- Slow mode and the connection assist together never slow the marker below this share of normal.
+LassoConfig.MIN_TOTAL_SPEED = 0.4
+-- The server measures each player's round trip itself, several times during a battle, and trusts
+-- the smallest reading: a player can delay a reply but cannot make one arrive early.
+-- With fewer readings than this the allowance is the default below.
+LassoConfig.ROUND_TRIP_MIN_SAMPLES = 3
+LassoConfig.ROUND_TRIP_DEFAULT_MS = 120
 
 -- Timing audit: flag an account when this share of its last SAMPLES throws landed within TINY_MS
 -- of the zone centre. A human with a 60 ms spread lands about 13% of throws that close.

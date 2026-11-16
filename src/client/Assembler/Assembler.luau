@@ -47,6 +47,8 @@ local COLOURS: { [string]: Color3 } = {
 local function cloneTemplate(species: string, template: string): MeshPart
 	local folder = ReplicatedStorage:WaitForChild("CreatureParts"):WaitForChild(species)
 	local part = folder:WaitForChild(template):Clone() :: MeshPart
+	-- Parts are unanchored so the joints can move them; the torso is anchored in `build`
+	-- and the world code moves the whole creature by its torso.
 	part.Anchored = false
 	part.CanCollide = false
 	part.CanTouch = false
@@ -73,6 +75,7 @@ function Assembler.build(creature: Types.Creature): Model
 	torso.Name = "Torso"
 	torso.Parent = model
 	model.PrimaryPart = torso
+	torso.Anchored = true -- creatures are placed and moved by code, not by physics
 
 	local scales = AssemblyMath.partScales(creature)
 	for _, entry in LAYOUT do
@@ -112,6 +115,8 @@ function Assembler.place(model: Model, groundPosition: Vector3)
 	local legSocket = torso:FindFirstChild("LegSocketL") :: Attachment
 	local rideHeight = model:GetAttribute("RideHeight") :: number
 	-- Lift the torso so its leg sockets sit one scaled leg length above the ground.
+	-- ScaleTo has already scaled the attachment, so this offset includes the size gene,
+	-- as the ride height does.
 	local socketOffset = legSocket.Position.Y
 	model:PivotTo(CFrame.new(groundPosition + Vector3.new(0, rideHeight - socketOffset, 0)))
 end

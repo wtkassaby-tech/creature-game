@@ -99,6 +99,25 @@ local function nth(list: { number }, index: number): number
 	return list[math.min(index, #list)]
 end
 
+-- Turns the two charm values sent by a player's device into a Charm, or nil if they are not
+-- a real slot and side. Nothing from the device is trusted beyond this.
+function Breeding.parseCharm(slot: unknown, favour: unknown): Charm?
+	local side: "A" | "B"
+	if favour == "A" then
+		side = "A"
+	elseif favour == "B" then
+		side = "B"
+	else
+		return nil
+	end
+	for _, name: Slot in BreedConfig.SLOTS do
+		if name == slot then
+			return { slot = name, favour = side }
+		end
+	end
+	return nil
+end
+
 -- Coins for this breed.
 function Breeding.cost(a: Creature, b: Creature): number
 	local biomeTier = math.max(a.originBiome, b.originBiome)
@@ -251,7 +270,9 @@ function Breeding.breed(a: Creature, b: Creature, rng: Rng.Rng, options: BreedOp
 		breedReadyAt = 0,
 		originBiome = math.max(a.originBiome, b.originBiome), -- closes the "biome reached" loophole
 		isGiant = false,
-		bound = false,
+		-- A child of a creature that can never be traded can never be traded either,
+		-- so breeding cannot be used to move a bound creature's value into a tradable one.
+		bound = a.bound or b.bound,
 	}
 
 	local function after(parent: Creature)

@@ -213,8 +213,17 @@ EconomyConfig.ITEMS = {
 	BondCharm: ItemDef,
 }
 
-local ITEM_IDS: { ItemId } =
-	{ "Basic", "Braided", "Gilded", "Tonic", "GreatTonic", "Revive", "GiantCall", "Bait", "BondCharm" }
+local ITEM_IDS: { ItemId } = {
+	"Basic",
+	"Braided",
+	"Gilded",
+	"Tonic",
+	"GreatTonic",
+	"Revive",
+	"GiantCall",
+	"Bait",
+	"BondCharm",
+}
 EconomyConfig.ITEM_IDS = ITEM_IDS
 local LASSO_TIERS: { LassoTier } = { "Basic", "Braided", "Gilded" }
 EconomyConfig.LASSO_TIERS = LASSO_TIERS
@@ -345,14 +354,30 @@ EconomyConfig.FLOWS = {
 	-- Coin sources
 	Starter = { currency = "Coins", limit = "Once", note = "STARTING_COINS, once per account" },
 	WildWin = { currency = "Coins", limit = "Diminishing", note = "Per kind per day" },
-	TamerWin = { currency = "Coins", limit = "Daily", note = "First clear once, one paid rematch a day" },
-	GateWin = { currency = "Coins", limit = "Daily", note = "First clear once, one paid rematch a day" },
-	GiantWin = { currency = "Coins", limit = "Daily", note = "First clear once, two paid rematches a day" },
+	TamerWin = {
+		currency = "Coins",
+		limit = "Daily",
+		note = "First clear once, one paid rematch a day",
+	},
+	GateWin = {
+		currency = "Coins",
+		limit = "Daily",
+		note = "First clear once, one paid rematch a day",
+	},
+	GiantWin = {
+		currency = "Coins",
+		limit = "Daily",
+		note = "First clear once, two paid rematches a day",
+	},
 	QuestLine = { currency = "Coins", limit = "Once", note = "Once per quest line" },
 	DailyTask = { currency = "Coins", limit = "Daily", note = "Three easy and three hard tasks" },
 	WeeklyChallenge = { currency = "Coins", limit = "Weekly", note = "Once a week" },
 	CasualPvp = { currency = "Coins", limit = "Daily", note = "First five matchmade wins a day" },
-	Release = { currency = "Coins", limit = "BelowCost", note = "Below the minimum lasso for the rarity" },
+	Release = {
+		currency = "Coins",
+		limit = "BelowCost",
+		note = "Below the minimum lasso for the rarity",
+	},
 	-- Coin sinks
 	Shop = { currency = "Coins", limit = "Sink", note = "Lassos, consumables, horns, bait, charms" },
 	Craft = { currency = "Coins", limit = "Sink", note = "Coin part of a recipe" },
@@ -364,7 +389,11 @@ EconomyConfig.FLOWS = {
 	CandyDaily = { currency = "Candy", limit = "Daily", note = "DailyTask and DailyHardTask" },
 	CandyGiantRematch = { currency = "Candy", limit = "Daily", note = "GiantRematch" },
 	CandyWeekly = { currency = "Candy", limit = "Weekly", note = "WeeklyChallenge" },
-	CandyFirstClear = { currency = "Candy", limit = "Once", note = "GiantFirstClear and GateFirstClear" },
+	CandyFirstClear = {
+		currency = "Candy",
+		limit = "Once",
+		note = "GiantFirstClear and GateFirstClear",
+	},
 	CandyQuest = { currency = "Candy", limit = "Once", note = "QuestLine" },
 	CandyRanked = { currency = "Candy", limit = "Once", note = "RankedSeason, once per season" },
 	-- Candy sink

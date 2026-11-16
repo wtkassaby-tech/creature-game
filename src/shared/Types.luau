@@ -55,6 +55,7 @@ export type Creature = {
 	originBiome: number,
 	isGiant: boolean,
 	bound: boolean, -- true if it can never be traded (giants, cosmic creatures)
+	serial: number?, -- its number among its kind; only giants and wild-caught gem creatures have one
 }
 
 -- A move a part brings, and the creature level at which it unlocks (1 = known from the start).

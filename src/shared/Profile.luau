@@ -5,9 +5,13 @@
 -- Everything that must change together (coins, candy, creatures, eggs, items) lives in this one
 -- record, so a breed, a capture or a purchase is saved whole or not at all. No Roblox services
 -- are used here: the data service on the server loads and saves this through ProfileStore.
+--
+-- This file runs past 400 lines on purpose: the shape and every check on it belong together,
+-- so a change to one is made beside the other.
 
 local BreedConfig = require("../config/BreedConfig")
 local ProfileConfig = require("../config/ProfileConfig")
+local Species = require("../content/Species")
 local Types = require("./Types")
 
 export type Egg = { child: Types.Creature, hatchAt: number, seed: number }
@@ -28,6 +32,10 @@ export type Daily = {
 	claimed: { [string]: boolean },
 }
 
+-- Something the player has earned but not yet received: a one-time gift waiting for room in the
+-- stable, or a captured giant waiting for its serial number. Saved, so it survives leaving.
+export type PendingGrant = { source: string, ref: string }
+
 export type Settings = {
 	battleSpeed: number,
 	lassoSlowMode: boolean,
@@ -43,6 +51,7 @@ export type Profile = {
 	Creatures: { [string]: Types.Creature }, -- keyed by creature id
 	Team: { string }, -- creature ids, in battle order
 	Eggs: { Egg },
+	Pending: { PendingGrant },
 	Pens: number,
 	StableCapacity: number,
 	Items: { [string]: number }, -- item id -> count
@@ -77,6 +86,7 @@ function Profile.template(): Profile
 		Creatures = {},
 		Team = {},
 		Eggs = {},
+		Pending = {},
 		Pens = ProfileConfig.STARTING_PENS,
 		StableCapacity = ProfileConfig.STARTING_STABLE_CAPACITY,
 		Items = {},
@@ -108,13 +118,17 @@ function Profile.teamSize(badges: number): number
 	return sizes[math.clamp(badges + 1, 1, #sizes)]
 end
 
-local function deepCopy(value: any): any
+local MAX_DEPTH = 32 -- far deeper than any real save; stops a table that contains itself
+
+local function deepCopy(value: any, depth: number?): any
 	if typeof(value) ~= "table" then
 		return value
 	end
+	local level = (depth or 0) + 1
+	assert(level <= MAX_DEPTH, "save is nested too deeply to copy")
 	local copy = {}
 	for key, child in value do
-		copy[key] = deepCopy(child)
+		copy[key] = deepCopy(child, level)
 	end
 	return copy
 end
@@ -139,7 +153,10 @@ function Profile.migrateWith(
 		return nil,
 			`save is version {version}, newer than this server ({targetVersion}); refusing to load it`
 	end
-	local migrated = deepCopy(data)
+	local copied, migrated = pcall(deepCopy, data)
+	if not copied then
+		return nil, `save could not be copied: {tostring(migrated)}`
+	end
 	while version < targetVersion do
 		local migration = migrations[version]
 		if not migration then
@@ -177,11 +194,21 @@ function Profile.rememberReceipt(profile: Profile, purchaseId: string): boolean
 end
 
 -- True if a value can be stored by Roblox data stores: tables are either lists or have only
--- string keys, numbers are finite, and nothing is a function or other unsaveable value.
-function Profile.isStorable(value: any, path: string?): (boolean, string?)
+-- string keys, numbers are finite, text is valid UTF-8, and nothing is a function or other
+-- unsaveable value. (It cannot measure the 4 MB size limit; stable capacity keeps saves small.)
+function Profile.isStorable(value: any, path: string?, depth: number?): (boolean, string?)
 	local where = path or "root"
+	local level = (depth or 0) + 1
+	if level > MAX_DEPTH then
+		return false, `{where} is nested too deeply (does a table contain itself?)`
+	end
 	local kind = typeof(value)
-	if kind == "nil" or kind == "string" or kind == "boolean" then
+	if kind == "nil" or kind == "boolean" then
+		return true, nil
+	elseif kind == "string" then
+		if utf8.len(value) == nil then
+			return false, `{where} is not valid UTF-8 text`
+		end
 		return true, nil
 	elseif kind == "number" then
 		if value ~= value or value == math.huge or value == -math.huge then
@@ -197,10 +224,13 @@ function Profile.isStorable(value: any, path: string?): (boolean, string?)
 		local keyKind = typeof(key)
 		if keyKind == "string" then
 			stringKeys += 1
+			if utf8.len(key) == nil then
+				return false, `{where} has a key that is not valid UTF-8 text`
+			end
 		elseif keyKind ~= "number" then
 			return false, `{where} has a {keyKind} key`
 		end
-		local ok, problem = Profile.isStorable(child, `{where}.{tostring(key)}`)
+		local ok, problem = Profile.isStorable(child, `{where}.{tostring(key)}`, level)
 		if not ok then
 			return false, problem
 		end
@@ -231,10 +261,49 @@ local function checkCreature(id: string, creature: Types.Creature, problems: { s
 	if typeof(creature.xp) ~= "number" or creature.xp < 0 then
 		table.insert(problems, `creature {id} has bad xp`)
 	end
+	if not isWholeNumber(creature.generation) or creature.generation < 0 then
+		table.insert(problems, `creature {id} has a bad generation`)
+	end
+	if
+		not table.find(BreedConfig.RARITY_ORDER, creature.rarity)
+		and creature.rarity ~= "Cosmic"
+	then
+		table.insert(problems, `creature {id} has an unknown rarity`)
+	end
+	if (creature.isGiant or creature.rarity == "Cosmic") and not creature.bound then
+		table.insert(problems, `creature {id} is a giant or cosmic creature but is not bound`)
+	end
+	if creature.serial ~= nil and (not isWholeNumber(creature.serial) or creature.serial < 1) then
+		table.insert(problems, `creature {id} has a bad serial number`)
+	end
+	if
+		not creature.isGiant
+		and (
+			typeof(creature.size) ~= "number"
+			or creature.size < BreedConfig.SIZE_MIN
+			or creature.size > BreedConfig.SIZE_MAX
+		)
+	then
+		table.insert(problems, `creature {id} has a size outside the allowed range`)
+	end
+	if
+		typeof(creature.colour) ~= "table"
+		or not BreedConfig.COLOURS[creature.colour.shown]
+		or not BreedConfig.COLOURS[creature.colour.carried]
+	then
+		table.insert(problems, `creature {id} has an unknown colour`)
+	end
 	for _, slot: Types.Slot in BreedConfig.SLOTS do
 		local part = creature.parts[slot]
 		if typeof(part) ~= "table" or typeof(part.species) ~= "string" then
 			table.insert(problems, `creature {id} is missing its {slot}`)
+		elseif not Species[part.species] then
+			table.insert(
+				problems,
+				`creature {id} has a {slot} from an unknown species ({part.species})`
+			)
+		elseif Species[part.species].bodyPlan ~= creature.bodyPlan then
+			table.insert(problems, `creature {id} has a {slot} from the wrong body plan`)
 		elseif
 			not isWholeNumber(part.quality)
 			or part.quality < BreedConfig.QUALITY_MIN
@@ -245,9 +314,9 @@ local function checkCreature(id: string, creature: Types.Creature, problems: { s
 	end
 end
 
--- Lists everything wrong with a loaded profile. An empty list means it is sound.
--- The data service logs problems as an alarm; it never deletes data because of them.
-function Profile.validate(profile: Profile): { string }
+-- The checks themselves. The data service logs problems as an alarm; it never deletes data
+-- because of them.
+local function validateUnsafe(profile: Profile): { string }
 	local problems: { string } = {}
 
 	local function checkBalance(name: string, amount: number)
@@ -291,6 +360,7 @@ function Profile.validate(profile: Profile): { string }
 	if #profile.Eggs > profile.Pens then
 		table.insert(problems, "more eggs than pens")
 	end
+	local seenInEggs: { [string]: boolean } = {}
 	for index, egg in profile.Eggs do
 		local id = egg.child.id
 		if profile.Creatures[id] then
@@ -299,7 +369,39 @@ function Profile.validate(profile: Profile): { string }
 				`egg {index} holds creature {id}, which is already in the stable`
 			)
 		end
+		if seenInEggs[id] then
+			table.insert(problems, `creature {id} is in two eggs`)
+		end
+		seenInEggs[id] = true
 		checkCreature(id, egg.child, problems)
+	end
+
+	-- A serial number may appear once per kind (the species of the torso).
+	local serials: { [string]: boolean } = {}
+	for id, creature in profile.Creatures do
+		if creature.serial ~= nil then
+			local key = `{creature.parts.Torso.species}#{creature.serial}`
+			if serials[key] then
+				table.insert(problems, `creature {id} repeats serial {key}`)
+			end
+			serials[key] = true
+		end
+	end
+
+	for index, pending in profile.Pending do
+		if typeof(pending.source) ~= "string" or typeof(pending.ref) ~= "string" then
+			table.insert(problems, `pending grant {index} is malformed`)
+		end
+	end
+
+	local receipts = profile.Purchases.receiptIds
+	if #receipts > ProfileConfig.RECEIPTS_REMEMBERED then
+		table.insert(problems, "more purchase ids remembered than the limit")
+	end
+	for index, receipt in receipts do
+		if typeof(receipt) ~= "string" then
+			table.insert(problems, `purchase id {index} is not text`)
+		end
 	end
 
 	for item, count in profile.Items do
@@ -313,6 +415,17 @@ function Profile.validate(profile: Profile): { string }
 		table.insert(problems, `cannot be saved: {why or "unknown"}`)
 	end
 	return problems
+end
+
+-- Lists everything wrong with a loaded profile. An empty list means it is sound.
+-- A save so broken that the checks themselves fail is reported as one problem, never an error:
+-- the data service treats any problem that starts with "unreadable" as a failed load.
+function Profile.validate(profile: Profile): { string }
+	local ok, result = pcall(validateUnsafe, profile)
+	if ok then
+		return result
+	end
+	return { `unreadable save: {tostring(result)}` }
 end
 
 return Profile
