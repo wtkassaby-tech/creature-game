@@ -316,7 +316,8 @@ local function validateSpecies(name: string): (Report, Measured?)
 		local part = parts[templateName]
 		local plugCount = 0
 		local allowed: { string } = { "Plug" }
-		for _, extra in OPTIONAL_ATTACHMENTS[templateName] or {} do
+		local extras: { string } = OPTIONAL_ATTACHMENTS[templateName] or {}
+		for _, extra in extras do
 			table.insert(allowed, extra)
 		end
 		for _, child in part:GetChildren() do
@@ -407,7 +408,7 @@ local function validateSpecies(name: string): (Report, Measured?)
 		if descendant:IsA("Attachment") and descendant.Orientation.Magnitude > TOLERANCE_ANGLE then
 			table.insert(
 				problems,
-				descendant.Parent.Name
+				(if descendant.Parent then descendant.Parent.Name else "?")
 					.. "."
 					.. descendant.Name
 					.. " Orientation = "
@@ -980,7 +981,7 @@ do
 	local moduleScript = if sharedFolder then sharedFolder:FindFirstChild("AssemblyMath") else nil
 	if moduleScript and moduleScript:IsA("ModuleScript") then
 		local ok, result = pcall(function(): any
-			return require(moduleScript)
+			return (require :: any)(moduleScript)
 		end)
 		if
 			ok
