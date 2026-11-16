@@ -1,0 +1,18 @@
+== Part A: brief formulas, best-pair breeder, breed limit 5, no kin rule ==
+  single species, no ceiling: best total vs best wild founder, median (p10-p90)
+    gen  5: x1.04 (1.02-1.07)  n=200
+    gen 10: x1.07 (1.05-1.11)  n=200
+    gen 20: x1.15 (1.10-1.20)  n=200
+    gen 50: x1.40 (1.32-1.49)  n=200
+  mixed roster, no ceiling: best total vs best wild founder, median (p10-p90)
+    gen  5: x1.11 (1.04-1.22)  n=200
+    gen 10: x1.15 (1.07-1.26)  n=200
+    gen 20: x1.23 (1.14-1.36)  n=200
+    gen 50: x1.53 (1.38-1.70)  n=200
+  mixed roster, ceiling 1.25x best part: best total vs best wild founder, median (p10-p90)
+    gen  5: x1.10 (1.04-1.21)  n=200
+    gen 10: x1.13 (1.07-1.26)  n=200
+    gen 20: x1.20 (1.13-1.34)  n=200
+    gen 50: x1.39 (1.28-1.54)  n=199
+  adversarial weight walk (stored factor): legs Speed 80 moved through ever lighter torsos
+    after 8 steps down: 653; after one step back up: 457

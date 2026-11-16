@@ -1,0 +1,26 @@
+{
+  "name": "creature-game",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "shared": { "$path": "src/shared" },
+      "config": { "$path": "src/config" },
+      "content": { "$path": "src/content" },
+      "net": { "$path": "src/net" },
+      "Packages": { "$path": "Packages" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "server": { "$path": "src/server" },
+      "ServerPackages": { "$path": "ServerPackages" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "client": { "$path": "src/client" }
+      }
+    }
+  }
+}

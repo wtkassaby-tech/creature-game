@@ -1,0 +1,178 @@
+
+== Proposal: fit on legs only, clamp 0.85-1.15, size 1.0 ==
+  best total  475.5  Scutt/Stump/Scutt/Mossb/Mossb  HP110 Atk115 Def110 Spd140
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 6712 of 32768; best hybrid is +44.1% over best pure
+  max HP: 140.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 145.0
+  max Spd: 160.0 (Scutt/Mossb/Scutt/Mossb/Mossb) vs best pure 160.0
+  duel field of 105 builds, 40 fights per pairing:
+    Scutt/Stump/Scutt/Mossb/Stump      mean win 96%, worst matchup 45%  HP140 Atk115 Def110 Spd110
+    Scutt/Stump/Scutt/Mossb/Burro      mean win 96%, worst matchup 38%  HP140 Atk115 Def110 Spd110
+    Scutt/Stump/Scutt/Mossb/Thorn      mean win 96%, worst matchup 42%  HP110 Atk145 Def110 Spd110
+    Scutt/Stump/Scutt/Mossb/Scutt      mean win 95%, worst matchup 40%  HP110 Atk145 Def110 Spd110
+    Scutt/Stump/Scutt/Dunes/Stump      mean win 89%, worst matchup 2%  HP140 Atk115 Def110 Spd94
+    best pure in duels: Burrowbear mean win 41%
+    builds with no losing matchup: 0
+
+== No fit factor at all ==
+  best total  495.0  Scutt/Stump/Scutt/Mossb/Mossb  HP110 Atk115 Def110 Spd160
+  worst total 220.0  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 7904 of 32768; best hybrid is +50.0% over best pure
+  max HP: 140.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 145.0
+  max Spd: 160.0 (Scutt/Stump/Scutt/Mossb/Mossb) vs best pure 160.0
+
+== Brief clamp 0.7-1.3 (derived, not stored) ==
+  best total  456.0  Scutt/Stump/Scutt/Mossb/Mossb  HP110 Atk115 Def110 Spd121
+  worst total 229.0  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 6336 of 32768; best hybrid is +38.2% over best pure
+  max HP: 140.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 145.0
+  max Spd: 173.0 (Scutt/Thorn/Scutt/Dunes/Mossb) vs best pure 160.0
+  duel field of 103 builds, 40 fights per pairing:
+    Scutt/Stump/Scutt/Mossb/Stump      mean win 97%, worst matchup 55%  HP140 Atk115 Def110 Spd91
+    Scutt/Stump/Scutt/Mossb/Burro      mean win 97%, worst matchup 38%  HP140 Atk115 Def110 Spd91
+    Scutt/Stump/Scutt/Mossb/Thorn      mean win 96%, worst matchup 48%  HP110 Atk145 Def110 Spd91
+    Scutt/Stump/Scutt/Mossb/Scutt      mean win 96%, worst matchup 48%  HP110 Atk145 Def110 Spd91
+    Scutt/Stump/Scutt/Dunes/Burro      mean win 91%, worst matchup 0%  HP140 Atk115 Def110 Spd88
+    best pure in duels: Burrowbear mean win 40%
+    builds with no losing matchup: 1
+
+== Size gene 1.2 (proposal, size only feeds the fit) ==
+  best total  475.5  Scutt/Stump/Scutt/Mossb/Mossb  HP110 Atk115 Def110 Spd140
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   327.4  Stumpback; pure range 318.7-327.4
+  hybrids above best pure by >12%: 6952 of 32768; best hybrid is +45.2% over best pure
+  max HP: 140.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 145.0
+  max Spd: 156.5 (Scutt/Thorn/Scutt/Dunes/Mossb) vs best pure 148.7
+
+== Size gene 0.8 (proposal, size only feeds the fit) ==
+  best total  475.5  Scutt/Stump/Scutt/Mossb/Mossb  HP110 Atk115 Def110 Spd140
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   345.3  Mossbun; pure range 333.5-345.3
+  hybrids above best pure by >12%: 4704 of 32768; best hybrid is +37.7% over best pure
+  max HP: 140.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 145.0
+  max Spd: 175.3 (Scutt/Mossb/Scutt/Mossb/Mossb) vs best pure 175.3
+
+  size 0.8 vs 1.2, same parts: best total 475.5 vs 475.5
+
+== Recommended: size also scales torso HP/Def, size 0.8 ==
+  best total  431.5  Scutt/Stump/Scutt/Mossb/Mossb  HP88 Atk115 Def88 Spd140
+  worst total 202.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   323.3  Mossbun; pure range 289.5-323.3
+  hybrids above best pure by >12%: 2952 of 32768; best hybrid is +33.4% over best pure
+  max HP: 118.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 118.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 122.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 122.0
+  max Spd: 175.3 (Scutt/Mossb/Scutt/Mossb/Mossb) vs best pure 175.3
+
+== Recommended: budget cap 1.05 x species budget, fit clamp 0.6-1.15, size scales torso ==
+  best total  346.5  Mossb/Stump/Thorn/Burro/Thorn  HP110 Atk100 Def110 Spd27
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 0 of 32768; best hybrid is +5.0% over best pure
+  max HP: 140.0 (Stump/Stump/Stump/Scutt/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Reefd/Scutt/Scutt/Thorn) vs best pure 145.0
+  max Def: 145.0 (Stump/Shell/Scutt/Burro/Shell) vs best pure 145.0
+  max Spd: 160.0 (Stump/Mossb/Burro/Mossb/Mossb) vs best pure 160.0
+  duel field of 118 builds, 40 fights per pairing:
+    Scutt/Burro/Scutt/Burro/Thorn      mean win 99%, worst matchup 42%  HP100 Atk145 Def70 Spd30
+    Scutt/Burro/Scutt/Burro/Scutt      mean win 99%, worst matchup 38%  HP100 Atk145 Def70 Spd30
+    Thorn/Stump/Mossb/Burro/Scutt      mean win 94%, worst matchup 0%  HP110 Atk100 Def110 Spd27
+    Thorn/Stump/Dunes/Burro/Thorn      mean win 94%, worst matchup 0%  HP110 Atk100 Def110 Spd27
+    Mossb/Stump/Thorn/Burro/Thorn      mean win 93%, worst matchup 0%  HP110 Atk100 Def110 Spd27
+    best pure in duels: Burrowbear mean win 93%
+    builds with no losing matchup: 0
+
+== Recommended: budget cap 1.10 x species budget, fit clamp 0.6-1.15, size scales torso ==
+  best total  363.0  Mossb/Stump/Burro/Reefd/Stump  HP128 Atk73 Def101 Spd61
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 0 of 32768; best hybrid is +10.0% over best pure
+  max HP: 140.0 (Stump/Stump/Thorn/Thorn/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Thorn/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Stump/Shell/Burro/Thorn/Shell) vs best pure 145.0
+  max Spd: 160.0 (Thorn/Mossb/Burro/Mossb/Mossb) vs best pure 160.0
+  duel field of 118 builds, 40 fights per pairing:
+    Scutt/Burro/Scutt/Thorn/Scutt      mean win 97%, worst matchup 48%  HP100 Atk145 Def70 Spd48
+    Scutt/Burro/Scutt/Thorn/Thorn      mean win 97%, worst matchup 35%  HP100 Atk145 Def70 Spd48
+    Scutt/Burro/Scutt/Scutt/Scutt      mean win 96%, worst matchup 25%  HP100 Atk145 Def70 Spd45
+    Scutt/Burro/Scutt/Scutt/Thorn      mean win 96%, worst matchup 10%  HP100 Atk145 Def70 Spd45
+    Mossb/Stump/Scutt/Burro/Scutt      mean win 94%, worst matchup 5%  HP110 Atk117 Def110 Spd27
+    best pure in duels: Burrowbear mean win 79%
+    builds with no losing matchup: 0
+
+== Recommended: budget cap 1.15 x species budget, fit clamp 0.6-1.15, size scales torso ==
+  best total  379.5  Mossb/Stump/Stump/Mossb/Stump  HP139 Atk54 Def109 Spd77
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 4880 of 32768; best hybrid is +15.0% over best pure
+  max HP: 140.0 (Stump/Stump/Reefd/Reefd/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Shell/Scutt/Burro/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Burro/Shell) vs best pure 145.0
+  max Spd: 160.0 (Burro/Mossb/Scutt/Mossb/Mossb) vs best pure 160.0
+  duel field of 118 builds, 40 fights per pairing:
+    Scutt/Shell/Scutt/Burro/Scutt      mean win 96%, worst matchup 42%  HP95 Atk145 Def115 Spd23
+    Scutt/Shell/Scutt/Burro/Thorn      mean win 96%, worst matchup 52%  HP95 Atk145 Def115 Spd23
+    Reefd/Stump/Thorn/Mossb/Scutt      mean win 93%, worst matchup 18%  HP103 Atk101 Def103 Spd73
+    Thorn/Stump/Thorn/Thorn/Burro      mean win 92%, worst matchup 8%  HP140 Atk80 Def110 Spd48
+    Mossb/Stump/Burro/Mossb/Thorn      mean win 92%, worst matchup 12%  HP102 Atk102 Def102 Spd73
+    best pure in duels: Burrowbear mean win 72%
+    builds with no losing matchup: 1
+
+######## Same tests with a ratio damage formula (damage ~ Atk x Atk/Def) ########
+
+== Proposal (ratio damage) ==
+  best total  475.5  Scutt/Stump/Scutt/Mossb/Mossb  HP110 Atk115 Def110 Spd140
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 6712 of 32768; best hybrid is +44.1% over best pure
+  max HP: 140.0 (Scutt/Stump/Scutt/Mossb/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Stump/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Scutt/Shell/Scutt/Mossb/Shell) vs best pure 145.0
+  max Spd: 160.0 (Scutt/Mossb/Scutt/Mossb/Mossb) vs best pure 160.0
+  duel field of 105 builds, 40 fights per pairing:
+    Scutt/Stump/Scutt/Mossb/Scutt      mean win 95%, worst matchup 45%  HP110 Atk145 Def110 Spd110
+    Scutt/Stump/Scutt/Mossb/Thorn      mean win 95%, worst matchup 35%  HP110 Atk145 Def110 Spd110
+    Scutt/Stump/Scutt/Mossb/Shell      mean win 93%, worst matchup 32%  HP110 Atk115 Def140 Spd110
+    Burro/Stump/Scutt/Mossb/Thorn      mean win 93%, worst matchup 30%  HP110 Atk138 Def110 Spd110
+    Scutt/Stump/Scutt/Mossb/Stump      mean win 93%, worst matchup 32%  HP140 Atk115 Def110 Spd110
+    best pure in duels: Burrowbear mean win 39%
+    builds with no losing matchup: 1
+
+== Recommended cap 1.10 (ratio damage) ==
+  best total  363.0  Mossb/Stump/Burro/Reefd/Stump  HP128 Atk73 Def101 Spd61
+  worst total 224.5  Stump/Scutt/Stump/Shell/Reefd
+  best pure   330.0  Mossbun; pure range 330.0-330.0
+  hybrids above best pure by >12%: 0 of 32768; best hybrid is +10.0% over best pure
+  max HP: 140.0 (Stump/Stump/Thorn/Thorn/Stump) vs best pure 140.0
+  max Atk: 145.0 (Scutt/Thorn/Scutt/Mossb/Thorn) vs best pure 145.0
+  max Def: 145.0 (Stump/Shell/Burro/Thorn/Shell) vs best pure 145.0
+  max Spd: 160.0 (Thorn/Mossb/Burro/Mossb/Mossb) vs best pure 160.0
+  duel field of 118 builds, 40 fights per pairing:
+    Mossb/Stump/Scutt/Burro/Scutt      mean win 98%, worst matchup 57%  HP110 Atk117 Def110 Spd27
+    Mossb/Stump/Scutt/Burro/Thorn      mean win 98%, worst matchup 40%  HP110 Atk117 Def110 Spd27
+    Scutt/Burro/Scutt/Thorn/Scutt      mean win 96%, worst matchup 30%  HP100 Atk145 Def70 Spd48
+    Scutt/Burro/Scutt/Thorn/Thorn      mean win 95%, worst matchup 32%  HP100 Atk145 Def70 Spd48
+    Scutt/Burro/Scutt/Scutt/Scutt      mean win 94%, worst matchup 0%  HP100 Atk145 Def70 Spd45
+    best pure in duels: Burrowbear mean win 68%
+    builds with no losing matchup: 1
+
+== How much does an all-stat edge matter in a duel? (Thornfox mirror, 4,000 fights) ==
+  + 1.0% all stats: win 97%; without the Speed edge: 62%
+  + 2.5% all stats: win 100%; without the Speed edge: 81%
+  + 5.0% all stats: win 100%; without the Speed edge: 99%
+  + 7.5% all stats: win 100%; without the Speed edge: 100%
+  +10.0% all stats: win 100%; without the Speed edge: 100%
+  +15.0% all stats: win 100%; without the Speed edge: 100%

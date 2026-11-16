@@ -1,0 +1,17 @@
+Recommended rule set invariants
+  [PASS] quality stays within 0-10 (seen (0, 10))
+  [PASS] no stat total above the computed ceiling (best 398.5, ceiling 398.5)
+  [PASS] same parts by any path give identical stats 
+  [PASS] random mating keeps mean quality in 4.5-5.5 for 100 generations (range 4.69-5.22)
+  [PASS] rarity odds 2x2 -> 2 match config (measured 0.3989, config 0.40)
+  [PASS] rarity odds 2x0 -> 2 match config (measured 0.1001, config 0.10)
+  [PASS] rarity odds 3x3 -> 3 match config (measured 0.4013, config 0.40)
+  [PASS] rarity odds 3x0 -> 3 match config (measured 0.0799, config 0.08)
+  [PASS] rarity odds 4x4 -> 4 match config (measured 0.2998, config 0.30)
+  [PASS] rarity odds 4x1 -> 4 match config (measured 0.0490, config 0.05)
+  [PASS] no hybrid beats the best pure species by more than 15% on total (+15.0%)
+  [PASS] parent x child is kin 
+  [PASS] full siblings are kin 
+  [PASS] gem-tier creature stops at its breed limit 
+  [PASS] child level never below 1 
+ALL PASS

@@ -1,0 +1,6 @@
+
+-- Proposal, closed cohort of 300, market 50%, no sink
+  day   7: active 300, gem1 held 88 (0.29/player, 1.0% of creatures); made wild 57, bred 31, removed 0; R_eff 0.35; own one: casual 0%, regular 13%, hardcore 33%; breeds/player: casual 5, regular 11, hardcore 33
+  day  30: active 300, gem1 held 813 (2.71/player, 4.6% of creatures); made wild 373, bred 440, removed 0; R_eff 0.54; own one: casual 21%, regular 54%, hardcore 88%; breeds/player: casual 14, regular 34, hardcore 101
+  day  90: active 300, gem1 held 3344 (11.15/player, 16.0% of creatures); made wild 1241, bred 2174, removed 71; R_eff 0.64; own one: casual 50%, regular 93%, hardcore 100%; breeds/player: casual 34, regular 80, hardcore 257
+  day 180: active 300, gem1 held 7013 (23.38/player, 33.5% of creatures); made wild 2657, bred 5391, removed 1035; R_eff 0.67; own one: casual 75%, regular 99%, hardcore 100%; breeds/player: casual 60, regular 141, hardcore 543

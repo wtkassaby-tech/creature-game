@@ -1,0 +1,14 @@
+
+== proposal ==
+  casual, day 7: play 2.3 h, biome 1; breeds median 5 (p10 4, p90 6); first breed on day 3.8; best creature +9% stat total over best wild catch (p10 0%, p90 27%); best mean pips 5.6; species in best 2; own a gem creature 0%; gem creatures median 0
+  casual, day 30: play 10.0 h, biome 3; breeds median 14 (p10 10, p90 16); first breed on day 3.8; best creature +17% stat total over best wild catch (p10 4%, p90 32%); best mean pips 5.8; species in best 2; own a gem creature 30%; gem creatures median 0
+  regular, day 7: play 7.0 h, biome 3; breeds median 11 (p10 9, p90 13); first breed on day 1.8; best creature +16% stat total over best wild catch (p10 4%, p90 31%); best mean pips 5.8; species in best 2; own a gem creature 20%; gem creatures median 0
+  hardcore, day 7: play 21.0 h, biome 3; breeds median 32 (p10 23, p90 38); first breed on day 1.4; best creature +20% stat total over best wild catch (p10 7%, p90 32%); best mean pips 6.2; species in best 3; own a gem creature 54%; gem creatures median 1
+  hardcore, day 30: play 90.0 h, biome 3; breeds median 98 (p10 72, p90 118); first breed on day 1.4; best creature +28% stat total over best wild catch (p10 14%, p90 37%); best mean pips 7.0; species in best 3; own a gem creature 98%; gem creatures median 8
+
+== recommended ==
+  casual, day 7: play 2.3 h, biome 1; breeds median 13 (p10 12, p90 14); first breed on day 1.8; best creature +9% stat total over best wild catch (p10 1%, p90 12%); best mean pips 5.4; species in best 2; own a gem creature 0%; gem creatures median 0
+  casual, day 30: play 10.0 h, biome 3; breeds median 52 (p10 48, p90 54); first breed on day 1.8; best creature +11% stat total over best wild catch (p10 5%, p90 13%); best mean pips 6.4; species in best 2; own a gem creature 15%; gem creatures median 0
+  regular, day 7: play 7.0 h, biome 3; breeds median 27 (p10 27, p90 28); first breed on day 1.3; best creature +10% stat total over best wild catch (p10 5%, p90 12%); best mean pips 5.6; species in best 2; own a gem creature 8%; gem creatures median 0
+  hardcore, day 7: play 21.0 h, biome 3; breeds median 83 (p10 83, p90 84); first breed on day 1.3; best creature +11% stat total over best wild catch (p10 7%, p90 12%); best mean pips 6.8; species in best 2; own a gem creature 32%; gem creatures median 0
+  hardcore, day 30: play 90.0 h, biome 3; breeds median 359 (p10 358, p90 360); first breed on day 1.3; best creature +12% stat total over best wild catch (p10 10%, p90 13%); best mean pips 9.2; species in best 3; own a gem creature 89%; gem creatures median 2

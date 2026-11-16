@@ -1,0 +1,23 @@
+
+== Part B: proposal, best-pair breeder (count only) ==
+  proposal, one species, kin rule
+    best creature mean pips by generation: g5=6.4, g10=6.8, g20=7.4, g50=8.6
+    breeds to reach mean 8 / 9.5 / 10 pips, median (p90): 8: 79 (132), 9.5: 396 (1503), 10: 2500 (2500)
+  proposal, one species, no kin rule
+    best creature mean pips by generation: g5=6.2, g10=6.6, g20=7.4, g50=8.6
+    breeds to reach mean 8 / 9.5 / 10 pips, median (p90): 8: 76 (124), 9.5: 568 (1695), 10: 2500 (2500)
+  proposal + Bond Charm every breed
+    best creature mean pips by generation: g5=6.6, g10=6.9, g20=7.7, g50=9.2
+    breeds to reach mean 8 / 9.5 / 10 pips, median (p90): 8: 54 (79), 9.5: 198 (327), 10: 620 (1626)
+  pull 15% (recommended), one species
+    best creature mean pips by generation: g5=6.4, g10=6.6, g20=7.2, g50=8.8
+    breeds to reach mean 8 / 9.5 / 10 pips, median (p90): 8: 84 (128), 9.5: 304 (528), 10: 860 (2204)
+  pull 15% + Bond Charm
+    best creature mean pips by generation: g5=6.6, g10=7.0, g20=7.8, g50=9.2
+    breeds to reach mean 8 / 9.5 / 10 pips, median (p90): 8: 53 (79), 9.5: 185 (294), 10: 370 (812)
+  no pull (flat 10% up/10% down)
+    best creature mean pips by generation: g5=6.6, g10=7.0, g20=7.8, g50=9.8
+    breeds to reach mean 8 / 9.5 / 10 pips, median (p90): 8: 43 (77), 9.5: 110 (177), 10: 150 (221)
+    stat total at all-5 pips: 330.0
+    stat total at all-8 pips: 339.9
+    stat total at all-10 pips: 346.5

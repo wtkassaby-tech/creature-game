@@ -1,0 +1,6 @@
+
+-- ABM rec_nosink: n=300, sink 0%/day, market 50%
+  day   7: active 300, gem1 held 33 (0.11/player, 0.3% of creatures); made wild 29, bred 4, removed 0; R_eff 0.12; own one: casual 0%, regular 8%, hardcore 21%; breeds/player: casual 13, regular 29, hardcore 90
+  day  30: active 300, gem1 held 241 (0.80/player, 1.2% of creatures); made wild 191, bred 50, removed 0; R_eff 0.21; own one: casual 11%, regular 33%, hardcore 81%; breeds/player: casual 52, regular 125, hardcore 382
+  day  90: active 300, gem1 held 874 (2.91/player, 4.2% of creatures); made wild 641, bred 233, removed 0; R_eff 0.27; own one: casual 33%, regular 80%, hardcore 100%; breeds/player: casual 147, regular 370, hardcore 1136
+  day 180: active 300, gem1 held 1793 (5.98/player, 8.6% of creatures); made wild 1311, bred 482, removed 0; R_eff 0.27; own one: casual 54%, regular 96%, hardcore 100%; breeds/player: casual 287, regular 736, hardcore 2265

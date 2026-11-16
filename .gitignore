@@ -1,0 +1,24 @@
+# Wally packages (restored by `wally install`)
+/Packages/
+/ServerPackages/
+
+# Generated or downloaded by the quality gate / tools
+/sourcemap.json
+/.cache/
+/build/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+/roblox.yml
+/src/net/generated/
+
+# Roblox Studio lock files
+*.rbxl.lock
+*.rbxlx.lock
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,8 @@
+
+== Ruby and Diamond (grid model, 300 players, 180 days, from first play) ==
+  Gem1 proposal (wild 0.05/h)        B=3 pure 50% single 12%: per player d180 23.63; bred:wild 1.75; R_eff 0.64; own d180 77/99/100% (perfect market)
+  Gem1 recommended (wild 0.025/h)    B=2 pure 40% single 10%: per player d180 6.23; bred:wild 0.44; R_eff 0.31; own d180 52/89/100% (perfect market)
+  Ruby proposal (wild 0.0125/h)      B=2 pure 60% single 15%: per player d180 3.82; bred:wild 0.79; R_eff 0.44; own d180 34/68/98% (perfect market)
+  Ruby recommended                   B=2 pure 40% single 8%: per player d180 2.93; bred:wild 0.37; R_eff 0.27; own d180 33/72/99% (perfect market)
+  Diamond proposal (wild 0.006/h)    B=2 pure 60% single 15%: per player d180 1.72; bred:wild 0.68; R_eff 0.40; own d180 19/50/90% (perfect market)
+  Diamond recommended                B=2 pure 30% single 5%: per player d180 1.22; bred:wild 0.19; R_eff 0.16; own d180 18/45/81% (perfect market)

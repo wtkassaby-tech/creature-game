@@ -1,0 +1,18 @@
+
+== Part C: clock, coins and days (proposal) ==
+  casual (2 pens):
+    mean 8 pips: days median 172 (p90 308), breeds 66, coins 512k (= 1706 min of biome-3 income), reached in 365 d: 59/60
+    mean 9.5 pips: days median 366 (p90 366), breeds 132, coins 1090k (= 3635 min of biome-3 income), reached in 365 d: 0/60
+    mean 10 pips: days median 366 (p90 366), breeds 132, coins 1090k (= 3635 min of biome-3 income), reached in 365 d: 0/60
+  regular (2 pens):
+    mean 8 pips: days median 59 (p90 102), breeds 70, coins 530k (= 1768 min of biome-3 income), reached in 365 d: 60/60
+    mean 9.5 pips: days median 315 (p90 366), breeds 331, coins 2831k (= 9438 min of biome-3 income), reached in 365 d: 35/60
+    mean 10 pips: days median 366 (p90 366), breeds 374, coins 3280k (= 10935 min of biome-3 income), reached in 365 d: 3/60
+  hardcore (2 pens):
+    mean 8 pips: days median 16 (p90 24), breeds 69, coins 518k (= 1728 min of biome-3 income), reached in 365 d: 60/60
+    mean 9.5 pips: days median 76 (p90 123), breeds 297, coins 2444k (= 8148 min of biome-3 income), reached in 365 d: 60/60
+    mean 10 pips: days median 200 (p90 366), breeds 728, coins 6461k (= 21538 min of biome-3 income), reached in 365 d: 52/60
+  hardcore with 4 pens:
+    mean 8 pips: days median 17 (p90 28), breeds 74, coins 548k (= 1826 min of biome-3 income), reached in 365 d: 60/60
+    mean 9.5 pips: days median 81 (p90 132), breeds 312, coins 2622k (= 8739 min of biome-3 income), reached in 365 d: 60/60
+    mean 10 pips: days median 196 (p90 366), breeds 716, coins 6366k (= 21220 min of biome-3 income), reached in 365 d: 52/60

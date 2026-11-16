@@ -1,0 +1,14 @@
+[package]
+name = "ayrton/creature-game"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+private = true
+
+[dependencies]
+Trove = "sleitnick/trove@1.8.0"
+React = "roblox/react@17.3.13"
+ReactRoblox = "roblox/react-roblox@17.3.13"
+
+[server-dependencies]
+ProfileStore = "lm-loleris/profilestore@1.0.3"

@@ -1,0 +1,15 @@
+
+== Sensitivity around B=2, pure 40%, single 10% (grid model, 3 seeds each) ==
+  baseline (wild 0.025/h)        per player d90  2.87, end  5.66; bred:wild 0.36; R_eff 0.27; own 65/97/100%
+  wild rate x0.5                 per player d90  1.35, end  2.80; bred:wild 0.35; R_eff 0.26; own 43/81/99%
+  wild rate x2                   per player d90  5.89, end 11.79; bred:wild 0.38; R_eff 0.27; own 88/100/100%
+  no market                      per player d90  2.75, end  5.33; bred:wild 0.29; R_eff 0.23; own 74/100/100%
+  perfect market                 per player d90  2.97, end  5.94; bred:wild 0.42; R_eff 0.30; own 52/91/100%
+  no kin rule                    per player d90  2.89, end  5.84; bred:wild 0.39; R_eff 0.28; own 66/98/100%
+  cooldowns halved               per player d90  2.62, end  5.38; bred:wild 0.30; R_eff 0.23; own 65/98/100%
+  B=3 instead                    per player d90  3.67, end  7.43; bred:wild 0.76; R_eff 0.43; own 64/94/100%
+  hatch instant (Gem speed-ups)  per player d90  2.87, end  5.66; bred:wild 0.36; R_eff 0.27; own 65/97/100%
+  sink 2%/day on spent           per player d90  2.21, end  3.28; bred:wild 0.33; R_eff 0.25; own 69/96/100%
+  no lone-gem breeding           per player d90  3.35, end  6.84; bred:wild 0.62; R_eff 0.38; own 47/87/100%
+  365 days                       per player d90  2.87, end 11.65; bred:wild 0.37; R_eff 0.27; own 88/100/100%
+  1,000 players                  per player d90  2.84, end  5.90; bred:wild 0.37; R_eff 0.27; own 69/96/100%

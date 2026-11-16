@@ -1,0 +1,26 @@
+== Offspring level ==
+  50 + 45 -> 19 (brief says about 20)
+  parent pairs (levels 1-100) giving level 0 without a floor: 6, e.g. [(1, 1), (1, 2), (1, 3), (2, 1)]
+  parents at level 20 -> child level 8
+  parents at level 30 -> child level 12
+  parents at level 50 -> child level 20
+  parents at level 100 -> child level 40
+  breeding children of children with no levelling: [20, 8, 3, 1, 0] (no runaway; floors at 0 without a minimum)
+
+== Biome-reached rule: what counts as a creature's biome? ==
+  biome-1 player, all parts from biome 1: best total 460.5 (Burrowbear/Stumpback/Burrowbear/Mossbun/Mossbun)
+  if only the torso's biome is checked: 475.5 (Scuttlejaw/Stumpback/Scuttlejaw/Mossbun/Mossbun), +3%
+  breed cost of that hybrid if tier comes from the torso: 1000 vs from its latest part: 2000 (x2)
+
+== Level loophole: traded high-level parents ==
+  level 60 creature vs Greenwood giant (level 12): stat multiple x3.18
+  level 24 creature vs Greenwood giant (level 12): stat multiple x1.55
+  their bred child is level 24; passes the biome rule because every part is from Greenwood
+  with a badge level cap (0 badges -> 15): both fight as level 15, x1.14 vs the giant
+
+== Rare colour onto a strong line (recessive gene, kin rule on) ==
+  common/uncommon rare-colour parent, limit 5: rare colour shown on a strong-line child within 5+12 breeds in 97% of runs; median breeds 8
+  gem-tier parent, limit 3: rare colour shown on a strong-line child within 3+12 breeds in 97% of runs; median breeds 6
+  Ruby parent, limit 2: rare colour shown on a strong-line child within 2+12 breeds in 97% of runs; median breeds 5.0
+  limit 1: rare colour shown on a strong-line child within 1+12 breeds in 72% of runs; median breeds 7
+  without the kin rule a carrier could breed straight back to its rr parent: 50% per breed
