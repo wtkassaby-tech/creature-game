@@ -6,7 +6,7 @@ Date: 16 November 2026. Owner: Ayrton. Builder: Claude Code.
 
 **The plan in five lines**
 
-1. The rules of breeding and battling already run as tested code (`prototype/`, 39 passing checks). Nothing has been built in Roblox Studio yet.
+1. The rules of breeding, battling, catching, levelling and saving already run as tested, type-checked code in `src/shared`. Nothing has been built in Roblox Studio yet.
 2. The biggest unknown is art: whether AI-generated creature parts split cleanly and fit together. Test it before the trip, not during it.
 3. Work splits into two tracks: a **logic track** that needs no Studio and can run in cloud sessions, and a **Studio track** that needs Ayrton's laptop.
 4. Four gates decide whether to go on: core proofs, the Greenwood slice, saving and economy, and launch readiness. Each has a pass mark and a fallback.
@@ -21,11 +21,13 @@ Date: 16 November 2026. Owner: Ayrton. Builder: Claude Code.
 | Vision, pillars, story arc, biome list | Decided by Ayrton | `BRIEF.md` |
 | 34 decisions since the brief (coin bets removed, Breeding Candy, consumables, launch scope, and the Defaults set from research) | Logged | `DECISIONS.md` |
 | Market and policy research, with a fact check against Roblox's own pages | Done; competitor numbers unverified | `research/market/00_MARKET_BRIEF.md` |
-| Breeding rules and maths | Tested code, stress-tested | `BREEDING_PLAN.md`, `prototype/shared/Breeding.luau`, `Stats.luau` |
-| Battle rules: type chart, damage, turn order, Speed band, Tempo | Tested code | `prototype/shared/Battle.luau`, `TypeChart.luau` |
-| Server breed flow, client creature assembler | Written, not yet run in Studio | `prototype/server`, `prototype/client` |
+| Breeding rules and maths | Tested code, stress-tested | `BREEDING_PLAN.md`, `src/shared/Breeding.luau`, `Stats.luau` |
+| Battle rules: type chart, damage, turn order, Speed band, Tempo | Tested code | `src/shared/Battle.luau`, `TypeChart.luau` |
+| Lasso timing, XP and level caps, the saved-data shape and migrations | Tested code | `src/shared/Lasso.luau`, `Xp.luau`, `Profile.luau` |
+| Project structure, quality gate, CI workflow | Done; strict type analysis passes | This folder; `lune/check.luau` |
+| Server breed flow, client creature assembler | Written, not yet run in Studio | `src/server/Breeding`, `src/client/Assembler` |
 | Project rules for the new repo | Drafted | `CLAUDE_DRAFT.md` |
-| The game's own repository, toolchain and Studio place | Not started | Brief section 13, "before Ayrton flies" |
+| The game's own repository and Studio place | Folder ready to copy (`README.md`); repository and place not created | Brief section 13, "before Ayrton flies" |
 | Art, map, screens, saving, shops, quests, story content | Not started | This plan |
 
 ---
@@ -48,7 +50,7 @@ Not needed for soft launch: PvP (milestone 8), trading (milestone 9), biomes 4 t
 
 ## 3. Everything the game needs
 
-Twelve workstreams. **State:** Tested = runs under Lune in `prototype/`; Designed = rules decided in the docs; New = nothing yet. **Track:** L = logic track (no Studio needed); S = Studio track. **M** = the brief's milestone number.
+Twelve workstreams. **State:** Tested = runs under Lune in `src/shared` with tests in `tests/`; Designed = rules decided in the docs; New = nothing yet. **Track:** L = logic track (no Studio needed); S = Studio track. **M** = the brief's milestone number.
 
 ### 3.1 Foundation
 
@@ -168,12 +170,12 @@ Twelve workstreams. **State:** Tested = runs under Lune in `prototype/`; Designe
 4  Content          Species | Moves | Biomes | Giants | Quests | Story chapters | Items   (all data)
 3  On the device    Assembler | Animation | Battle screen | Lasso | Screens | World | Sound
 2  On the server    Data | Creatures | Battle | Capture | Breeding | World | Quests | Economy
-1  Pure rules       Stats | Breeding | Battle | Type chart   (exist, tested under Lune)
-                    Lasso timing | XP | Economy maths        (still to write)
+1  Pure rules       Stats | Breeding | Battle | Type chart | Lasso timing | XP | Saved-data shape | Economy maths
+                    (all exist, tested under Lune)
 0  Foundation       Repo | Toolchain | Blink | CI | Data formats | Part specification
 ```
 
-Each layer needs the ones below it. Only part of layer 1 exists today. Content (layer 4) is data: a new biome should need no new code, which is what makes a biome every 6 to 8 weeks possible.
+Each layer needs the ones below it. Layers 0 and 1 exist today; the first species and the economy numbers of layer 4 are being written. Content (layer 4) is data: a new biome should need no new code, which is what makes a biome every 6 to 8 weeks possible.
 
 The longest chain of dependencies, and so the one that sets the schedule:
 
@@ -186,12 +188,11 @@ CLAUDE.md
 default.project.json, rokit.toml, wally.toml, stylua.toml, selene.toml
 src/
   shared/            pure rules, no Roblox services
-    from prototype/: Types, Rng, Stats, Breeding, AssemblyMath, Battle, TypeChart
-    still to write:  Lasso, Xp, Economy
-  config/            every balance number: BreedConfig and BattleConfig (from prototype/), EconomyConfig, ShopConfig, LassoConfig
+    exist: Types, Rng, Stats, Breeding, AssemblyMath, Battle, TypeChart, Lasso, Xp, Profile, Economy
+  config/            every balance number: BreedConfig, BattleConfig, LassoConfig, ProgressionConfig, ProfileConfig, EconomyConfig
   content/           data only, one file per thing
-    Species/  Moves/  Biomes/  Giants/  Tamers/  Quests/  Story/  Items/
-                     (the prototype's Species and Moves are placeholders to replace)
+    Species.luau, Moves.luau (registries), species/ (one file each),
+                     then biomes/ giants/ tamers/ quests/ story/ items/
   net/               Blink definitions and generated modules
   server/
     Data/      Creatures/   Battle/    Capture/   Breeding/   World/
@@ -313,7 +314,7 @@ The logic track should always be one step ahead, so that Studio time is never sp
 
 | Phase | When | Logic track | Studio track | Ends with |
 | --- | --- | --- | --- | --- |
-| **0. Set-up** | Now to the flight | Write `PART_SPEC.md` first, because the art test needs it. Create the repo; move `prototype/` into `src/shared`, `src/config`, `src/content` and `tests`; CI passing; species data format; Greenwood roster and moves designed and balanced by the tournament; XP curve; lasso timing rules; economy simulation; approval packs 1 (saving) and 2 (creature grants) written | Toolchain and Studio MCP on the travel laptop; **the art test: two four-legged species and one two-legged species as parts** | Checklist in section 8; art test result |
+| **0. Set-up** | Now to the flight | Write `PART_SPEC.md` first, because the art test needs it. Create the repo; copy this folder into it; CI passing; species data format; Greenwood roster and moves designed and balanced by the tournament; XP curve; lasso timing rules; economy simulation; approval packs 1 (saving) and 2 (creature grants) written | Toolchain and Studio MCP on the travel laptop; **the art test: two four-legged species and one two-legged species as parts** | Checklist in section 8; art test result |
 | **1. Core proofs** (M1, M2) | Trip week 1 | Battle service; opponent tiers; Blink messages for battle; Greenwood giant script; Dust Canyon roster designed and balanced | Assembler and animation on the test species, both body plans; the 32-mix contact sheet; battle screen on a phone; 30 creatures in view | **Gate A** |
 | **2. Greenwood slice** (M3) | Week 2 | Capture and lasso server rules (under approval pack 2); spawn tables; quest and story data for chapter 1; first-session funnel; Tide Flats roster designed and balanced; approval pack 3 written and pack 4 drafted | Greenwood greybox; the 8 Greenwood species; roaming creatures; lasso screen; giant lair; hub; the first-session script with the mentor's scripted egg. No saving yet | **Gate B** |
 | **3. Saving and economy** (M4) | Week 3 | Data service and migrations; serial counters; coins, candy, shop, healer, items; Gems as a test-only balance; breeding service; the "biome reached" check; daily tasks; independent review of all of it | Breeder screens, hatch reveal, shop, team and stable screens; Greenwood art pass | **Gate C** |

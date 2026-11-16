@@ -1,24 +1,8 @@
-# Breeding and battle prototype (working code)
+# Notes from the breeding and battle prototype
 
-Real Luau for the breeding system in `../BREEDING_PLAN.md`. The rules and maths run and are tested here under Lune; the two Roblox-side files are written against documented APIs but have not been run in Studio yet.
+These are the worked examples and measurements from the first working version of the rules. The code has since moved into the project proper: rules in `src/shared/`, numbers in `src/config/`, tests in `tests/breeding.test.luau` and `tests/battle.test.luau`. The three species named here (Mossback, Dartlet, Brindle) are test placeholders in `tests/fixtures/`, not game content.
 
-| File | What it does | Tested here |
-| --- | --- | --- |
-| `shared/Types.luau` | Creature and species record types | Used by all tests |
-| `shared/Species.luau` | Three example four-legged species: Mossback (heavy tank), Dartlet (light sprinter), Brindle (all-rounder) | Yes |
-| `shared/BreedConfig.luau` | Every breeding number: quality gene, fit clamp, rarity odds, Breeding Candy prices, cooldowns, hatch times, costs, colours | Yes |
-| `shared/Rng.luau` | Seeded random numbers, identical under Lune and Roblox, so any breed can be replayed from its seed | Yes |
-| `shared/Stats.luau` | Stats from parts: base x quality x fit, the shared stat budget, then level and rarity | Yes |
-| `shared/Breeding.luau` | Who can breed, cost, rarity odds, the preview, and the roll itself | Yes |
-| `shared/AssemblyMath.luau` | How much to scale a donor part to fit a torso socket; ride height | Yes |
-| `server/BreedingService.luau` | The server's breed request: validate, check ownership and locks, roll from a logged seed, change coins, parents and eggs together | Not run (needs Roblox) |
-| `client/Assembler.luau` | Builds the model: clone part templates, scale to the socket, join with Motor6D, colour, size | Not run (needs Roblox and part meshes) |
-| `tests/run.luau` | Breeding: two worked examples and five simulations | 29 checks pass |
-| `shared/TypeChart.luau`, `shared/Moves.luau`, `shared/BattleConfig.luau` | The ten-type chart, example moves and battle numbers | Yes |
-| `shared/Battle.luau` | Turn-based battle core: both sides choose, switches first, moves in Speed order, the Speed band, the Tempo meter, draws, a simple opponent, replay from a seed | Yes |
-| `tests/battle.luau` | Battle: chart checks, a 3v3 worked example, pacing, the Speed-edge test and a 243-build tournament | 10 checks pass |
-
-Run the tests from this folder: `lune run tests/run.luau` and `lune run tests/battle.luau`. Formatting follows the repo's StyLua config. Selene could not run in the cloud session (it needs to download Roblox's API list).
+Run the tests from the project folder: `lune run tests/breeding.test` and `lune run tests/battle.test`.
 
 ## Worked example 1: the brief's small mother and big father
 

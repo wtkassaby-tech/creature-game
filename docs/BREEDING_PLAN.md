@@ -4,7 +4,7 @@ Date: 16 November 2026
 Status: plan. Every rule here is a [Default] under the brief (section 7) unless marked; none changes a [Locked] item. Numbers are starting values for `src/config/`. They include the fixes from an independent stress test (`research/market/09_BREEDING_STRESS_TEST.md`, summarised in section 9).
 Built from: `BRIEF.md` sections 4, 7 and 12; `research/market/04_BREEDING_DESIGN.md` (design and supply maths); `research/market/05_CREATURE_TECH.md` (Roblox assembly and art); `research/market/06_TRADING_AND_ECONOMY.md`; `research/market/08_ROBLOX_FACT_CHECK.md`.
 
-**Working code:** `prototype/` holds the rules and maths in real Luau with 29 passing checks, worked examples, the server breed flow and the client assembler. See `prototype/README.md`.
+**Working code:** the rules and maths are real, type-checked Luau in `src/shared/Breeding.luau` and `src/shared/Stats.luau`, with 29 passing checks and worked examples in `tests/breeding.test.luau`. The server breed flow is `src/server/Breeding/BreedingService.luau` and the assembler is `src/client/Assembler/Assembler.luau`. See `PROTOTYPE_NOTES.md`.
 
 **Is it feasible?** Yes, with one unproven step. The rules, the maths, the server flow and the runtime assembly all use ordinary, documented Roblox features. The unproven step is art: whether Studio's AI mesh generation can produce creature parts that split cleanly and fit together. That is the first thing the prototype tests (section 8, step 2), and there is a fallback.
 
@@ -174,7 +174,7 @@ Each step has a pass mark. Steps 1 to 4 are the brief's milestone 2.
 
 | # | Step | Done when |
 | --- | --- | --- |
-| 1 | (Prototyped in `prototype/`.) Pure breeding module and species data format in `src/shared/`, with the simulation tests: no stat ever passes the ceiling over 50 generations of best-of-8 selection; same parts always give the same stats; random mating keeps average quality between 4.5 and 5.5; rarity odds match config; rare supply levels off | All tests pass under `lune run check` |
+| 1 | (Done in `src/shared/`.) Pure breeding module and species data format in `src/shared/`, with the simulation tests: no stat ever passes the ceiling over 50 generations of best-of-8 selection; same parts always give the same stats; random mating keeps average quality between 4.5 and 5.5; rarity odds match config; rare supply levels off | All tests pass under `lune run check` |
 | 2 | Part specification and a Studio validation script. Generate two four-legged species with Studio's segmented mesh generation | Parts separate cleanly and pass validation. If not: generate each part alone, or code-built or hand-fixed parts |
 | 3 | Assembler and code-driven animation. Build all 32 mixes of the two species and a contact sheet | Ayrton accepts at least 80% of the mixes without hand fixes; idle, walk and lunge look right on all of them |
 | 4 | Phone checks: 30 creatures in view; a team screen of 30 icons | 30 frames per second or better on a low-end phone; no hitch opening the screen |
@@ -217,4 +217,4 @@ For Ayrton:
 | Very low-level parents gave a level-0 child | Level floor of 1 |
 | A traded level-60 early-biome creature was 3.2 times the first giant | A level cap per badge: creatures above it fight at the cap. This belongs to the battle rules |
 
-The battle formula now exists in the prototype. Its Speed band and Tempo meter stop a 1% Speed edge deciding mirror fights. Its all-builds tournament shows the three placeholder species are not balanced (best hybrid wins 94%), so each real roster must pass that tournament before its art is made; see `prototype/README.md`. The candy earn rates and the wild gem spawn rate (about 1 in 120 catches for the first gem tier) are guesses to tune from the first playtest.
+The battle formula now exists in the prototype. Its Speed band and Tempo meter stop a 1% Speed edge deciding mirror fights. Its all-builds tournament shows the three placeholder species are not balanced (best hybrid wins 94%), so each real roster must pass that tournament before its art is made; see `PROTOTYPE_NOTES.md`. The candy earn rates and the wild gem spawn rate (about 1 in 120 catches for the first gem tier) are guesses to tune from the first playtest.

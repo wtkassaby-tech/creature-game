@@ -2,6 +2,8 @@
 
 One line per decision or change to a [Default], as the design brief asks (brief section 1). The source of truth is Ayrton's brief, "Creature Game - Design Brief" (16 November 2026): https://claude.ai/artifact/SXN85dnsvkAN8jYM9jQpcY. This file moves to the creature game's own repo when it is created.
 
+Paths: rows written before the project was restructured mention `prototype/`. That code now lives in `src/` and `tests/`.
+
 | Date | Decision | By | Brief section |
 | --- | --- | --- | --- |
 | 16 Nov 2026 | The brief is the vision for the game. It replaces the version 2 design in this folder (`DESIGN.md`); a snapshot is saved as `BRIEF.md`. `research/SCAFFOLD_STRUCTURE.md` still applies | Ayrton | All |
