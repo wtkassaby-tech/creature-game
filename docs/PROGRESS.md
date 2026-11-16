@@ -1,0 +1,51 @@
+# Progress
+
+What changed, and what Ayrton should do or look at next. Newest first.
+
+## 16 November 2026: from plan to a working project
+
+**In one line:** the game's rules now exist as tested code in a real project structure. Nothing has been built in Roblox Studio yet, and the next steps need Ayrton's laptop.
+
+### What exists now
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Project structure, quality gate, CI workflow | Done. Formatting, lint and strict type analysis pass | `README.md`, `lune/check.luau` |
+| Breeding rules | Tested (31 checks) | `src/shared/Breeding.luau`, `Stats.luau` |
+| Battle rules and the type chart | Tested (10) | `src/shared/Battle.luau`, `TypeChart.luau` |
+| Opponent behaviour: wild, tamer, rival | Tested (10) | `src/shared/BattleAi.luau` |
+| Giant fights and the first giant, Hollowbough | Tested (67); being retuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giants/` |
+| Lasso catching | Tested (51) | `src/shared/Lasso.luau` |
+| XP, levels and level caps | Tested (43) | `src/shared/Xp.luau` |
+| Saved data: shape, safe upgrades, checks | Tested (54). Nothing saves yet | `src/shared/Profile.luau` |
+| Economy: every price and reward, with a 30-day simulation | Tested (38) | `src/shared/Economy.luau`, `docs/ECONOMY_MODEL.md` |
+| Greenwood roster: eight species, 24 moves, balanced | Tested (28) | `src/content/species/`, `docs/content/GREENWOOD_ROSTER.md` |
+| Part specification, art test procedure, Studio part validator | Written. **Not yet run in Studio** | `docs/PART_SPEC.md`, `docs/ART_TEST.md`, `tools/studio/ValidateParts.luau` |
+| Server breed flow, creature assembler | Written and type-checked. **Not yet run in Studio** | `src/server/Breeding/`, `src/client/Assembler/` |
+| Approval packs 1 and 2 | Waiting for Ayrton | `docs/plans/` |
+| Independent exploit review of the saving design | Done; nine must-fix findings fixed | `docs/REVIEWS.md` |
+
+332 checks pass in total.
+
+### What Ayrton needs to do, in order
+
+1. **Create the creature game's repository** and copy this folder into it (five steps at the bottom of `README.md`). Add it to a Claude Code session so work can continue there.
+2. **Set up the travel laptop:** Studio, Rojo, Claude Code and the Studio MCP working together. `rokit install`, `wally install`, then `lune run check` should pass on the laptop; it has only been run in a cloud sandbox so far, where Wally packages and one lint standard could not be downloaded.
+3. **Run the art test** by following `docs/ART_TEST.md` with Claude Code and the Studio MCP. It is the biggest unknown in the whole plan: whether AI-generated parts split cleanly and fit together. Use Burlhorn and Spadesnout (four-legged) and Mossmitt (two-legged) from the roster document.
+4. **Read and answer the two approval packs** in `docs/plans/`. Each ends with a tick-list and two questions.
+5. **Answer the open decisions** at the end of `docs/DECISIONS.md`. The ones that shape the next build steps: two body plans at launch, the asset rule, Breeding Candy never sold, and whether switching in battle should be made cheaper.
+
+### What Claude Code does next (no Studio needed)
+
+- Networking messages for battles, catching and breeding, compiled with Blink.
+- The battle service: the server runs each battle and takes one action a turn.
+- Greenwood's wild creature tables, tamers, quests and the first story chapter, as data.
+- Rosters for Dust Canyon and Tide Flats, through the same balance gate.
+- Approval pack 3 (breeding service and Breeding Candy sources).
+
+### Honest notes
+
+- Nothing here has run inside Roblox. The rules are tested as pure code; the server and on-screen files are type-checked against Roblox's definitions only.
+- The balance numbers come from simulations with simple computer players, not from people. Expect to retune after the first real playtest. The economy is most sensitive to how long battles really take.
+- Species and move names are placeholders that should be checked against other games before any art is made.
+- The schedule risk in `MASTER_PLAN.md` section 5.5 has not changed: unless the art test passes before the trip, expect the trimmed or fallback launch.

@@ -14,6 +14,7 @@ local Types = require("./Types")
 export type Fighter = {
 	creature: Types.Creature,
 	element: Types.Element,
+	level: number, -- the level the stats were worked out at; damage scales with it
 	stats: Stats.StatBlock,
 	hp: number,
 	tempo: number, -- 0..1, fills while this creature is the faster one
@@ -39,6 +40,7 @@ function Battle.fighter(creature: Types.Creature, moves: { string }?, level: num
 	return {
 		creature = creature,
 		element = Species[creature.parts.Torso.species].element,
+		level = level or creature.level,
 		stats = stats,
 		hp = stats.Hp,
 		tempo = 0,
@@ -87,7 +89,17 @@ function Battle.previewDamage(attacker: Fighter, defender: Fighter, moveName: st
 	local ratio = attacker.stats.Attack / (attacker.stats.Attack + defender.stats.Defence)
 	local own = if move.element == attacker.element then TypeChart.OWN_TYPE_MULTIPLIER else 1
 	local matchup = TypeChart.multiplier(move.element, defender.element)
-	return math.max(1, math.floor(BattleConfig.DAMAGE_SCALE * move.power * ratio * own * matchup))
+	return math.max(
+		1,
+		math.floor(
+			BattleConfig.DAMAGE_SCALE
+				* Stats.levelScale(attacker.level)
+				* move.power
+				* ratio
+				* own
+				* matchup
+		)
+	)
 end
 
 -- A simple opponent: use the move that does the most damage right now.

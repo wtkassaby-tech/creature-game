@@ -115,6 +115,7 @@ local function bossFighter(def: GiantDef): Fighter
 	return {
 		creature = stand,
 		element = def.element,
+		level = def.level,
 		stats = {
 			Hp = def.stats.Hp,
 			Attack = def.stats.Attack,

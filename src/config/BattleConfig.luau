@@ -5,9 +5,9 @@ local BattleConfig = {}
 
 BattleConfig.MAX_MOVES = 4
 
--- damage = DAMAGE_SCALE x power x Attack / (Attack + Defence) x type x own-type x variance
+-- damage = DAMAGE_SCALE x levelScale(attacker level) x power x Attack / (Attack + Defence) x type x own-type x variance
 -- Bounded: a huge Attack can at most double the damage of an even match-up.
-BattleConfig.DAMAGE_SCALE = 2.5
+BattleConfig.DAMAGE_SCALE = 0.95
 
 -- Fights against the game have a little variance; ranked has none. No misses, no critical hits.
 BattleConfig.PVE_VARIANCE_MIN = 0.96

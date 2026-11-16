@@ -133,7 +133,7 @@ candy = CANDY_COST[rarer parent]
 - **Candy rules that keep this honest:** candy cannot be traded or gifted, and is never sold for Robux or Gems. If it could be bought, breeding would stop rewarding play, and paying for candy would be paying toward a random result. Daily sources are capped per account, so extra accounts gain little. Flag for Ayrton: confirm candy is never sold.
 - **Coins still apply** ([Locked]: breeding is never free, and the cost is multiplied by rarity). Candy is the supply gate; coins are the sink.
 - **Cooldowns stay** to pace play within a day; they no longer carry the job of limiting supply.
-- **Pens** still cap eggs in progress: 1 free, a second from a quest, up to 4 in total with Gems, hard cap 4.
+- **Pens** still cap eggs in progress: 1 free, a second from the mentor's lesson at about minute 10, up to 4 in total with Gems, hard cap 4.
 - **BASE** is 400 coins, about 4 minutes of biome-1 income, so a casual player can breed about twice a day. The steeper cost curve first proposed left casual players unable to breed until day 4. Never discounted.
 - **Creatures leave the game** through release for materials (brief Default). Two more sinks are proposed and need Ayrton's yes as new systems: Radiant fusion (four of one species fuse into one with a cosmetic glow) and move imprint (consume a donor to teach one of its moves).
 - **To tune from the first playtest:** candies earned and spent per player per day, and how many gem-tier creatures exist per active player. If rares pile up, raise the candy prices; the earn rates stay generous.

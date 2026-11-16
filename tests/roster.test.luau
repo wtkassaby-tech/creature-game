@@ -356,6 +356,7 @@ local function freshFighter(f: Fighter): Fighter
 	return {
 		creature = f.creature,
 		element = f.element,
+		level = f.level,
 		stats = f.stats,
 		hp = f.stats.Hp,
 		tempo = 0,
@@ -491,21 +492,14 @@ do
 		end
 		return turns / battles, shortest, longest
 	end
-	-- Enforced at the ranked level, where battle.test also measures pacing.
-	local mean, shortest, longest = pace(RANKED)
-	check(
-		`level {RANKED}: a 3v3 lasts {PACE_MIN} to {PACE_MAX} turns on average`,
-		mean >= PACE_MIN and mean <= PACE_MAX,
-		`{string.format("%.1f", mean)} turns, shortest {shortest}, longest {longest}`
-	)
-	-- Reported, not enforced: under the current rules damage does not grow with level but Hp does,
-	-- so battles at the Greenwood cap are about 40% shorter than at level 50 whatever the roster.
-	-- No DAMAGE_SCALE puts both levels in range; the rule change that fixes it is described in
-	-- docs/content/GREENWOOD_ROSTER.md ("Known gap: battle length at level 15").
-	local capMean, capShortest, capLongest = pace(GREENWOOD_CAP)
-	print(
-		`  NOTE  level {GREENWOOD_CAP}: a 3v3 lasts {string.format("%.1f", capMean)} turns on average (shortest {capShortest}, longest {capLongest}); target {PACE_MIN} to {PACE_MAX}, known gap`
-	)
+	for _, level in { 5, GREENWOOD_CAP, RANKED } do
+		local mean, shortest, longest = pace(level)
+		check(
+			`level {level}: a 3v3 lasts {PACE_MIN} to {PACE_MAX} turns on average`,
+			mean >= PACE_MIN and mean <= PACE_MAX,
+			`{string.format("%.1f", mean)} turns, shortest {shortest}, longest {longest}`
+		)
+	end
 end
 
 print(`\n{passed} passed, {failed} failed`)
