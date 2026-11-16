@@ -91,12 +91,14 @@ do
 					fighter.tempo = Rng.next(rng) * 0.99
 				end
 			end
-			local chooserA = BattleAi.forTier(Rng.pick(rng, TIERS), Rng.new(seed))
-			local chooserB = BattleAi.forTier(Rng.pick(rng, TIERS), Rng.new(seed + 1))
+			local tierA: BattleAi.Tier = Rng.pick(rng, TIERS)
+			local tierB: BattleAi.Tier = Rng.pick(rng, TIERS)
+			local chooserA = BattleAi.forTier(tierA, Rng.new(seed))
+			local chooserB = BattleAi.forTier(tierB, Rng.new(seed + 1))
 			Battle.step(state, chooserA(state, 1), chooserB(state, 2))
 		end
 		if not state.winner then
-			for _, tier in TIERS do
+			for _, tier: BattleAi.Tier in TIERS do
 				for _, withRng in { false, true } do
 					local chooser = BattleAi.forTier(tier, if withRng then Rng.new(seed) else nil)
 					for side = 1, 2 do
@@ -270,7 +272,7 @@ do
 		local state = play(randomTeam(rng, 3, "a"), randomTeam(rng, 3, "b"), tier, "Wild", 4242)
 		return state
 	end
-	for _, tier in TIERS do
+	for _, tier: BattleAi.Tier in TIERS do
 		local one, two = run(tier), run(tier)
 		local same = one.turn == two.turn and one.winner == two.winner and #one.log == #two.log
 		for index, event in one.log do
