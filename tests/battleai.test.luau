@@ -91,8 +91,8 @@ do
 					fighter.tempo = Rng.next(rng) * 0.99
 				end
 			end
-			local tierA: BattleAi.Tier = Rng.pick(rng, TIERS)
-			local tierB: BattleAi.Tier = Rng.pick(rng, TIERS)
+			local tierA: BattleAi.Tier = TIERS[Rng.int(rng, 1, #TIERS)]
+			local tierB: BattleAi.Tier = TIERS[Rng.int(rng, 1, #TIERS)]
 			local chooserA = BattleAi.forTier(tierA, Rng.new(seed))
 			local chooserB = BattleAi.forTier(tierB, Rng.new(seed + 1))
 			Battle.step(state, chooserA(state, 1), chooserB(state, 2))

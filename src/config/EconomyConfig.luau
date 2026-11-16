@@ -75,7 +75,7 @@ local EconomyConfig = {}
 ------------------------------------------------------------------------------------------------
 
 -- Coin multiplier per biome: equal to Breeding.cost's biome tier (the biome number).
-local BIOME_MULT: { number } = { 1, 2.5, 4, 5.5, 7, 8.5, 10, 11.5, 13, 14.5, 16 }
+local BIOME_MULT: { number } = { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 }
 EconomyConfig.BIOME_MULT = BIOME_MULT
 
 -- Opponent level band per biome, used only to scale rewards. Ten levels per biome.
@@ -182,7 +182,7 @@ EconomyConfig.ITEMS = {
 	},
 	GiantCall = {
 		name = "Giant Horn",
-		price = 900,
+		price = 700,
 		scalesWithBiome = true,
 		fieldItem = false,
 		note = "Needed to start a giant fight; used up win or lose",
