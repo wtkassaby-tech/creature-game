@@ -75,7 +75,9 @@ function Economy.battleCoins(
 	end
 	local rule = EconomyConfig.TRAINED[kind]
 	if firstClear then
-		return math.floor(rule.firstClear * scale)
+		local oneTime = clampIndex(EconomyConfig.ONE_TIME_MULT, biome)
+			* Economy.levelFactor(biome, level)
+		return math.floor(rule.firstClear * oneTime)
 	elseif priorWinsToday < rule.rematchesPaidPerDay then
 		return math.floor(rule.rematch * scale)
 	end
@@ -85,7 +87,9 @@ end
 -- Coin price of an item. Biome is the hub's biome (only some items scale with it).
 function Economy.itemPrice(item: ItemId, biome: number): number
 	local def = EconomyConfig.ITEMS[item]
-	if def.scalesWithBiome then
+	if biome <= 1 and def.firstBiomePrice then
+		return def.firstBiomePrice
+	elseif def.scalesWithBiome then
 		return def.price * Economy.biomeMult(biome)
 	end
 	return def.price
@@ -106,7 +110,7 @@ function Economy.giantPrepCost(biome: number, fieldItems: { ItemId }): number?
 		return nil
 	end
 	local total = Economy.itemPrice("GiantCall", biome)
-	for _, item in fieldItems do
+	for _, item: ItemId in fieldItems do
 		if not EconomyConfig.ITEMS[item].fieldItem then
 			return nil
 		end
@@ -142,7 +146,8 @@ end
 -- if they alone would break the cap.
 function Economy.releasePayout(rarity: Types.Rarity, originBiome: number): ReleasePayout
 	local ceiling = EconomyConfig.RELEASE_MAX_SHARE * Economy.minCatchCost(rarity)
-	local material: MaterialId = clampIndex(EconomyConfig.MATERIAL_BY_BIOME, originBiome)
+	local materialIndex = math.clamp(math.floor(originBiome), 1, #EconomyConfig.MATERIAL_BY_BIOME)
+	local material: MaterialId = EconomyConfig.MATERIAL_BY_BIOME[materialIndex]
 	local materials = EconomyConfig.RELEASE_MATERIALS[rarity]
 	local materialWorth = materials * Economy.materialValue(material)
 	if materialWorth + EconomyConfig.RELEASE_MIN_COINS > ceiling then
@@ -177,7 +182,12 @@ end
 
 -- Coins for a completed quest line in a biome (once per line).
 function Economy.questLineCoins(biome: number): number
-	return EconomyConfig.QUEST_LINE_COINS * Economy.biomeMult(biome)
+	return EconomyConfig.QUEST_LINE_COINS * clampIndex(EconomyConfig.ONE_TIME_MULT, biome)
+end
+
+-- Daily tasks (and their candy) open once the player holds enough badges.
+function Economy.dailyTasksOpen(badges: number): boolean
+	return badges >= EconomyConfig.DAILY_TASKS_UNLOCK_BADGES
 end
 
 -- Coins for the next daily task, given how many of that kind were already paid today.
@@ -203,7 +213,8 @@ end
 function Economy.casualPvpCoins(
 	paidWinsToday: number,
 	repeatOpponent: boolean,
-	matchmade: boolean
+	matchmade: boolean,
+	furthestBiome: number
 ): number
 	if
 		repeatOpponent
@@ -212,12 +223,17 @@ function Economy.casualPvpCoins(
 	then
 		return 0
 	end
-	return EconomyConfig.CASUAL_PVP_WIN_COINS
+	return EconomyConfig.CASUAL_PVP_WIN_COINS * Economy.biomeMult(furthestBiome)
 end
 
 -- Price of the next coin-bought stable expansion, or nil when none are left.
 function Economy.stableExpansionPrice(alreadyBought: number): number?
 	return EconomyConfig.STABLE_EXPANSION_COINS[alreadyBought + 1]
+end
+
+-- Price of the next stable decoration, or nil when the player owns them all.
+function Economy.decorPrice(alreadyOwned: number): number?
+	return EconomyConfig.DECOR_COINS[alreadyOwned + 1]
 end
 
 function Economy.stableSlots(coinExpansions: number, gemExpansions: number): number

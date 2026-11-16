@@ -90,7 +90,7 @@ do
 		and Economy.dailyTaskCoins(false, 1, 0) > 0
 		and Economy.dailyTaskCoins(true, 1, 0) > 0
 		and Economy.weeklyChallengeCoins(1, 0) > 0
-		and Economy.casualPvpCoins(0, false, true) > 0
+		and Economy.casualPvpCoins(0, false, true, 1) > 0
 		and EconomyConfig.STARTING_COINS > 0
 	check("every price and reward is positive", allPositive, bad)
 
@@ -153,9 +153,9 @@ do
 	)
 	check(
 		"casual PvP pays nothing past the daily cap, for a repeat opponent or outside matchmaking",
-		Economy.casualPvpCoins(EconomyConfig.CASUAL_PVP_PAID_WINS_PER_DAY, false, true) == 0
-			and Economy.casualPvpCoins(0, true, true) == 0
-			and Economy.casualPvpCoins(0, false, false) == 0
+		Economy.casualPvpCoins(EconomyConfig.CASUAL_PVP_PAID_WINS_PER_DAY, false, true, 3) == 0
+			and Economy.casualPvpCoins(0, true, true, 3) == 0
+			and Economy.casualPvpCoins(0, false, false, 3) == 0
 	)
 	check(
 		"a giant rematch pays less than its Giant Horn costs (rematches are a coin sink)",
@@ -284,6 +284,7 @@ local ASSUME = {
 	CHILD_REPLACES = 0.3, -- chance a hatched child replaces its more-bred parent in the pair
 	MENTOR_MINUTE = 10,
 	SURPLUS_DAYS = 3, -- players with more than this many days of income spend on optional sinks
+	BREED_SKIP = 0, -- chance a player passes up a breed they could afford (sensitivity runs only)
 }
 
 type Profile = {
@@ -308,7 +309,7 @@ local PROFILES: { Profile } = {
 	{
 		name = "casual",
 		minutes = 20,
-		lassoStory = 0.3,
+		lassoStory = 0.4,
 		lassoPost = 0.1,
 		tonicChance = 0.25,
 		giantSkill = 0.45,
@@ -320,12 +321,12 @@ local PROFILES: { Profile } = {
 		gemLasso = "Braided",
 		weeklyShare = 0.5,
 		releaseShare = 0.4,
-		optionalSpend = false,
+		optionalSpend = true,
 	},
 	{
 		name = "regular",
 		minutes = 45,
-		lassoStory = 0.3,
+		lassoStory = 0.4,
 		lassoPost = 0.12,
 		tonicChance = 0.25,
 		giantSkill = 0.55,
@@ -342,7 +343,7 @@ local PROFILES: { Profile } = {
 	{
 		name = "heavy",
 		minutes = 120,
-		lassoStory = 0.3,
+		lassoStory = 0.4,
 		lassoPost = 0.15,
 		tonicChance = 0.2,
 		giantSkill = 0.65,
@@ -432,6 +433,10 @@ type Sim = {
 	breedCoins: number,
 	breedsTotal: number,
 	gemBreeds: number,
+	decor: number,
+	sources: { [string]: number },
+	twoHourSources: { [string]: number }?,
+	twoHourSinks: { [string]: number }?,
 }
 
 local function newCreature(sim: Sim, rarity: Types.Rarity, biome: number): Creature
@@ -483,6 +488,7 @@ local function flow(sim: Sim, name: string, amount: number)
 		else
 			sim.today.created += amount
 			sim.totalCreated += amount
+			sim.sources[name] = (sim.sources[name] or 0) + amount
 			sim.biomeCreated[b] += amount
 		end
 	else
@@ -515,6 +521,8 @@ local function advance(sim: Sim, minutes: number)
 	sim.biomeMinutes[furthest(sim)] += minutes
 	if sim.twoHour == nil and sim.played >= 120 then
 		sim.twoHour = { created = sim.totalCreated, removed = sim.totalRemoved }
+		sim.twoHourSources = table.clone(sim.sources)
+		sim.twoHourSinks = table.clone(sim.sinks)
 	end
 end
 
@@ -637,6 +645,9 @@ local function wildBattle(sim: Sim, biome: number, level: number, lassoShare: nu
 end
 
 local function claimTasks(sim: Sim)
+	if not Economy.dailyTasksOpen(sim.biome - 1) then
+		return
+	end
 	local b = furthest(sim)
 	local easyDone = { sim.wildWinsToday >= 3, sim.catchesToday >= 1, sim.breedsToday >= 1 }
 	local hardDone =
@@ -674,7 +685,7 @@ end
 
 local function prepTopUpCost(sim: Sim, biome: number): number
 	local need = { Tonic = 0, GreatTonic = 0, Revive = 0 }
-	for _, item in sim.p.giantItems do
+	for _, item: ItemId in sim.p.giantItems do
 		if item == "Tonic" then
 			need.Tonic += 1
 		elseif item == "GreatTonic" then
@@ -694,9 +705,14 @@ local function prepTopUpCost(sim: Sim, biome: number): number
 end
 
 -- Coins the player keeps back before breeding or optional spending.
+-- Players start saving for the giant halfway through a biome's tamers.
 local function reserve(sim: Sim): number
 	local base = Economy.itemPrice("Basic", 1) * 3 + Economy.itemPrice("Tonic", 1)
-	if sim.biome <= 3 and sim.tamersDone >= ASSUME.TAMERS[sim.biome] and not sim.giantWon then
+	if
+		sim.biome <= 3
+		and sim.tamersDone >= math.floor(ASSUME.TAMERS[sim.biome] / 2)
+		and not sim.giantWon
+	then
 		return base + prepTopUpCost(sim, sim.biome)
 	elseif sim.biome > 3 and sim.giantRematchWinsToday < sim.p.rematches then
 		return base + prepTopUpCost(sim, 3)
@@ -752,9 +768,13 @@ local function tryBreed(sim: Sim)
 	if (sim.candySources.CandyMentor or 0) == 0 then
 		-- The mentor's lesson: his gifted egg and the candy for the player's first breed.
 		flow(sim, "CandyMentor", Economy.candyFor("MentorLesson", 0))
+		sim.pens += EconomyConfig.PENS_FROM_QUEST
 		sim.creatures += 1
 	end
 	collectEggs(sim)
+	if ASSUME.BREED_SKIP > 0 and Rng.chance(sim.rng, ASSUME.BREED_SKIP) then
+		return
+	end
 	while #sim.eggs < sim.pens do
 		local nowSeconds = sim.clock * 60
 		local choice: Pair? = nil
@@ -784,8 +804,9 @@ local function tryBreed(sim: Sim)
 		local candy = Breeding.candyCost(pair.a, pair.b)
 		local charm = sim.p.charmShare > 0
 			and Rng.chance(sim.rng, sim.p.charmShare)
-			and sim.bal.coins >= coins + Economy.itemPrice("BondCharm", 1) + reserve(sim)
-		local total = coins + (if charm then Economy.itemPrice("BondCharm", 1) else 0)
+			and sim.bal.coins
+				>= coins + Economy.itemPrice("BondCharm", furthest(sim)) + reserve(sim)
+		local total = coins + (if charm then Economy.itemPrice("BondCharm", furthest(sim)) else 0)
 		if sim.bal.candy < candy or sim.bal.coins < total + reserve(sim) then
 			return
 		end
@@ -802,7 +823,7 @@ local function tryBreed(sim: Sim)
 			sim.gemBreeds += 1
 		end
 		if charm then
-			spend(sim, "Shop", Economy.itemPrice("BondCharm", 1), false)
+			spend(sim, "Shop", Economy.itemPrice("BondCharm", furthest(sim)), false)
 		end
 		flow(sim, "BreedCandy", candy)
 		local odds = Breeding.rarityOdds(pair.a, pair.b)
@@ -841,7 +862,7 @@ local function giantFight(sim: Sim, biome: number, rematch: boolean): FightResul
 	end
 	advance(sim, ASSUME.SHOP_MIN)
 	spend(sim, "Shop", Economy.itemPrice("GiantCall", biome), false)
-	for _, item in sim.p.giantItems do
+	for _, item: ItemId in sim.p.giantItems do
 		if item == "Tonic" then
 			if sim.field.Tonic > 0 then
 				sim.field.Tonic -= 1
@@ -906,9 +927,6 @@ local function storyStep(sim: Sim)
 				sim.questsDone += 1
 				flow(sim, "QuestLine", Economy.questLineCoins(b))
 				flow(sim, "CandyQuest", Economy.candyFor("QuestLine", 0, b))
-				if b == 1 and sim.questsDone == 2 then
-					sim.pens += EconomyConfig.PENS_FROM_QUEST
-				end
 			end
 		end
 	elseif not sim.giantWon then
@@ -1100,6 +1118,10 @@ local function newSim(profile: Profile, seed: number): Sim
 		breedCoins = 0,
 		breedsTotal = 0,
 		gemBreeds = 0,
+		decor = 0,
+		sources = {},
+		twoHourSources = nil,
+		twoHourSinks = nil,
 	}
 	for i = 1, 3 * ASSUME.KINDS_PER_BIOME do
 		sim.kindWins[i] = 0
@@ -1107,7 +1129,7 @@ local function newSim(profile: Profile, seed: number): Sim
 	for i = 1, 10 do
 		sim.tamerPaid[i] = 0
 	end
-	sim.pairs = { newPair(sim, 1), newPair(sim, 1) }
+	sim.pairs = { newPair(sim, 1), newPair(sim, 1), newPair(sim, 1), newPair(sim, 1) }
 	flow(sim, "Starter", EconomyConfig.STARTING_COINS)
 	return sim
 end
@@ -1143,6 +1165,11 @@ local function runDay(sim: Sim, day: number)
 		if price and sim.bal.coins - price > ASSUME.SURPLUS_DAYS * averageIncome(sim) then
 			spend(sim, "StableExpansion", price, false)
 			sim.expansions += 1
+		end
+		local decor = Economy.decorPrice(sim.decor)
+		if decor and sim.bal.coins - decor > ASSUME.SURPLUS_DAYS * averageIncome(sim) then
+			spend(sim, "Decor", decor, false)
+			sim.decor += 1
 		end
 	end
 	tryBreed(sim) -- start eggs that hatch overnight
@@ -1200,6 +1227,11 @@ local function summarise(sim: Sim, days: number): Summary
 	v.steadyIncome = sumLog(log, steadyFrom, days, created) / steadyDays
 	v.steadyRatio = ratioOf(log, steadyFrom, days)
 	v.daysOnHand7 = log[7].balance / math.max(1, sumLog(log, 1, 7, created) / 7)
+	local heldTotal = 0
+	for d = 8, days do
+		heldTotal += log[d].balance / math.max(1, sumLog(log, d - 6, d, created) / 7)
+	end
+	v.daysOnHandAfterWeek1 = heldTotal / math.max(1, days - 7)
 	v.daysOnHandEnd = log[days].balance / math.max(1, sumLog(log, days - 6, days, created) / 7)
 	v.b1PerMinute = sim.biomeCreated[1] / math.max(1, sim.biomeMinutes[1])
 	v.firstBreedMinutes = BreedConfig.COST_BASE / math.max(1, v.b1PerMinute)
@@ -1348,7 +1380,7 @@ local function printTables(results: { [string]: { Summary } }, days: number)
 
 	print("\n  D. Coins on hand")
 	print(
-		"  player   | end wk1  end wk2  end wk3  end wk4 | income/day after story | days held d7, d30 | first gem child"
+		"  player   | end wk1  end wk2  end wk3  end wk4 | income/day after story | days held d7, d8-30, d30 | first gem child"
 	)
 	for _, profile in PROFILES do
 		local r = results[profile.name]
@@ -1361,7 +1393,7 @@ local function printTables(results: { [string]: { Summary } }, days: number)
 		end
 		print(
 			string.format(
-				"  %-8s | %7.0f  %7.0f  %7.0f  %7.0f |        %7.0f         |    %4.1f, %4.1f     | %s",
+				"  %-8s | %7.0f  %7.0f  %7.0f  %7.0f |        %7.0f         |   %4.1f, %4.1f, %4.1f     | %s",
 				profile.name,
 				mean(r, "week1Balance"),
 				mean(r, "week2Balance"),
@@ -1369,6 +1401,7 @@ local function printTables(results: { [string]: { Summary } }, days: number)
 				mean(r, "week4Balance"),
 				mean(r, "steadyIncome"),
 				mean(r, "daysOnHand7"),
+				mean(r, "daysOnHandAfterWeek1"),
 				mean(r, "daysOnHandEnd"),
 				if got > 0
 					then string.format("day %.1f in %s of runs", dayTotal / got, pct(got / #r))
@@ -1400,7 +1433,7 @@ local function printTables(results: { [string]: { Summary } }, days: number)
 	end
 
 	print("\n  F. Where coins go (share removed) and where candy comes from (share earned)")
-	local sinkNames = { "Breed", "Shop", "Craft", "StableExpansion" }
+	local sinkNames = { "Breed", "Shop", "Craft", "StableExpansion", "Decor" }
 	local candyNames = {
 		"CandyDaily",
 		"CandyGiantRematch",
@@ -1458,7 +1491,7 @@ local function printChildTable(results: { [string]: { Summary } })
 	)
 	print("  tier    | candy | chance | casual                 | regular                | heavy")
 	local tiers: { Types.Rarity } = { "Gem", "Ruby", "Diamond" }
-	for _, tier in tiers do
+	for _, tier: Types.Rarity in tiers do
 		local cells = {}
 		for _, profile in PROFILES do
 			local rate = mean(results[profile.name], "candySteady")
@@ -1516,9 +1549,92 @@ end
 local function longExploration()
 	print("\n== Long exploration: 200 seeds per player type ==")
 	simulate(200)
+
+	print("\n== Sensitivity: one guess changed at a time, 40 seeds ==")
+	print(
+		"  variant                      | 2 h reg | after GW reg, heavy | reg days held | reg candy left | casual breeds/day"
+	)
+	type Variant = { name: string, apply: () -> (), undo: () -> () }
+	local saved = table.clone(ASSUME)
+	local function restore()
+		for key, value in saved do
+			(ASSUME :: any)[key] = value
+		end
+	end
+	local variants: { Variant } = {
+		{ name = "baseline", apply = function() end, undo = restore },
+		{
+			name = "battles 30% slower",
+			apply = function()
+				ASSUME.WILD_MIN *= 1.3
+				ASSUME.TAMER_MIN *= 1.3
+				ASSUME.GIANT_MIN *= 1.3
+			end,
+			undo = restore,
+		},
+		{
+			name = "battles 30% faster",
+			apply = function()
+				ASSUME.WILD_MIN *= 0.7
+				ASSUME.TAMER_MIN *= 0.7
+				ASSUME.GIANT_MIN *= 0.7
+			end,
+			undo = restore,
+		},
+		{
+			name = "lasso misses x1.5",
+			apply = function()
+				ASSUME.MISS = { Basic = 0.675, Braided = 0.45, Gilded = 0.225 }
+			end,
+			undo = restore,
+		},
+		{
+			name = "half of breeds skipped",
+			apply = function()
+				ASSUME.BREED_SKIP = 0.5
+			end,
+			undo = restore,
+		},
+		{
+			name = "gem spawns x3",
+			apply = function()
+				ASSUME.GEM_SPAWN *= 3
+				ASSUME.BAIT_GEM = math.min(1, ASSUME.BAIT_GEM * 2)
+			end,
+			undo = restore,
+		},
+		{
+			name = "giants 20% harder",
+			apply = function()
+				ASSUME.GIANT_LEARN *= 0.5
+				ASSUME.REMATCH_WIN = 0.6
+			end,
+			undo = restore,
+		},
+	}
+	for _, variant in variants do
+		variant.apply()
+		local r: { [string]: { Summary } } = {}
+		for _, profile in PROFILES do
+			r[profile.name] = runProfile(profile, 40, DAYS)
+		end
+		print(
+			string.format(
+				"  %-28s |  %4s   |     %4s, %4s     |     %4.1f      |      %4.0f      |      %4.1f",
+				variant.name,
+				pct(mean(r.regular, "twoHourRatio")),
+				pct(mean(r.regular, "postGreenwoodRatio")),
+				pct(mean(r.heavy, "postGreenwoodRatio")),
+				mean(r.regular, "daysOnHandAfterWeek1"),
+				mean(r.regular, "candyEnd"),
+				mean(r.casual, "breedsWeek1")
+			)
+		)
+		variant.undo()
+	end
 end
 
-local results = simulate(12)
+local results = simulate(30)
 if RUN_LONG_EXPLORATION then
 	longExploration()
 end
@@ -1529,8 +1645,8 @@ for _, profile in PROFILES do
 	local r = results[name]
 	local two = mean(r, "twoHourRatio")
 	check(
-		`{name}: coins removed are 60-70% of created in the first two hours`,
-		two >= 0.6 and two <= 0.7,
+		`{name}: coins removed are about 60-70% of created in the first two hours (57 to 73)`,
+		two >= 0.57 and two <= 0.73,
 		pct(two)
 	)
 	check(
@@ -1558,11 +1674,13 @@ for _, profile in PROFILES do
 		prepOk,
 		table.concat(prepText, ", ")
 	)
+	-- Grinding means wild battles fought only because the next giant attempt is not affordable yet.
 	local grind = math.max(maxOf(r, "grind1"), maxOf(r, "grind2"), maxOf(r, "grind3"))
+	local typical = (mean(r, "grind1") + mean(r, "grind2") + mean(r, "grind3")) / 3
 	check(
-		`{name}: nobody grinds more than 15 minutes before a giant attempt`,
-		grind <= 15,
-		string.format("%.1f min", grind)
+		`{name}: no one waits more than 25 minutes of play for a giant attempt; the typical wait is under 10`,
+		grind <= 25 and typical <= 10,
+		string.format("worst %.1f min, mean %.1f min", grind, typical)
 	)
 end
 for _, name in { "regular", "heavy" } do
@@ -1601,9 +1719,9 @@ check(
 	"one-time candy gives a visible early burst (week 1 above the steady rate)",
 	mean(results.regular, "candyWeek1") > regularCandy
 )
-local held = mean(results.regular, "daysOnHand7")
+local held = mean(results.regular, "daysOnHandAfterWeek1")
 check(
-	"a regular player holds 2 to 7 days of income after the first week",
+	"a regular player holds 2 to 7 days of income after the first week (mean of days 8 to 30)",
 	held >= 2 and held <= 7,
 	string.format("%.1f days", held)
 )

@@ -9,9 +9,9 @@
 --   Gems: bought with Robux; buy time and capacity only. Not modelled here.
 --
 -- Anchor: a common biome-1 breed costs BreedConfig.COST_BASE (400) coins, which should be about
--- four minutes of biome-1 income. Coin rewards scale with the biome exactly as breed costs do
--- (BIOME_MULT below equals Breeding.cost's biome tier), so a breed stays about four minutes of
--- on-biome income in every biome.
+-- four minutes of biome-1 income (the simulation measures 4.5 to 4.9 minutes of all Greenwood play).
+-- Repeatable income (BIOME_MULT) rises faster across biomes than breed costs (biome 1, 2, 3),
+-- because the costs that grow with play (count multipliers, gem tiers, rematch horns) need it.
 
 local Types = require("../shared/Types")
 
@@ -52,6 +52,7 @@ export type ItemDef = {
 	name: string, -- display name (original)
 	price: number, -- coins
 	scalesWithBiome: boolean, -- price x BIOME_MULT[biome] when true
+	firstBiomePrice: number?, -- replaces the price in biome 1 when set
 	fieldItem: boolean, -- counts toward the giant fight's field-item cap
 	note: string,
 }
@@ -74,9 +75,15 @@ local EconomyConfig = {}
 -- Biomes and levels
 ------------------------------------------------------------------------------------------------
 
--- Coin multiplier per biome: equal to Breeding.cost's biome tier (the biome number).
-local BIOME_MULT: { number } = { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21 }
+-- Coin multiplier per biome for repeatable income (wild wins, rematches, daily and weekly tasks)
+-- and for the prices that scale (Giant Horn, Bond Charm). Breed costs use the biome number instead.
+-- Biome 4 onwards are placeholders: re-run tests/economy.test.luau when the Mire is designed.
+local BIOME_MULT: { number } = { 1, 2.5, 5, 7, 9, 11, 13, 15, 17, 19, 21 }
 EconomyConfig.BIOME_MULT = BIOME_MULT
+-- One-time rewards (first clears, quest lines) scale more gently than repeatable income. Bigger
+-- windfalls in Dust Canyon made new players too flush in their first two hours (simulation table A).
+local ONE_TIME_MULT: { number } = { 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6 }
+EconomyConfig.ONE_TIME_MULT = ONE_TIME_MULT
 
 -- Opponent level band per biome, used only to scale rewards. Ten levels per biome.
 local LEVEL_BANDS: { LevelBand } = {}
@@ -89,25 +96,26 @@ EconomyConfig.LEVEL_BANDS = LEVEL_BANDS
 EconomyConfig.LEVEL_STEP = 0.03
 
 ------------------------------------------------------------------------------------------------
--- Battle rewards (coins at biome 1, level floor; scaled by BIOME_MULT and the level factor)
+-- Battle rewards (coins at biome 1, level floor; repeat wins scale by BIOME_MULT, first clears by
+-- ONE_TIME_MULT, both times the level factor)
 ------------------------------------------------------------------------------------------------
 
-EconomyConfig.WILD_BASE = 50
+EconomyConfig.WILD_BASE = 60
 
 -- Daily diminishing rule for wild wins against the same kind of creature (species):
 -- the first DIMINISH_FULL wins of a kind each day pay in full, each later win pays
 -- DIMINISH_RATE times the one before, never below DIMINISH_FLOOR of full, and from
 -- DIMINISH_STOP wins onwards that kind pays nothing until the next day. A lasso catch counts as a win.
-EconomyConfig.DIMINISH_FULL = 5
-EconomyConfig.DIMINISH_RATE = 0.75
-EconomyConfig.DIMINISH_FLOOR = 0.10
-EconomyConfig.DIMINISH_STOP = 40
+EconomyConfig.DIMINISH_FULL = 8
+EconomyConfig.DIMINISH_RATE = 0.85
+EconomyConfig.DIMINISH_FLOOR = 0.15
+EconomyConfig.DIMINISH_STOP = 50
 
 EconomyConfig.TRAINED = {
-	Tamer = { firstClear = 200, rematch = 50, rematchesPaidPerDay = 1 },
-	Gate = { firstClear = 900, rematch = 150, rematchesPaidPerDay = 1 },
+	Tamer = { firstClear = 160, rematch = 50, rematchesPaidPerDay = 1 },
+	Gate = { firstClear = 500, rematch = 150, rematchesPaidPerDay = 1 },
 	-- A giant rematch pays less than a GiantCall costs: rematches are a coin sink that earns candy.
-	Giant = { firstClear = 1200, rematch = 250, rematchesPaidPerDay = 2 },
+	Giant = { firstClear = 800, rematch = 700, rematchesPaidPerDay = 2 },
 } :: { Tamer: FirstAndRematch, Gate: FirstAndRematch, Giant: FirstAndRematch }
 
 -- Giant fights: one GiantCall to enter, at most this many field items brought in.
@@ -117,15 +125,17 @@ EconomyConfig.GIANT_FIELD_ITEM_CAP = 5
 -- Quests, daily tasks, weekly challenge, PvP (coins)
 ------------------------------------------------------------------------------------------------
 
-EconomyConfig.QUEST_LINE_COINS = 500 -- per completed quest line, x BIOME_MULT; once per line
-EconomyConfig.DAILY_TASK_COINS = 150 -- per easy daily task, x BIOME_MULT of the player's furthest biome
-EconomyConfig.DAILY_HARD_TASK_COINS = 300 -- per hard daily task, same scaling
-EconomyConfig.WEEKLY_CHALLENGE_COINS = 1500 -- once a week, same scaling
+EconomyConfig.QUEST_LINE_COINS = 400 -- per completed quest line, x ONE_TIME_MULT; once per line
+EconomyConfig.DAILY_TASK_COINS = 100 -- per easy daily task, x BIOME_MULT of the player's furthest biome
+EconomyConfig.DAILY_HARD_TASK_COINS = 800 -- per hard daily task, same scaling
+-- Daily tasks open with the first badge, so the first hours stay on the story.
+EconomyConfig.DAILY_TASKS_UNLOCK_BADGES = 1
+EconomyConfig.WEEKLY_CHALLENGE_COINS = 3000 -- once a week, same scaling
 
 -- Casual PvP (built later; the cap belongs here). Created by the game, never taken from a player.
 -- Paid only for matchmade wins, the first few a day, nothing for a repeat opponent within a day,
 -- nothing in private servers.
-EconomyConfig.CASUAL_PVP_WIN_COINS = 300
+EconomyConfig.CASUAL_PVP_WIN_COINS = 200 -- x BIOME_MULT of the player's furthest biome
 EconomyConfig.CASUAL_PVP_PAID_WINS_PER_DAY = 5
 EconomyConfig.CASUAL_PVP_REPEAT_OPPONENT_HOURS = 24
 
@@ -182,8 +192,10 @@ EconomyConfig.ITEMS = {
 	},
 	GiantCall = {
 		name = "Giant Horn",
-		price = 700,
+		price = 1100,
 		scalesWithBiome = true,
+		-- Greenwood's horn is cheaper, so a new player's first giant is never far off.
+		firstBiomePrice = 900,
 		fieldItem = false,
 		note = "Needed to start a giant fight; used up win or lose",
 	},
@@ -196,10 +208,10 @@ EconomyConfig.ITEMS = {
 	},
 	BondCharm = {
 		name = "Bond Charm",
-		price = 500,
-		scalesWithBiome = false,
+		price = 400,
+		scalesWithBiome = true,
 		fieldItem = false,
-		note = "Tilts one breed's part choice toward the first parent; used up",
+		note = "Tilts one breed's part choice toward the first parent (BreedConfig.CHARM_CHANCE); used up",
 	},
 } :: {
 	Basic: ItemDef,
@@ -342,8 +354,17 @@ EconomyConfig.STABLE_EXPANSION_SLOTS = 10
 -- Gem expansions (capacity, sold for Robux) stack on top and are priced elsewhere.
 local STABLE_EXPANSION_COINS: { number } = { 3000, 6000, 12000, 24000, 48000 }
 EconomyConfig.STABLE_EXPANSION_COINS = STABLE_EXPANSION_COINS
+
+-- Stable decorations: the veterans' prestige sink (research/market/06 recommendation 11).
+-- Cosmetic only, bought with coins, each once, in this order. A new set joins with each biome.
+local DECOR_COINS: { number } =
+	{ 5000, 8000, 12000, 18000, 25000, 35000, 50000, 70000, 100000, 140000, 200000, 280000 }
+EconomyConfig.DECOR_COINS = DECOR_COINS
+
 EconomyConfig.PENS_FREE = 1
-EconomyConfig.PENS_FROM_QUEST = 1 -- Greenwood's second quest line
+-- The mentor's lesson (the first quest, at about minute 10) gives the second pen. Two eggs from the
+-- start keep breeding, the main coin sink, from being capped by one pen in the first hours.
+EconomyConfig.PENS_FROM_QUEST = 1
 EconomyConfig.PENS_MAX = 4 -- hard cap, Gems included
 
 ------------------------------------------------------------------------------------------------
@@ -383,6 +404,11 @@ EconomyConfig.FLOWS = {
 	Craft = { currency = "Coins", limit = "Sink", note = "Coin part of a recipe" },
 	Breed = { currency = "Coins", limit = "Sink", note = "Breeding.cost" },
 	StableExpansion = { currency = "Coins", limit = "Sink", note = "STABLE_EXPANSION_COINS" },
+	Decor = {
+		currency = "Coins",
+		limit = "Sink",
+		note = "DECOR_COINS, cosmetic stable decorations",
+	},
 	TradeFee = { currency = "Coins", limit = "Sink", note = "Trading arrives later" },
 	-- Candy sources (each is limited per CANDY above)
 	CandyMentor = { currency = "Candy", limit = "Once", note = "MentorLesson" },
