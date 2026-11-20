@@ -126,7 +126,11 @@ local rival: WorldTypes.RivalDef = {
 		Mossmitt = {
 			members = {
 				member("Spadesnout", 14, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
-				member("Splashjack", 13, { "Ripple Ram", "Silt Surge", "Brook Rush", "Dew Splash" }),
+				member(
+					"Splashjack",
+					13,
+					{ "Ripple Ram", "Silt Surge", "Brook Rush", "Dew Splash" }
+				),
 				member("Gorsling", 13, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
 			},
 			tint = 0.25,
@@ -143,7 +147,11 @@ local rival: WorldTypes.RivalDef = {
 		-- The player picked Sloshcalf (Water): Leaf leads, with Sand and a tank behind it.
 		Sloshcalf = {
 			members = {
-				member("Mossmitt", 14, { "Bramble Rake", "Thorn Volley", "Leaf Gust", "Moss Slam" }),
+				member(
+					"Mossmitt",
+					14,
+					{ "Bramble Rake", "Thorn Volley", "Leaf Gust", "Moss Slam" }
+				),
 				member("Spadesnout", 13, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
 				member("Stumpwarden", 13, { "Sap Hammer", "Root Lash", "Moss Slam", "Twig Snap" }),
 			},
