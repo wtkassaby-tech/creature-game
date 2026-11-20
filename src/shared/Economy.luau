@@ -1,9 +1,10 @@
 --!strict
 -- Pure economy rules over src/config/EconomyConfig: battle rewards, prices, release payouts,
--- candy claims and a small ledger. No Roblox services, so it is tested under Lune
+-- typed and Prism candy, how a breed's candy is paid, and a small ledger. No Roblox services, so it is tested under Lune
 -- (tests/economy.test.luau). The model behind the numbers is docs/ECONOMY_MODEL.md.
 
 local EconomyConfig = require("../config/EconomyConfig")
+local TypeChart = require("./TypeChart")
 local Types = require("./Types")
 
 export type BattleKind = EconomyConfig.BattleKind
@@ -12,14 +13,22 @@ export type CandySource = EconomyConfig.CandySource
 export type Currency = EconomyConfig.Currency
 export type MaterialId = EconomyConfig.MaterialId
 
-export type Balances = { coins: number, candy: number }
+export type CandyWallet = Types.CandyWallet
+export type CandyNeed = Types.CandyNeed
+-- How a breed's candy is paid: what comes out of each typed balance, and the Prism that covers
+-- the rest. Worked out by Economy.candyPayment, applied by Economy.payCandy.
+export type CandyPayment = { typed: { CandyNeed }, prism: number }
+
+export type Balances = { coins: number, candy: CandyWallet }
 export type LedgerRecord = {
 	flow: string,
 	currency: Currency,
+	element: Types.Element?, -- typed candy only
 	direction: "In" | "Out",
 	amount: number,
-	before: number,
+	before: number, -- the balance this flow moved: coins, Prism, or (typed) that type's candy
 	after: number,
+	prismUsed: number, -- typed candy spends only: the Prism that covered a shortfall
 }
 export type LedgerResult = {
 	ok: boolean,
@@ -165,7 +174,142 @@ function Economy.releasePayout(rarity: Types.Rarity, originBiome: number): Relea
 	}
 end
 
--- Candy the next claim from a source grants.
+------------------------------------------------------------------------------------------------
+-- Typed candy
+------------------------------------------------------------------------------------------------
+
+function Economy.zeroByElement(): Types.ByElement<number>
+	return {
+		Leaf = 0,
+		Sand = 0,
+		Water = 0,
+		Toxic = 0,
+		Frost = 0,
+		Crystal = 0,
+		Fire = 0,
+		Storm = 0,
+		Arcane = 0,
+		Cosmic = 0,
+	}
+end
+
+function Economy.emptyWallet(): CandyWallet
+	return { typed = Economy.zeroByElement(), prism = 0 }
+end
+
+function Economy.copyWallet(wallet: CandyWallet): CandyWallet
+	return { typed = table.clone(wallet.typed), prism = wallet.prism }
+end
+
+-- Every typed balance plus Prism.
+function Economy.walletTotal(wallet: CandyWallet): number
+	local total = wallet.prism
+	for _, element: Types.Element in TypeChart.ELEMENTS do
+		total += wallet.typed[element]
+	end
+	return total
+end
+
+-- Share of full pay for a typed claim, given claims of that type already paid today.
+function Economy.candyFalloff(rule: EconomyConfig.CandyFalloff, priorToday: number): number
+	if priorToday < rule.full then
+		return 1
+	elseif priorToday >= rule.stop then
+		return 0
+	end
+	return math.max(rule.floor, rule.rate ^ (priorToday - rule.full + 1))
+end
+
+-- Whole candies for the next claim. The day's claims of a type add up as fractions and each
+-- claim pays the whole candies its share completes, so a falloff of 0.25 pays one candy every
+-- fourth claim instead of rounding to nothing. The same counts always give the same answer.
+local function fallingCandy(
+	base: number,
+	rule: EconomyConfig.CandyFalloff,
+	priorToday: number
+): number
+	if base <= 0 or priorToday < 0 or priorToday ~= math.floor(priorToday) then
+		return 0
+	end
+	local before = 0
+	for index = 0, math.min(priorToday, rule.stop) - 1 do
+		before += Economy.candyFalloff(rule, index)
+	end
+	local after = before + Economy.candyFalloff(rule, priorToday)
+	-- A small allowance stops 0.1 + 0.2 style float sums from losing a candy.
+	return math.floor(base * after + 1e-9) - math.floor(base * before + 1e-9)
+end
+
+-- Typed candy for catching a creature of this rarity. priorToday: catches of that creature's
+-- type already paid today (the count goes up by one with every catch, paid or not).
+function Economy.catchCandy(rarity: Types.Rarity, priorToday: number): number
+	return fallingCandy(EconomyConfig.CATCH_CANDY[rarity], EconomyConfig.CATCH_FALLOFF, priorToday)
+end
+
+-- Typed candy for releasing a creature of this rarity. priorToday: releases of that type today.
+function Economy.releaseCandy(rarity: Types.Rarity, priorToday: number): number
+	return fallingCandy(
+		EconomyConfig.RELEASE_CANDY[rarity],
+		EconomyConfig.RELEASE_FALLOFF,
+		priorToday
+	)
+end
+
+-- How a wallet pays a breed's candy: typed candy of each type first, then Prism for every
+-- shortfall. Returns nil if the wallet cannot pay all of it, or if a need is not a positive whole
+-- number. Never changes the wallet.
+function Economy.candyPayment(wallet: CandyWallet, needs: { CandyNeed }): CandyPayment?
+	local typed: { CandyNeed } = {}
+	local prism = 0
+	local seen: { Types.Element } = {}
+	for _, need in needs do
+		local amount = need.amount
+		if
+			amount ~= amount
+			or amount <= 0
+			or amount ~= math.floor(amount)
+			or amount == math.huge
+		then
+			return nil
+		end
+		if table.find(seen, need.element) then
+			return nil -- one entry per type, as Breeding.candyCost builds it
+		end
+		table.insert(seen, need.element)
+		local fromTyped = math.min(wallet.typed[need.element], amount)
+		if fromTyped > 0 then
+			table.insert(typed, { element = need.element, amount = fromTyped })
+		end
+		prism += amount - fromTyped
+	end
+	if prism > wallet.prism then
+		return nil
+	end
+	return { typed = typed, prism = prism }
+end
+
+-- The wallet after a payment from Economy.candyPayment (a new table; the old one is unchanged).
+-- Returns nil if the payment does not fit the wallet.
+function Economy.payCandy(wallet: CandyWallet, payment: CandyPayment): CandyWallet?
+	local nextWallet = Economy.copyWallet(wallet)
+	for _, part in payment.typed do
+		nextWallet.typed[part.element] -= part.amount
+		if nextWallet.typed[part.element] < 0 then
+			return nil
+		end
+	end
+	nextWallet.prism -= payment.prism
+	if nextWallet.prism < 0 then
+		return nil
+	end
+	return nextWallet
+end
+
+------------------------------------------------------------------------------------------------
+-- Prism Candy and the other capped sources
+------------------------------------------------------------------------------------------------
+
+-- Prism Candy the next claim from a source grants.
 -- claimed: claims already paid in this source's window (today for Daily, this week for Weekly,
 -- ever for this key for Once: this giant, this biome's gate, this quest line).
 -- biome: used by QuestLine only.
@@ -241,10 +385,16 @@ function Economy.stableSlots(coinExpansions: number, gemExpansions: number): num
 		+ (coinExpansions + gemExpansions) * EconomyConfig.STABLE_EXPANSION_SLOTS
 end
 
--- Apply one named flow to the balances. Sources add, sinks subtract. Refuses an unknown flow,
--- an amount that is not a positive whole number, or a sink that would take a balance below zero.
--- Never changes the table passed in.
-function Economy.apply(balances: Balances, flowName: string, amount: number): LedgerResult
+-- Apply one named flow to the balances. Sources add, sinks subtract. Typed candy flows need the
+-- element; a typed candy sink ("BreedCandy") takes that type's candy first and Prism for the rest.
+-- Refuses an unknown flow, a missing element, an amount that is not a positive whole number, or a
+-- sink that would take a balance below zero. Never changes the table passed in.
+function Economy.apply(
+	balances: Balances,
+	flowName: string,
+	amount: number,
+	element: Types.Element?
+): LedgerResult
 	local flow = EconomyConfig.FLOWS[flowName]
 	if flow == nil then
 		return { ok = false, balances = balances, reason = `unknown flow {flowName}` }
@@ -252,26 +402,50 @@ function Economy.apply(balances: Balances, flowName: string, amount: number): Le
 	if amount ~= amount or amount <= 0 or amount ~= math.floor(amount) or amount == math.huge then
 		return { ok = false, balances = balances, reason = "amount must be a positive whole number" }
 	end
-	local isCoins = flow.currency == "Coins"
-	local before = if isCoins then balances.coins else balances.candy
 	local isSink = flow.limit == "Sink"
-	local after = if isSink then before - amount else before + amount
+	local candy = Economy.copyWallet(balances.candy)
+	local coins = balances.coins
+	local before, after, prismUsed = 0, 0, 0
+	if flow.currency == "Coins" then
+		before = coins
+		after = if isSink then before - amount else before + amount
+		coins = after
+	elseif flow.currency == "Prism" then
+		before = candy.prism
+		after = if isSink then before - amount else before + amount
+		candy.prism = after
+	else
+		if element == nil or candy.typed[element] == nil then
+			return { ok = false, balances = balances, reason = "typed candy needs an element" }
+		end
+		before = candy.typed[element]
+		if isSink then
+			local fromTyped = math.min(before, amount)
+			prismUsed = amount - fromTyped
+			after = before - fromTyped
+			candy.prism -= prismUsed
+			if candy.prism < 0 then
+				return { ok = false, balances = balances, reason = `not enough {element} candy` }
+			end
+		else
+			after = before + amount
+		end
+		candy.typed[element] = after
+	end
 	if after < 0 then
 		return { ok = false, balances = balances, reason = `not enough {flow.currency}` }
 	end
-	local nextBalances: Balances = {
-		coins = if isCoins then after else balances.coins,
-		candy = if isCoins then balances.candy else after,
-	}
 	local record: LedgerRecord = {
 		flow = flowName,
 		currency = flow.currency,
+		element = if flow.currency == "Candy" then element else nil,
 		direction = if isSink then "Out" else "In",
 		amount = amount,
 		before = before,
 		after = after,
+		prismUsed = prismUsed,
 	}
-	return { ok = true, balances = nextBalances, record = record }
+	return { ok = true, balances = { coins = coins, candy = candy }, record = record }
 end
 
 return Economy

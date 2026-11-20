@@ -14,11 +14,13 @@ export type ByStarter<T> = { Mossmitt: T, Spadesnout: T, Sloshcalf: T }
 
 -- Rewards ------------------------------------------------------------------------------------
 
--- The ways the game can hand something over. Coins, Candy, Item and Material are the economy's
--- (EconomyConfig); Creature, Egg, Pen, Starter and Badge are gifts.
+-- The ways the game can hand something over. Coins, PrismCandy, Item and Material are the
+-- economy's (EconomyConfig); Creature, Egg, Pen, Starter and Badge are gifts. Story and quest
+-- rewards pay Prism Candy (working name), which counts as any type; typed candy comes only from
+-- catching and releasing creatures.
 export type RewardKind =
 	"Coins"
-	| "Candy"
+	| "PrismCandy"
 	| "Item"
 	| "Material"
 	| "Creature"
@@ -29,7 +31,7 @@ export type RewardKind =
 
 export type Reward =
 	{ kind: "Coins", amount: number }
-	| { kind: "Candy", amount: number }
+	| { kind: "PrismCandy", amount: number }
 	| { kind: "Item", item: EconomyConfig.ItemId, count: number }
 	| { kind: "Material", material: EconomyConfig.MaterialId, count: number }
 	| { kind: "Creature", species: string, level: number, rarity: Types.Rarity, colour: string }

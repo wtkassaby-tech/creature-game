@@ -1,7 +1,7 @@
 --!strict
 -- Greenwood's quest line, "Thistledown Favours": four quests in order, ending in a guaranteed
 -- creature, plus one optional quest for the giant. The main line never needs the giant or an
--- uncommon species. Coin and candy for finishing the line come from EconomyConfig (one-time
+-- uncommon species. Coins and Prism Candy for finishing the line come from EconomyConfig (one-time
 -- multiplier and QUEST_LINE_CANDY for biome 1), so tuning the economy tunes the quests.
 -- Early steps pay in items, so a new player is stocked for the road.
 
@@ -76,7 +76,7 @@ local quests: { WorldTypes.Quest } = {
 		done = "He sent word himself. Here is a friend who can stand in front of a team.",
 		rewards = {
 			{ kind = "Coins", amount = FINAL_COINS },
-			{ kind = "Candy", amount = FINAL_CANDY },
+			{ kind = "PrismCandy", amount = FINAL_CANDY },
 			{
 				kind = "Creature",
 				species = "Stumpwarden",

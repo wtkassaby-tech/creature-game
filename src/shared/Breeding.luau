@@ -18,7 +18,7 @@ export type BreedResult = {
 	child: Creature,
 	hatchAt: number,
 	cost: number,
-	candy: number,
+	candy: { Types.CandyNeed }, -- what Breeding.candyCost asked for, by type
 	parentA: { breedCount: number, breedReadyAt: number },
 	parentB: { breedCount: number, breedReadyAt: number },
 }
@@ -130,9 +130,42 @@ function Breeding.cost(a: Creature, b: Creature): number
 	)
 end
 
--- Breeding Candy for this breed: set by the rarer parent.
-function Breeding.candyCost(a: Creature, b: Creature): number
-	return BreedConfig.CANDY_COST[rarerOf(a, b)]
+-- A creature's type: the element of its torso's species (the torso sets the type).
+function Breeding.element(creature: Creature): Types.Element
+	return Species[creature.parts.Torso.species].element
+end
+
+-- Breeding Candy for this breed, by type: each parent needs CANDY_COST[its own rarity] of its
+-- own type. A same-type pair is one entry with both amounts added; otherwise parent A's type
+-- comes first. Entries with nothing to pay are left out. How the balance pays it (typed candy
+-- first, then Prism) is Economy.candyPayment.
+function Breeding.candyCost(a: Creature, b: Creature): { Types.CandyNeed }
+	local needs: { Types.CandyNeed } = {}
+	for _, parent in { a, b } do
+		local amount: number = BreedConfig.CANDY_COST[parent.rarity]
+		local element: Types.Element = Breeding.element(parent)
+		local merged = false
+		for _, need in needs do
+			if need.element == element then
+				need.amount += amount
+				merged = true
+			end
+		end
+		if not merged and amount > 0 then
+			local need: Types.CandyNeed = { element = element, amount = amount }
+			table.insert(needs, need)
+		end
+	end
+	return needs
+end
+
+-- Total candy of every type a breed needs (for summaries; paying uses the list).
+function Breeding.candyTotal(needs: { Types.CandyNeed }): number
+	local total = 0
+	for _, need in needs do
+		total += need.amount
+	end
+	return total
 end
 
 -- Chance of each rarity for the child. The values sum to 1.
@@ -304,7 +337,7 @@ export type Preview = {
 	rarityOdds: RarityOdds,
 	level: number,
 	cost: number,
-	candy: number,
+	candy: { Types.CandyNeed }, -- candy by type, as Breeding.candyCost
 }
 
 -- What the breeder screen shows before the player pays. Enumerates all 32 part combinations

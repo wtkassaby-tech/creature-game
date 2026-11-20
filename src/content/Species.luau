@@ -14,6 +14,15 @@ local Species: { [string]: Types.SpeciesDef } = {
 	Splashjack = require("./species/Splashjack"),
 	Stiltbark = require("./species/Stiltbark"),
 	Stumpwarden = require("./species/Stumpwarden"),
+	-- Dust Canyon (biome 2). See docs/content/DUST_CANYON_ROSTER.md.
+	Cairnback = require("./species/Cairnback"),
+	Duneskit = require("./species/Duneskit"),
+	Flintknap = require("./species/Flintknap"),
+	Spirecap = require("./species/Spirecap"),
+	Spurlet = require("./species/Spurlet"),
+	Thatchling = require("./species/Thatchling"),
+	Wadibuck = require("./species/Wadibuck"),
+	Whirlgrit = require("./species/Whirlgrit"),
 }
 
 return Species

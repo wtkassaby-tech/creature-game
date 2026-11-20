@@ -1,8 +1,8 @@
 --!strict
 -- Shared record types for creatures and species. Data only, no logic.
 --
--- Typing note: fixed sets of keys (slots, stats, rarities, body plans) are written as records
--- (BySlot, StatBlock, ByRarity, ByPlan), not as `{ [Slot]: T }` maps. The strict checker accepts
+-- Typing note: fixed sets of keys (slots, stats, rarities, body plans, elements) are written as
+-- records (BySlot, StatBlock, ByRarity, ByPlan, ByElement), not as `{ [Slot]: T }` maps. The strict checker accepts
 -- `record[slot]` and `record.Legs` on records, but rejects both on maps keyed by a union of names.
 -- Lists of names are declared with an annotation: `local SLOTS: { Slot } = { ... }`.
 
@@ -26,6 +26,25 @@ export type BySlot<T> = { Head: T, Torso: T, FrontLimbs: T, Legs: T, Tail: T }
 export type ByRarity<T> = { Common: T, Uncommon: T, Gem: T, Ruby: T, Diamond: T, Cosmic: T }
 export type ByPlan<T> = { Quad: T, Biped: T, Winged: T, Serpent: T }
 export type StatBlock = { Hp: number, Attack: number, Defence: number, Speed: number }
+export type ByElement<T> = {
+	Leaf: T,
+	Sand: T,
+	Water: T,
+	Toxic: T,
+	Frost: T,
+	Crystal: T,
+	Fire: T,
+	Storm: T,
+	Arcane: T,
+	Cosmic: T,
+}
+
+-- Breeding Candy is typed (DECISIONS.md, 20 November 2026): one balance per element, earned by
+-- catching and releasing creatures of that type, plus Prism Candy (working name), earned from
+-- milestones and daily rewards, which counts as any type.
+export type CandyWallet = { typed: ByElement<number>, prism: number }
+-- Candy of one type that a breed needs (a same-type pair is one entry with both parents' amounts).
+export type CandyNeed = { element: Element, amount: number }
 
 -- What a creature stores for one body slot. `quality` is the only inherited number.
 export type Part = {

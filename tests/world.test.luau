@@ -178,12 +178,15 @@ for _, route in greenwood.routes do
 	end
 end
 
+-- Only Greenwood's own species (biome 1); later biomes are checked by their own tests.
 for name, def in Species do
-	check(`{name}: appears in Greenwood`, seen[name] == true)
-	if def.baseRarity == "Common" then
-		check(`{name}: common species can be met in the open`, openSeen[name] == true)
-	else
-		check(`{name}: uncommon species is never met in the open`, openSeen[name] ~= true)
+	if def.biome == 1 then
+		check(`{name}: appears in Greenwood`, seen[name] == true)
+		if def.baseRarity == "Common" then
+			check(`{name}: common species can be met in the open`, openSeen[name] == true)
+		else
+			check(`{name}: uncommon species is never met in the open`, openSeen[name] ~= true)
+		end
 	end
 end
 check(
@@ -315,7 +318,7 @@ check("the Rival tier exists in BattleAi", (("Rival" :: any) :: BattleAi.Tier) =
 
 local function checkReward(label: string, reward: WorldTypes.Reward): boolean
 	local ok = containsAny(World.REWARD_KINDS, reward.kind)
-	if reward.kind == "Coins" or reward.kind == "Candy" then
+	if reward.kind == "Coins" or reward.kind == "PrismCandy" then
 		ok = ok and reward.amount > 0
 	elseif reward.kind == "Item" then
 		ok = ok and EconomyConfig.ITEMS[reward.item] ~= nil and reward.count > 0
@@ -462,7 +465,7 @@ check(
 		for _, reward in Quests.gw_woodcutters_word.rewards do
 			if reward.kind == "Coins" then
 				coins = reward.amount
-			elseif reward.kind == "Candy" then
+			elseif reward.kind == "PrismCandy" then
 				candy = reward.amount
 			end
 		end
@@ -575,7 +578,7 @@ check(
 			pen = pen or reward.kind == "Pen"
 			candy = candy
 				or (
-					reward.kind == "Candy"
+					reward.kind == "PrismCandy"
 					and reward.amount == EconomyConfig.CANDY.MentorLesson.perClaim
 				)
 		end

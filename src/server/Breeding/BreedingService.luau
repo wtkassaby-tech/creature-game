@@ -13,6 +13,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Breeding = require(ReplicatedStorage.shared.Breeding)
+local Economy = require(ReplicatedStorage.shared.Economy)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rng = require(ReplicatedStorage.shared.Rng)
 local Types = require(ReplicatedStorage.shared.Types)
@@ -109,8 +110,13 @@ function BreedingService.requestBreed(
 	if data.Coins < cost then
 		return false, "Not enough coins"
 	end
-	local candy = Breeding.candyCost(a, b)
-	if data.Candy < candy then
+	-- Each parent needs candy of its own type; typed candy is used first, then Prism.
+	local payment = Economy.candyPayment(data.Candy, Breeding.candyCost(a, b))
+	if not payment then
+		return false, "Not enough Breeding Candy"
+	end
+	local candyAfter = Economy.payCandy(data.Candy, payment)
+	if not candyAfter then
 		return false, "Not enough Breeding Candy"
 	end
 	-- A charm only counts if the player owns one; it is used up below with everything else.
@@ -129,7 +135,7 @@ function BreedingService.requestBreed(
 
 	-- 4. Apply every change together. Nothing above this line has changed the player's data.
 	data.Coins -= result.cost
-	data.Candy -= result.candy
+	data.Candy = candyAfter -- worked out above from this same balance, with no pause since
 	if charm then
 		data.Items[CHARM_ITEM] -= 1
 	end
@@ -146,6 +152,8 @@ function BreedingService.requestBreed(
 		seed = seed,
 		cost = result.cost,
 		candy = result.candy,
+		candyTyped = payment.typed,
+		candyPrism = payment.prism,
 		charm = charm ~= nil,
 	})
 	return true, result.hatchAt

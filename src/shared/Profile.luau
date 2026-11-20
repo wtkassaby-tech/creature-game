@@ -10,8 +10,10 @@
 -- so a change to one is made beside the other.
 
 local BreedConfig = require("../config/BreedConfig")
+local Economy = require("./Economy")
 local ProfileConfig = require("../config/ProfileConfig")
 local Species = require("../content/Species")
+local TypeChart = require("./TypeChart")
 local Types = require("./Types")
 
 export type Egg = { child: Types.Creature, hatchAt: number, seed: number }
@@ -30,6 +32,10 @@ export type Daily = {
 	wildWins: { [string]: number }, -- species name -> wins today, for the diminishing coin rule
 	tasksDone: { [string]: number },
 	claimed: { [string]: boolean },
+	-- Catches and releases already counted today, per type, for the typed candy falloff
+	-- (Economy.catchCandy, Economy.releaseCandy). Saved, so leaving and rejoining cannot reset it.
+	catches: Types.ByElement<number>,
+	releases: Types.ByElement<number>,
 }
 
 -- Something the player has earned but not yet received: a one-time gift waiting for room in the
@@ -47,7 +53,11 @@ export type Profile = {
 	SchemaVersion: number,
 	Coins: number,
 	Gems: number,
-	Candy: number,
+	-- Typed Breeding Candy, one balance per element, plus Prism Candy that counts as any type.
+	-- This shape replaced a single number on 20 November 2026, before any save had shipped, so
+	-- the template changed directly and no migration was needed (playtest saves are wiped at the
+	-- soft launch). Any change from here on needs a migration.
+	Candy: Types.CandyWallet,
 	Creatures: { [string]: Types.Creature }, -- keyed by creature id
 	Team: { string }, -- creature ids, in battle order
 	Eggs: { Egg },
@@ -82,7 +92,7 @@ function Profile.template(): Profile
 		SchemaVersion = Profile.CURRENT_VERSION,
 		Coins = ProfileConfig.STARTING_COINS,
 		Gems = 0,
-		Candy = 0,
+		Candy = Economy.emptyWallet(),
 		Creatures = {},
 		Team = {},
 		Eggs = {},
@@ -99,7 +109,14 @@ function Profile.template(): Profile
 			giantsCaptured = {},
 		},
 		Quests = { active = {}, done = {} },
-		Daily = { day = 0, wildWins = {}, tasksDone = {}, claimed = {} },
+		Daily = {
+			day = 0,
+			wildWins = {},
+			tasksDone = {},
+			claimed = {},
+			catches = Economy.zeroByElement(),
+			releases = Economy.zeroByElement(),
+		},
 		Index = { seen = {}, owned = {} },
 		Purchases = { passes = {}, receiptIds = {} },
 		Settings = {
@@ -326,7 +343,29 @@ local function validateUnsafe(profile: Profile): { string }
 	end
 	checkBalance("Coins", profile.Coins)
 	checkBalance("Gems", profile.Gems)
-	checkBalance("Candy", profile.Candy)
+	-- One whole count of zero or more for every element, and nothing else in the record.
+	local function checkByElement(name: string, record: Types.ByElement<number>)
+		if typeof(record) ~= "table" then
+			table.insert(problems, `{name} is missing`)
+			return
+		end
+		for _, element: Types.Element in TypeChart.ELEMENTS do
+			checkBalance(`{name}.{element}`, record[element])
+		end
+		for key in record :: any do
+			if typeof(key) ~= "string" or not table.find(TypeChart.ELEMENTS, key :: any) then
+				table.insert(problems, `{name} has an unknown type ({tostring(key)})`)
+			end
+		end
+	end
+	if typeof(profile.Candy) ~= "table" then
+		table.insert(problems, "Candy is not a candy record")
+	else
+		checkByElement("Candy.typed", profile.Candy.typed)
+		checkBalance("Candy.prism", profile.Candy.prism)
+	end
+	checkByElement("Daily.catches", profile.Daily.catches)
+	checkByElement("Daily.releases", profile.Daily.releases)
 
 	local owned = 0
 	for id, creature in profile.Creatures do

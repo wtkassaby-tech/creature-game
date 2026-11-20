@@ -23,7 +23,7 @@ local World = {}
 
 local REWARD_KINDS: { WorldTypes.RewardKind } = {
 	"Coins",
-	"Candy",
+	"PrismCandy",
 	"Item",
 	"Material",
 	"Creature",

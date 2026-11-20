@@ -5,7 +5,9 @@
 --
 -- Three currencies:
 --   Coins: earned only, never sold, never traded. Pay for lassos, consumables, bait, breeding.
---   Breeding Candy: earned only, never sold, never traded. Needed for every breed (BreedConfig.CANDY_COST).
+--   Breeding Candy: earned only, never sold, never traded. Typed (one balance per element): each
+--     parent in a breed uses BreedConfig.CANDY_COST of its own type. Catching and releasing pay
+--     typed candy; milestone and daily rewards pay Prism Candy (working name), which counts as any type.
 --   Gems: bought with Robux; buy time and capacity only. Not modelled here.
 --
 -- Anchor: a common biome-1 breed costs BreedConfig.COST_BASE (400) coins, which should be about
@@ -15,7 +17,8 @@
 
 local Types = require("../shared/Types")
 
-export type Currency = "Coins" | "Candy"
+-- "Candy" is typed candy (one balance per element); "Prism" is Prism Candy, which counts as any type.
+export type Currency = "Coins" | "Candy" | "Prism"
 export type BattleKind = "Wild" | "Tamer" | "Gate" | "Giant"
 export type ItemId =
 	"Basic"
@@ -58,10 +61,14 @@ export type ItemDef = {
 }
 export type Recipe = { material: MaterialId, count: number, coins: number }
 export type CandyDef = {
-	perClaim: number, -- candy per claim (QuestLine uses QUEST_LINE_CANDY by biome instead)
+	perClaim: number, -- Prism Candy per claim (QuestLine uses QUEST_LINE_CANDY by biome instead)
 	cap: number, -- paid claims per window (day, week, or ever for Once)
 	limit: Limit,
 }
+-- A daily falloff on typed candy, counted per type: the first `full` claims of a type each day pay
+-- in full, each later claim is worth `rate` times the one before, never below `floor` of full,
+-- and from `stop` claims onwards that type pays nothing until the next day.
+export type CandyFalloff = { full: number, rate: number, floor: number, stop: number }
 export type FirstAndRematch = {
 	firstClear: number, -- coins at biome 1, level floor
 	rematch: number, -- coins per paid rematch at biome 1, level floor
@@ -295,10 +302,42 @@ EconomyConfig.RELEASE_MAX_SHARE = 0.75
 EconomyConfig.RELEASE_MIN_COINS = 1
 
 ------------------------------------------------------------------------------------------------
--- Breeding Candy sources (BreedConfig.CANDY_COST sets what each breed uses).
+-- Breeding Candy (BreedConfig.CANDY_COST sets what each parent uses, of its own type).
 -- Candy is earned only: never sold for Robux or Gems, never traded or gifted.
+--
+-- Typed candy: catching a creature pays candy of its type (its torso's element); releasing one
+-- pays less. Both fall off after a daily number per type, so catch-and-release cannot flood
+-- supply. Economy.catchCandy and Economy.releaseCandy apply the falloff.
 ------------------------------------------------------------------------------------------------
 
+-- Typed candy for a catch, by the creature's rarity, before the falloff. Fractions are paid as
+-- they add up across the day's claims of that type (0.5 pays one candy every second claim).
+EconomyConfig.CATCH_CANDY = {
+	Common = 1,
+	Uncommon = 2,
+	Gem = 6,
+	Ruby = 12,
+	Diamond = 24,
+	Cosmic = 24,
+} :: Types.ByRarity<number>
+-- Typed candy for a release. Always less than the catch pays and less than the cheapest breed
+-- that can make a creature of that rarity (tested), so releasing never turns a profit in candy.
+EconomyConfig.RELEASE_CANDY = {
+	Common = 0.5,
+	Uncommon = 0.5,
+	Gem = 3,
+	Ruby = 6,
+	Diamond = 12,
+	Cosmic = 12,
+} :: Types.ByRarity<number>
+-- Three catches and three releases of each type a day pay in full, which covers normal play
+-- (a regular player catches about five creatures a day, across several types). Farming one type
+-- runs into the falloff fast: a whole day of common catches of one type pays at most 7 candy.
+EconomyConfig.CATCH_FALLOFF = { full = 3, rate = 0.5, floor = 0.1, stop = 40 } :: CandyFalloff
+EconomyConfig.RELEASE_FALLOFF = { full = 3, rate = 0.4, floor = 0.1, stop = 40 } :: CandyFalloff
+
+-- Prism Candy sources: milestones and daily rewards. Prism counts as any type, so a player is
+-- never stuck for a type their biome lacks.
 EconomyConfig.CANDY = {
 	-- Once per account: the mentor's lesson pays for the first breed (and a second to try again).
 	MentorLesson = { perClaim = 2, cap = 1, limit = "Once" },
@@ -340,7 +379,7 @@ local CANDY_SOURCES: { CandySource } = {
 	"RankedSeason",
 }
 EconomyConfig.CANDY_SOURCES = CANDY_SOURCES
--- Candy per quest line by biome (later biomes use the last entry).
+-- Prism Candy per quest line by biome (later biomes use the last entry).
 local QUEST_LINE_CANDY: { number } = { 2, 3, 4 }
 EconomyConfig.QUEST_LINE_CANDY = QUEST_LINE_CANDY
 
@@ -410,20 +449,27 @@ EconomyConfig.FLOWS = {
 		note = "DECOR_COINS, cosmetic stable decorations",
 	},
 	TradeFee = { currency = "Coins", limit = "Sink", note = "Trading arrives later" },
-	-- Candy sources (each is limited per CANDY above)
-	CandyMentor = { currency = "Candy", limit = "Once", note = "MentorLesson" },
-	CandyDaily = { currency = "Candy", limit = "Daily", note = "DailyTask and DailyHardTask" },
-	CandyGiantRematch = { currency = "Candy", limit = "Daily", note = "GiantRematch" },
-	CandyWeekly = { currency = "Candy", limit = "Weekly", note = "WeeklyChallenge" },
-	CandyFirstClear = {
+	-- Typed candy sources (per type per day, CATCH_FALLOFF and RELEASE_FALLOFF)
+	CandyCatch = { currency = "Candy", limit = "Diminishing", note = "CATCH_CANDY, per type" },
+	CandyRelease = {
 		currency = "Candy",
+		limit = "Diminishing",
+		note = "RELEASE_CANDY, per type; below the catch and the cheapest breed",
+	},
+	-- Prism Candy sources (each is limited per CANDY above)
+	CandyMentor = { currency = "Prism", limit = "Once", note = "MentorLesson" },
+	CandyDaily = { currency = "Prism", limit = "Daily", note = "DailyTask and DailyHardTask" },
+	CandyGiantRematch = { currency = "Prism", limit = "Daily", note = "GiantRematch" },
+	CandyWeekly = { currency = "Prism", limit = "Weekly", note = "WeeklyChallenge" },
+	CandyFirstClear = {
+		currency = "Prism",
 		limit = "Once",
 		note = "GiantFirstClear and GateFirstClear",
 	},
-	CandyQuest = { currency = "Candy", limit = "Once", note = "QuestLine" },
-	CandyRanked = { currency = "Candy", limit = "Once", note = "RankedSeason, once per season" },
-	-- Candy sink
-	BreedCandy = { currency = "Candy", limit = "Sink", note = "BreedConfig.CANDY_COST" },
+	CandyQuest = { currency = "Prism", limit = "Once", note = "QuestLine" },
+	CandyRanked = { currency = "Prism", limit = "Once", note = "RankedSeason, once per season" },
+	-- Candy sink: one type at a time, typed candy first, then Prism for any shortfall
+	BreedCandy = { currency = "Candy", limit = "Sink", note = "BreedConfig.CANDY_COST, per parent" },
 } :: { [string]: Flow }
 
 return EconomyConfig

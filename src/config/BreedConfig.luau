@@ -80,10 +80,13 @@ BreedConfig.RARITY_INHERIT = {
 	Cosmic: InheritOdds?,
 }
 
--- Breeding Candy (working name): every breed uses up candies, earned only through play
--- (giants, gate battles, quests, daily tasks, ranked seasons). Never sold for Robux or Gems.
--- There is no limit on how many times a creature can breed (Ayrton, 16 November 2026):
--- candy income is what caps supply. The price follows the rarer parent.
+-- Breeding Candy (working name): every breed uses up candies, earned only through play.
+-- Never sold for Robux or Gems. There is no limit on how many times a creature can breed
+-- (Ayrton, 16 November 2026): candy income is what caps supply.
+-- Candy is typed (Ayrton, 20 November 2026): each parent uses CANDY_COST[its own rarity] of its
+-- own type (its torso's element), so a breed of two different types needs two kinds of candy.
+-- Typed candy comes from catching and releasing; Prism Candy covers any shortfall
+-- (EconomyConfig, Economy.candyPayment). Tuned by tests/economy.test.luau (docs/ECONOMY_MODEL.md).
 BreedConfig.CANDY_COST =
 	{ Common = 1, Uncommon = 2, Gem = 5, Ruby = 12, Diamond = 30, Cosmic = 0 } :: Types.ByRarity<number>
 

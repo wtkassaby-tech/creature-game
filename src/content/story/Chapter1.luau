@@ -27,7 +27,7 @@ local lasso: { WorldTypes.Reward } = {
 local egg: { WorldTypes.Reward } = {
 	{ kind = "Egg", parentA = "Stumpwarden", parentB = "Splashjack" },
 	{ kind = "Pen" },
-	{ kind = "Candy", amount = EconomyConfig.CANDY.MentorLesson.perClaim },
+	{ kind = "PrismCandy", amount = EconomyConfig.CANDY.MentorLesson.perClaim },
 }
 
 local badge: { WorldTypes.Reward } = {
@@ -36,7 +36,7 @@ local badge: { WorldTypes.Reward } = {
 		kind = "Coins",
 		amount = math.floor(EconomyConfig.TRAINED.Gate.firstClear * EconomyConfig.ONE_TIME_MULT[1]),
 	},
-	{ kind = "Candy", amount = EconomyConfig.CANDY.GateFirstClear.perClaim },
+	{ kind = "PrismCandy", amount = EconomyConfig.CANDY.GateFirstClear.perClaim },
 	{
 		kind = "Creature",
 		species = "Gorsling",

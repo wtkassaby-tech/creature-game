@@ -43,7 +43,8 @@ local function sample(): Profile.Profile
 	profile.Creatures[b.id] = b
 	profile.Team = { "a", "b" }
 	profile.Coins = 2000
-	profile.Candy = 4
+	profile.Candy.typed.Leaf = 4
+	profile.Candy.prism = 2
 	profile.Items.BasicLasso = 3
 	local bred = Breeding.breed(a, b, rng, { childId = "egg1", now = 1000 })
 	table.insert(profile.Eggs, { child = bred.child, hatchAt = bred.hatchAt, seed = 42 })
@@ -179,8 +180,31 @@ do
 	check("negative coins", has(Profile.validate(p), "Coins"))
 
 	p = sample()
-	p.Candy = 1.5
-	check("a fractional candy balance", has(Profile.validate(p), "Candy"))
+	p.Candy.typed.Sand = 1.5
+	check("a fractional typed candy balance", has(Profile.validate(p), "Candy.typed.Sand"))
+
+	p = sample()
+	p.Candy.prism = -1
+	check("a negative Prism Candy balance", has(Profile.validate(p), "Candy.prism"))
+
+	p = sample()
+	local typedAny: any = p.Candy.typed
+	typedAny.Wood = 3
+	check("candy of a type that does not exist", has(Profile.validate(p), "unknown type"))
+
+	p = sample()
+	typedAny = p.Candy.typed
+	typedAny.Frost = nil
+	check("a typed candy balance that is missing", has(Profile.validate(p), "Candy.typed.Frost"))
+
+	p = sample()
+	local profileAny: any = p
+	profileAny.Candy = 4
+	check("candy saved as a single number (the old shape)", has(Profile.validate(p), "Candy"))
+
+	p = sample()
+	p.Daily.catches.Water = -2
+	check("a bad daily catch count", has(Profile.validate(p), "Daily.catches.Water"))
 
 	p = sample()
 	table.insert(p.Team, "ghost")

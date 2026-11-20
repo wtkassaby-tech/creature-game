@@ -27,27 +27,39 @@ When the timer ends the egg moves to the stable if there is room, and stays in i
 
 ## 3. Where Breeding Candy comes from
 
-> **Changed after approval (20 November 2026):** candy is now typed. Catching and releasing creatures earn candy of their type, and each parent in a breed needs candy of its own type. Milestone and daily rewards below pay Prism Candy, which counts as any type. Section 3 is being reworked with new numbers; until then the table below shows the milestone sources only.
+Changed after approval (Ayrton, 20 November 2026): **candy is typed**. There is one balance per type. Catching and releasing creatures earn candy of their type, and each parent in a breed needs candy of its own type. Milestone and daily rewards pay **Prism Candy** (working name), which counts as any type. A breed uses typed candy first, then Prism for any shortfall. The numbers below were set by re-running the 30-day economy simulation (`docs/ECONOMY_MODEL.md`).
 
-Candy is earned only by playing. It cannot be bought, traded or gifted. Every source has a cap, so no amount of grinding or extra accounts turns into unlimited candy.
+Candy is earned only by playing. It cannot be bought, traded or gifted. Every source has a cap or falls off within a day, so no amount of grinding or extra accounts turns into unlimited candy.
 
 | Source | Candy | Limit |
 | --- | --- | --- |
-| The mentor's lesson | 2 | Once per player. Pays for the first breed in the first session |
-| Easy daily tasks (win 3 battles, tame a creature, breed once) | 1 each | 3 a day |
-| Harder daily tasks (win 30 wild battles, win a giant rematch, win 5 tamer rematches) | 1 each | 3 a day |
-| Giant rematch | 1 | 2 a day |
-| Weekly challenge | 3 | Once a week |
-| First clear of a giant | 5 | Once per giant |
-| First clear of a gate | 5 | Once per biome |
-| Finishing a biome's quest line | 2, 3, 4 by biome | Once per quest line |
-| Ranked season prize | Up to 10 by league | Once per season, after PvP ships |
+| Catching a creature | 1 of its type (Uncommon 2, first gem tier 6, Ruby 12, Diamond 24) | Per type per day: the first 3 pay in full, then each pays half the one before, never below a tenth, and nothing from the 40th |
+| Releasing a creature | 1 of its type every second release (first gem tier 3, Ruby 6, Diamond 12) | Per type per day, falling off the same way. Always less than catching it, and less than the cheapest breed that could make it |
+| The mentor's lesson | 2 Prism | Once per player. Pays for the first breed in the first session |
+| Easy daily tasks (win 3 battles, tame a creature, breed once) | 1 Prism each | 3 a day |
+| Harder daily tasks (win 30 wild battles, win a giant rematch, win 5 tamer rematches) | 1 Prism each | 3 a day |
+| Giant rematch | 1 Prism | 2 a day |
+| Weekly challenge | 3 Prism | Once a week |
+| First clear of a giant | 5 Prism | Once per giant |
+| First clear of a gate | 5 Prism | Once per biome |
+| Finishing a biome's quest line | 2, 3, 4 Prism by biome | Once per quest line |
+| Ranked season prize | Up to 10 Prism by league | Once per season, after PvP ships |
 
-Daily tasks open with the first badge. The most a player can earn in a day from repeatable sources is 8.
+Daily tasks open with the first badge. The most Prism a player can earn in a day from repeatable sources is 8. A whole day of catching commons of one type pays at most 7 candy of that type.
 
-What each breed uses, set by the rarer parent: 1 (Common), 2 (Uncommon), 5 (first gem tier), 12 (Ruby), 30 (Diamond).
+What each parent uses, of its own type, by its own rarity: 1 (Common), 2 (Uncommon), 5 (first gem tier), 12 (Ruby), 30 (Diamond). A common Leaf with a common Water needs 1 Leaf and 1 Water; a pure gem-tier pair needs 10 of its type.
 
-In the 30-day simulation a regular player earned about 6 candies a day and a heavy player about 8, with nearly double that in the first week from one-time rewards.
+In the 30-day simulation, after the story:
+
+| Player | Prism a day | Typed candy a day (best type) | Catches a day | Common breeds a day | Days to a gem-tier / Ruby / Diamond child from a pure pair (single-candy model) |
+| --- | --- | --- | --- | --- | --- |
+| Casual (20 min) | 3.4 | 3.0 (2.0) | 1.9 | 1.8 to 1.9 | 3.7 / 8.8 / 22.1 (3.0 / 7.0 / 17.5) |
+| Regular (45 min) | 5.9 | 8.1 (5.1) | 4.7 | 3.3 | 1.8 / 4.4 / 10.9 (1.7 / 4.1 / 10.2) |
+| Heavy (2 h) | 8.1 | 19.4 (9.7) | 16.1 | 5.6 to 5.8 | 1.2 / 2.7 / 6.8 (1.2 / 3.0 / 7.5) |
+
+- The first breed still happens at about minute 11, paid by the mentor's 2 Prism.
+- A player whose starter is Sand (the only Sand species in Greenwood) makes 3 (casual) or 6 (regular) breeds with a Sand parent in the first two days, mostly paid with Prism.
+- An hour of catching and releasing earns about the same candy as an hour of normal play (at most 1.4 times, for the heavy player).
 
 ## 4. What can go wrong, and the answer
 
@@ -58,6 +70,7 @@ In the 30-day simulation a regular player earned about 6 candies a day and a hea
 | A device asks for a charm it does not own, or names a slot that does not exist | The charm is parsed by tested code and must be in the inventory; it is used up in the same step as the payment |
 | Re-rolling a child by leaving before the hatch | The child is fixed at the breed and stored in the egg |
 | Claiming a candy reward twice | Each source's count is kept in the player's record and checked in the same step that adds the candy. Daily counts reset by the server's date, never the device's |
+| Leaving and rejoining to reset the catch and release falloff | The day's catches and releases per type are saved in the profile (`Daily.catches`, `Daily.releases`) and reset only by the server's date |
 | Changing the device's clock to reset daily tasks or skip a cooldown | Only the server's clock is used |
 | Extra accounts feeding candy to a main account | Candy cannot be traded or gifted. A bred creature can be traded later, so trading has its own limits (pack 6) |
 | Gems turning into luck | Gems only shorten a timer or add a pen, up to 4 pens. They never touch the roll |

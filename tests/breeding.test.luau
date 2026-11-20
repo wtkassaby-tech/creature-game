@@ -161,12 +161,46 @@ do
 	)
 	local ruby = table.clone(a)
 	ruby.rarity = "Ruby"
+	-- Candy is typed: each parent pays its own rarity's amount in its own type (Brindle is Sand,
+	-- Dartlet is Leaf); a same-type pair pays both from one balance.
+	local function needText(needs: { Types.CandyNeed }): string
+		local bits = {}
+		for _, need in needs do
+			table.insert(bits, `{need.amount} {need.element}`)
+		end
+		return table.concat(bits, " + ")
+	end
+	local common = Breeding.candyCost(a, b)
+	local withRuby = Breeding.candyCost(ruby, b)
+	local sameType =
+		Breeding.candyCost(a, Breeding.wild("Brindle", newId(), 10, "Gem", "Moss", rng))
 	check(
-		"candy follows the rarer parent",
-		Breeding.candyCost(a, b) == BreedConfig.CANDY_COST.Common
-			and Breeding.candyCost(ruby, b) == BreedConfig.CANDY_COST.Ruby,
-		`common pair {Breeding.candyCost(a, b)}, with a Ruby parent {Breeding.candyCost(ruby, b)}`
+		"each parent pays candy of its own type, by its own rarity",
+		#common == 2
+			and common[1].element == "Sand"
+			and common[1].amount == BreedConfig.CANDY_COST.Common
+			and common[2].element == "Leaf"
+			and common[2].amount == BreedConfig.CANDY_COST.Common
+			and #withRuby == 2
+			and withRuby[1].element == "Sand"
+			and withRuby[1].amount == BreedConfig.CANDY_COST.Ruby
+			and withRuby[2].amount == BreedConfig.CANDY_COST.Common,
+		`common pair {needText(common)}, Ruby and common {needText(withRuby)}`
 	)
+	check(
+		"a same-type pair pays both parents from one balance",
+		#sameType == 1
+			and sameType[1].element == "Sand"
+			and sameType[1].amount == BreedConfig.CANDY_COST.Common + BreedConfig.CANDY_COST.Gem,
+		needText(sameType)
+	)
+	check(
+		"the breed result and the preview carry the same candy as candyCost",
+		needText(Breeding.breed(ruby, b, Rng.new(5), { childId = newId(), now = 0 }).candy)
+				== needText(withRuby)
+			and needText(Breeding.preview(ruby, b, nil).candy) == needText(withRuby)
+	)
+	check("a creature's type is its torso's element", Breeding.element(a) == "Sand")
 	local resting = table.clone(a)
 	resting.breedReadyAt = 500
 	check("a resting creature cannot breed", not Breeding.canBreed(resting, b, 499))
@@ -357,7 +391,7 @@ do
 	local gemTiers: { Types.Rarity } = { "Gem", "Ruby", "Diamond" }
 	for _, tier: Types.Rarity in gemTiers do
 		local rule = assert(BreedConfig.RARITY_INHERIT[tier], "gem tiers have inheritance odds")
-		local perChild = BreedConfig.CANDY_COST[tier] / rule.both
+		local perChild = 2 * BreedConfig.CANDY_COST[tier] / rule.both -- both parents pay
 		check(
 			`{tier}: a rare child costs many candies on average`,
 			perChild >= 10,
