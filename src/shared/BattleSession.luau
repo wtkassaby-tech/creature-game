@@ -241,4 +241,33 @@ function BattleSession.act(
 	return result(session, logStart), nil
 end
 
+-- The player spends this turn on something outside the battle (a lasso throw that missed, an
+-- item); the opponent still acts. Same turn check as `act`.
+function BattleSession.pass(session: Session, turn: unknown): (TurnResult?, string?)
+	local state = session.state
+	if session.ran or state.winner ~= nil then
+		return nil, "The battle is over"
+	end
+	if typeof(turn) ~= "number" or turn ~= state.turn + 1 then
+		return nil, "That turn has already been played"
+	end
+	local logStart = #state.log + 1
+	Battle.step(state, { kind = "Pass" }, session.chooser(state, FOE))
+	return result(session, logStart), nil
+end
+
+-- The opponent's active creature, for the lasso: its creature record and share of health left.
+function BattleSession.foe(session: Session): (Types.Creature, number)
+	local side = session.state.sides[FOE]
+	local fighter = side.team[side.active]
+	return fighter.creature, fighter.hp / math.max(1, fighter.stats.Hp)
+end
+
+-- Ends a wild battle because its creature was caught. Counts as a win for the turn result.
+function BattleSession.endCaught(session: Session): TurnResult
+	local state = session.state
+	state.winner = PLAYER
+	return result(session, #state.log + 1)
+end
+
 return BattleSession

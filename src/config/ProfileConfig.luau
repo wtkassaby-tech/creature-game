@@ -3,6 +3,16 @@
 
 local ProfileConfig = {}
 
+-- Where player data is kept (approval pack 1). Playtests and the live game never share a store,
+-- and the live store starts clean at the soft launch.
+ProfileConfig.STORE_NAME = "PlayerData_Test"
+ProfileConfig.LIVE_STORE_NAME = "PlayerData_Live"
+-- When true the live store is used. Switched on for the soft launch only.
+ProfileConfig.USE_LIVE_STORE = false
+-- In Studio, saves go to ProfileStore's in-memory mock unless this is true, so a test session
+-- never writes to a real store by accident.
+ProfileConfig.STUDIO_USES_REAL_STORE = false
+
 -- Bump this whenever the saved shape changes, and add a migration in src/shared/Profile.luau.
 ProfileConfig.SCHEMA_VERSION = 1
 

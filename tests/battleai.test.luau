@@ -62,6 +62,8 @@ local function isLegal(state: Battle.State, side: number, action: Battle.Action)
 	if action.kind == "Switch" then
 		local target = s.team[action.to]
 		return target ~= nil and target.hp > 0 and action.to ~= s.active
+	elseif action.kind == "Pass" then
+		return false -- the AI never passes; only a lasso throw does
 	end
 	return table.find(s.team[s.active].moves, action.move) ~= nil
 end

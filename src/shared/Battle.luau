@@ -21,7 +21,11 @@ export type Fighter = {
 	moves: { string },
 }
 export type Side = { team: { Fighter }, active: number }
-export type Action = { kind: "Move", move: string } | { kind: "Switch", to: number }
+-- "Pass" spends the turn doing nothing in the battle itself: a lasso throw or an item uses it.
+export type Action =
+	{ kind: "Move", move: string }
+	| { kind: "Switch", to: number }
+	| { kind: "Pass" }
 export type EventKind = "Move" | "FollowUp" | "Switch" | "Faint"
 -- One thing that happened in a turn. `text` is for logs; the other fields are what the
 -- player's screen needs to replay it. `side` is who acted (for a faint, whose creature fell).
@@ -170,7 +174,9 @@ end
 
 local function validate(state: State, side: number, action: Action): Action
 	local s = state.sides[side]
-	if action.kind == "Switch" then
+	if action.kind == "Pass" then
+		return action
+	elseif action.kind == "Switch" then
 		local target = s.team[action.to]
 		if target and target.hp > 0 and action.to ~= s.active then
 			return action
@@ -245,7 +251,12 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 		local action = actions[side]
 		if action.kind == "Switch" then
 			me.tempo = 0
-		elseif me.hp > 0 and foe.hp > 0 and me.stats.Speed > foe.stats.Speed then
+		elseif
+			action.kind == "Move"
+			and me.hp > 0
+			and foe.hp > 0
+			and me.stats.Speed > foe.stats.Speed
+		then
 			me.tempo += (me.stats.Speed / foe.stats.Speed - 1) * BattleConfig.TEMPO_GAIN
 			if me.tempo >= 1 then
 				me.tempo -= 1
