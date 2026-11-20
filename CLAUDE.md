@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-> **Draft for the creature game's own repo** (16 November 2026), built from Ayrton's design brief. It is named `CLAUDE_DRAFT.md` so Claude Code does not load it as rules while this folder sits inside the golf-game repo. This folder is laid out as the new repo's root: when the repo is created, copy the folder's contents into it, rename this file `CLAUDE.md`, and delete this note. The engineering rules (Blink, ProfileStore, Lune, the check script) carry over from Ayrton's golf project; the brief marks the toolchain as [Default], so they can be swapped for something better and logged.
-
 Rules for Claude Code on this project. Read this every session.
 
 ## The brief is the vision

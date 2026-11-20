@@ -2,7 +2,7 @@
 
 A turn-based Roblox creature game: tame with a lasso, battle, breed creatures part by part, and trade. Working title. Owner: Ayrton.
 
-**This folder is the future repository.** It sits inside the golf-game repo only until the creature game has its own. It is laid out exactly as that repo's root will be, so moving it is a copy (steps at the bottom). Nothing here changes the golf game.
+This is the game's own repository. It began as a folder inside the golf-game repo and was split out on 20 November 2026; the two projects share nothing.
 
 ## Start here
 
@@ -12,7 +12,7 @@ A turn-based Roblox creature game: tame with a lasso, battle, breed creatures pa
 | What has been decided since | `docs/DECISIONS.md` (wins over the brief) |
 | What to build, in what order | `docs/MASTER_PLAN.md` |
 | What happened last and what to playtest | `docs/PROGRESS.md` |
-| The rules Claude Code works by | `CLAUDE_DRAFT.md` (becomes `CLAUDE.md` in the new repo) |
+| The rules Claude Code works by | `CLAUDE.md` |
 
 ## What exists
 
@@ -38,11 +38,3 @@ lune run check
 It runs, in order: Blink generation (once networking exists), StyLua, Selene, strict type analysis with luau-lsp, every `tests/*.test.luau`, and a Rojo build. A task is not done until it passes.
 
 To run one test file: `lune run tests/breeding.test`.
-
-## Moving this folder into its own repository
-
-1. Create an empty repository.
-2. Copy everything in this folder into it, including the hidden `.github`, `.claude`, `.gitignore`, `.luaurc`, `.mcp.json`, `.styluaignore` and `.gitattributes`.
-3. Rename `CLAUDE_DRAFT.md` to `CLAUDE.md` and delete the note at its top.
-4. Run `rokit install`, `wally install`, then `lune run check`.
-5. Push. The workflow in `.github/workflows/ci.yml` runs the same check on every push.

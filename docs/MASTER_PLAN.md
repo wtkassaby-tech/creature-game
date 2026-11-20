@@ -31,7 +31,7 @@ Date: 16 November 2026. Owner: Ayrton. Builder: Claude Code.
 | Part specification, art test procedure, approval packs 1 and 2, first exploit review | Written; the art test and approvals wait on Ayrton | `PART_SPEC.md`, `ART_TEST.md`, `plans/`, `REVIEWS.md` |
 | Project structure, quality gate, CI workflow | Done; strict type analysis passes | This folder; `lune/check.luau` |
 | Server breed flow, client creature assembler | Written, not yet run in Studio | `src/server/Breeding`, `src/client/Assembler` |
-| Project rules for the new repo | Drafted | `CLAUDE_DRAFT.md` |
+| Project rules for the new repo | Drafted | `CLAUDE.md` |
 | The game's own repository and Studio place | Folder ready to copy (`README.md`); repository and place not created | Brief section 13, "before Ayrton flies" |
 | Art, map, screens, saving, shops, quests, story content | Not started | This plan |
 
@@ -62,7 +62,7 @@ Twelve workstreams. **State:** Tested = runs under Lune in `src/shared` with tes
 | Item | What it is | State | Track | M |
 | --- | --- | --- | --- | --- |
 | Repository and toolchain | New repo; Rojo, Rokit tools, Wally packages (ProfileStore, Trove, a UI library), Blink, Lune; `lune run check`; GitHub Actions | New (copy the golf repo's setup) | L | 0 |
-| Agent set-up | `CLAUDE.md` from `CLAUDE_DRAFT.md`; the `builder`, `helper` and `exploit-reviewer` agent definitions from the golf repo | Drafted | L | 0 |
+| Agent set-up | `CLAUDE.md` from `CLAUDE.md`; the `builder`, `helper` and `exploit-reviewer` agent definitions from the golf repo | Drafted | L | 0 |
 | Studio place and Studio MCP | A place file synced by Rojo; the Studio MCP working on the travel laptop | New | S | 0 |
 | Networking | Every client-server message defined in Blink, validated and rate-limited (catalogue in 4.4) | New | L | 1-4 |
 | Live config and switches | ConfigService values read by the server; off-switches for the shop, trading and PvP | Designed | L | 4, 7 |
@@ -136,7 +136,7 @@ Twelve workstreams. **State:** Tested = runs under Lune in `src/shared` with tes
 | --- | --- | --- | --- | --- |
 | Player save | One ProfileStore profile per player, session-locked, versioned, with migrations (shape in 4.3) | Designed in outline | L | 4 |
 | Global stores | Serial counters and registry, leaderboards; later the trade ledger and saved PvP teams | Designed | L | 5, 8, 9 |
-| Validation | Every message checked for type, ownership and rate; nothing from the client trusted | Rule set in `CLAUDE_DRAFT.md` | L | All |
+| Validation | Every message checked for type, ownership and rate; nothing from the client trusted | Rule set in `CLAUDE.md` | L | All |
 | Independent reviews | A separate Opus reviewer for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards | Process defined | L | 4, 7, 8, 9 |
 | Support tools | Look up a player's log; remove or restore a creature with a log entry; a tested way to restore a profile from an earlier save; later a trade ban. Policy: never undo one side of a trade | New | L | 7, 9 |
 

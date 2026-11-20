@@ -7,7 +7,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | Date | Decision | By | Brief section |
 | --- | --- | --- | --- |
 | 16 Nov 2026 | The brief is the vision for the game. It replaces the version 2 design in this folder (`DESIGN.md`); a snapshot is saved as `BRIEF.md`. `research/SCAFFOLD_STRUCTURE.md` still applies | Ayrton | All |
-| 16 Nov 2026 | `CLAUDE_DRAFT.md` rewritten from the brief, keeping the engineering rules from Ayrton's golf project (Blink, ProfileStore, Lune check) as the [Default] toolchain | Claude (Default) | 1, 12 |
+| 16 Nov 2026 | `CLAUDE.md` rewritten from the brief, keeping the engineering rules from Ayrton's golf project (Blink, ProfileStore, Lune check) as the [Default] toolchain | Claude (Default) | 1, 12 |
 | 16 Nov 2026 | Paid speed-ups and extra slots (Gems) are fine: they buy time and capacity, not a random result, and coins are never sold. Not gambling and not a paid random item | Ayrton | 7, 10, 11 |
 | 16 Nov 2026 | Playtesters are 16 or older, matching the 16+ soft launch | Ayrton | 11, 13 |
 | 16 Nov 2026 | Launch with the first few biomes (Greenwood, Dust Canyon, Tide Flats). Later biomes are teased in the world and already written into the story | Ayrton | 8, 9, 13, 14 |
@@ -50,6 +50,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 16 Nov 2026 | Giants (`src/shared/GiantBattle.luau`): the player always acts first; the giant then does exactly the intent it showed; a weak-type hit on the turn a big attack lands cancels or halves it; five items a fight; enrage from turn 30. First giant: Hollowbough (Leaf), retuned against the real roster: at level 15 a team with a Sand move wins 81% in about 24 turns and a team without one wins 37%; at level 9 almost nobody wins; at level 18 nearly everyone does. Most of its attacks are Storm type so that leading with the Sand starter is not an automatic win | Claude (Default) | 5, 6 |
 | 16 Nov 2026 | Opponent behaviour (`src/shared/BattleAi.luau`): wild creatures mostly use their first move and never switch; tamers pick the hardest-hitting move and switch only when clearly outmatched; the rival also takes knock-outs and accounts for turn order | Claude (Default) | 5 |
 | 16 Nov 2026 | Saved data: a `Pending` list holds one-time gifts waiting for room and giants waiting for a serial number; locks on creatures live only in server memory; a child of a bound creature is bound; every creature record has `xp`, `bound` and `serial` | Claude (Default) | 4, 12 |
+| 20 Nov 2026 | The creature game moved into its own repository, `wtkassaby-tech/creature-game`, with its history. `CLAUDE.md` is now the live rules file. References in older documents to "the golf repo" mean `wtkassaby-tech/golf-game` | Ayrton | 12, 13 |
 
 ## Still open
 
