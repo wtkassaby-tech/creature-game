@@ -209,6 +209,20 @@ do
 	}) == nil)
 end
 
+print("\n== A run during the throw ==")
+do
+	local profile, session = setup(6)
+	local throw = assert(Capture.begin(input(profile, session)), "throw should start")
+	session.ran = true -- as if a Run had slipped in before the taps were judged
+	local taps = perfectTaps(throw)
+	local result = Capture.finish(profile, session, throw, taps, taps, 0)
+	check(
+		"a throw judged after the battle ended catches nothing",
+		result == nil and profile.Creatures.wild == nil
+	)
+	check("and the lasso stays spent", profile.Items.Basic == 4)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("capture checks failed")

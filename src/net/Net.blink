@@ -115,3 +115,124 @@ event BattleRefused {
 		Reason: string(1..80),
 	},
 }
+
+-- Catching (approval pack 2 section 3). The device asks to throw; the server checks, takes the
+-- lasso and sends the sweep; the device sends one tap per zone; the server judges on its own
+-- clock and answers with the result and the turn that followed.
+
+enum LassoTier = { Basic, Braided, Gilded }
+enum ThrowOutcome = { Caught, Missed, Fled }
+
+-- Server -> device, and back: the server's own round-trip measurement. The nonce is random,
+-- so a reply cannot be sent before the ping arrives; a slow reply only makes the reading worse.
+event Ping {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Nonce: u32 },
+}
+event Pong {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Nonce: u32 },
+}
+
+-- Device -> server: throw this lasso in this battle's current turn.
+event ThrowLasso {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Tier: LassoTier,
+	},
+}
+
+struct LassoZone {
+	Centre: f32,
+	Width: f32,
+	Speed: f32,
+	StartPhase: f32,
+	StartMs: u16,
+}
+
+-- Server -> device: the sweep to play. Times are from when the device receives it.
+event LassoPattern {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		ThrowId: u32,
+		Zones: LassoZone[1..6],
+		SlowMode: boolean,
+		ConnectionAssist: boolean,
+	},
+}
+
+-- Device -> server: one tap, for zone `Zone`, at `ClaimMs` since the sweep began on the device.
+-- The server stamps its own arrival time on every tap; the claim is only believed inside the
+-- lag window.
+event LassoTap {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		ThrowId: u32,
+		Zone: u8(1..6),
+		ClaimMs: f32,
+	},
+}
+
+-- Server -> device: how the throw went. A BattleTurn with the turn that followed is sent next.
+event LassoResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		ThrowId: u32,
+		Outcome: ThrowOutcome,
+		ZonesHit: u8(0..6),
+		Candy: u16,
+		Element: Element?,
+	},
+}
+
+-- Breeding (approval pack 3). The device names two of its creatures, and optionally a Bond Charm
+-- slot and the parent it favours; the server checks and decides everything else.
+enum Slot = { Head, Torso, FrontLimbs, Legs, Tail }
+enum Parent = { A, B }
+
+event RequestBreed {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		ParentA: string(1..40),
+		ParentB: string(1..40),
+		CharmSlot: Slot?,
+		CharmFavour: Parent?,
+	},
+}
+
+-- Server -> device: the breed's result. HatchAt is the server's Unix time when the egg hatches.
+event BreedResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Ok: boolean,
+		Reason: string(0..80),
+		HatchAt: f64,
+	},
+}
+
+-- Server -> device: eggs that hatched into the stable, by creature id.
+event Hatched {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Ids: string(1..40)[1..8] },
+}

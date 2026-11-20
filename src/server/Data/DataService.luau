@@ -79,7 +79,9 @@ local function load(player: Player)
 	end
 
 	-- Upgrade first, on a copy; only then fill in fields that are new to the template.
-	local upgraded, problem = Profile.migrate(session.Data)
+	-- Kept so a refused save is written back exactly as it was found.
+	local original = session.Data
+	local upgraded, problem = Profile.migrate(original)
 	if upgraded == nil then
 		log("DataMigrationRefused", { player = player.UserId, problem = problem })
 		session:EndSession()
@@ -91,8 +93,14 @@ local function load(player: Player)
 
 	local problems = Profile.validate(session.Data)
 	for _, found in problems do
-		if string.sub(found, 1, 10) == "unreadable" then
+		-- Unreadable data, or data that could never be saved (every save would fail and progress
+		-- would be lost silently), is refused and left as it was.
+		if
+			string.sub(found, 1, 10) == "unreadable"
+			or string.sub(found, 1, 15) == "cannot be saved"
+		then
 			log("DataUnreadable", { player = player.UserId, problem = found })
+			session.Data = original
 			session:EndSession()
 			return remove(
 				player,

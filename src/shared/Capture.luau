@@ -156,6 +156,11 @@ function Capture.finish(
 		return nil, "That throw no longer belongs to this battle"
 	end
 	throw.used = true
+	-- The battle may have ended since the throw began (a Run slipped in, or it was won): then
+	-- nothing is caught and nothing is passed, and the lasso stays spent.
+	if session.ran or session.state.winner ~= nil then
+		return nil, "The battle is over"
+	end
 
 	local claims = asTimes(claimsMs) or {}
 	local judgement = Lasso.judge(throw.pattern, claims, serverElapsedMs)
@@ -177,7 +182,10 @@ function Capture.finish(
 	end
 
 	-- A miss, or an impossible tap, which is treated exactly the same.
-	local turn = assert(BattleSession.pass(session, throw.turn), "the throw's turn is current")
+	local turn = BattleSession.pass(session, throw.turn)
+	if not turn then
+		return nil, "That throw no longer belongs to this battle"
+	end
 	local flee = Lasso.missesBeforeFlee(creature.rarity)
 	if flee ~= nil and missesAfter >= flee and not turn.finished then
 		session.ran = true

@@ -2,6 +2,26 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 20 November 2026: saving, catching and breeding on the server
+
+**In one line:** the server side of saving, catching and breeding is written, type-checked, tested where it is pure, and reviewed. It has not run in Studio yet.
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Saving: one locked profile per player (ProfileStore), a test store until launch, upgrades on a copy, broken saves refused untouched | Written, reviewed | `src/server/Data/DataService.luau`, `src/config/ProfileConfig.luau` |
+| Creature grants: one-time gifts, a waiting list when the stable is full, two-step giant captures, release payouts | Tested (37), reviewed | `src/shared/Grants.luau` |
+| Typed candy (Ayrton's Pokémon-style idea): catching and releasing pay candy of the creature's type; each parent in a breed pays its own type | Tested | `src/shared/Economy.luau`, `docs/DECISIONS.md` |
+| Lasso throw rules: lasso spent first, judged on the server's clock, impossible taps count as misses, rare creatures flee | Tested (23), reviewed | `src/shared/Capture.luau` |
+| Network messages for catching, ping and breeding | Compiled | `src/net/Net.blink` |
+| Capture service, round-trip meter, breed requests, hatching, server start-up | Written, type-checked | `src/server/Capture/`, `src/server/Main.server.luau` |
+| Second independent exploit review | Done: 1 must-fix and 4 should-fix, all fixed | `docs/REVIEWS.md` |
+
+743 checks pass.
+
+**What Ayrton can playtest once Studio is set up:** join in Studio (you get a test Mossmitt), start a wild battle (Studio gives a Greenwood creature), throw a Basic lasso, tap the zones. Then check: a good throw catches and pays candy; a bad one spends your turn; leaving and rejoining keeps the creature. There is no on-screen battle or lasso yet, so for now this is driven from the command bar.
+
+**Next:** the release and starter-pick services, battle rewards, then the client screens for battle and lasso.
+
 ## 16 November 2026: from plan to a working project
 
 **In one line:** the game's rules now exist as tested code in a real project structure. Nothing has been built in Roblox Studio yet, and the next steps need Ayrton's laptop.

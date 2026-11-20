@@ -2,6 +2,29 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 20 November 2026: data service, creature grants, lasso capture (commit 8d1983c)
+
+Reviewer: a separate read-only agent that did not write the code. Scope: `src/server/Data/DataService.luau`, `src/shared/Grants.luau`, `src/shared/Capture.luau`, the new Pass action and the ProfileStore 1.0.3 calls.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A throw could still be judged after the player ran: a hit caught a creature they had run from; a miss crashed the handler and never counted toward fleeing | Must fix | `Capture.finish` refuses once the battle has ended; no assert. The capture service also blocks every battle action while a throw is in the air. Test added |
+| 2 | The daily reset fired on any change of day, so hopping between servers whose clocks disagree near midnight reset the candy falloff | Should fix | The day only moves forwards. Test added |
+| 3 | A giant could be released, losing it for good (it can never be caught again) | Should fix | Releasing a giant is refused. Test added |
+| 4 | A caught creature was saved as the battle's own table, so a shared spawn record could reach two profiles | Should fix | The capture saves a deep copy. Test added |
+| 5 | An unreadable save was written back in its filled-in form, not as found | Should fix | The original is restored before the session ends |
+| 6 | A giant with a full stable uses up a serial on every retry; the comment said it waits | Note | Comment corrected; the giant serial service (not written yet) must check room first or keep the serial on the waiting entry |
+| 7 | A save that can never be stored was only logged, so every save would fail silently | Note | Refused like an unreadable save |
+
+Caller rules the reviewer set for the capture service, and where each is met:
+
+- One open throw per player, and no battle action while it is open: `CaptureService` (`playing`, and `BattleService.setBusyCheck`).
+- The round trip, seed and start time come only from the server: `RoundTrip` (random-nonce pings, smallest reading) and `CaptureService`.
+- One message per tap, stamped on arrival: `LassoTap`.
+- The daily roll before every capture: done in `CaptureService`. The release service (not written yet) must do the same.
+- Misses must follow the wild creature, not the battle: **open for the world service**. Today each Studio test battle makes a fresh creature, so it cannot be fought twice; real spawns must despawn after a battle or carry their miss count.
+- Fresh unique ids for every grant: GUIDs in `Main.server.luau`.
+
 ## 16 November 2026: saving design, creature grants, breeding server flow, lasso judging
 
 Reviewer: an independent Opus exploit reviewer, read-only. Reviewed before approval and before any of it is wired up: `docs/plans/01_SAVING.md`, `docs/plans/02_CREATURE_GRANTS.md`, `src/shared/Profile.luau`, `src/server/Breeding/BreedingService.luau`, `src/shared/Lasso.luau`.

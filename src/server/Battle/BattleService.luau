@@ -66,6 +66,59 @@ end
 local function refuse(player: Player, reason: string)
 	Net.BattleRefused.Fire(player, { Reason = string.sub(reason, 1, 80) })
 end
+BattleService.refuse = refuse
+
+-- Set by the capture service: true while a lasso throw is being played, so no battle action can
+-- slip in between the throw and its result.
+local busy: (player: Player) -> boolean = function()
+	return false
+end
+function BattleService.setBusyCheck(check: (player: Player) -> boolean)
+	busy = check
+end
+
+local finished: OnFinished = function() end
+
+-- Sends a turn to the device, and ends the battle if the turn finished it. Used by battle
+-- actions and by lasso throws, so both end a battle the same way.
+function BattleService.publishTurn(
+	player: Player,
+	session: BattleSession.Session,
+	turn: BattleSession.TurnResult
+)
+	local events = {}
+	for _, event in turn.events do
+		table.insert(events, {
+			Side = event.side,
+			Kind = event.kind,
+			Move = event.move,
+			Damage = event.damage or 0,
+			TargetHp = event.targetHp or 0,
+			Slot = event.slot or 0,
+		})
+	end
+	Net.BattleTurn.Fire(player, {
+		BattleId = turn.battleId,
+		Turn = turn.turn,
+		Events = events,
+		YourActive = turn.yourActive,
+		TheirActive = turn.theirActive,
+		YourTempo = turn.yourTempo,
+		TheirTempo = turn.theirTempo,
+		Previews = turn.previews,
+		Finished = turn.finished,
+		Outcome = turn.outcome,
+	})
+	if turn.finished and sessions[player] == session then
+		sessions[player] = nil
+		finished(player, session, turn.outcome)
+	end
+end
+
+-- The player's current battle, or nil.
+function BattleService.session(player: Player): BattleSession.Session?
+	return sessions[player]
+end
 
 function BattleService.start(
 	resolveTarget: ResolveTarget,
@@ -73,6 +126,7 @@ function BattleService.start(
 	onFinished: OnFinished
 ): () -> ()
 	local random = Random.new()
+	finished = onFinished
 
 	local stopStart = Net.StartBattle.On(function(player, value)
 		if sessions[player] then
@@ -121,37 +175,14 @@ function BattleService.start(
 		if not session or session.battleId ~= value.BattleId then
 			return refuse(player, "That battle is over")
 		end
+		if busy(player) then
+			return refuse(player, "Finish your throw first")
+		end
 		local turn, problem = BattleSession.act(session, value.Turn, value.Kind, value.Index)
 		if not turn then
 			return refuse(player, problem or "That choice is not allowed")
 		end
-		local events = {}
-		for _, event in turn.events do
-			table.insert(events, {
-				Side = event.side,
-				Kind = event.kind,
-				Move = event.move,
-				Damage = event.damage or 0,
-				TargetHp = event.targetHp or 0,
-				Slot = event.slot or 0,
-			})
-		end
-		Net.BattleTurn.Fire(player, {
-			BattleId = turn.battleId,
-			Turn = turn.turn,
-			Events = events,
-			YourActive = turn.yourActive,
-			TheirActive = turn.theirActive,
-			YourTempo = turn.yourTempo,
-			TheirTempo = turn.theirTempo,
-			Previews = turn.previews,
-			Finished = turn.finished,
-			Outcome = turn.outcome,
-		})
-		if turn.finished then
-			sessions[player] = nil
-			onFinished(player, session, turn.outcome)
-		end
+		BattleService.publishTurn(player, session, turn)
 	end)
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)

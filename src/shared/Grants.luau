@@ -64,7 +64,8 @@ end
 -- ever used, so changing a device's clock cannot reset anything.
 function Grants.rollDay(profile: Profile, unixTime: number)
 	local day = math.floor(unixTime / SECONDS_PER_DAY)
-	if profile.Daily.day ~= day then
+	-- Only forwards: servers whose clocks disagree near midnight cannot reset a day twice.
+	if day > profile.Daily.day then
 		profile.Daily.day = day
 		profile.Daily.wildWins = {}
 		profile.Daily.tasksDone = {}
@@ -125,6 +126,17 @@ end
 
 -- A wild capture after a lasso hit. The stable was checked before the throw; this checks again,
 -- adds the creature and pays typed candy for its type, all in one step.
+local function deepCopy<T>(value: T): T
+	if type(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for key, child in value :: any do
+		copy[key] = deepCopy(child)
+	end
+	return copy :: any
+end
+
 function Grants.capture(profile: Profile, creature: Creature): Grant
 	if Grants.room(profile) < 1 then
 		return { outcome = "NoRoom", reason = "Your stable is full" }
@@ -137,7 +149,8 @@ function Grants.capture(profile: Profile, creature: Creature): Grant
 	local candy = Economy.catchCandy(creature.rarity, prior)
 	profile.Daily.catches[element] = prior + 1
 	profile.Candy.typed[element] += candy
-	profile.Creatures[creature.id] = creature
+	-- A copy, so the battle's (or a spawner's) table can never be shared with the saved record.
+	profile.Creatures[creature.id] = deepCopy(creature)
 	local key = creature.parts.Torso.species
 	profile.Index.owned[key] = true
 	profile.Index.seen[key] = true
@@ -160,7 +173,9 @@ end
 
 -- Giant step 3, after the serial number arrives: checks the capture is still waiting, then adds
 -- the giant (already carrying its serial and bound), marks it captured and clears the waiting
--- entry, in one step. A giant waits even with a full stable: it was earned and never expires.
+-- entry, in one step. With a full stable it stays waiting (NoRoom) and is finished later. The caller checks
+-- Grants.room before fetching a serial, or keeps the fetched serial on the waiting entry, so a
+-- full stable never uses up serial numbers.
 function Grants.finishGiant(profile: Profile, giantId: string, giant: Creature): Grant
 	if profile.Story.giantsCaptured[giantId] then
 		return { outcome = "AlreadyGranted" }
@@ -199,6 +214,10 @@ function Grants.release(profile: Profile, creatureId: string, isLocked: boolean)
 	end
 	if isLocked then
 		return { outcome = "Refused", reason = "That creature is busy in a battle or a trade" }
+	end
+	if creature.isGiant then
+		-- A giant can be caught once per player, ever; releasing it would lose it for good.
+		return { outcome = "Refused", reason = "A giant cannot be released" }
 	end
 	local onTeam = table.find(profile.Team, creatureId)
 	if onTeam and #profile.Team == 1 then

@@ -231,6 +231,35 @@ do
 	)
 end
 
+print("\n== Review fixes ==")
+do
+	local p = fresh(100)
+	Grants.rollDay(p, 86400 * 200 + 10)
+	p.Daily.catches.Leaf = 9
+	Grants.rollDay(p, 86400 * 199 + 86000) -- another server whose clock is still on yesterday
+	check("a day never resets backwards", p.Daily.catches.Leaf == 9 and p.Daily.day == 200)
+
+	local wild = creature()
+	Grants.capture(p, wild)
+	wild.level = 99
+	check(
+		"a caught creature is a copy, not the battle's own table",
+		p.Creatures[wild.id].level ~= 99
+	)
+
+	local giant = creature("Spadesnout", "Ruby")
+	giant.isGiant = true
+	p.Creatures[giant.id] = giant
+	local starter = creature()
+	p.Creatures[starter.id] = starter
+	p.Team = { starter.id }
+	local refused = Grants.release(p, giant.id, false)
+	check(
+		"a giant cannot be released",
+		refused.outcome == "Refused" and p.Creatures[giant.id] ~= nil
+	)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("grant checks failed")
