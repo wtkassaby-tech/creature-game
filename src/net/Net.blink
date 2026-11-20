@@ -1,0 +1,117 @@
+option ServerOutput = "generated/Server.luau"
+option ClientOutput = "generated/Client.luau"
+option Typescript = false
+option Casing = Pascal
+
+-- Every message between a player's device and the server lives in this one schema.
+-- The device only ever sends what the player chose; the server answers with results.
+-- Call = SingleAsync everywhere: one listener, and the handler may yield safely.
+
+enum BattleKind = { Wild, Tamer, Rival, Friendly }
+enum ActionKind = { Move, Switch, Run }
+enum EventKind = { Move, FollowUp, Switch, Faint }
+enum BodyPlan = { Quad, Biped, Winged, Serpent }
+enum Element = { Leaf, Sand, Water, Toxic, Frost, Crystal, Fire, Storm, Arcane, Cosmic }
+enum Rarity = { Common, Uncommon, Gem, Ruby, Diamond, Cosmic }
+
+-- What the screen needs to draw one creature in a battle and show its bars.
+struct BattleCreature {
+	Id: string(1..40),
+	BodyPlan: BodyPlan,
+	Head: string(1..24),
+	Torso: string(1..24),
+	FrontLimbs: string(1..24),
+	Legs: string(1..24),
+	Tail: string(1..24),
+	Colour: string(1..24),
+	Size: f32,
+	Rarity: Rarity,
+	Element: Element,
+	Level: u8,
+	MaxHp: u16,
+	Hp: u16,
+	-- The player's own creatures list their moves; an opponent's list is empty until seen.
+	Moves: string(1..24)[0..4],
+}
+
+-- One thing that happened in a turn, in the order it happened.
+struct BattleEvent {
+	Side: u8(1..2),
+	Kind: EventKind,
+	Move: string(1..24)?,
+	Damage: u16,
+	TargetHp: u16,
+	Slot: u8(0..6),
+}
+
+-- Device -> server: start a battle against something in the world. The server checks the
+-- target exists, is close enough and is free; the device never names a creature or a level.
+event StartBattle {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Kind: BattleKind,
+		TargetId: u32,
+	},
+}
+
+-- Server -> device: the battle has begun.
+event BattleStarted {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Kind: BattleKind,
+		Yours: BattleCreature[1..6],
+		Theirs: BattleCreature[1..6],
+		-- Exact damage each of your active creature's moves would do now (no dice in ranked).
+		Previews: u16[0..4],
+	},
+}
+
+-- Device -> server: the one choice for this turn. Index is the move number (1..4) or the
+-- team position to switch to (1..6). Turn must match the server's turn or it is ignored.
+event BattleAction {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Kind: ActionKind,
+		Index: u8(0..6),
+	},
+}
+
+-- Server -> device: everything that happened in the turn, and the state to show afterwards.
+event BattleTurn {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Events: BattleEvent[0..12],
+		YourActive: u8(1..6),
+		TheirActive: u8(1..6),
+		-- Tempo meters, 0..100.
+		YourTempo: u8(0..100),
+		TheirTempo: u8(0..100),
+		Previews: u16[0..4],
+		Finished: boolean,
+		-- 0 while the battle goes on or for a draw; 1 if you won; 2 if you lost.
+		Outcome: u8(0..2),
+	},
+}
+
+-- Server -> device: a request was refused, with a short reason the screen can show.
+event BattleRefused {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Reason: string(1..80),
+	},
+}

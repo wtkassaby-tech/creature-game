@@ -22,7 +22,19 @@ export type Fighter = {
 }
 export type Side = { team: { Fighter }, active: number }
 export type Action = { kind: "Move", move: string } | { kind: "Switch", to: number }
-export type Event = { turn: number, side: number, text: string }
+export type EventKind = "Move" | "FollowUp" | "Switch" | "Faint"
+-- One thing that happened in a turn. `text` is for logs; the other fields are what the
+-- player's screen needs to replay it. `side` is who acted (for a faint, whose creature fell).
+export type Event = {
+	turn: number,
+	side: number,
+	text: string,
+	kind: EventKind,
+	move: string?, -- Move and FollowUp
+	damage: number?, -- Move and FollowUp
+	targetHp: number?, -- the struck creature's health afterwards
+	slot: number?, -- Switch: the team position now active; Faint: the position that fell
+}
 export type State = {
 	sides: { Side },
 	turn: number,
@@ -134,8 +146,26 @@ function Battle.firstMover(state: State): number
 	return if a > b then 1 else 2
 end
 
-local function note(state: State, side: number, text: string)
-	table.insert(state.log, { turn = state.turn, side = side, text = text })
+local function note(
+	state: State,
+	side: number,
+	kind: EventKind,
+	text: string,
+	move: string?,
+	damage: number?,
+	targetHp: number?,
+	slot: number?
+)
+	table.insert(state.log, {
+		turn = state.turn,
+		side = side,
+		text = text,
+		kind = kind,
+		move = move,
+		damage = damage,
+		targetHp = targetHp,
+		slot = slot,
+	})
 end
 
 local function validate(state: State, side: number, action: Action): Action
@@ -163,7 +193,16 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 		local action = actions[side]
 		if action.kind == "Switch" then
 			state.sides[side].active = action.to
-			note(state, side, `switches to {active(state, side).creature.id}`)
+			note(
+				state,
+				side,
+				"Switch",
+				`switches to {active(state, side).creature.id}`,
+				nil,
+				nil,
+				nil,
+				action.to
+			)
 		end
 	end
 
@@ -176,7 +215,16 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 			damage = math.max(1, math.floor(damage * variance))
 		end
 		foe.hp = math.max(0, foe.hp - damage)
-		note(state, side, `{me.creature.id} {label} {moveName} for {damage}`)
+		local kind: EventKind = if power < 1 then "FollowUp" else "Move"
+		note(
+			state,
+			side,
+			kind,
+			`{me.creature.id} {label} {moveName} for {damage}`,
+			moveName,
+			damage,
+			foe.hp
+		)
 	end
 
 	local first = Battle.firstMover(state)
@@ -208,7 +256,16 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 
 	for side = 1, 2 do
 		if active(state, side).hp == 0 then
-			note(state, side, `{active(state, side).creature.id} faints`)
+			note(
+				state,
+				side,
+				"Faint",
+				`{active(state, side).creature.id} faints`,
+				nil,
+				nil,
+				nil,
+				state.sides[side].active
+			)
 		end
 	end
 

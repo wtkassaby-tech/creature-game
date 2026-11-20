@@ -1,0 +1,244 @@
+--!strict
+-- One player's battle against the game, as the server runs it: start it, take the player's one
+-- choice each turn, and say what happened in the form the screen needs.
+--
+-- This is pure (no Roblox services), so the same code is tested under Lune and wrapped by the
+-- battle service on the server. Nothing from the player's device is trusted: a choice is checked
+-- against the battle's own state, and anything that does not fit is refused, never guessed at.
+
+local Battle = require("./Battle")
+local BattleAi = require("./BattleAi")
+local Rng = require("./Rng")
+local Stats = require("./Stats")
+local Types = require("./Types")
+local Xp = require("./Xp")
+
+export type Kind = "Wild" | "Tamer" | "Rival" | "Friendly"
+export type ActionKind = "Move" | "Switch" | "Run"
+
+export type StartInput = {
+	battleId: number,
+	kind: Kind,
+	yours: { Types.Creature }, -- the player's team, in order
+	theirs: { Types.Creature },
+	theirMoves: { { string } }?, -- chosen moves for each opposing creature (tamers); nil = default
+	tier: BattleAi.Tier,
+	seed: number,
+	levelCap: number, -- the player's cap: their creatures above it fight at the cap
+}
+
+export type CreatureView = {
+	id: string,
+	bodyPlan: Types.BodyPlan,
+	parts: Types.BySlot<string>, -- species of each part, for drawing
+	colour: string,
+	size: number,
+	rarity: Types.Rarity,
+	element: Types.Element,
+	level: number,
+	maxHp: number,
+	hp: number,
+	moves: { string }, -- empty for the opponent's creatures
+}
+
+export type Started = {
+	battleId: number,
+	kind: Kind,
+	yours: { CreatureView },
+	theirs: { CreatureView },
+	previews: { number }, -- damage each of the active creature's moves would do now
+}
+
+export type TurnResult = {
+	battleId: number,
+	turn: number,
+	events: { Battle.Event },
+	yourActive: number,
+	theirActive: number,
+	yourTempo: number, -- 0..100
+	theirTempo: number,
+	previews: { number },
+	finished: boolean,
+	outcome: number, -- 0 ongoing or a draw, 1 the player won, 2 the player lost or ran
+	ran: boolean,
+}
+
+export type Session = {
+	battleId: number,
+	kind: Kind,
+	state: Battle.State,
+	chooser: BattleAi.Chooser,
+	ran: boolean,
+}
+
+local BattleSession = {}
+
+local PLAYER, FOE = 1, 2
+
+local function view(fighter: Battle.Fighter, showMoves: boolean): CreatureView
+	local creature = fighter.creature
+	return {
+		id = creature.id,
+		bodyPlan = creature.bodyPlan,
+		parts = {
+			Head = creature.parts.Head.species,
+			Torso = creature.parts.Torso.species,
+			FrontLimbs = creature.parts.FrontLimbs.species,
+			Legs = creature.parts.Legs.species,
+			Tail = creature.parts.Tail.species,
+		},
+		colour = creature.colour.shown,
+		size = creature.size,
+		rarity = creature.rarity,
+		element = fighter.element,
+		level = fighter.level,
+		maxHp = fighter.stats.Hp,
+		hp = fighter.hp,
+		moves = if showMoves then table.clone(fighter.moves) else {},
+	}
+end
+
+local function previews(state: Battle.State): { number }
+	local me = state.sides[PLAYER].team[state.sides[PLAYER].active]
+	local foe = state.sides[FOE].team[state.sides[FOE].active]
+	local list = {}
+	for _, move in me.moves do
+		table.insert(list, Battle.previewDamage(me, foe, move))
+	end
+	return list
+end
+
+-- Starts a battle. Returns nil and a reason if the teams cannot fight.
+function BattleSession.start(input: StartInput): (Session?, string?)
+	if #input.yours < 1 or #input.yours > 6 then
+		return nil, "You need between one and six creatures on your team"
+	end
+	if #input.theirs < 1 or #input.theirs > 6 then
+		return nil, "Bad opponent"
+	end
+	local yours: { Battle.Fighter } = {}
+	for _, creature in input.yours do
+		local level = Xp.battleLevel(creature.level, input.levelCap)
+		table.insert(yours, Battle.fighter(creature, nil, level))
+	end
+	local theirs: { Battle.Fighter } = {}
+	for index, creature in input.theirs do
+		local moves: { string }? = if input.theirMoves then input.theirMoves[index] else nil
+		if not moves and input.tier == "Wild" then
+			-- A wild creature keeps its natural move order, so "mostly the first move" is a
+			-- plain attack and not its calculated best.
+			local natural = Stats.movePool(creature)
+			while #natural > 4 do
+				table.remove(natural)
+			end
+			moves = natural
+		end
+		table.insert(theirs, Battle.fighter(creature, moves, creature.level))
+	end
+	local state = Battle.new(yours, theirs, input.seed, false)
+	return {
+		battleId = input.battleId,
+		kind = input.kind,
+		state = state,
+		chooser = BattleAi.forTier(input.tier, Rng.new(input.seed + 1)),
+		ran = false,
+	},
+		nil
+end
+
+-- What the player's screen is told when the battle begins.
+function BattleSession.started(session: Session): Started
+	local yours, theirs = {}, {}
+	for _, fighter in session.state.sides[PLAYER].team do
+		table.insert(yours, view(fighter, true))
+	end
+	for _, fighter in session.state.sides[FOE].team do
+		table.insert(theirs, view(fighter, false))
+	end
+	return {
+		battleId = session.battleId,
+		kind = session.kind,
+		yours = yours,
+		theirs = theirs,
+		previews = previews(session.state),
+	}
+end
+
+local function result(session: Session, fromLog: number): TurnResult
+	local state = session.state
+	local events: { Battle.Event } = {}
+	for index = fromLog, #state.log do
+		table.insert(events, state.log[index])
+	end
+	local mine, foe = state.sides[PLAYER], state.sides[FOE]
+	local lost = session.ran or state.winner == FOE
+	local outcome = if lost then 2 elseif state.winner == PLAYER then 1 else 0
+	local finished = session.ran or state.winner ~= nil
+	return {
+		battleId = session.battleId,
+		turn = state.turn,
+		events = events,
+		yourActive = mine.active,
+		theirActive = foe.active,
+		yourTempo = math.clamp(math.floor(mine.team[mine.active].tempo * 100), 0, 100),
+		theirTempo = math.clamp(math.floor(foe.team[foe.active].tempo * 100), 0, 100),
+		previews = if finished then {} else previews(state),
+		finished = finished,
+		outcome = outcome,
+		ran = session.ran,
+	}
+end
+
+-- Takes the player's choice for a turn. `turn` is the turn the player thinks it is (the last
+-- finished turn plus one); a stale or repeated message is refused, so a choice can never be
+-- applied twice. `index` is a move number (1..4) or a team position (1..6).
+-- Returns the turn's result, or nil and a reason.
+function BattleSession.act(
+	session: Session,
+	turn: unknown,
+	kind: unknown,
+	index: unknown
+): (TurnResult?, string?)
+	local state = session.state
+	if session.ran or state.winner ~= nil then
+		return nil, "The battle is over"
+	end
+	if typeof(turn) ~= "number" or turn ~= state.turn + 1 then
+		return nil, "That turn has already been played"
+	end
+	if typeof(index) ~= "number" or index % 1 ~= 0 then
+		return nil, "Bad choice"
+	end
+	local mine = state.sides[PLAYER]
+	local logStart = #state.log + 1
+
+	if kind == "Run" then
+		if session.kind ~= "Wild" then
+			return nil, "You cannot run from this battle"
+		end
+		session.ran = true
+		return result(session, logStart), nil
+	end
+
+	local action: Battle.Action
+	if kind == "Move" then
+		local move = mine.team[mine.active].moves[index]
+		if not move then
+			return nil, "That creature does not know that move"
+		end
+		action = { kind = "Move", move = move }
+	elseif kind == "Switch" then
+		local target = mine.team[index]
+		if not target or target.hp <= 0 or index == mine.active then
+			return nil, "You cannot switch to that creature"
+		end
+		action = { kind = "Switch", to = index }
+	else
+		return nil, "Bad choice"
+	end
+
+	Battle.step(state, action, session.chooser(state, FOE))
+	return result(session, logStart), nil
+end
+
+return BattleSession
