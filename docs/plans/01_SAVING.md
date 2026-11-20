@@ -1,6 +1,6 @@
 # Approval pack 1: saving
 
-Date: 16 November 2026. For: Ayrton. Status: **waiting for approval**. Nothing in this pack saves anything yet. Revised the same day after an independent exploit review; its findings are in `docs/REVIEWS.md`.
+Date: 16 November 2026. For: Ayrton. Status: **approved by Ayrton on 20 November 2026**, with Claude's recommended answers (see `DECISIONS.md`). Nothing in this pack saves anything yet. Revised the same day after an independent exploit review; its findings are in `docs/REVIEWS.md`.
 
 The project rules need your yes before anything that touches saving is built, and an independent review after. This pack is the plan for the save itself. Read section 6 first if you only have two minutes: it lists what you are agreeing to.
 

@@ -51,6 +51,9 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 16 Nov 2026 | Opponent behaviour (`src/shared/BattleAi.luau`): wild creatures mostly use their first move and never switch; tamers pick the hardest-hitting move and switch only when clearly outmatched; the rival also takes knock-outs and accounts for turn order | Claude (Default) | 5 |
 | 16 Nov 2026 | Saved data: a `Pending` list holds one-time gifts waiting for room and giants waiting for a serial number; locks on creatures live only in server memory; a child of a bound creature is bound; every creature record has `xp`, `bound` and `serial` | Claude (Default) | 4, 12 |
 | 20 Nov 2026 | The creature game moved into its own repository, `wtkassaby-tech/creature-game`, with its history. `CLAUDE.md` is now the live rules file. References in older documents to "the golf repo" mean `wtkassaby-tech/golf-game` | Ayrton | 12, 13 |
+| 20 Nov 2026 | Approval packs 1 (saving), 2 (how creatures are granted) and 3 (breeding and Breeding Candy) approved as written, with Claude's recommended answers: playtest progress is wiped at the soft launch; a new stable holds 30 creatures; the two starters not picked can be caught in the wild; quest and clear-token creatures are species not found in the wild; "breed once" stays an easy daily task; the name stays "Breeding Candy" for now; the breeder screen lists the ways to earn candy | Ayrton | 7, 12 |
+| 20 Nov 2026 | **Breeding Candy is typed, like evolution candy in creature-collecting games.** Catching a creature earns candy of its type (the torso's element) and releasing one earns a little more. Breeding uses candy of each parent's type, so breeding Sand creatures means catching Sand creatures. This replaces the single candy balance | Ayrton | 7, 10 |
+| 20 Nov 2026 | How typed candy is built (adjust freely): one balance per element; catches pay a few candies of the creature's type, falling off after a daily number of catches per type so catch-and-release cannot flood supply; releases pay one, more for gem tiers; each parent in a breed costs its rarity's amount of its own type; milestone and daily rewards pay "Prism Candy" (working name), which counts as any type, so a player is never stuck for a type their biome lacks. Numbers set by re-running the economy simulation | Claude (Default) | 7, 10 |
 
 ## Still open
 
@@ -60,10 +63,8 @@ Only Ayrton can decide these:
 - Style references for biome 9.
 - The launch product list and prices (it touches Robux).
 - Two proposed new systems that remove creatures from the game: Radiant fusion and move imprint. Not adopted until he says yes.
-- Whether Breeding Candy stays unsellable (the plan assumes yes) and its final name.
+- Breeding Candy's final name.
 - Bringing a small post-game forward to launch.
-- Approval packs 1 (saving) and 2 (how creatures are granted), in `plans/`.
 - Switching creatures in battle usually loses under the current rules (it costs a free hit and resets Tempo). Should switching be made cheaper so it is a real tactic?
 - Greenwood has only one Sand species, the Sand starter. Swap a Water species for a second Sand one?
-- Can the two starters you did not pick be caught in the wild (current plan), or should they be held back?
 - The live brief doc still shows coin bets, the original breeding formulas and the section 15 list as they were; this log overrides it until the doc is updated.

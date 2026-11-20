@@ -1,6 +1,6 @@
 # Approval pack 3: the breeding service and Breeding Candy
 
-Date: 20 November 2026. For: Ayrton. Status: **waiting for approval**. The breeding rules are written and tested; the server flow is written but not wired up, and nothing grants or spends candy yet.
+Date: 20 November 2026. For: Ayrton. Status: **approved by Ayrton on 20 November 2026**, with Claude's recommended answers (see `DECISIONS.md`). The breeding rules are written and tested; the server flow is written but not wired up, and nothing grants or spends candy yet.
 
 This pack covers the two things that decide how many creatures exist: the act of breeding on the server, and where Breeding Candy comes from. Needed before phase 3 (saving and economy). It depends on pack 1 (saving).
 
@@ -26,6 +26,8 @@ The player's device sends only "breed these two", and optionally "use a Bond Cha
 When the timer ends the egg moves to the stable if there is room, and stays in its pen if there is not. Gems can shorten the timer; they cannot change the child.
 
 ## 3. Where Breeding Candy comes from
+
+> **Changed after approval (20 November 2026):** candy is now typed. Catching and releasing creatures earn candy of their type, and each parent in a breed needs candy of its own type. Milestone and daily rewards below pay Prism Candy, which counts as any type. Section 3 is being reworked with new numbers; until then the table below shows the milestone sources only.
 
 Candy is earned only by playing. It cannot be bought, traded or gifted. Every source has a cap, so no amount of grinding or extra accounts turns into unlimited candy.
 
