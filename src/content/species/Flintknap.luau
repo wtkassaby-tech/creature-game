@@ -1,6 +1,6 @@
 --!strict
--- Flintknap: a wiry flint-chipper whose forearms end in knapped stone blades it keeps sharpening on the canyon walls
--- Dust Canyon, two-legged, Sand, Common. Role: striker (the most Attack in Dust Canyon).
+-- Flintknap: a broad-shouldered flint-chipper whose forearms end in knapped stone blades it keeps sharpening on the canyon walls
+-- Dust Canyon, two-legged, Sand, Common. Role: bruiser (the most Attack and Hp in Dust Canyon, slow).
 -- Gem-tier ("Amber") individuals are rare wild spawns of this same species, not a separate one.
 --
 -- Look (chunky low-poly, flat colours, every joint ends in a rounded ball that sits in its socket):
@@ -33,31 +33,31 @@ local Flintknap: Types.SpeciesDef = {
 	},
 	parts = {
 		Head = {
-			stats = { Attack = 34, Speed = 4 },
+			stats = { Hp = 6, Attack = 31, Defence = 2, Speed = 4 },
 			moves = { { name = "Knap Edge", level = 1 }, { name = "Grit Whirl", level = 18 } },
 			plugRadius = 0.64,
 			length = 1.5,
 		},
 		Torso = {
-			stats = { Hp = 100, Attack = 3, Defence = 16, Speed = 3 },
+			stats = { Hp = 113, Attack = 3, Defence = 10, Speed = 2 },
 			moves = { { name = "Flint Cleave", level = 1 } },
 			plugRadius = 0,
 			length = 2.9,
 		},
 		FrontLimbs = {
-			stats = { Hp = 12, Attack = 17, Defence = 6, Speed = 3 },
+			stats = { Hp = 12, Attack = 17, Defence = 6, Speed = 5 },
 			moves = { { name = "Knap Edge", level = 1 } },
 			plugRadius = 0.49,
 			length = 1.9,
 		},
 		Legs = {
-			stats = { Hp = 5, Speed = 34 },
+			stats = { Hp = 7, Speed = 25 },
 			moves = { { name = "Dune Dash", level = 1 } },
 			plugRadius = 0.64,
 			length = 1.9,
 		},
 		Tail = {
-			stats = { Hp = 5, Defence = 6 },
+			stats = { Hp = 7, Attack = 2, Defence = 5, Speed = 1 },
 			moves = { { name = "Pebble Pelt", level = 1 } },
 			plugRadius = 0.33,
 			length = 1.0,

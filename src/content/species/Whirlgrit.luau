@@ -1,6 +1,6 @@
 --!strict
 -- Whirlgrit: a spinning little desert dancer that whirls on the spot until the sand around it lifts into a ring
--- Dust Canyon, two-legged, Sand, Common. Role: sprinter (the fastest in Dust Canyon, the least Defence).
+-- Dust Canyon, two-legged, Sand, Common. Role: sprinter (the fastest on two legs here, the least Defence).
 -- Gem-tier ("Amber") individuals are rare wild spawns of this same species, not a separate one.
 --
 -- Look (chunky low-poly, flat colours, every joint ends in a rounded ball that sits in its socket):
@@ -22,44 +22,44 @@ local Whirlgrit: Types.SpeciesDef = {
 	baseRarity = "Common",
 	lassoDifficulty = 1.3,
 	element = "Sand",
-	weight = 38,
+	weight = 36,
 	torsoLength = 2.4,
 	socketRadius = {
 		Torso = 0,
-		Head = 0.6,
-		FrontLimbs = 0.46,
-		Legs = 0.6,
-		Tail = 0.31,
+		Head = 0.59,
+		FrontLimbs = 0.45,
+		Legs = 0.59,
+		Tail = 0.3,
 	},
 	parts = {
 		Head = {
-			stats = { Attack = 28, Speed = 10 },
+			stats = { Hp = 5, Attack = 26, Defence = 2, Speed = 7 },
 			moves = { { name = "Sand Flick", level = 1 }, { name = "Grit Whirl", level = 17 } },
-			plugRadius = 0.6,
+			plugRadius = 0.59,
 			length = 1.1,
 		},
 		Torso = {
-			stats = { Hp = 105, Defence = 16, Speed = 3 },
+			stats = { Hp = 105, Attack = 2, Defence = 8, Speed = 3 },
 			moves = { { name = "Dune Dash", level = 1 } },
 			plugRadius = 0,
 			length = 2.4,
 		},
 		FrontLimbs = {
-			stats = { Hp = 13, Attack = 14, Defence = 4, Speed = 6 },
+			stats = { Hp = 11, Attack = 13, Defence = 5, Speed = 8 },
 			moves = { { name = "Pebble Pelt", level = 1 } },
-			plugRadius = 0.46,
+			plugRadius = 0.45,
 			length = 1.4,
 		},
 		Legs = {
-			stats = { Hp = 5, Speed = 37 },
+			stats = { Hp = 7, Speed = 38 },
 			moves = { { name = "Dune Dash", level = 1 } },
-			plugRadius = 0.6,
+			plugRadius = 0.59,
 			length = 1.6,
 		},
 		Tail = {
-			stats = { Hp = 5, Defence = 5 },
+			stats = { Hp = 7, Attack = 1, Defence = 4, Speed = 2 },
 			moves = { { name = "Sand Flick", level = 1 } },
-			plugRadius = 0.31,
+			plugRadius = 0.3,
 			length = 1.0,
 		},
 	},

@@ -1,6 +1,6 @@
 --!strict
 -- Spurlet: a low, flat succulent creature that sits rooted in the sun by day and scuttles between shadows by night
--- Dust Canyon, four-legged, Leaf, Common. Role: striker (strong Attack, average Speed).
+-- Dust Canyon, four-legged, Leaf, Common. Role: striker (the most Attack on four legs here).
 -- Gem-tier ("Amber") individuals are rare wild spawns of this same species, not a separate one.
 --
 -- Look (chunky low-poly, flat colours, every joint ends in a rounded ball that sits in its socket):
@@ -33,31 +33,31 @@ local Spurlet: Types.SpeciesDef = {
 	},
 	parts = {
 		Head = {
-			stats = { Hp = 10, Attack = 25, Defence = 3, Speed = 3 },
+			stats = { Hp = 5, Attack = 30, Defence = 3, Speed = 5 },
 			moves = { { name = "Spine Jab", level = 1 }, { name = "Agave Lance", level = 18 } },
 			plugRadius = 0.7,
 			length = 1.2,
 		},
 		Torso = {
-			stats = { Hp = 100, Attack = 1, Defence = 17 },
+			stats = { Hp = 101, Attack = 2, Defence = 13, Speed = 2 },
 			moves = { { name = "Needle Fan", level = 1 }, { name = "Dust Squall", level = 14 } },
 			plugRadius = 0,
 			length = 3.4,
 		},
 		FrontLimbs = {
-			stats = { Hp = 10, Attack = 13, Defence = 5, Speed = 5 },
+			stats = { Hp = 10, Attack = 15, Defence = 8, Speed = 6 },
 			moves = { { name = "Spine Jab", level = 1 } },
 			plugRadius = 0.51,
 			length = 1.2,
 		},
 		Legs = {
-			stats = { Hp = 5, Speed = 34 },
+			stats = { Hp = 7, Speed = 29 },
 			moves = { { name = "Hoof Scuff", level = 1 } },
 			plugRadius = 0.58,
 			length = 1.3,
 		},
 		Tail = {
-			stats = { Hp = 5, Attack = 4, Defence = 8 },
+			stats = { Hp = 7, Attack = 1, Defence = 6, Speed = 2 },
 			moves = { { name = "Needle Fan", level = 1 } },
 			plugRadius = 0.35,
 			length = 1.8,

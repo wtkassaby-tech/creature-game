@@ -1,6 +1,6 @@
 --!strict
 -- Duneskit: a lean dune sprinter that skims the sand on fringed feet, its tall shutter ears snapping flat when it runs
--- Dust Canyon, four-legged, Sand, Common. Role: sprinter (very fast, thin Defence).
+-- Dust Canyon, four-legged, Sand, Common. Role: sprinter (fast, thin Attack).
 -- Gem-tier ("Amber") individuals are rare wild spawns of this same species, not a separate one.
 --
 -- Look (chunky low-poly, flat colours, every joint ends in a rounded ball that sits in its socket):
@@ -22,44 +22,44 @@ local Duneskit: Types.SpeciesDef = {
 	baseRarity = "Common",
 	lassoDifficulty = 1.3,
 	element = "Sand",
-	weight = 46,
+	weight = 40,
 	torsoLength = 3.6,
 	socketRadius = {
 		Torso = 0,
-		Head = 0.7,
-		FrontLimbs = 0.51,
-		Legs = 0.58,
-		Tail = 0.35,
+		Head = 0.67,
+		FrontLimbs = 0.48,
+		Legs = 0.56,
+		Tail = 0.34,
 	},
 	parts = {
 		Head = {
-			stats = { Attack = 26, Defence = 8, Speed = 6 },
+			stats = { Hp = 5, Attack = 24, Defence = 3, Speed = 7 },
 			moves = { { name = "Sand Flick", level = 1 }, { name = "Grit Whirl", level = 18 } },
-			plugRadius = 0.7,
+			plugRadius = 0.67,
 			length = 1.6,
 		},
 		Torso = {
-			stats = { Hp = 100, Defence = 15, Speed = 4 },
+			stats = { Hp = 93, Attack = 2, Defence = 14, Speed = 3 },
 			moves = { { name = "Dune Dash", level = 1 }, { name = "Tumbleweed Toss", level = 14 } },
 			plugRadius = 0,
 			length = 3.6,
 		},
 		FrontLimbs = {
-			stats = { Hp = 5, Attack = 15, Defence = 8, Speed = 3 },
+			stats = { Hp = 10, Attack = 12, Defence = 8, Speed = 8 },
 			moves = { { name = "Pebble Pelt", level = 1 } },
-			plugRadius = 0.51,
+			plugRadius = 0.48,
 			length = 1.7,
 		},
 		Legs = {
-			stats = { Attack = 1, Defence = 3, Speed = 36 },
+			stats = { Hp = 6, Speed = 39 },
 			moves = { { name = "Dune Dash", level = 1 } },
-			plugRadius = 0.58,
+			plugRadius = 0.56,
 			length = 2.4,
 		},
 		Tail = {
-			stats = { Hp = 5, Attack = 3, Defence = 6 },
+			stats = { Hp = 6, Attack = 1, Defence = 6, Speed = 2 },
 			moves = { { name = "Sand Flick", level = 1 } },
-			plugRadius = 0.35,
+			plugRadius = 0.34,
 			length = 2.4,
 		},
 	},

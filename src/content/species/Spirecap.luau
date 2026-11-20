@@ -1,6 +1,6 @@
 --!strict
--- Spirecap: a slow-swaying sentinel shaped like the canyon's rock spires, with a flat capstone balanced on its head
--- Dust Canyon, two-legged, Sand, Uncommon. Role: tank (the most Hp and Defence on two legs here, slow).
+-- Spirecap: a swaying sentinel shaped like the canyon's rock spires, with a flat capstone balanced on its head
+-- Dust Canyon, two-legged, Sand, Uncommon. Role: all-rounder (sturdy and steady, with a fair turn of speed).
 -- Gem-tier ("Amber") individuals are rare wild spawns of this same species, not a separate one.
 --
 -- Look (chunky low-poly, flat colours, every joint ends in a rounded ball that sits in its socket):
@@ -22,44 +22,47 @@ local Spirecap: Types.SpeciesDef = {
 	baseRarity = "Uncommon",
 	lassoDifficulty = 1.8,
 	element = "Sand",
-	weight = 60,
+	weight = 64,
 	torsoLength = 3.6,
 	socketRadius = {
 		Torso = 0,
-		Head = 0.7,
-		FrontLimbs = 0.53,
-		Legs = 0.7,
-		Tail = 0.36,
+		Head = 0.71,
+		FrontLimbs = 0.54,
+		Legs = 0.71,
+		Tail = 0.37,
 	},
 	parts = {
 		Head = {
-			stats = { Hp = 10, Attack = 26, Defence = 6 },
-			moves = { { name = "Capstone Crash", level = 1 }, { name = "Spire Topple", level = 22 } },
-			plugRadius = 0.7,
+			stats = { Hp = 6, Attack = 22, Defence = 3, Speed = 5 },
+			moves = {
+				{ name = "Capstone Crash", level = 1 },
+				{ name = "Spire Topple", level = 22 },
+			},
+			plugRadius = 0.71,
 			length = 1.4,
 		},
 		Torso = {
-			stats = { Hp = 115, Defence = 14 },
+			stats = { Hp = 109, Attack = 2, Defence = 15, Speed = 2 },
 			moves = { { name = "Mesa Slam", level = 1 } },
 			plugRadius = 0,
 			length = 3.6,
 		},
 		FrontLimbs = {
-			stats = { Hp = 10, Attack = 13, Defence = 12 },
+			stats = { Hp = 11, Attack = 12, Defence = 9, Speed = 6 },
 			moves = { { name = "Pebble Pelt", level = 1 } },
-			plugRadius = 0.53,
+			plugRadius = 0.54,
 			length = 1.5,
 		},
 		Legs = {
-			stats = { Defence = 4, Speed = 31 },
-			moves = { { name = "Hoof Scuff", level = 1 } },
-			plugRadius = 0.7,
+			stats = { Hp = 7, Speed = 30 },
+			moves = { { name = "Grit Step", level = 1 } },
+			plugRadius = 0.71,
 			length = 1.0,
 		},
 		Tail = {
-			stats = { Hp = 10, Defence = 6 },
+			stats = { Hp = 7, Attack = 1, Defence = 7, Speed = 2 },
 			moves = { { name = "Pebble Pelt", level = 1 } },
-			plugRadius = 0.36,
+			plugRadius = 0.37,
 			length = 1.0,
 		},
 	},

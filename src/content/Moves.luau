@@ -37,6 +37,33 @@ local Moves: { [string]: MoveDef } = {
 	["Gale Hop"] = { element = "Storm", power = 50 },
 	-- Toxic
 	["Spore Puff"] = { element = "Toxic", power = 65 },
+
+	-- Dust Canyon (biome 2). Still no status effects. See docs/content/DUST_CANYON_ROSTER.md.
+	-- Sand
+	["Knap Edge"] = { element = "Sand", power = 40 },
+	["Sand Flick"] = { element = "Sand", power = 40 },
+	["Flint Cleave"] = { element = "Sand", power = 45 },
+	["Grit Step"] = { element = "Sand", power = 45 },
+	["Hoof Scuff"] = { element = "Sand", power = 45 },
+	["Pebble Pelt"] = { element = "Sand", power = 45 },
+	["Capstone Crash"] = { element = "Sand", power = 50 },
+	["Spire Topple"] = { element = "Sand", power = 50 },
+	["Talus Tumble"] = { element = "Sand", power = 50 },
+	["Dune Dash"] = { element = "Sand", power = 55 },
+	["Grit Whirl"] = { element = "Sand", power = 55 },
+	["Mesa Slam"] = { element = "Sand", power = 60 },
+	-- Water
+	["Fog Drip"] = { element = "Water", power = 40 },
+	["Flash Flood"] = { element = "Water", power = 50 },
+	["Oasis Spout"] = { element = "Water", power = 50 },
+	["Wadi Rush"] = { element = "Water", power = 55 },
+	-- Leaf
+	["Spine Jab"] = { element = "Leaf", power = 45 },
+	["Agave Lance"] = { element = "Leaf", power = 55 },
+	["Needle Fan"] = { element = "Leaf", power = 55 },
+	["Tumbleweed Toss"] = { element = "Leaf", power = 55 },
+	-- Storm: a teaser for Stormreach, on Leaf torsos only (see the roster document)
+	["Dust Squall"] = { element = "Storm", power = 65 },
 }
 
 return Moves
