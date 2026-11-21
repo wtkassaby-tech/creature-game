@@ -27,6 +27,15 @@ local Species: { [string]: Types.SpeciesDef } = {
 	Whirlgrit = require("./species/Whirlgrit"),
 	-- Dust Canyon's giant in its creature form: captured, never met in the wild.
 	Mesalith = require("./species/Mesalith"),
+	-- Tide Flats (biome 3). See docs/content/TIDE_FLATS_ROSTER.md.
+	Clapshell = require("./species/Clapshell"),
+	Cocklemole = require("./species/Cocklemole"),
+	Glissot = require("./species/Glissot"),
+	Gulpmaw = require("./species/Gulpmaw"),
+	Hullock = require("./species/Hullock"),
+	Lanternell = require("./species/Lanternell"),
+	Moatkeep = require("./species/Moatkeep"),
+	Runnelfin = require("./species/Runnelfin"),
 }
 
 return Species

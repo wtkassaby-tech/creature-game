@@ -87,6 +87,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 21 Nov 2026 | Gem-tier wild creatures are 0.6% of open-route encounters from Dust Canyon on (`EconomyConfig.GEM_WILD_SHARE`), the number the economy simulation is balanced at. The brief's table says "about 5%" for the first gem tier; raising it is Ayrton's call (it multiplies gem candy and gem breeding) | Claude (Default) | 4, 10 |
 | 21 Nov 2026 | Bait: used at a rustle spot from Tide Flats on; a creature always steps out, gem-tier 35% of the time; at most 5 baits a day. Crafting: a tonic, a deep tonic or a bait from a biome's material and a few coins, anywhere | Claude (Default) | 6, 10 |
 | 21 Nov 2026 | The first screens for the story: a starter pick, a dialogue box that plays each beat's lines and names its gifts, and a tracker showing the next story step and quests in hand. Time played is logged with each story beat for the first-session numbers | Claude (Default) | 9, 13 |
+| 21 Nov 2026 | **Tide Flats roster** (`docs/content/TIDE_FLATS_ROSTER.md`): eight species, four on each body plan, six Water and two Sand (no Leaf: one Leaf among three Water won 85% of fights), six Common and two Uncommon. The biome's breeding stat is Defence (its torsos are the Defence parts). Twenty-one new moves, with one Toxic teaser move on the two Sand torsos. Alone it passes the balance gate (best build 65 to 68%, weakest species 48 to 50%). Mixed with the first two biomes it improves on the two-biome pool but still misses the marks (best 77 to 78%, weakest 31 to 32%). Names are placeholders to check | Claude (Default) | 5, 8 |
 
 ## Still open
 
@@ -100,7 +101,8 @@ Only Ayrton can decide these:
 - Bringing a small post-game forward to launch.
 - Switching creatures in battle usually loses under the current rules (it costs a free hit and resets Tempo). Should switching be made cheaper so it is a real tactic?
 - Greenwood has only one Sand species, the Sand starter. Swap a Water species for a second Sand one?
-- Mixed Greenwood and Dust Canyon balance: give Greenwood's Leaf creatures more non-Leaf moves, or judge mixed balance by 3v3 teams rather than one-on-one?
+- Tide Flats: no Leaf species (six Water, two Sand); Defence as its breeding stat; and the move name "Red Tide", which is also a real toxic algae bloom. Change any of these?
+- Mixed Greenwood and Dust Canyon balance (now measured across all three launch biomes too): give Greenwood's Leaf creatures more non-Leaf moves, or judge mixed balance by 3v3 teams rather than one-on-one?
 - How common should gem-tier wild creatures be? Built at 0.6% of encounters (what the economy was balanced at); your brief's table says about 5%.
 - Should waking at the healer after a lost battle also cost coins? Today it costs the walk back and what was used in the fight, and only the team that fought is mended.
 - Giant Candy numbers (10 a breed; 1 a win, 2 a day): rarer or easier? And can a captured giant ever be traded (bound for now)?

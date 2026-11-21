@@ -70,6 +70,32 @@ local Moves: { [string]: MoveDef } = {
 	-- Mesalith's own (the captured giant's signature moves; see src/content/giants).
 	["Strata Crush"] = { element = "Sand", power = 65 },
 	["Tumble Barrage"] = { element = "Leaf", power = 60 },
+
+	-- Tide Flats (biome 3). Still no status effects. See docs/content/TIDE_FLATS_ROSTER.md.
+	-- Water
+	["Foam Flick"] = { element = "Water", power = 40 },
+	["Brine Jab"] = { element = "Water", power = 45 },
+	["Riptide Rush"] = { element = "Water", power = 45 },
+	["Rockpool Lunge"] = { element = "Water", power = 45 },
+	["Shoal Stomp"] = { element = "Water", power = 45 },
+	["Skim Dash"] = { element = "Water", power = 45 },
+	["Spray Jet"] = { element = "Water", power = 45 },
+	["Tidepool Surge"] = { element = "Water", power = 45 },
+	["Lantern Pulse"] = { element = "Water", power = 50 },
+	["Maw Snap"] = { element = "Water", power = 50 },
+	["Barnacle Butt"] = { element = "Water", power = 55 },
+	["Mussel Smack"] = { element = "Water", power = 55 },
+	["Breaker Charge"] = { element = "Water", power = 60 },
+	["Undertow"] = { element = "Water", power = 60 },
+	["Clamp Crush"] = { element = "Water", power = 65 },
+	-- Sand: the two Sand torsos and their parts
+	["Sand Scoop"] = { element = "Sand", power = 45 },
+	["Rampart Slam"] = { element = "Sand", power = 50 },
+	["Shell Grind"] = { element = "Sand", power = 50 },
+	["Burrow Burst"] = { element = "Sand", power = 55 },
+	["Cockle Crack"] = { element = "Sand", power = 55 },
+	-- Toxic: a teaser for the Mire, on the two Sand torsos only (see the roster document)
+	["Red Tide"] = { element = "Toxic", power = 65 },
 }
 
 return Moves

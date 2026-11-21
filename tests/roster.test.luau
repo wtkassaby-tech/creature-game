@@ -1,13 +1,14 @@
 --!strict
--- The roster balance gate (docs/DECISIONS.md) for Greenwood (biome 1), Dust Canyon (biome 2) and
--- the two biomes mixed, plus the data checks for each roster.
+-- The roster balance gate (docs/DECISIONS.md) for Greenwood (biome 1), Dust Canyon (biome 2),
+-- Tide Flats (biome 3), the first two biomes mixed and all three mixed, plus the data checks for
+-- each roster.
 -- Run from the project folder:  lune run tests/roster.test
 --
 -- The gate builds every combination of parts on each body plan, picks a fixed, seeded field
 -- (every pure species, the five best builds by each stat and by total, then a random sample),
 -- and has every pair fight twice with sides swapped, using the real battle rules, at each biome's
--- level cap and at the ranked level. Results are in docs/content/GREENWOOD_ROSTER.md and
--- docs/content/DUST_CANYON_ROSTER.md.
+-- level cap and at the ranked level. Results are in docs/content/GREENWOOD_ROSTER.md,
+-- docs/content/DUST_CANYON_ROSTER.md and docs/content/TIDE_FLATS_ROSTER.md.
 
 local AssemblyMath = require("../src/shared/AssemblyMath")
 local Battle = require("../src/shared/Battle")
@@ -49,12 +50,13 @@ local function note(name: string, condition: boolean, detail: string?)
 	)
 end
 
-local GREENWOOD, DUST_CANYON = 1, 2
+local GREENWOOD, DUST_CANYON, TIDE_FLATS = 1, 2, 3
 local GREENWOOD_CAP = 15 -- level cap before the first badge (docs/DECISIONS.md)
 local DUST_CANYON_CAP = 25 -- 15 plus 10 for the first badge
+local TIDE_FLATS_CAP = 35 -- plus 10 more for the second badge
 local RANKED = BattleConfig.RANKED_LEVEL
 local FIELD_SIZE = 160
-local MIXED_FIELD_SIZE = 200 -- eight species a plan: 32,768 builds
+local MIXED_FIELD_SIZE = 200 -- eight species a plan: 32,768 builds; twelve: 248,832
 local FIELD_SEED = 2026
 local MAX_WIN = 0.75
 local MIN_PURE = 0.40
@@ -86,6 +88,7 @@ end
 
 local greenwood = rosterOf(GREENWOOD)
 local dustCanyon = rosterOf(DUST_CANYON)
+local tideFlats = rosterOf(TIDE_FLATS)
 
 local function planList(roster: Roster, plan: Types.BodyPlan): { string }
 	return if plan == "Quad" then roster.Quad else roster.Biped
@@ -366,6 +369,117 @@ do
 	checkFits({ greenwood, dustCanyon }, "both biomes")
 end
 
+print("\n== Tide Flats roster data ==")
+do
+	local used = commonData(tideFlats, TIDE_FLATS_CAP, 32)
+	local counts: { [string]: number } = {}
+	for _, name in tideFlats.all do
+		local def = Species[name]
+		counts[def.element] = (counts[def.element] or 0) + 1
+	end
+	local others = (counts.Leaf or 0) + (counts.Sand or 0)
+	check(
+		"most species are Water, with one or two Leaf or Sand and no later type",
+		(counts.Water or 0) > #tideFlats.all / 2
+			and others >= 1
+			and others <= 2
+			and (counts.Water or 0) + others == #tideFlats.all,
+		`Water {counts.Water or 0}, Leaf {counts.Leaf or 0}, Sand {counts.Sand or 0}`
+	)
+
+	-- Lasso difficulty is a step above Dust Canyon's, as Dust Canyon's is above Greenwood's.
+	local dcCommon, dcUncommon = 0, 0
+	for _, name in dustCanyon.all do
+		local def = Species[name]
+		if def.baseRarity == "Common" then
+			dcCommon = math.max(dcCommon, def.lassoDifficulty)
+		else
+			dcUncommon = math.max(dcUncommon, def.lassoDifficulty)
+		end
+	end
+	local easiestCommon, hardestCommon, easiestUncommon = math.huge, 0, math.huge
+	for _, name in tideFlats.all do
+		local def = Species[name]
+		if def.baseRarity == "Common" then
+			easiestCommon = math.min(easiestCommon, def.lassoDifficulty)
+			hardestCommon = math.max(hardestCommon, def.lassoDifficulty)
+		else
+			easiestUncommon = math.min(easiestUncommon, def.lassoDifficulty)
+		end
+	end
+	check(
+		"lasso difficulty is a step above Dust Canyon's",
+		easiestCommon > dcCommon
+			and easiestUncommon > dcUncommon
+			and easiestUncommon > hardestCommon,
+		`commons {easiestCommon} to {hardestCommon} (Dust Canyon up to {dcCommon}), uncommons from {easiestUncommon} (Dust Canyon up to {dcUncommon})`
+	)
+
+	-- Tide Flats favours Defence for breeding: its torsos are shells, carrying more Defence on
+	-- average than either earlier biome's torsos.
+	local function meanTorsoDefence(roster: Roster): number
+		local sum = 0
+		for _, name in roster.all do
+			sum += Species[name].parts.Torso.stats.Defence or 0
+		end
+		return sum / #roster.all
+	end
+	local tfTorso = meanTorsoDefence(tideFlats)
+	local gwTorso, dcTorso = meanTorsoDefence(greenwood), meanTorsoDefence(dustCanyon)
+	check(
+		"Tide Flats torsos carry more Defence than Greenwood's and Dust Canyon's",
+		tfTorso > gwTorso and tfTorso > dcTorso,
+		string.format(
+			"mean torso Defence %.1f (Greenwood %.1f, Dust Canyon %.1f)",
+			tfTorso,
+			gwTorso,
+			dcTorso
+		)
+	)
+
+	-- Moves the Tide Flats parts bring that neither earlier roster's do.
+	local earlierMoves: { [string]: boolean } = {}
+	for _, name in joined(greenwood.all, dustCanyon.all) do
+		for _, slot: Types.Slot in BreedConfig.SLOTS do
+			for _, unlock in Species[name].parts[slot].moves do
+				earlierMoves[unlock.name] = true
+			end
+		end
+	end
+	local fresh, water, powerOk = 0, 0, true
+	for moveName in used do
+		if not earlierMoves[moveName] then
+			fresh += 1
+			local move = Moves[moveName]
+			if move.element == "Water" then
+				water += 1
+			end
+			powerOk = powerOk and move.power >= 40 and move.power <= 80
+		end
+	end
+	check("18 to 24 new moves", fresh >= 18 and fresh <= 24, `{fresh}`)
+	check("most new moves are Water", water > fresh / 2, `{water} of {fresh}`)
+	check("new move power is between 40 and 80", powerOk)
+
+	-- The Toxic teaser (Mire is next) sits only on the torsos of the species Water beats, so no
+	-- Water creature can take an anti-Water move into a Water mirror.
+	local teaserOk, teasers = true, 0
+	for _, name in tideFlats.all do
+		local def = Species[name]
+		for _, slot: Types.Slot in BreedConfig.SLOTS do
+			for _, unlock in def.parts[slot].moves do
+				if Moves[unlock.name].element == "Toxic" then
+					teasers += 1
+					teaserOk = teaserOk and slot == "Torso" and def.element == "Sand"
+				end
+			end
+		end
+	end
+	check("Toxic moves come only on Sand torsos", teaserOk and teasers >= 1, `{teasers} found`)
+	checkFits({ tideFlats }, "Tide Flats")
+	checkFits({ greenwood, dustCanyon, tideFlats }, "all three biomes")
+end
+
 ------------------------------------------------------------------------------------------------
 type Entry = {
 	label: string,
@@ -467,16 +581,30 @@ local function pickField(builds: { Entry }, size: number, level: number): { Entr
 			end
 			return total(s)
 		end
-		local sorted = table.clone(builds)
-		table.sort(sorted, function(a: Entry, b: Entry): boolean
+		local function better(a: Entry, b: Entry): boolean
 			local va, vb = value(a), value(b)
 			if va == vb then
 				return a.label < b.label
 			end
 			return va > vb
-		end)
-		for index = 1, 5 do
-			add(sorted[index])
+		end
+		-- The five best in that order, as a full sort would give, in one pass: the three-biome
+		-- pool has 248,832 builds a plan, and five full sorts of it took most of the run.
+		local top: { Entry } = {}
+		for _, entry in builds do
+			if #top < 5 or better(entry, top[#top]) then
+				local at = #top + 1
+				while at > 1 and better(entry, top[at - 1]) do
+					at -= 1
+				end
+				table.insert(top, at, entry)
+				if #top > 5 then
+					table.remove(top)
+				end
+			end
+		end
+		for _, entry in top do
+			add(entry)
 		end
 	end
 	local rng = Rng.new(FIELD_SEED)
@@ -689,6 +817,98 @@ for _, plan: Types.BodyPlan in PLANS do
 	end
 end
 
+-- Tide Flats alone, then all three biomes mixed.
+for _, plan: Types.BodyPlan in PLANS do
+	for _, level in { TIDE_FLATS_CAP, RANKED } do
+		tournament("Tide Flats", plan, planList(tideFlats, plan), level, FIELD_SIZE, STRICT)
+	end
+end
+
+-- The three-biome pool is held to the same marks as the two-biome one (noted, not failed, for
+-- the same reason), plus guard rails at the measured level so it cannot quietly get worse.
+-- Measured and explained in docs/content/TIDE_FLATS_ROSTER.md, "Mixed with the earlier biomes".
+local MIXED3_GUARD_WIN = 0.80
+local MIXED3_GUARD_PURE = 0.30
+
+-- Tide Flats against each earlier biome in the three-biome pool: no pure species beats every
+-- pure species of the other biome head to head, and the win rates are shown side by side.
+local function compareTideFlats(result: Result, plan: Types.BodyPlan, level: number)
+	local tf = planList(tideFlats, plan)
+	local function line(names: { string }): string
+		local parts: { string } = {}
+		local sum = 0
+		for _, name in names do
+			table.insert(parts, `{name} {fmtPct(result.pure[name])}`)
+			sum += result.pure[name]
+		end
+		return `{table.concat(parts, ", ")}  (mean {fmtPct(sum / #names)})`
+	end
+	print(`  Greenwood pure:   {line(planList(greenwood, plan))}`)
+	print(`  Dust Canyon pure: {line(planList(dustCanyon, plan))}`)
+	print(`  Tide Flats pure:  {line(tf)}`)
+	local function beatsAll(name: string, others: { string }): boolean
+		for _, other in others do
+			if (result.headToHead[name][other] or 0) <= 1 then
+				return false
+			end
+		end
+		return true
+	end
+	type Earlier = { title: string, roster: Roster }
+	local earlier: { Earlier } = {
+		{ title = "Greenwood", roster = greenwood },
+		{ title = "Dust Canyon", roster = dustCanyon },
+	}
+	for _, other in earlier do
+		local old = planList(other.roster, plan)
+		local dominant: { string } = {}
+		for _, name in tf do
+			if beatsAll(name, old) then
+				table.insert(dominant, name)
+			end
+		end
+		for _, name in old do
+			if beatsAll(name, tf) then
+				table.insert(dominant, name)
+			end
+		end
+		check(
+			`All three biomes, {plan}, level {level}: no pure species beats every pure species of Tide Flats and {other.title} the other way`,
+			#dominant == 0,
+			table.concat(dominant, ", ")
+		)
+	end
+end
+
+for _, plan: Types.BodyPlan in PLANS do
+	for _, level in { TIDE_FLATS_CAP, RANKED } do
+		local names = joined(
+			joined(planList(greenwood, plan), planList(dustCanyon, plan)),
+			planList(tideFlats, plan)
+		)
+		local result = tournament("All three biomes", plan, names, level, MIXED_FIELD_SIZE, MIXED)
+		local lowest = 1
+		for _, rate in result.pure do
+			lowest = math.min(lowest, rate)
+		end
+		check(
+			`All three biomes, {plan}, level {level}: guard, no build wins more than {fmtPct(
+				MIXED3_GUARD_WIN
+			)}`,
+			result.ranked[1].rate <= MIXED3_GUARD_WIN,
+			`best {fmtPct(result.ranked[1].rate)}`
+		)
+		check(
+			`All three biomes, {plan}, level {level}: guard, every pure species wins at least {fmtPct(
+				MIXED3_GUARD_PURE
+			)}`,
+			lowest >= MIXED3_GUARD_PURE,
+			`lowest {fmtPct(lowest)}`
+		)
+		compareTideFlats(result, plan, level)
+	end
+end
+
 ------------------------------------------------------------------------------------------------
 print("\n== Pacing: 3v3 between random wild teams ==")
 do
@@ -725,6 +945,12 @@ do
 			title = "Both biomes",
 			names = joined(greenwood.all, dustCanyon.all),
 			levels = { DUST_CANYON_CAP, RANKED },
+		},
+		{ title = "Tide Flats", names = tideFlats.all, levels = { TIDE_FLATS_CAP, RANKED } },
+		{
+			title = "All three biomes",
+			names = joined(joined(greenwood.all, dustCanyon.all), tideFlats.all),
+			levels = { TIDE_FLATS_CAP, RANKED },
 		},
 	}
 	for _, case in cases do
