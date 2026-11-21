@@ -1614,7 +1614,7 @@ end
 
 local ROSTER: { string } = {}
 for name, def in Species do
-	if not def.giantForm then
+	if def.biome <= 3 and not def.giantForm then
 		table.insert(ROSTER, name)
 	end
 end

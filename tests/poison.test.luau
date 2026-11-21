@@ -5,10 +5,12 @@
 local Battle = require("../src/shared/Battle")
 local BattleAi = require("../src/shared/BattleAi")
 local BattleConfig = require("../src/config/BattleConfig")
+local BreedConfig = require("../src/config/BreedConfig")
 local Breeding = require("../src/shared/Breeding")
 local Moves = require("../src/content/Moves")
 local Rng = require("../src/shared/Rng")
 local Species = require("../src/content/Species")
+local Types = require("../src/shared/Types")
 
 local passed, failed = 0, 0
 local function check(name: string, condition: boolean, detail: string?)
@@ -59,17 +61,27 @@ local function events(state: Battle.State, kind: Battle.EventKind, side: number?
 	return list
 end
 
-check(
-	"no move in the three launch biomes poisons",
-	(function(): boolean
-		for name, move in Moves do
-			if move.effect ~= nil and string.sub(name, 1, 5) ~= "Test " then
-				return false
+-- Poison arrives with the Mire (biome 4): no part of any species from the three launch biomes
+-- (giants' creature forms included) brings a move with an effect, so they play exactly as before.
+do
+	local found: { string } = {}
+	for name, def in Species do
+		if def.biome <= 3 then
+			for _, slot: Types.Slot in BreedConfig.SLOTS do
+				for _, unlock in def.parts[slot].moves do
+					if Moves[unlock.name].effect ~= nil then
+						table.insert(found, `{name} {slot}: {unlock.name}`)
+					end
+				end
 			end
 		end
-		return true
-	end)()
-)
+	end
+	check(
+		"no move brought by a species of the three launch biomes has an effect",
+		#found == 0,
+		table.concat(found, "; ")
+	)
+end
 
 print("\n== A poisoned creature ==")
 do

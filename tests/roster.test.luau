@@ -1,14 +1,16 @@
 --!strict
 -- The roster balance gate (docs/DECISIONS.md) for Greenwood (biome 1), Dust Canyon (biome 2),
--- Tide Flats (biome 3), the first two biomes mixed and all three mixed, plus the data checks for
--- each roster.
+-- Tide Flats (biome 3), the Mire (biome 4), the first two biomes mixed, the first three mixed and
+-- all four mixed, plus the data checks for each roster and what poison does in the gate.
 -- Run from the project folder:  lune run tests/roster.test
 --
 -- The gate builds every combination of parts on each body plan, picks a fixed, seeded field
 -- (every pure species, the five best builds by each stat and by total, then a random sample),
 -- and has every pair fight twice with sides swapped, using the real battle rules, at each biome's
 -- level cap and at the ranked level. Results are in docs/content/GREENWOOD_ROSTER.md,
--- docs/content/DUST_CANYON_ROSTER.md and docs/content/TIDE_FLATS_ROSTER.md.
+-- docs/content/DUST_CANYON_ROSTER.md, docs/content/TIDE_FLATS_ROSTER.md and
+-- docs/content/MIRE_ROSTER.md. The four-biome pool (16 species a plan, about a million builds)
+-- makes this the slowest test: about a minute and a half in all.
 
 local AssemblyMath = require("../src/shared/AssemblyMath")
 local Battle = require("../src/shared/Battle")
@@ -50,10 +52,11 @@ local function note(name: string, condition: boolean, detail: string?)
 	)
 end
 
-local GREENWOOD, DUST_CANYON, TIDE_FLATS = 1, 2, 3
+local GREENWOOD, DUST_CANYON, TIDE_FLATS, MIRE = 1, 2, 3, 4
 local GREENWOOD_CAP = 15 -- level cap before the first badge (docs/DECISIONS.md)
 local DUST_CANYON_CAP = 25 -- 15 plus 10 for the first badge
 local TIDE_FLATS_CAP = 35 -- plus 10 more for the second badge
+local MIRE_CAP = 45 -- plus 10 more for the third badge
 local RANKED = BattleConfig.RANKED_LEVEL
 local FIELD_SIZE = 160
 local MIXED_FIELD_SIZE = 200 -- eight species a plan: 32,768 builds; twelve: 248,832
@@ -89,6 +92,7 @@ end
 local greenwood = rosterOf(GREENWOOD)
 local dustCanyon = rosterOf(DUST_CANYON)
 local tideFlats = rosterOf(TIDE_FLATS)
+local mire = rosterOf(MIRE)
 
 local function planList(roster: Roster, plan: Types.BodyPlan): { string }
 	return if plan == "Quad" then roster.Quad else roster.Biped
@@ -632,6 +636,13 @@ end
 type Ranked = { entry: Entry, rate: number }
 type Result = {
 	ranked: { Ranked },
+	-- Poison (docs/content/MIRE_ROSTER.md): the share of fights in which a creature was poisoned,
+	-- and the mean win rate of the builds whose four moves include a poisoning move (carriers)
+	-- and of those whose four do not.
+	poisoned: number,
+	carriers: number,
+	carrierRate: number,
+	otherRate: number,
 	pure: { [string]: number }, -- win rate of each pure species
 	headToHead: { [string]: { [string]: number } }, -- points (out of 2) one pure species took off another
 }
@@ -646,6 +657,18 @@ local STRICT: Marks = { maxWin = check, minPure = check, spread = check }
 -- document, "Known gaps"), so those two are noted rather than failed.
 local MIXED: Marks = { maxWin = note, minPure = note, spread = check }
 
+local function poisons(fighter: Fighter): boolean
+	for _, name in fighter.moves do
+		if Moves[name].effect == "Poison" then
+			return true
+		end
+	end
+	return false
+end
+-- Fights in pools without the Mire in which anything was poisoned: must stay 0, so the three
+-- launch biomes play exactly as before.
+local launchPoisoned = 0
+
 local function tournament(
 	title: string,
 	plan: Types.BodyPlan,
@@ -657,7 +680,7 @@ local function tournament(
 	local field = pickField(allBuilds(plan, names, level), size, level)
 	local wins = table.create(#field, 0)
 	local headToHead: { [string]: { [string]: number } } = {}
-	local turns, fights = 0, 0
+	local turns, fights, poisonedFights = 0, 0, 0
 	for i = 1, #field do
 		for j = i + 1, #field do
 			-- Each pair fights twice, swapping sides, so side order cannot favour anyone.
@@ -673,6 +696,12 @@ local function tournament(
 				Battle.autoPlay(state)
 				turns += state.turn
 				fights += 1
+				for _, event in state.log do
+					if event.kind == "Poisoned" then
+						poisonedFights += 1
+						break
+					end
+				end
 				local winner = state.winner :: number
 				local pointsA = if winner == 0 then 0.5 elseif winner == 1 then 1 else 0
 				wins[order[1]] += pointsA
@@ -737,6 +766,31 @@ local function tournament(
 		end
 	end
 	print(`  pure species: {table.concat(pureLine, ", ")}`)
+	local carriers, carrierSum, otherSum = 0, 0, 0
+	for _, r in ranked do
+		if poisons(r.entry.fighter :: Fighter) then
+			carriers += 1
+			carrierSum += r.rate
+		else
+			otherSum += r.rate
+		end
+	end
+	local poisoned = poisonedFights / fights
+	local carrierRate = if carriers > 0 then carrierSum / carriers else 0
+	local otherRate = if carriers < #ranked then otherSum / (#ranked - carriers) else 0
+	local hasMire = false
+	for _, name in names do
+		hasMire = hasMire or Species[name].biome == MIRE
+	end
+	if hasMire then
+		print(
+			`  poison: applied in {fmtPct(poisoned)} of fights; {carriers} of {#ranked} builds carry a poisoning move, winning {fmtPct(
+				carrierRate
+			)} on average against {fmtPct(otherRate)} for the rest`
+		)
+	else
+		launchPoisoned += poisonedFights
+	end
 
 	local where = `{title}, {plan}, level {level}`
 	marks.maxWin(
@@ -754,7 +808,15 @@ local function tournament(
 		torsoCount >= 2 and legCount >= 2,
 		`{torsoCount} torsos, {legCount} leg sets`
 	)
-	return { ranked = ranked, pure = pure, headToHead = headToHead }
+	return {
+		ranked = ranked,
+		pure = pure,
+		headToHead = headToHead,
+		poisoned = poisoned,
+		carriers = carriers,
+		carrierRate = carrierRate,
+		otherRate = otherRate,
+	}
 end
 
 -- In the mixed pool, no pure species from one biome may beat every pure species from the other
@@ -910,13 +972,329 @@ for _, plan: Types.BodyPlan in PLANS do
 end
 
 ------------------------------------------------------------------------------------------------
-print("\n== Pacing: 3v3 between random wild teams ==")
+-- The Mire (biome 4). Poison arrives here; see docs/content/MIRE_ROSTER.md for the measurements.
+-- The most a poison carrier's mean win rate may exceed the rest's, alone and in the four-biome
+-- pool; and guard rails for the four-biome pool at the measured level, as for the three-biome one.
+local MIRE_POISON_EDGE = 0.15
+local MIXED4_POISON_EDGE = 0.15
+local MIXED4_GUARD_WIN = 0.88
+local MIXED4_GUARD_PURE = 0.24
+
+print("\n== Mire roster data ==")
 do
-	local function pace(names: { string }, level: number): (number, number, number)
+	local used = commonData(mire, MIRE_CAP, 42)
+	local counts: { [string]: number } = {}
+	for _, name in mire.all do
+		local def = Species[name]
+		counts[def.element] = (counts[def.element] or 0) + 1
+	end
+	local others = (counts.Leaf or 0) + (counts.Sand or 0) + (counts.Water or 0)
+	check(
+		"most species are Toxic, with one or two of the launch types and no later type",
+		(counts.Toxic or 0) > #mire.all / 2
+			and others >= 1
+			and others <= 2
+			and (counts.Toxic or 0) + others == #mire.all,
+		`Toxic {counts.Toxic or 0}, Water {counts.Water or 0}, Leaf {counts.Leaf or 0}, Sand {counts.Sand or 0}`
+	)
+
+	-- Lasso difficulty is a step above Tide Flats', and no Mire species is a three-zone catch.
+	local tfCommon, tfUncommon = 0, 0
+	for _, name in tideFlats.all do
+		local def = Species[name]
+		if def.baseRarity == "Common" then
+			tfCommon = math.max(tfCommon, def.lassoDifficulty)
+		else
+			tfUncommon = math.max(tfUncommon, def.lassoDifficulty)
+		end
+	end
+	local easiestCommon, hardestCommon, easiestUncommon, hardest = math.huge, 0, math.huge, 0
+	for _, name in mire.all do
+		local def = Species[name]
+		hardest = math.max(hardest, def.lassoDifficulty)
+		if def.baseRarity == "Common" then
+			easiestCommon = math.min(easiestCommon, def.lassoDifficulty)
+			hardestCommon = math.max(hardestCommon, def.lassoDifficulty)
+		else
+			easiestUncommon = math.min(easiestUncommon, def.lassoDifficulty)
+		end
+	end
+	check(
+		"lasso difficulty is a step above Tide Flats', below the three-zone catches",
+		easiestCommon > tfCommon
+			and easiestUncommon > tfUncommon
+			and easiestUncommon > hardestCommon
+			and hardest < 2.5,
+		`commons {easiestCommon} to {hardestCommon} (Tide Flats up to {tfCommon}), uncommons from {easiestUncommon} (Tide Flats up to {tfUncommon})`
+	)
+
+	-- The Mire favours Hp for breeding: its tails are swollen water sacks and bulrush heads,
+	-- carrying more Hp on average than any earlier biome's tails.
+	local function meanTailHp(roster: Roster): number
+		local sum = 0
+		for _, name in roster.all do
+			sum += Species[name].parts.Tail.stats.Hp or 0
+		end
+		return sum / #roster.all
+	end
+	local mireTail = meanTailHp(mire)
+	local earlierTail =
+		math.max(meanTailHp(greenwood), meanTailHp(dustCanyon), meanTailHp(tideFlats))
+	check(
+		"Mire tails carry more Hp than any earlier biome's",
+		mireTail > earlierTail,
+		string.format("mean tail Hp %.1f (best earlier biome %.1f)", mireTail, earlierTail)
+	)
+
+	-- Moves the Mire parts bring that no earlier roster's do.
+	local earlierMoves: { [string]: boolean } = {}
+	for _, name in joined(joined(greenwood.all, dustCanyon.all), tideFlats.all) do
+		for _, slot: Types.Slot in BreedConfig.SLOTS do
+			for _, unlock in Species[name].parts[slot].moves do
+				earlierMoves[unlock.name] = true
+			end
+		end
+	end
+	local fresh, toxic, powerOk, poisoning = 0, 0, true, 0
+	for moveName in used do
+		if not earlierMoves[moveName] then
+			fresh += 1
+			local move = Moves[moveName]
+			if move.element == "Toxic" then
+				toxic += 1
+			end
+			if move.effect == "Poison" then
+				poisoning += 1
+				powerOk = powerOk and move.power >= 30 and move.power <= 50
+			else
+				powerOk = powerOk and move.power >= 40 and move.power <= 80
+			end
+		end
+	end
+	check("18 to 24 new moves", fresh >= 18 and fresh <= 24, `{fresh}`)
+	check("most new moves are Toxic", toxic > fresh / 2, `{toxic} of {fresh}`)
+	check("new move power is 40 to 80, or 30 to 50 for a poisoning move", powerOk)
+	check(
+		"a small set of poisoning moves: three to five",
+		poisoning >= 3 and poisoning <= 5,
+		`{poisoning}`
+	)
+
+	-- Where the effects and the teaser sit. Poisoning moves are Toxic and come only from Toxic
+	-- species, and each is weaker than the plain Mire moves brought on the same slot at the same
+	-- level (on average). The Frost teaser (Frostline is next) sits only on Water torsos, so no
+	-- Toxic creature can take an anti-Toxic move into a Toxic mirror.
+	type Brought = { slot: Types.Slot, level: number, power: number }
+	local plain: { Brought } = {}
+	local poisonParts: { Brought } = {}
+	local placedOk, teasers = true, 0
+	local placement: { string } = {}
+	for _, name in mire.all do
+		local def = Species[name]
+		for _, slot: Types.Slot in BreedConfig.SLOTS do
+			for _, unlock in def.parts[slot].moves do
+				local move = Moves[unlock.name]
+				local entry: Brought = { slot = slot, level = unlock.level, power = move.power }
+				if move.effect == "Poison" then
+					table.insert(poisonParts, entry)
+					if move.element ~= "Toxic" or def.element ~= "Toxic" then
+						placedOk = false
+						table.insert(placement, `{name} {slot}: {unlock.name}`)
+					end
+				else
+					table.insert(plain, entry)
+				end
+				if move.element == "Frost" then
+					teasers += 1
+					if slot ~= "Torso" or def.element ~= "Water" then
+						placedOk = false
+						table.insert(placement, `{name} {slot}: {unlock.name}`)
+					end
+				end
+			end
+		end
+	end
+	check(
+		"poisoning moves come only from Toxic species and Frost moves only on Water torsos",
+		placedOk and teasers >= 1,
+		if #placement > 0 then table.concat(placement, "; ") else `{teasers} Frost moves`
+	)
+	local weakerOk = true
+	for _, p in poisonParts do
+		local sum, count = 0, 0
+		for _, q in plain do
+			if q.slot == p.slot and q.level == p.level then
+				sum += q.power
+				count += 1
+			end
+		end
+		weakerOk = weakerOk and count > 0 and p.power < sum / count
+	end
+	check(
+		"each poisoning move is weaker than the plain moves of its slot and unlock level",
+		weakerOk
+	)
+
+	-- Wild Mire creatures do poison: each Toxic species with a poisoning move on its head or
+	-- torso keeps it among its four default moves at the Mire's cap.
+	local keepsOk = true
+	local carriers: { string } = {}
+	local firstSlots: { Types.Slot } = { "Head", "Torso" }
+	for _, name in mire.all do
+		local def = Species[name]
+		local brings = false
+		for _, slot: Types.Slot in firstSlots do
+			for _, unlock in def.parts[slot].moves do
+				brings = brings or Moves[unlock.name].effect == "Poison"
+			end
+		end
+		if brings then
+			local fighter =
+				Battle.fighter(build(def.bodyPlan, table.create(5, name), MIRE_CAP), nil, MIRE_CAP)
+			local keeps = poisons(fighter)
+			keepsOk = keepsOk and keeps
+			table.insert(carriers, `{name}{if keeps then "" else " (not in its four)"}`)
+		end
+	end
+	check(
+		"each species with a poisoning head or torso keeps that move in its default four",
+		keepsOk and #carriers >= 2,
+		table.concat(carriers, ", ")
+	)
+	checkFits({ mire }, "Mire")
+	checkFits({ greenwood, dustCanyon, tideFlats, mire }, "all four biomes")
+end
+
+-- The Mire alone, then all four biomes mixed. Measured and explained in
+-- docs/content/MIRE_ROSTER.md.
+for _, plan: Types.BodyPlan in PLANS do
+	for _, level in { MIRE_CAP, RANKED } do
+		local result = tournament("Mire", plan, planList(mire, plan), level, FIELD_SIZE, STRICT)
+		-- Poison is a real choice in the Mire but not the only good one: it lands in some fights
+		-- (only on the Water species and Water-torso builds, since Toxic is immune), and builds
+		-- that carry it do not win much more often than builds that do not.
+		check(
+			`Mire, {plan}, level {level}: poison is applied in some fights, and carriers win at most {fmtPct(
+				MIRE_POISON_EDGE
+			)} more than the rest`,
+			result.poisoned > 0 and result.carrierRate - result.otherRate <= MIRE_POISON_EDGE,
+			`applied in {fmtPct(result.poisoned)}; carriers {fmtPct(result.carrierRate)}, others {fmtPct(
+				result.otherRate
+			)}`
+		)
+	end
+end
+
+-- A newer biome against each earlier one in a mixed pool: no pure species beats every pure
+-- species of the other biome head to head, and the win rates are shown side by side.
+type Titled = { title: string, roster: Roster }
+local function compareNewest(
+	result: Result,
+	plan: Types.BodyPlan,
+	level: number,
+	newest: Titled,
+	earlier: { Titled },
+	poolTitle: string
+)
+	local function line(names: { string }): string
+		local parts: { string } = {}
+		local sum = 0
+		for _, name in names do
+			table.insert(parts, `{name} {fmtPct(result.pure[name])}`)
+			sum += result.pure[name]
+		end
+		return `{table.concat(parts, ", ")}  (mean {fmtPct(sum / #names)})`
+	end
+	for _, other in earlier do
+		print(`  {other.title} pure: {line(planList(other.roster, plan))}`)
+	end
+	print(`  {newest.title} pure: {line(planList(newest.roster, plan))}`)
+	local function beatsAll(name: string, others: { string }): boolean
+		for _, other in others do
+			if (result.headToHead[name][other] or 0) <= 1 then
+				return false
+			end
+		end
+		return true
+	end
+	local new = planList(newest.roster, plan)
+	for _, other in earlier do
+		local old = planList(other.roster, plan)
+		local dominant: { string } = {}
+		for _, name in new do
+			if beatsAll(name, old) then
+				table.insert(dominant, name)
+			end
+		end
+		for _, name in old do
+			if beatsAll(name, new) then
+				table.insert(dominant, name)
+			end
+		end
+		check(
+			`{poolTitle}, {plan}, level {level}: no pure species beats every pure species of {newest.title} and {other.title} the other way`,
+			#dominant == 0,
+			table.concat(dominant, ", ")
+		)
+	end
+end
+
+for _, plan: Types.BodyPlan in PLANS do
+	for _, level in { MIRE_CAP, RANKED } do
+		local names = joined(
+			joined(
+				joined(planList(greenwood, plan), planList(dustCanyon, plan)),
+				planList(tideFlats, plan)
+			),
+			planList(mire, plan)
+		)
+		local result = tournament("All four biomes", plan, names, level, MIXED_FIELD_SIZE, MIXED)
+		local lowest = 1
+		for _, rate in result.pure do
+			lowest = math.min(lowest, rate)
+		end
+		check(
+			`All four biomes, {plan}, level {level}: guard, no build wins more than {fmtPct(
+				MIXED4_GUARD_WIN
+			)}`,
+			result.ranked[1].rate <= MIXED4_GUARD_WIN,
+			`best {fmtPct(result.ranked[1].rate)}`
+		)
+		check(
+			`All four biomes, {plan}, level {level}: guard, every pure species wins at least {fmtPct(
+				MIXED4_GUARD_PURE
+			)}`,
+			lowest >= MIXED4_GUARD_PURE,
+			`lowest {fmtPct(lowest)}`
+		)
+		check(
+			`All four biomes, {plan}, level {level}: guard, poison carriers win at most {fmtPct(
+				MIXED4_POISON_EDGE
+			)} more than the rest`,
+			result.carrierRate - result.otherRate <= MIXED4_POISON_EDGE,
+			`carriers {fmtPct(result.carrierRate)}, others {fmtPct(result.otherRate)}`
+		)
+		compareNewest(result, plan, level, { title = "Mire", roster = mire }, {
+			{ title = "Greenwood", roster = greenwood },
+			{ title = "Dust Canyon", roster = dustCanyon },
+			{ title = "Tide Flats", roster = tideFlats },
+		}, "All four biomes")
+	end
+end
+check(
+	"no creature is poisoned in any pool without the Mire",
+	launchPoisoned == 0,
+	`{launchPoisoned} fights`
+)
+
+------------------------------------------------------------------------------------------------
+print("\n== Pacing: 3v3 (4v4 from the Mire) between random wild teams ==")
+do
+	local function pace(names: { string }, level: number, size: number): (number, number, number)
 		local rng = Rng.new(31)
 		local function randomTeam(prefix: string): { Fighter }
 			local team: { Fighter } = {}
-			for index = 1, 3 do
+			for index = 1, size do
 				local creature = Breeding.wild(
 					Rng.pick(rng, names),
 					`{prefix}{index}`,
@@ -937,7 +1315,9 @@ do
 		end
 		return turns / battles, shortest, longest
 	end
-	type PaceCase = { title: string, names: { string }, levels: { number } }
+	-- Team size: three in the launch biomes, four from the Mire (docs/MASTER_PLAN.md). The target
+	-- grows with the team: a 4v4 has a third more creatures to knock out than a 3v3.
+	type PaceCase = { title: string, names: { string }, levels: { number }, size: number? }
 	local cases: { PaceCase } = {
 		{ title = "Greenwood", names = greenwood.all, levels = { 5, GREENWOOD_CAP, RANKED } },
 		{ title = "Dust Canyon", names = dustCanyon.all, levels = { DUST_CANYON_CAP, RANKED } },
@@ -952,13 +1332,25 @@ do
 			names = joined(joined(greenwood.all, dustCanyon.all), tideFlats.all),
 			levels = { TIDE_FLATS_CAP, RANKED },
 		},
+		{ title = "Mire", names = mire.all, levels = { MIRE_CAP, RANKED }, size = 4 },
+		{
+			title = "All four biomes",
+			names = joined(joined(joined(greenwood.all, dustCanyon.all), tideFlats.all), mire.all),
+			levels = { MIRE_CAP, RANKED },
+			size = 4,
+		},
 	}
 	for _, case in cases do
 		for _, level in case.levels do
-			local mean, shortest, longest = pace(case.names, level)
+			local size = case.size or 3
+			local low, high = PACE_MIN * size / 3, PACE_MAX * size / 3
+			local mean, shortest, longest = pace(case.names, level, size)
 			check(
-				`{case.title}, level {level}: a 3v3 lasts {PACE_MIN} to {PACE_MAX} turns on average`,
-				mean >= PACE_MIN and mean <= PACE_MAX,
+				`{case.title}, level {level}: a {size}v{size} lasts {string.format("%.1f", low)} to {string.format(
+					"%.1f",
+					high
+				)} turns on average`,
+				mean >= low and mean <= high,
 				`{string.format("%.1f", mean)} turns, shortest {shortest}, longest {longest}`
 			)
 		end

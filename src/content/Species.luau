@@ -38,6 +38,16 @@ local Species: { [string]: Types.SpeciesDef } = {
 	Runnelfin = require("./species/Runnelfin"),
 	-- Tide Flats' giant in its creature form: captured, never met in the wild.
 	Carrackon = require("./species/Carrackon"),
+	-- The Mire (biome 4). See docs/content/MIRE_ROSTER.md. Data only for now: no biome in
+	-- src/content/Biomes.luau spawns them yet.
+	Bogbellow = require("./species/Bogbellow"),
+	Bulbroth = require("./species/Bulbroth"),
+	Fenwhisk = require("./species/Fenwhisk"),
+	Keelsnap = require("./species/Keelsnap"),
+	Lilyshade = require("./species/Lilyshade"),
+	Mistrel = require("./species/Mistrel"),
+	Skipslick = require("./species/Skipslick"),
+	Snaggar = require("./species/Snaggar"),
 }
 
 return Species

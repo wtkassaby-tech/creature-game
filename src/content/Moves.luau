@@ -9,7 +9,7 @@ export type MoveEffect = "Poison"
 export type MoveDef = { element: Types.Element, power: number, effect: MoveEffect? }
 
 local Moves: { [string]: MoveDef } = {
-	-- Greenwood (biome 1). No status effects yet: those arrive with the Mire.
+	-- Greenwood (biome 1). No status effects: those arrive with the Mire.
 	-- Leaf
 	["Moss Slam"] = { element = "Leaf", power = 35 },
 	["Seed Shot"] = { element = "Leaf", power = 35 },
@@ -101,6 +101,36 @@ local Moves: { [string]: MoveDef } = {
 	-- Carrackon's own (the captured giant's signature moves; see src/content/giants).
 	["Rolling Breaker"] = { element = "Water", power = 65 },
 	["Silt Cloud"] = { element = "Sand", power = 60 },
+
+	-- The Mire (biome 4). Poison arrives here. See docs/content/MIRE_ROSTER.md.
+	-- Toxic
+	["Muck Stamp"] = { element = "Toxic", power = 40 },
+	["Simmer Slam"] = { element = "Toxic", power = 40 },
+	["Peat Butt"] = { element = "Toxic", power = 45 },
+	["Sludge Slap"] = { element = "Toxic", power = 45 },
+	["Bog Wade"] = { element = "Toxic", power = 50 },
+	["Gar Rend"] = { element = "Toxic", power = 50 },
+	["Hook Beak"] = { element = "Toxic", power = 50 },
+	["Slick Dash"] = { element = "Toxic", power = 50 },
+	["Fen Lash"] = { element = "Toxic", power = 55 },
+	["Snag Bite"] = { element = "Toxic", power = 55 },
+	["Mire Crush"] = { element = "Toxic", power = 60 },
+	["Murk Lunge"] = { element = "Toxic", power = 65 },
+	["Shell Bash"] = { element = "Toxic", power = 65 },
+	-- Toxic, poisoning (the first moves with an effect): weaker hits than the plain moves of the
+	-- same slot, brought only by Toxic species
+	["Barb Sting"] = { element = "Toxic", power = 30, effect = "Poison" },
+	["Venom Nip"] = { element = "Toxic", power = 30, effect = "Poison" },
+	["Broth Spit"] = { element = "Toxic", power = 40, effect = "Poison" },
+	["Fume Belch"] = { element = "Toxic", power = 45, effect = "Poison" },
+	-- Water: the two Water species and their parts
+	["Fen Plunge"] = { element = "Water", power = 40 },
+	["Mist Snap"] = { element = "Water", power = 40 },
+	["Reed Paddle"] = { element = "Water", power = 45 },
+	["Murk Dive"] = { element = "Water", power = 65 },
+	["Still Water"] = { element = "Water", power = 65 },
+	-- Frost: a teaser for Frostline, on the two Water torsos only (see the roster document)
+	["Hoarmist"] = { element = "Frost", power = 70 },
 }
 
 return Moves

@@ -2,6 +2,25 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (the Mire roster, poison, live switches)
+
+**In one line:** the fourth biome's eight creatures now exist as data, with the first poisoning moves; nothing in the three launch biomes changes. The full check passes. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Mire roster: eight species (six Toxic, two Water), 23 moves, four of them poisoning | Balanced and tested (190 roster checks, 22 known gaps noted). Data only: no biome spawns them yet | `src/content/species/`, `docs/content/MIRE_ROSTER.md` |
+| Poison in the battle rules: a twelfth of health a turn for four turns; Toxic creatures are immune | Tested (23), reviewed | `src/shared/Battle.luau` |
+| Thirteenth independent review (poison, switches, analytics) | Done: no must-fix; six smaller fixes made | `docs/REVIEWS.md` |
+| A new live off-switch for releasing creatures | Tested | `src/config/LiveConfig.luau` |
+
+**What to know:**
+
+1. Inside the Mire, poison barely moves the balance, because most Mire creatures are immune. Against the creatures a player brings from the launch biomes it is strong. Whether to soften it is in `docs/DECISIONS.md` under Still open.
+2. Mixing all four biomes one-on-one is less balanced than three (the best bred creature wins 81 to 85% of fights, against a target of 70%). The cause is the type chart, and it is recorded as a known gap, not hidden.
+3. One Mire species was renamed (to Keelsnap) because its first name was too close to a creature in another game. All names remain placeholders.
+
+**Next for the Mire:** its town, routes, tamers with teams of four, giant, quests and chapter 4. Giants do not react to poison yet.
+
 ## 21 November 2026 (Tide Flats, and robots that play the whole game)
 
 **In one line:** all three launch biomes can now be played end to end on the server, and twelve robot players prove it on every check: each one plays from the starter pick to the third badge through the real rules. 1,910 checks pass. **None of it has run in Roblox Studio yet.**
