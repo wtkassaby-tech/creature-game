@@ -107,7 +107,9 @@ local rival: WorldTypes.RivalDef = {
 	look = "A sharp-eyed youth in a green jacket with a loud, quick grin",
 	tier = "Rival",
 	firstBattle = "rival_first",
+	firstPlace = "greenwood_hub",
 	gateBattle = "rival_gate",
+	gatePlace = "greenwood_gate",
 	firstCannotBeLost = true,
 	first = {
 		Mossmitt = {
@@ -166,4 +168,6 @@ local rival: WorldTypes.RivalDef = {
 	gateAfter = "Again... fine. I will get stronger, whatever it takes.",
 }
 
-return { locals = locals, rival = rival }
+local pack: WorldTypes.BiomeTamers = { locals = locals, rival = rival }
+
+return pack

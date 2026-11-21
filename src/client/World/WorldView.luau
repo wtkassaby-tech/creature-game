@@ -10,7 +10,7 @@
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
+local Storyline = require(ReplicatedStorage.content.Storyline)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
@@ -110,7 +110,7 @@ end
 -- the quests given at their place. The server checks every part of this again.
 local function talk(who: string, place: string?)
 	local flags = flagsSeen()
-	local beat = World.nextBeat(Chapter1, flags)
+	local beat = World.nextBeat(Storyline, flags)
 	if beat and beat.trigger.kind == "Talk" and beat.trigger.target == who then
 		Net.CompleteBeat.Fire({ BeatId = beat.id, Choice = nil })
 	end

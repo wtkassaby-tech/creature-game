@@ -168,13 +168,40 @@ export type RivalDef = {
 	tier: BattleAi.Tier,
 	first: ByStarter<TamerTeam>, -- the first battle, keyed by the player's starter
 	firstBattle: string, -- the story battle id of the first battle (a beat's Win target)
+	firstPlace: string, -- the place id where he stands for it
 	gateBattle: string, -- the story battle id of the gate battle
+	gatePlace: string,
 	firstCannotBeLost: boolean, -- the server never lets the player lose it
 	gate: ByStarter<TamerTeam>, -- the gate battle, keyed by the player's starter
 	firstBefore: string,
 	firstAfter: string,
 	gateBefore: string,
 	gateAfter: string,
+}
+
+-- A battle the story calls for (the rival, a gate's champion). It can be fought only while it is
+-- the story's next step, and only once. `team` is one team for everyone; `teams` is one for each
+-- starter the player may have picked. Exactly one of the two is set.
+export type StoryBattle = {
+	id: string, -- the story battle id (a beat's Win target)
+	name: string,
+	look: string,
+	tier: BattleAi.Tier,
+	place: string, -- the place id where the opponent stands
+	xpKind: "Rival" | "Gate", -- how its XP is counted (ProgressionConfig.KIND_MULTIPLIER)
+	team: TamerTeam?,
+	teams: ByStarter<TamerTeam>?,
+	before: string, -- said before the battle
+	after: string, -- said after losing
+	mayRetryAtOnce: boolean, -- a loss costs nothing and the battle is offered again
+}
+
+-- A biome's tamer file: its local tamers, and optionally the rival's teams there and any other
+-- story battles (a gate's champion).
+export type BiomeTamers = {
+	locals: { Tamer },
+	rival: RivalDef?,
+	storyBattles: { StoryBattle }?,
 }
 
 -- Quests ------------------------------------------------------------------------------------

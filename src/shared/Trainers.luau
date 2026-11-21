@@ -3,8 +3,9 @@
 -- Pure rules: who can be battled now, where the player must stand, and the team they bring.
 --
 -- A local tamer can always be battled (the first win pays most; rematches pay once a day).
--- A rival battle exists only while the story is waiting for it: it is the next story beat's
--- battle, so it can never be replayed for XP once the story has moved on.
+-- A story battle (the rival, a gate's champion) exists only while the story is waiting for it:
+-- it is the next story beat's battle, so it can never be replayed for XP once the story has
+-- moved on. In the code a story battle's kind is "Rival" whoever the opponent is.
 
 local Breeding = require("./Breeding")
 local Profile = require("./Profile")
@@ -45,8 +46,7 @@ end
 function Trainers.resolve(
 	id: unknown,
 	profile: Profile.Profile,
-	chapter: WorldTypes.Chapter,
-	biome: WorldTypes.Biome
+	chapter: WorldTypes.Chapter
 ): (Opponent?, string?)
 	if typeof(id) ~= "string" then
 		return nil, "Bad request"
@@ -73,26 +73,30 @@ function Trainers.resolve(
 	if Rewards.hasBeaten(profile, id) then
 		return nil, "That battle is not available"
 	end
-	for _, rival in Tamers.rivals do
-		local first = id == rival.firstBattle
-		if first or id == rival.gateBattle then
-			local team = byStarter(if first then rival.first else rival.gate, profile.Story.starter)
-			if team == nil then
-				return nil, "Pick your first creature before this battle"
-			end
-			return {
-				id = id,
-				kind = "Rival",
-				xpKind = if first then "Rival" else "Gate",
-				place = if first then biome.hub.id else biome.gate.id,
-				team = team,
-				paysCoins = false,
-				mayRetryAtOnce = first and rival.firstCannotBeLost,
-			},
-				nil
+	local battle = Tamers.story[id]
+	if not battle then
+		return nil, "That battle is not available"
+	end
+	local team = battle.team
+	if battle.teams then
+		team = byStarter(battle.teams, profile.Story.starter)
+		if team == nil then
+			return nil, "Pick your first creature before this battle"
 		end
 	end
-	return nil, "That battle is not available"
+	if team == nil then
+		return nil, "That battle is not available"
+	end
+	return {
+		id = id,
+		kind = "Rival",
+		xpKind = battle.xpKind,
+		place = battle.place,
+		team = team,
+		paysCoins = false,
+		mayRetryAtOnce = battle.mayRetryAtOnce,
+	},
+		nil
 end
 
 -- Builds a team's creatures and their chosen moves. The same opponent always brings the same

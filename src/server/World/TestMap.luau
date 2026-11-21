@@ -215,18 +215,14 @@ function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
 		end
 	end
 
-	-- The rival waits in the square for the first battle and at the gate for the last.
-	for _, rival in Tamers.rivals do
-		local first = person(hub, `{rival.name} (first battle)`, { x = 20, z = -20 })
-		prompt(first, "Rival", rival.firstBattle, "Battle", rival.name, WorldConfig.ENGAGE_RADIUS)
-		local gatePoint = map.places[biome.gate.id]
-		if gatePoint then
-			local last = person(
-				world,
-				`{rival.name} (gate battle)`,
-				{ x = gatePoint.x - 10, z = gatePoint.z + 10 }
-			)
-			prompt(last, "Rival", rival.gateBattle, "Battle", rival.name, WorldConfig.ENGAGE_RADIUS)
+	-- The people the story sends the player to battle (the rival, a gate's champion) stand a
+	-- few steps from their place.
+	for _, battle in Tamers.story do
+		local place = map.places[battle.place]
+		if place then
+			local body =
+				person(world, `{battle.name} ({battle.id})`, { x = place.x + 14, z = place.z - 14 })
+			prompt(body, "Rival", battle.id, "Battle", battle.name, WorldConfig.ENGAGE_RADIUS)
 		end
 	end
 

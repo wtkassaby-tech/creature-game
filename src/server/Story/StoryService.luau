@@ -11,7 +11,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
+local Storyline = require(ReplicatedStorage.content.Storyline)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
@@ -39,7 +39,7 @@ local lastRequest: { [Player]: number } = {}
 local random = Random.new()
 
 function StoryService.chapter(): WorldTypes.Chapter
-	return Chapter1
+	return Storyline
 end
 
 -- Something happened that might be what the story is waiting for. `choice` is the starter the
@@ -54,14 +54,14 @@ function StoryService.event(
 	if not profile then
 		return false
 	end
-	local beat = StoryTriggers.ready(Chapter1, profile, hooks.map(), event)
+	local beat = StoryTriggers.ready(Storyline, profile, hooks.map(), event)
 	if not beat then
 		if not quiet then
 			hooks.refuse(player, "Not yet")
 		end
 		return false
 	end
-	local done, problem = StoryProgress.complete(profile, Chapter1, {
+	local done, problem = StoryProgress.complete(profile, Storyline, {
 		beatId = beat.id,
 		choice = choice,
 		triggerMet = true, -- StoryTriggers.ready just confirmed it
@@ -90,7 +90,7 @@ function StoryService.event(
 	hooks.log("StoryBeat", { player = player.UserId, beat = done.beat.id, gifts = #done.gifts })
 
 	-- If the next beat just follows this one, it starts by itself after a moment.
-	local nextBeat = World.nextBeat(Chapter1, profile.Story.flags)
+	local nextBeat = World.nextBeat(Storyline, profile.Story.flags)
 	if nextBeat and nextBeat.trigger.kind == "Follow" then
 		task.delay(FOLLOW_SECONDS, function()
 			if player.Parent == Players then
@@ -110,7 +110,7 @@ function StoryService.start(given: Hooks): () -> ()
 		end
 		lastRequest[player] = now
 		local profile = hooks.getData(player)
-		local beat = if profile then World.nextBeat(Chapter1, profile.Story.flags) else nil
+		local beat = if profile then World.nextBeat(Storyline, profile.Story.flags) else nil
 		-- The device names the beat only so a stale request cannot finish a later one.
 		if not beat or beat.id ~= value.BeatId then
 			return hooks.refuse(player, "Not yet")

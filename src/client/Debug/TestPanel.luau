@@ -8,7 +8,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
+local Storyline = require(ReplicatedStorage.content.Storyline)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoPlayer = require(script.Parent.Parent.Lasso.LassoPlayer)
@@ -173,7 +173,7 @@ function TestPanel.start(parent: Instance)
 		for _, flag in seen do
 			flags[flag] = true
 		end
-		local beat = World.nextBeat(Chapter1, flags)
+		local beat = World.nextBeat(Storyline, flags)
 		if beat then
 			Net.CompleteBeat.Fire({ BeatId = beat.id, Choice = nil })
 		end
@@ -237,7 +237,7 @@ function TestPanel.start(parent: Instance)
 	end)
 	Bus.listen(Net.BeatCompleted, function(value)
 		log(`Story: {value.BeatId} ({#value.Gifts} gift(s))`)
-		for _, beat in Chapter1.beats do
+		for _, beat in Storyline.beats do
 			if beat.id == value.BeatId then
 				for _, line in beat.lines do
 					log(`  {line.speaker}: {line.text}`)

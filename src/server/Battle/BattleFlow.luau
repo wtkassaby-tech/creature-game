@@ -92,8 +92,7 @@ local function resolveTarget(
 		if not profile then
 			return nil, "Your data is not loaded"
 		end
-		local opponent, why =
-			Trainers.resolve(targetName, profile, StoryService.chapter(), WorldService.biome())
+		local opponent, why = Trainers.resolve(targetName, profile, StoryService.chapter())
 		if not opponent or opponent.kind ~= kind then
 			return nil, why or "That battle is not available"
 		end

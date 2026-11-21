@@ -61,21 +61,21 @@ do
 	local profile = Profile.template()
 	check(
 		"a made-up opponent is refused",
-		Trainers.resolve("gw_nobody", profile, Chapter1, greenwood) == nil
-			and Trainers.resolve(12, profile, Chapter1, greenwood) == nil
+		Trainers.resolve("gw_nobody", profile, Chapter1) == nil
+			and Trainers.resolve(12, profile, Chapter1) == nil
 	)
-	local pip = Trainers.resolve("gw_pip", profile, Chapter1, greenwood)
+	local pip = Trainers.resolve("gw_pip", profile, Chapter1)
 	check(
 		"a local tamer can be battled, standing by them",
 		pip ~= nil and pip.place == "gw_pip" and pip.paysCoins
 	)
 	check(
 		"the rival's battle is refused before the story reaches it",
-		Trainers.resolve("rival_first", profile, Chapter1, greenwood) == nil
+		Trainers.resolve("rival_first", profile, Chapter1) == nil
 	)
 
 	advance(profile, "rival_parting")
-	local first = Trainers.resolve("rival_first", profile, Chapter1, greenwood)
+	local first = Trainers.resolve("rival_first", profile, Chapter1)
 	check(
 		"it opens when it is the story's next step",
 		first ~= nil and first.kind == "Rival" and not first.paysCoins
@@ -88,21 +88,21 @@ do
 	profile.Story.flags["won:rival_first"] = true
 	check(
 		"once won it cannot be replayed, even before its beat finishes",
-		Trainers.resolve("rival_first", profile, Chapter1, greenwood) == nil
+		Trainers.resolve("rival_first", profile, Chapter1) == nil
 	)
 	profile.Story.flags["won:rival_first"] = nil
 	check(
 		"the gate battle is not open yet",
-		Trainers.resolve("rival_gate", profile, Chapter1, greenwood) == nil
+		Trainers.resolve("rival_gate", profile, Chapter1) == nil
 	)
 
 	advance(profile, "lasso_lesson")
 	check(
 		"once won, the first battle cannot be replayed",
-		Trainers.resolve("rival_first", profile, Chapter1, greenwood) == nil
+		Trainers.resolve("rival_first", profile, Chapter1) == nil
 	)
 	advance(profile, "badge_and_token")
-	local gate = Trainers.resolve("rival_gate", profile, Chapter1, greenwood)
+	local gate = Trainers.resolve("rival_gate", profile, Chapter1)
 	check(
 		"the gate battle opens at the gate",
 		gate ~= nil and gate.place == "greenwood_gate" and gate.xpKind == "Gate"
@@ -112,7 +112,7 @@ end
 print("\n== Their teams ==")
 do
 	local profile = Profile.template()
-	local wren = assert(Trainers.resolve("gw_wren", profile, Chapter1, greenwood), "Wren exists")
+	local wren = assert(Trainers.resolve("gw_wren", profile, Chapter1), "Wren exists")
 	local creatures, moves = Trainers.build(wren)
 	check(
 		"a tamer brings their listed team at its levels",
