@@ -307,3 +307,69 @@ event ReleaseResult {
 		Element: Element?,
 	},
 }
+
+-- Server -> device: the player's saved state, for the screens. Sent once data loads and again
+-- after anything changes it (at most a few times a second). Display only: the device never
+-- sends any of it back. An egg's child is kept secret until it hatches.
+struct PartView {
+	Species: string(1..24),
+	Quality: u8,
+}
+struct CreatureView {
+	Id: string(1..40),
+	BodyPlan: BodyPlan,
+	Head: PartView,
+	Torso: PartView,
+	FrontLimbs: PartView,
+	Legs: PartView,
+	Tail: PartView,
+	Colour: string(1..24),
+	CarriedColour: string(1..24),
+	Size: f32,
+	Rarity: Rarity,
+	Level: u8,
+	Xp: u32,
+	Generation: u16,
+	BreedCount: u16,
+	BreedReadyAt: f64,
+	OriginBiome: u8,
+	IsGiant: boolean,
+	Bound: boolean,
+	Serial: u32?,
+}
+struct EggView {
+	HatchAt: f64,
+}
+struct CandyView {
+	Leaf: f32,
+	Sand: f32,
+	Water: f32,
+	Toxic: f32,
+	Frost: f32,
+	Crystal: f32,
+	Fire: f32,
+	Storm: f32,
+	Arcane: f32,
+	Cosmic: f32,
+	Prism: f32,
+}
+event PlayerState {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Coins: u32,
+		Gems: u32,
+		Candy: CandyView,
+		Items: map { [string(1..24)]: u16 },
+		Creatures: CreatureView[0..400],
+		Team: string(1..40)[0..6],
+		Eggs: EggView[0..4],
+		Pens: u8,
+		StableCapacity: u16,
+		Badges: u8,
+		Starter: string(0..24),
+		Flags: string(1..40)[0..200],
+		Waiting: u8,
+	},
+}

@@ -55,7 +55,8 @@ local function missesSoFar(player: Player, battleId: number): number
 	return 0
 end
 
-function CaptureService.start(getData: GetData, log: Log): () -> ()
+-- `changed` is told whenever a throw changes the player's saved state (a lasso spent, a catch).
+function CaptureService.start(getData: GetData, log: Log, changed: (player: Player) -> ()): () -> ()
 	local random = Random.new()
 
 	local function resolve(player: Player, throwId: number)
@@ -105,6 +106,7 @@ function CaptureService.start(getData: GetData, log: Log): () -> ()
 				log("LassoInvalid", { player = player.UserId, reason = result.judgement.reason })
 			end
 		end
+		changed(player)
 		Net.LassoResult.Fire(player, {
 			ThrowId = throwId,
 			Outcome = result.outcome,
@@ -146,6 +148,7 @@ function CaptureService.start(getData: GetData, log: Log): () -> ()
 		if not throw then
 			return BattleService.refuse(player, problem or "You cannot throw now")
 		end
+		changed(player) -- the lasso is spent
 		nextThrowId = (nextThrowId + 1) % 4294967295
 		local throwId = nextThrowId
 		playing[player] = {

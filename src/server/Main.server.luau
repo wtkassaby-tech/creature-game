@@ -30,6 +30,7 @@ local BattleService = require(script.Parent.Battle.BattleService)
 local BreedingService = require(script.Parent.Breeding.BreedingService)
 local CaptureService = require(script.Parent.Capture.CaptureService)
 local DataService = require(script.Parent.Data.DataService)
+local StateSync = require(script.Parent.State.StateSync)
 
 local HATCH_CHECK_SECONDS = 5
 local IS_STUDIO = RunService:IsStudio()
@@ -90,6 +91,7 @@ local function completeBeat(player: Player, beatId: string, choice: string?)
 			Waiting = gift.waiting == true,
 		})
 	end
+	StateSync.changed(player)
 	Net.BeatCompleted.Fire(player, { BeatId = done.beat.id, Gifts = gifts, Unlocks = done.unlocks })
 	log("StoryBeat", { player = player.UserId, beat = done.beat.id, gifts = #done.gifts })
 end
@@ -99,6 +101,7 @@ local function onLoaded(player: Player)
 	if not profile then
 		return
 	end
+	StateSync.changed(player)
 	Grants.rollDay(profile, os.time())
 	local handed = Grants.claimPending(profile, rebuildGift)
 	if handed > 0 then
@@ -194,6 +197,7 @@ local function payBattle(player: Player, session: BattleSession.Session, outcome
 			NewMoves = member.newMoves,
 		})
 	end
+	StateSync.changed(player)
 	Net.BattleRewards.Fire(player, {
 		BattleId = session.battleId,
 		Coins = paid.coins,
@@ -210,7 +214,8 @@ end
 
 BattleService.start(resolveTarget, playerTeam, payBattle)
 
-CaptureService.start(DataService.get, log)
+CaptureService.start(DataService.get, log, StateSync.changed)
+StateSync.start(DataService.get)
 
 local breeding = BreedingService.new(DataService.get, BattleService.isInBattle, log)
 
@@ -222,6 +227,7 @@ Net.RequestBreed.On(function(player, value)
 		value.CharmSlot,
 		value.CharmFavour
 	)
+	StateSync.changed(player)
 	Net.BreedResult.Fire(player, {
 		Ok = ok,
 		Reason = if ok then "" else string.sub(tostring(detail), 1, 80),
@@ -273,6 +279,7 @@ task.spawn(function()
 					end
 					table.insert(ids, creature.id)
 				end
+				StateSync.changed(player)
 				Net.Hatched.Fire(player, { Ids = ids })
 			end
 		end
