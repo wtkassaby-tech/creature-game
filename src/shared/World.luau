@@ -87,16 +87,17 @@ function World.pickWild(
 	else
 		colour = Rng.pick(rng, chosen.colours)
 	end
-	local creature = Breeding.wild(
-		chosen.species,
-		id or `wild_{seed}`,
-		level,
-		(if options then options.rarity else nil)
-			or chosen.rarity
-			or Species[chosen.species].baseRarity,
-		colour,
-		rng
-	)
+	-- A tier asked for by the caller (bait) can raise the row's tier, never lower it.
+	local rarity: Types.Rarity = chosen.rarity or Species[chosen.species].baseRarity
+	local asked: Types.Rarity? = if options then options.rarity else nil
+	if
+		asked
+		and (table.find(BreedConfig.RARITY_ORDER, asked) or 0)
+			> (table.find(BreedConfig.RARITY_ORDER, rarity) or 0)
+	then
+		rarity = asked
+	end
+	local creature = Breeding.wild(chosen.species, id or `wild_{seed}`, level, rarity, colour, rng)
 	return { creature = creature, entry = chosen, rareColour = rare }
 end
 

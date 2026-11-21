@@ -447,6 +447,26 @@ do
 	)
 end
 
+print("\n== Every rustle spot has something in it ==")
+do
+	local World = require("../src/shared/World")
+	local empty: { string } = {}
+	for _, biome in Biomes do
+		for _, route in biome.routes do
+			for _, spot in route.rustleSpots do
+				if #World.candidates(route, { spot = spot.id }) == 0 then
+					table.insert(empty, spot.id)
+				end
+			end
+		end
+	end
+	check(
+		"no rustle spot in any biome is empty (a search or a bait there always finds something)",
+		#empty == 0,
+		table.concat(empty, ", ")
+	)
+end
+
 print("\n== Bait ==")
 do
 	local reeds = map.places.reed_bed

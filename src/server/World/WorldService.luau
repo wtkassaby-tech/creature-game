@@ -34,7 +34,7 @@ export type Hooks = {
 	onAmbush: (player: Player, spawn: Encounters.Spawn) -> (), -- a creature jumped out of long grass
 	mayEnter: (player: Player, biomeNumber: number) -> boolean, -- has the player earned this biome?
 	hasReached: (player: Player, biomeNumber: number) -> boolean, -- have they stood in it before?
-	hasBait: (player: Player) -> boolean,
+	baitProblem: (player: Player) -> string?, -- why they cannot use a bait now, or nil
 	spendBait: (player: Player) -> (),
 	canBeAmbushed: (player: Player) -> boolean, -- wild battles are open and someone can fight
 }
@@ -363,8 +363,9 @@ function WorldService.start(hooks: Hooks): () -> ()
 		if not at or not hooks.isReady(player) then
 			return
 		end
-		if not hooks.hasBait(player) then
-			return hooks.refuse(player, "You have no bait")
+		local problem = hooks.baitProblem(player)
+		if problem then
+			return hooks.refuse(player, problem)
 		end
 		local spawn: Encounters.Spawn? = nil
 		local why: string? = "There is nothing there"

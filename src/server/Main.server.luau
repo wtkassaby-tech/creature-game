@@ -13,6 +13,7 @@ local Grants = require(ReplicatedStorage.shared.Grants)
 local Health = require(ReplicatedStorage.shared.Health)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
+local Shop = require(ReplicatedStorage.shared.Shop)
 local StoryProgress = require(ReplicatedStorage.shared.StoryProgress)
 local Types = require(ReplicatedStorage.shared.Types)
 local World = require(ReplicatedStorage.shared.World)
@@ -92,14 +93,13 @@ WorldService.start({
 			log("BiomeReached", { player = player.UserId, biome = here })
 		end
 	end,
-	hasBait = function(player)
+	baitProblem = function(player)
 		local profile = DataService.get(player)
-		return profile ~= nil and (profile.Items.Bait or 0) >= 1
+		return if profile then Shop.baitProblem(profile, os.time()) else "Your data is not loaded"
 	end,
 	spendBait = function(player)
 		local profile = DataService.get(player)
-		if profile and (profile.Items.Bait or 0) >= 1 then
-			profile.Items.Bait -= 1
+		if profile and Shop.spendBait(profile, os.time()) then
 			StateSync.changed(player)
 			log("BaitUsed", { player = player.UserId })
 		end

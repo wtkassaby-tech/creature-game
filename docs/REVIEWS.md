@@ -2,6 +2,16 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: bait and crafting (commit 966744a)
+
+Reviewer: a separate read-only agent. No must-fix findings: a bait cannot be used without owning one, used twice, or used where it should not work; the device cannot influence the gem chance; crafting cannot go below zero, make anything without a recipe, or be turned back into coins.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A player can see what a bait brought out and walk away from anything not gem-tier, so with no limit, coins alone set how many gem-tier creatures appear (99 baits in under a minute) | Should fix | Baits are limited to 5 uses a day (`BAIT_USES_PER_DAY`), counted by the server's date. Test added |
+| 2 | Nothing checked that every rustle spot has creatures in it; an empty one would take a player's bait money for nothing | Should fix | A test checks every rustle spot in every biome |
+| 3 | A bait's gem roll replaced the row's own tier, so it could lower a rarer row | Note | It can only raise the tier |
+
 ## 21 November 2026: more than one biome, gem serials, travel, stable room (commits 0e291e8 to dbe2c8a)
 
 Reviewer: a separate read-only agent. Found sound: travel between towns; wild creatures, rustle spots and long grass gated by biome; shop prices; gem catches cannot be duplicated and their candy is paid once; story battles cannot be replayed or fought out of order.

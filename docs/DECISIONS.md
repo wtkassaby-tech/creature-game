@@ -85,6 +85,8 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 21 Nov 2026 | Lasso timing is audited: an account whose taps are nearly all closer to centre than a person can manage is flagged in the log for a human to look at. Nothing is refused automatically | Claude (Default) | 6, 12 |
 | 21 Nov 2026 | **Dust Canyon is written** (`docs/content/DUST_CANYON_WORLD.md`): the town of Kilnrest, the Dry Wash and Mesa Road, five tamers, the gate held by a local champion (Isolde Karrow), a rival appearance mid-biome, the giant Mesalith (Sand, level 26; "hit and swap": Water or Storm stops its big attacks) with its own creature form, a four-quest line and chapter 2 of the story. Names are placeholders to check against other games | Claude (Default) | 8, 9 |
 | 21 Nov 2026 | Gem-tier wild creatures are 0.6% of open-route encounters from Dust Canyon on (`EconomyConfig.GEM_WILD_SHARE`), the number the economy simulation is balanced at. The brief's table says "about 5%" for the first gem tier; raising it is Ayrton's call (it multiplies gem candy and gem breeding) | Claude (Default) | 4, 10 |
+| 21 Nov 2026 | Bait: used at a rustle spot from Tide Flats on; a creature always steps out, gem-tier 35% of the time; at most 5 baits a day. Crafting: a tonic, a deep tonic or a bait from a biome's material and a few coins, anywhere | Claude (Default) | 6, 10 |
+| 21 Nov 2026 | The first screens for the story: a starter pick, a dialogue box that plays each beat's lines and names its gifts, and a tracker showing the next story step and quests in hand. Time played is logged with each story beat for the first-session numbers | Claude (Default) | 9, 13 |
 
 ## Still open
 

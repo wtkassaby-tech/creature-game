@@ -261,6 +261,10 @@ EconomyConfig.BAIT_MIN_BIOME = 3
 -- Bait is used at a rustle spot (from Tide Flats on) and always brings a creature out; this is
 -- the chance that it is a gem-tier one. The economy simulation is balanced at this number.
 EconomyConfig.BAIT_GEM_CHANCE = 0.35
+-- Baits a player may use in a day. A player can see what a bait brought out and walk away from
+-- anything that is not gem-tier, so without a limit coins alone would set how many gem-tier
+-- creatures appear. The simulation's heaviest player uses 3 a day.
+EconomyConfig.BAIT_USES_PER_DAY = 5
 
 -- The cheapest lasso that can catch each rarity (a gem creature's zone is too small for a rope).
 -- Used for the release rule: a release always pays less than this lasso costs.

@@ -5,6 +5,7 @@
 local BattleSession = require("./BattleSession")
 local Economy = require("./Economy")
 local EconomyConfig = require("../config/EconomyConfig")
+local Grants = require("./Grants")
 local Profile = require("./Profile")
 
 export type Bought = { item: EconomyConfig.ItemId, count: number, coins: number }
@@ -102,6 +103,32 @@ function Shop.craft(profile: Profile.Profile, item: unknown): (Craftable?, strin
 	profile.Coins -= recipe.coins
 	profile.Items[key] = (profile.Items[key] or 0) + 1
 	return id, nil
+end
+
+local BAIT_DAY_KEY = "bait"
+
+-- Why the player cannot use a bait right now, or nil if they can: they must hold one and have
+-- uses left today (EconomyConfig.BAIT_USES_PER_DAY, counted by the server's date).
+function Shop.baitProblem(profile: Profile.Profile, unixTime: number): string?
+	Grants.rollDay(profile, unixTime)
+	if (profile.Items.Bait or 0) < 1 then
+		return "You have no bait"
+	end
+	if (profile.Daily.tasksDone[BAIT_DAY_KEY] or 0) >= EconomyConfig.BAIT_USES_PER_DAY then
+		return "The creatures are wary of bait today. Try again tomorrow"
+	end
+	return nil
+end
+
+-- Takes one bait and counts the use. Call only after `baitProblem` returned nil and a creature
+-- has really come out, with no pause in between.
+function Shop.spendBait(profile: Profile.Profile, unixTime: number): boolean
+	if Shop.baitProblem(profile, unixTime) ~= nil then
+		return false
+	end
+	profile.Items.Bait -= 1
+	profile.Daily.tasksDone[BAIT_DAY_KEY] = (profile.Daily.tasksDone[BAIT_DAY_KEY] or 0) + 1
+	return true
 end
 
 -- How many coin-bought stable expansions the player has, from their stable's size. (Stable

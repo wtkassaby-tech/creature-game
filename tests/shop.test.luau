@@ -196,6 +196,31 @@ do
 	)
 end
 
+print("\n== Bait uses ==")
+do
+	local profile = Profile.template()
+	local DAY = 86400 * 300
+	check(
+		"no bait, no use",
+		Shop.baitProblem(profile, DAY) ~= nil and not Shop.spendBait(profile, DAY)
+	)
+	profile.Items.Bait = 20
+	local used = 0
+	for _ = 1, 12 do
+		if Shop.spendBait(profile, DAY) then
+			used += 1
+		end
+	end
+	check(
+		"only so many baits can be used in a day, and only those are taken",
+		used == EconomyConfig.BAIT_USES_PER_DAY and profile.Items.Bait == 20 - used
+	)
+	check(
+		"the next day by the server's clock they can be used again",
+		Shop.baitProblem(profile, DAY + 86400) == nil
+	)
+end
+
 print("\n== Items in a battle ==")
 do
 	local function setup(): (Profile.Profile, BattleSession.Session)
