@@ -84,7 +84,7 @@ do
 		"the rival brings the counter to the player's starter",
 		first ~= nil and first.team.members[1].species == "Spadesnout"
 	)
-	check("a loss in the first battle costs nothing", first ~= nil and first.mayRetryAtOnce)
+	check("the first battle cannot be lost", first ~= nil and first.cannotLose)
 	profile.Story.flags["won:rival_first"] = true
 	check(
 		"once won it cannot be replayed, even before its beat finishes",

@@ -110,6 +110,7 @@ local function resolveTarget(
 			moves = moves,
 			tier = if kind == "Rival" then "Rival" else "Tamer",
 			ref = ref,
+			cannotLose = opponent.cannotLose,
 		},
 			nil
 	end
@@ -251,6 +252,11 @@ local function battleFinished(
 			unixTime = os.time(),
 		})
 		BattleFlow.sendRewards(player, session.battleId, paid)
+		if trained.opponent.cannotLose then
+			-- The battle the story does not let the player lose can leave their creature on
+			-- its last legs: it is mended afterwards, so the first steps are not a walk to the healer.
+			Health.healTeam(profile)
+		end
 		DailyService.record(player, "WinBattle")
 		-- Only the first rematch of each tamer today counts toward "win 5 tamer rematches":
 		-- beating one weak tamer five times is not five rematches.

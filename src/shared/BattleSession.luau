@@ -26,6 +26,9 @@ export type StartInput = {
 	tier: BattleAi.Tier,
 	seed: number,
 	levelCap: number, -- the player's cap: their creatures above it fight at the cap
+	-- A battle the story does not let the player lose (the rival's first): whenever their last
+	-- creature would fall it holds on with 1 health, and the battle goes on until they win.
+	cannotLose: boolean?,
 }
 
 export type CreatureView = {
@@ -76,6 +79,7 @@ export type Session = {
 	ran: boolean,
 	caught: boolean?, -- set by endCaught
 	fled: boolean?, -- set by endFled
+	cannotLose: boolean?,
 }
 
 local BattleSession = {}
@@ -199,6 +203,7 @@ function BattleSession.start(input: StartInput): (Session?, string?)
 		state = state,
 		chooser = BattleAi.forTier(input.tier, Rng.new(input.seed + 1)),
 		ran = false,
+		cannotLose = input.cannotLose,
 	},
 		nil
 end
@@ -221,7 +226,36 @@ function BattleSession.started(session: Session): Started
 	}
 end
 
+-- In a battle that cannot be lost: if the turn just played would have beaten the player (or
+-- ended in a draw), their last creature holds on with 1 health and the battle goes on. If the
+-- battle has run to its turn limit, the opponent gives up.
+local function holdOn(session: Session)
+	local state = session.state
+	if not session.cannotLose or state.winner == nil or state.winner == PLAYER then
+		return
+	end
+	if state.turn >= BattleConfig.MAX_TURNS then
+		state.winner = PLAYER
+		return
+	end
+	local side = state.sides[PLAYER]
+	local fighter = side.team[side.active]
+	fighter.hp = 1
+	state.winner = nil
+	local event: Battle.Event = {
+		turn = state.turn,
+		side = PLAYER,
+		text = `{fighter.creature.id} holds on`,
+		kind = "Endure",
+		damage = 0,
+		targetHp = 1,
+		slot = side.active,
+	}
+	table.insert(state.log, event)
+end
+
 local function result(session: Session, fromLog: number): TurnResult
+	holdOn(session)
 	local state = session.state
 	-- After every turn: leaving a battle part way never undoes the damage taken in it.
 	if session.kind ~= "Friendly" then

@@ -9,7 +9,7 @@ option Casing = Pascal
 
 enum BattleKind = { Wild, Tamer, Rival, Friendly }
 enum ActionKind = { Move, Switch, Run }
-enum EventKind = { Move, FollowUp, Switch, Faint, Item }
+enum EventKind = { Move, FollowUp, Switch, Faint, Item, Endure }
 enum BodyPlan = { Quad, Biped, Winged, Serpent }
 enum Element = { Leaf, Sand, Water, Toxic, Frost, Crystal, Fire, Storm, Arcane, Cosmic }
 enum Rarity = { Common, Uncommon, Gem, Ruby, Diamond, Cosmic }

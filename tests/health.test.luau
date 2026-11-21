@@ -119,6 +119,69 @@ do
 	)
 end
 
+print("\n== A battle that cannot be lost ==")
+do
+	local weak = Breeding.wild("Mossmitt", "w", 2, "Common", "Moss", Rng.new(21))
+	local strong = Breeding.wild("Spadesnout", "s", 12, "Common", "Sand", Rng.new(22))
+	local session = assert(
+		BattleSession.start({
+			battleId = 5,
+			kind = "Rival",
+			yours = { weak },
+			theirs = { strong },
+			theirMoves = nil,
+			tier = "Rival",
+			seed = 3,
+			levelCap = 15,
+			cannotLose = true,
+		}),
+		"battle starts"
+	)
+	local held, ending = false, nil
+	for _ = 1, 200 do
+		local turn = assert(
+			BattleSession.act(session, session.state.turn + 1, "Move", 1),
+			"a turn is played"
+		)
+		for _, event in turn.events do
+			held = held or event.kind == "Endure"
+		end
+		if turn.finished then
+			ending = BattleSession.ending(session)
+			check("the turn that ends it reports a win", turn.outcome == 1)
+			break
+		end
+	end
+	check("the player's creature holds on when it would have fallen", held)
+	check("the battle only ever ends in the player's win", ending == "Won", tostring(ending))
+
+	local losable = assert(
+		BattleSession.start({
+			battleId = 6,
+			kind = "Rival",
+			yours = { Breeding.wild("Mossmitt", "w2", 2, "Common", "Moss", Rng.new(21)) },
+			theirs = { Breeding.wild("Spadesnout", "s2", 12, "Common", "Sand", Rng.new(22)) },
+			theirMoves = nil,
+			tier = "Rival",
+			seed = 3,
+			levelCap = 15,
+		}),
+		"battle starts"
+	)
+	local lost: BattleSession.Ending? = nil
+	for _ = 1, 200 do
+		local turn = assert(
+			BattleSession.act(losable, losable.state.turn + 1, "Move", 1),
+			"a turn is played"
+		)
+		if turn.finished then
+			lost = BattleSession.ending(losable)
+			break
+		end
+	end
+	check("the same battle without the rule is lost", lost == "Lost", tostring(lost))
+end
+
 print("\n== Giant fights ==")
 do
 	local profile, a, b = setup()

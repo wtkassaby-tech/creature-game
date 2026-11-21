@@ -175,7 +175,7 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		teams = rivalTeams,
 		before = "You keep up, I will give you that. But I have help now. Watch this.",
 		after = "It hums louder when I lose. I do not like that. Not one bit.",
-		mayRetryAtOnce = true,
+		mayRetryAtOnce = false, -- he can be lost to here; only the very first battle cannot
 	},
 	{
 		id = "champion_karrow",

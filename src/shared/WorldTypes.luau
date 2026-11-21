@@ -196,7 +196,9 @@ export type StoryBattle = {
 	teams: ByStarter<TamerTeam>?,
 	before: string, -- said before the battle
 	after: string, -- said after losing
-	mayRetryAtOnce: boolean, -- a loss costs nothing and the battle is offered again
+	-- The player cannot lose this battle: their last creature holds on until they win. (The
+	-- field keeps its first name; the rule became stricter than "try again at once".)
+	mayRetryAtOnce: boolean,
 }
 
 -- A biome's tamer file: its local tamers, and optionally the rival's teams there and any other

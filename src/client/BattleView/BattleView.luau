@@ -382,6 +382,13 @@ function BattleView.start(playerGui: Instance)
 					fallen.hp = 0
 					message.Text = `{fallen.name} fainted`
 				end
+			elseif event.Kind == "Endure" then
+				local holding = current.sides[actor][event.Slot]
+				if holding then
+					holding.hp = event.TargetHp
+					current.active[actor] = event.Slot
+					message.Text = `{holding.name} holds on!`
+				end
 			elseif event.Kind == "Item" then
 				local treated = current.sides[actor][event.Slot]
 				if treated then

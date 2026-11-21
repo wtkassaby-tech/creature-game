@@ -26,7 +26,7 @@ export type Opponent = {
 	place: string, -- the place id the player must be standing at
 	team: WorldTypes.TamerTeam,
 	paysCoins: boolean, -- rival battles are paid by their story beat, not by the battle
-	mayRetryAtOnce: boolean, -- a loss costs nothing and the battle is offered again
+	cannotLose: boolean, -- the story does not let the player lose this battle (BattleSession)
 }
 
 local Trainers = {}
@@ -60,7 +60,7 @@ function Trainers.resolve(
 			place = tamer.id,
 			team = tamer.team,
 			paysCoins = true,
-			mayRetryAtOnce = false,
+			cannotLose = false,
 		},
 			nil
 	end
@@ -94,7 +94,7 @@ function Trainers.resolve(
 		place = battle.place,
 		team = team,
 		paysCoins = false,
-		mayRetryAtOnce = battle.mayRetryAtOnce,
+		cannotLose = battle.mayRetryAtOnce,
 	},
 		nil
 end

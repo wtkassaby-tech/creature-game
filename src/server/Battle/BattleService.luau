@@ -22,6 +22,7 @@ export type Opponent = {
 	moves: { { string } }?,
 	tier: BattleAi.Tier,
 	ref: any?, -- whatever the resolver needs back when the battle ends (a spawn, a tamer)
+	cannotLose: boolean?, -- a story battle the player's last creature holds on through
 }
 -- Returns the opponent, or nil and a reason for the screen.
 export type ResolveTarget = (
@@ -193,6 +194,7 @@ function BattleService.start(
 				tier = opponent.tier,
 				seed = random:NextInteger(1, 2147483646),
 				levelCap = cap,
+				cannotLose = opponent.cannotLose,
 			})
 			if made and onStarted then
 				onStarted(player, made, opponent.ref)
