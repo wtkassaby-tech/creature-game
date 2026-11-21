@@ -70,6 +70,8 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 21 Nov 2026 | Giant fights are on the server: a Giant Horn is used up when the fight starts (win, lose or leave), at most five items a fight, the giant's next move shown every turn. A win pays first-clear or rematch coins, Prism Candy (5 once per giant, then 1 for up to 2 rematches a day) and XP. The giant can be fought once the story has shown it | Claude (Default) | 5, 6, 10 |
 | 21 Nov 2026 | A giant rematch pays at most 85% of its biome's horn price (`GIANT_REMATCH_MAX_HORN_SHARE`); Greenwood's cheaper horn had made a rematch profitable. Giant Horns are graded by biome: a horn wakes its own biome's giant or an earlier one, so early horns cannot be saved for richer giants | Claude (Default) | 10 |
 | 21 Nov 2026 | The team is chosen on the creatures screen: any creatures the player owns, up to the number their badges allow, never changed during a battle. Breeding and the shop open when their story beats are done | Claude (Default) | 4, 9 |
+| 21 Nov 2026 | **A captured giant is a normal-sized creature version of the giant** (approval pack 4, option A), with its own parts and signature moves. **It can breed**, but the candy for breeding it is harder to get than ordinary candy. This settles the brief's open question "can giants breed" as yes | Ayrton | 6, 7, 15 |
+| 21 Nov 2026 | Losing a battle has a cost: consumables used are gone, and damage should matter if the player keeps fighting. Details being agreed with Ayrton (see Still open) | Ayrton | 5, 10 |
 
 ## Still open
 
@@ -84,7 +86,8 @@ Only Ayrton can decide these:
 - Switching creatures in battle usually loses under the current rules (it costs a free hit and resets Tempo). Should switching be made cheaper so it is a real tactic?
 - Greenwood has only one Sand species, the Sand starter. Swap a Water species for a second Sand one?
 - Mixed Greenwood and Dust Canyon balance: give Greenwood's Leaf creatures more non-Leaf moves, or judge mixed balance by 3v3 teams rather than one-on-one?
-- **What a captured giant is on your team** (approval pack 4, `docs/plans/04_GIANT_CAPTURE.md`). Giants can be fought but not captured until this is answered.
+- Giant capture: how the harder-to-get giant candy is earned and what a giant breed costs (Claude to propose numbers); whether a captured giant looks bigger; whether a missed capture keeps the win's rewards.
+- Damage that lasts between battles: the brief says consumables are needed to heal damaged creatures (locked), but today every creature starts every battle at full health. To build once Ayrton confirms how healing in town works.
 - How wild creatures are met: built as creatures you can see and walk up to, each player's own (21 November). The other way is hidden encounters in long grass. Say if you want that instead.
 - Should there be a limit on items used in one ordinary battle? Today a player with many tonics can outlast a tamer. Giant fights already have a limit of five.
 - Should losing a battle cost anything (a walk back to the healer, a few coins)? Nothing yet.

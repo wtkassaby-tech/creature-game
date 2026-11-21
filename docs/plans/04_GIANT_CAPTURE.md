@@ -1,6 +1,6 @@
 # Approval pack 4: capturing a giant
 
-Date: 21 November 2026. For: Ayrton. Status: **waiting for your answers**. Giant fights are built and tested; the capture is not, because the brief does not say what a captured giant *is* once it is yours.
+Date: 21 November 2026. For: Ayrton. Status: **option A chosen by Ayrton on 21 November 2026, with one change: a captured giant can breed, and the candy for it is harder to get.** The smaller questions in section 3 are still open. Giant fights are built and tested; the capture is not, because the brief does not say what a captured giant *is* once it is yours.
 
 ## 1. What is already decided
 
