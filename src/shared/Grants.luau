@@ -34,8 +34,16 @@ local function count(profile: Profile): number
 end
 
 -- Free stable places right now.
+-- Free places in the stable. A gem-tier catch that is waiting for its serial number already
+-- holds a place, so catches cannot pile up in the waiting list beyond what the stable can take.
 function Grants.room(profile: Profile): number
-	return profile.StableCapacity - count(profile)
+	local held = 0
+	for _, pending in profile.Pending do
+		if pending.source == "Gem" then
+			held += 1
+		end
+	end
+	return profile.StableCapacity - count(profile) - held
 end
 
 -- The element of a creature: its torso sets it.
@@ -242,7 +250,8 @@ function Grants.finishGem(profile: Profile, creatureId: string): Grant
 			if not creature or pending.serial == nil then
 				return { outcome = "Refused", reason = "That catch has no number yet" }
 			end
-			if Grants.room(profile) < 1 then
+			-- Its own held place is the one it takes (Grants.room counts it as taken already).
+			if Grants.room(profile) < 0 then
 				return {
 					outcome = "NoRoom",
 					reason = "Your stable is full: it waits until there is room",

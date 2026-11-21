@@ -67,6 +67,9 @@ local Moves: { [string]: MoveDef } = {
 	["Tumbleweed Toss"] = { element = "Leaf", power = 55 },
 	-- Storm: a teaser for Stormreach, on Leaf torsos only (see the roster document)
 	["Dust Squall"] = { element = "Storm", power = 65 },
+	-- Mesalith's own (the captured giant's signature moves; see src/content/giants).
+	["Strata Crush"] = { element = "Sand", power = 65 },
+	["Tumble Barrage"] = { element = "Leaf", power = 60 },
 }
 
 return Moves

@@ -188,6 +188,7 @@ GiantService.start({
 	inOtherBattle = function(player)
 		return BattleService.session(player) ~= nil
 	end,
+	mayEnter = WorldService.mayEnter,
 	isOpen = function(profile)
 		return isUnlocked(profile, "giant_marker")
 	end,

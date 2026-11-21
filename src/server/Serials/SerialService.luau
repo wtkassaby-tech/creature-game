@@ -26,6 +26,7 @@ local SerialService = {}
 
 local useMemory = RunService:IsStudio() and not ProfileConfig.STUDIO_USES_REAL_STORE
 local memory: { [string]: number } = {}
+local broken: { [string]: boolean } = {}
 local store: DataStore? = nil
 local log: Log = function() end
 
@@ -48,7 +49,16 @@ end
 
 -- Takes the next number for a kind ("Giant:greenwood_hollowbough"). Waits on the data store.
 -- Returns nil if the store could not be reached; nothing is taken then.
+-- True for a kind whose counter was found damaged: it gives no more numbers until the server
+-- restarts and a person has looked at it.
+function SerialService.isBroken(kind: string): boolean
+	return broken[kind] == true
+end
+
 function SerialService.next(kind: string): number?
+	if broken[kind] then
+		return nil
+	end
 	if useMemory then
 		memory[kind] = (memory[kind] or 0) + 1
 		return memory[kind]
@@ -69,6 +79,7 @@ function SerialService.next(kind: string): number?
 			end)
 		end)
 		if damaged then
+			broken[kind] = true
 			log("SerialAlarm", { kind = kind, problem = "the counter is not a number" })
 			return nil
 		end

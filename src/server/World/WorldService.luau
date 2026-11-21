@@ -80,6 +80,11 @@ local function biomeNumbered(number: number?): WorldTypes.Biome
 	return biomes[1]
 end
 
+-- True if the player has earned this biome (the badge of the one before it).
+function WorldService.mayEnter(player: Player, biomeNumber: number): boolean
+	return engageAllowed(player, biomeNumber)
+end
+
 -- The biome a place belongs to (the first biome if the place is unknown).
 function WorldService.biomeOfPlace(placeId: string): WorldTypes.Biome
 	return biomeNumbered(world.biomeOfPlace[placeId])

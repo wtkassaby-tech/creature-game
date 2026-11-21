@@ -25,6 +25,8 @@ local Species: { [string]: Types.SpeciesDef } = {
 	Thatchling = require("./species/Thatchling"),
 	Wadibuck = require("./species/Wadibuck"),
 	Whirlgrit = require("./species/Whirlgrit"),
+	-- Dust Canyon's giant in its creature form: captured, never met in the wild.
+	Mesalith = require("./species/Mesalith"),
 }
 
 return Species

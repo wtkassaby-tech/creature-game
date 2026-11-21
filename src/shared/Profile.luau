@@ -437,7 +437,9 @@ local function validateUnsafe(profile: Profile): { string }
 	local serials: { [string]: boolean } = {}
 	for id, creature in profile.Creatures do
 		if creature.serial ~= nil then
-			local key = `{creature.parts.Torso.species}#{creature.serial}`
+			-- Numbers count within a kind: each giant, and each tier of each species.
+			local kind = if creature.isGiant then "Giant" else creature.rarity
+			local key = `{kind}:{creature.parts.Torso.species}#{creature.serial}`
 			if serials[key] then
 				table.insert(problems, `creature {id} repeats serial {key}`)
 			end
@@ -457,6 +459,9 @@ local function validateUnsafe(profile: Profile): { string }
 			and (typeof(pending.creature) ~= "table" or pending.creature.id ~= pending.ref)
 		then
 			table.insert(problems, `pending grant {index} is a gem catch with no creature`)
+		elseif pending.source == "Gem" and pending.creature then
+			-- A creature waiting for its number is checked like any creature in the stable.
+			checkCreature(pending.ref, pending.creature, problems)
 		elseif pending.source == "Giant" and profile.Story.giantsCaptured[pending.ref] then
 			table.insert(
 				problems,

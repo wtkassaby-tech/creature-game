@@ -231,6 +231,63 @@ do
 	)
 end
 
+print("\n== Ids never collide ==")
+do
+	local Giants = require("../src/content/Giants")
+	local seen: { [string]: string } = {}
+	local clashes: { string } = {}
+	local function claim(id: string, what: string)
+		if seen[id] then
+			table.insert(clashes, `{id} ({seen[id]} and {what})`)
+		end
+		seen[id] = what
+	end
+	for id in Tamers.locals do
+		claim(id, "tamer")
+	end
+	for id in Tamers.story do
+		claim(id, "story battle")
+	end
+	for id in Giants do
+		claim(id, "giant")
+	end
+	check(
+		"no tamer, story battle or giant shares an id",
+		#clashes == 0,
+		table.concat(clashes, ", ")
+	)
+
+	local names: { [string]: boolean } = {}
+	local shared: { string } = {}
+	local list = {}
+	for _, biome in Biomes do
+		table.insert(list, biome)
+		for _, building in biome.hub.buildings do
+			if names[building.name] then
+				table.insert(shared, building.name)
+			end
+			names[building.name] = true
+		end
+	end
+	check(
+		"no two buildings in the world share a name (quest givers are found by it)",
+		#shared == 0,
+		table.concat(shared, ", ")
+	)
+
+	local world = Layout.world(list, Tamers.locals)
+	local count, total = 0, 0
+	for _ in world.map.places do
+		count += 1
+	end
+	for _, own in world.maps do
+		for _ in own.places do
+			total += 1
+		end
+	end
+	check("no place id is used in two biomes", count == total, `{count} of {total}`)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("trainer checks failed")

@@ -142,6 +142,11 @@ do
 	)
 end
 
+check(
+	"the stable's starting size is the same in both configs that name it",
+	Profile.template().StableCapacity == EconomyConfig.STABLE_FREE_SLOTS
+)
+
 print("\n== Items in a battle ==")
 do
 	local function setup(): (Profile.Profile, BattleSession.Session)

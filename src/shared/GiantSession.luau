@@ -26,6 +26,7 @@ export type StartInput = {
 
 export type Session = {
 	battleId: number,
+	biome: number, -- the giant's biome, fixed when the fight starts: its rewards follow this
 	state: GiantBattle.State,
 	shown: number, -- how many log lines the device has been sent
 }
@@ -131,7 +132,7 @@ function GiantSession.begin(profile: Profile.Profile, input: StartInput): (Sessi
 	state.active = standing
 	-- The horn goes the moment the fight starts: leaving part way does not bring it back.
 	profile.Items[horn] -= 1
-	return { battleId = input.battleId, state = state, shown = 0 }, nil
+	return { battleId = input.battleId, biome = input.biome, state = state, shown = 0 }, nil
 end
 
 -- Takes the player's choice for a turn. `kind` is "Move", "Switch" or "Item"; `index` is a move

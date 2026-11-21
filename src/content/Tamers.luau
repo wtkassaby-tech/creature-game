@@ -5,6 +5,7 @@
 -- who hold the gates of biomes where the rival does not. One data file per biome in the tamers
 -- folder; add each new biome to the lists below. Data only.
 
+local DustCanyon = require("./tamers/DustCanyon")
 local Greenwood = require("./tamers/Greenwood")
 local WorldTypes = require("../shared/WorldTypes")
 
@@ -18,7 +19,7 @@ local locals: { [string]: WorldTypes.Tamer } = {}
 local rivals: { [string]: WorldTypes.RivalDef } = {}
 local story: { [string]: WorldTypes.StoryBattle } = {}
 
-local biomes: { WorldTypes.BiomeTamers } = { Greenwood }
+local biomes: { WorldTypes.BiomeTamers } = { Greenwood, DustCanyon }
 
 for _, biome in biomes do
 	for _, tamer in biome.locals do

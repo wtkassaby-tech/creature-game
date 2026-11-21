@@ -127,6 +127,12 @@ EconomyConfig.TRAINED = {
 
 -- Giant fights: one GiantCall to enter, at most this many field items brought in.
 EconomyConfig.GIANT_FIELD_ITEM_CAP = 5
+-- The share of open-route wild encounters, from Dust Canyon on, that are a gem-tier ("Amber")
+-- individual of a local species. The economy simulation is balanced at this number: a gem catch
+-- pays 6 candy and seeds gem breeding, so it must stay rare. (The brief's table says "about 5%"
+-- for the first gem tier; that is a question for the owner, listed in DECISIONS.)
+EconomyConfig.GEM_WILD_SHARE = 0.006
+
 -- Giant Candy: needed to breed from a captured giant, and earned only by beating that giant
 -- (first clear and rematches alike). It cannot be bought, traded or replaced by Prism Candy.
 EconomyConfig.GIANT_CANDY = { perWin = 1, capPerDay = 2 } :: { perWin: number, capPerDay: number }

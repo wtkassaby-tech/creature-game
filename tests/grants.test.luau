@@ -322,6 +322,56 @@ do
 	check("the record is sound", #Profile.validate(p) == 0, table.concat(Profile.validate(p), "; "))
 end
 
+print("\n== Waiting gems hold their place ==")
+do
+	local p = fresh(2)
+	Grants.rollDay(p, 86400 * 200)
+	local first, second, third =
+		creature("Duneskit", "Gem"), creature("Duneskit", "Gem"), creature("Duneskit", "Gem")
+	check(
+		"two gem catches fit a stable with two places",
+		Grants.capture(p, first).outcome == "Waiting"
+			and Grants.capture(p, second).outcome == "Waiting"
+	)
+	check(
+		"a third does not: the waiting ones hold the room",
+		Grants.room(p) == 0 and Grants.capture(p, third).outcome == "NoRoom" and #p.Pending == 2
+	)
+	check("an ordinary catch is refused too", Grants.capture(p, creature()).outcome == "NoRoom")
+	Grants.keepSerial(p, "Gem", first.id, 1)
+	Grants.keepSerial(p, "Gem", second.id, 2)
+	check(
+		"each waiting gem takes the place it held",
+		Grants.finishGem(p, first.id).outcome == "Granted"
+			and Grants.finishGem(p, second.id).outcome == "Granted"
+			and Grants.room(p) == 0
+	)
+
+	local twin = fresh(100)
+	local amber, ruby = creature("Mossmitt", "Gem"), creature("Mossmitt", "Ruby")
+	amber.serial, ruby.serial = 1, 1
+	twin.Creatures[amber.id], twin.Creatures[ruby.id] = amber, ruby
+	check(
+		"the same number in two tiers of one species is not a repeat",
+		#Profile.validate(twin) == 0,
+		table.concat(Profile.validate(twin), "; ")
+	)
+	local copy = creature("Mossmitt", "Gem")
+	copy.serial = 1
+	twin.Creatures[copy.id] = copy
+	check(
+		"the same number twice in one tier of one species is reported",
+		#Profile.validate(twin) > 0
+	)
+
+	local damaged = fresh(100)
+	local broken = creature("Duneskit", "Gem")
+	Grants.capture(damaged, broken)
+	local held: any = damaged.Pending[1].creature
+	held.level = -3
+	check("a damaged creature in the waiting list is reported", #Profile.validate(damaged) > 0)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("grant checks failed")

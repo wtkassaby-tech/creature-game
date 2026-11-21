@@ -33,6 +33,9 @@ local SerialGrants = {}
 local hooks: Hooks = nil :: any -- set by start
 local fetching: { [Player]: { [string]: boolean } } = {} -- numbers being fetched, by kind and ref
 local toldNoRoom: { [Player]: boolean } = {}
+local backoff: { [Player]: { [string]: { delay: number, untilTime: number } } } = {}
+local FIRST_BACKOFF_SECONDS = 30
+local MAX_BACKOFF_SECONDS = 600
 local random = Random.new()
 
 local TIER_NAMES: { [string]: string } = { Gem = "Amber", Ruby = "Ruby", Diamond = "Diamond" }
@@ -45,7 +48,18 @@ local function fetch(player: Player, source: string, ref: string, kind: string)
 		mine = {}
 		fetching[player] = mine
 	end
-	if mine[key] then
+	if mine[key] or SerialService.isBroken(kind) then
+		return
+	end
+	-- After a failed fetch, wait before trying again, longer each time: a struggling data
+	-- store must not be hammered (player saves share its budget).
+	local waits = backoff[player]
+	if not waits then
+		waits = {}
+		backoff[player] = waits
+	end
+	local wait = waits[key]
+	if wait and os.clock() < wait.untilTime then
 		return
 	end
 	mine[key] = true
@@ -63,9 +77,17 @@ local function fetch(player: Player, source: string, ref: string, kind: string)
 			and player.Parent == Players
 			and Grants.keepSerial(now, source, ref, serial)
 		then
+			waits[key] = nil
 			hooks.save(player) -- the number is theirs from here on
 			SerialGrants.finish(player)
 		else
+			if not serial then
+				local delay = math.min(
+					MAX_BACKOFF_SECONDS,
+					if wait then wait.delay * 2 else FIRST_BACKOFF_SECONDS
+				)
+				waits[key] = { delay = delay, untilTime = os.clock() + delay }
+			end
 			-- The player left or the store failed: nothing was written. A fetched number is
 			-- skipped for ever; the entry still waits and gets a number next time.
 			hooks.log("SerialUnused", { player = player.UserId, kind = kind, serial = serial })
@@ -160,6 +182,7 @@ function SerialGrants.start(given: Hooks)
 	Players.PlayerRemoving:Connect(function(player)
 		fetching[player] = nil
 		toldNoRoom[player] = nil
+		backoff[player] = nil
 	end)
 end
 

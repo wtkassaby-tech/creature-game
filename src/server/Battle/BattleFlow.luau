@@ -96,6 +96,10 @@ local function resolveTarget(
 		if not opponent or opponent.kind ~= kind then
 			return nil, why or "That battle is not available"
 		end
+		-- A tamer or champion of a biome the player has not earned cannot be fought.
+		if not WorldService.mayEnter(player, WorldService.biomeOfPlace(opponent.place).number) then
+			return nil, "You have not earned your way here yet"
+		end
 		if not WorldService.isNear(player, opponent.place, WorldConfig.ENGAGE_RADIUS) then
 			return nil, "You are too far away"
 		end

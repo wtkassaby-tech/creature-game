@@ -2,6 +2,23 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (Dust Canyon and the multi-biome world)
+
+**In one line:** two biomes can now be played end to end on the server: Greenwood, then Dust Canyon, with its own town, routes, tamers, giant, quests and story chapter. 1463 checks pass. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| The world across biomes: layout, gating by badge, shops and healers in every town, Waystation travel | Tested, reviewed | `src/shared/Layout.luau`, `src/server/World/` |
+| Dust Canyon: town, two routes, five tamers, gate champion, rival appearance, giant Mesalith and its creature form, quest line, chapter 2 | Tested (345). Data only | `src/content/`, `docs/content/DUST_CANYON_WORLD.md` |
+| Gem-tier wild creatures with serial numbers | Tested, reviewed | `src/shared/Grants.luau`, `src/server/Serials/` |
+| Stable room for coins; the lasso timing audit | Tested, reviewed | `src/shared/Shop.luau`, `src/server/Capture/` |
+| Tenth independent exploit review | Done: two must-fix (rewards and fights in a biome not yet earned), fixed | `docs/REVIEWS.md` |
+| Approval pack 5: purchases | **Waiting for Ayrton** | `docs/plans/05_PURCHASES.md` |
+
+**To try in Studio:** earn the Acorn Badge, walk east past the Greenwood gate along the sealed road to Kilnrest, and check that Dust Canyon's creatures only appear once you hold the badge. Talk to a Waystation keeper to jump back to Thistledown.
+
+**Still to build on the logic side:** Tide Flats (roster, world, bait); purchases (after pack 5); trading and the Circuit (after launch, per the plan).
+
 ## 21 November 2026 (giant capture)
 
 | Piece | State | Where |

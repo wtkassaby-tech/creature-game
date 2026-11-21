@@ -246,8 +246,15 @@ local function checkTeam(label: string, team: WorldTypes.TamerTeam, maxLevel: nu
 	check(`{label}: no repeated move`, uniqueOk)
 end
 
+-- Greenwood's own tamers only: other biomes' tamers are checked by their own tests.
 local localCount = 0
+local greenwoodTamers: { [string]: WorldTypes.Tamer } = {}
 for id, tamer in Tamers.locals do
+	if routeById[tamer.route] ~= nil then
+		greenwoodTamers[id] = tamer
+	end
+end
+for id, tamer in greenwoodTamers do
 	localCount += 1
 	checkTeam(id, tamer.team, greenwood.gate.recommendedMin)
 	check(`{id}: tier is Tamer`, tamer.tier == "Tamer")

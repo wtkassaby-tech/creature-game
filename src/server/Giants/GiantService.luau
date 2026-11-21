@@ -33,6 +33,7 @@ export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
 	team: (player: Player) -> ({ Types.Creature }?, number?), -- the team and the level cap
 	inOtherBattle: (player: Player) -> boolean,
+	mayEnter: (player: Player, biomeNumber: number) -> boolean, -- has the player earned this biome?
 	isOpen: (profile: Profile.Profile) -> boolean, -- has the story shown this player the giant yet?
 	biome: (player: Player) -> WorldTypes.Biome, -- the biome the player is standing in
 	map: () -> Layout.Map,
@@ -163,6 +164,9 @@ function GiantService.start(given: Hooks): () -> ()
 		if not at or not Layout.isNear(hooks.map(), lair.id, at, lair.arenaSize / 2) then
 			return hooks.refuse(player, "You are too far away")
 		end
+		if not hooks.mayEnter(player, hooks.biome(player).number) then
+			return hooks.refuse(player, "You have not earned your way here yet")
+		end
 		if not hooks.isOpen(profile) then
 			return hooks.refuse(player, "The giant does not stir. Come back later in your journey")
 		end
@@ -268,7 +272,9 @@ function GiantService.start(given: Hooks): () -> ()
 				table.insert(team, { id = fighter.creature.id, fainted = fighter.hp <= 0 })
 			end
 			paid = Rewards.giantWin(profile, giant, session.state.boss.creature, {
-				biome = hooks.biome(player).number,
+				-- The giant's own biome, fixed when the fight began: never where the
+				-- player happens to be standing when it ends.
+				biome = session.biome,
 				team = team,
 				cap = Xp.levelCap(profile.Story.badges),
 				unixTime = os.time(),

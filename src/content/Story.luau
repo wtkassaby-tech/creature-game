@@ -3,11 +3,12 @@
 -- to the list below. Data only: no logic lives here.
 
 local Chapter1 = require("./story/Chapter1")
+local Chapter2 = require("./story/Chapter2")
 local WorldTypes = require("../shared/WorldTypes")
 
 local Story: { [string]: WorldTypes.Chapter } = {}
 
-for _, chapter in { Chapter1 } do
+for _, chapter in { Chapter1, Chapter2 } do
 	Story[chapter.id] = chapter
 end
 

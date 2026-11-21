@@ -2,6 +2,23 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: more than one biome, gem serials, travel, stable room (commits 0e291e8 to dbe2c8a)
+
+Reviewer: a separate read-only agent. Found sound: travel between towns; wild creatures, rustle spots and long grass gated by biome; shop prices; gem catches cannot be duplicated and their candy is paid once; story battles cannot be replayed or fought out of order.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A giant win was paid by the biome the player was standing in when the fight ended, so walking into a later biome mid-fight paid that biome's bigger reward for a cheap horn | Must fix | The fight's biome is fixed when it starts, and the reward follows it |
+| 2 | Giants and tamers of a biome the player had not earned could be fought (the grey-box gate does not block walking): first-clear coins, a later giant's rewards and a capture attempt, with no badge | Must fix | Both are refused until the player holds the badge for that biome |
+| 3 | Gem catches waiting for a serial number did not count against stable room, so they could pile up without limit while the serial store was slow | Should fix | A waiting gem holds a place in the stable. Tests added |
+| 4 | A failing serial store was retried about every five seconds for each waiting entry, drawing on the same budget as player saves; a damaged counter was retried for ever | Should fix | Failed fetches back off (30 seconds, doubling to 10 minutes); a damaged counter gives no numbers until the server restarts |
+| 5 | The save check called two creatures with the same number a repeat even when they were different tiers | Should fix | Numbers are compared within their own kind. Tests added |
+| 6 | A gem creature in the waiting list was not checked like one in the stable | Note | It is now. Test added |
+| 7 | The stable's starting size is named in two configs | Note | A test holds them equal. A saved count of expansions is needed before stable room can be bought any other way (noted in approval pack 5) |
+| 8 | Duplicate ids across tamers, story battles, giants or places would be silently overwritten | Note | Tests check all of them are unique, and that no two buildings share a name |
+
+Not separately reviewed: the Dust Canyon content (data only; its rewards come from the economy's config and its own test checks them).
+
 ## 21 November 2026: daily tasks (commits 9f49d29, e471c7d)
 
 Reviewer: a separate read-only agent. No must-fix findings: a task cannot be paid twice or before it is finished; nothing that did not happen is counted; the daily caps match the economy's (3 easy and 3 harder payouts); the move of the battle wiring into `BattleFlow` dropped nothing.
