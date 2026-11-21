@@ -635,3 +635,12 @@ event ClaimDailyTask {
 	Call: SingleAsync,
 	Data: struct { TaskId: string(1..24) },
 }
+
+-- Device -> server: travel from one town's Waystation to another's. The server checks the
+-- player is standing at a Waystation, is not in a battle, and has reached the town they want.
+event Travel {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { BiomeNumber: u8(1..11) },
+}

@@ -25,6 +25,7 @@ local TestMap = require(script.Parent.TestMap)
 
 local TICK_SECONDS = 1
 local MIN_SECONDS_BETWEEN_RUSTLES = 0.5
+local MIN_SECONDS_BETWEEN_TRAVELS = 2
 
 export type Hooks = {
 	isReady: (player: Player) -> boolean, -- data loaded and not in a battle
@@ -32,6 +33,7 @@ export type Hooks = {
 	onAt: (player: Player, at: Layout.Point) -> (), -- the regular look at where a player is
 	onAmbush: (player: Player, spawn: Encounters.Spawn) -> (), -- a creature jumped out of long grass
 	mayEnter: (player: Player, biomeNumber: number) -> boolean, -- has the player earned this biome?
+	hasReached: (player: Player, biomeNumber: number) -> boolean, -- have they stood in it before?
 	canBeAmbushed: (player: Player) -> boolean, -- wild battles are open and someone can fight
 }
 
@@ -46,6 +48,7 @@ type Timers = { rustledAt: { [string]: number }, freeAt: { [string]: number }, l
 local timers: { [number]: Timers } = {}
 local KEEP_TIMERS_SECONDS = 600
 local lastRustle: { [Player]: number } = {}
+local lastTravel: { [Player]: number } = {}
 local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function()
 	return true
 end
@@ -343,7 +346,35 @@ function WorldService.start(hooks: Hooks): () -> ()
 		end
 	end)
 
+	local stopTravel = Net.Travel.On(function(player, value)
+		local now = os.clock()
+		if now - (lastTravel[player] or -math.huge) < MIN_SECONDS_BETWEEN_TRAVELS then
+			return
+		end
+		lastTravel[player] = now
+		if not hooks.isReady(player) then
+			return hooks.refuse(player, "Finish your battle first")
+		end
+		if WorldService.buildingAt(player, "Teleport", WorldConfig.TALK_RADIUS) == nil then
+			return hooks.refuse(player, "You need to be at a Waystation to travel")
+		end
+		if not hooks.hasReached(player, value.BiomeNumber) then
+			return hooks.refuse(player, "You have not been there yet")
+		end
+		for _, biome in biomes do
+			if biome.number == value.BiomeNumber then
+				for _, building in biome.hub.buildings do
+					if building.role == "Teleport" then
+						return WorldService.sendTo(player, building.id)
+					end
+				end
+			end
+		end
+		hooks.refuse(player, "There is no Waystation there")
+	end)
+
 	local leaving = Players.PlayerRemoving:Connect(function(player)
+		lastTravel[player] = nil
 		local left = books[player]
 		if left then
 			timers[player.UserId] =
@@ -362,6 +393,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 	return function()
 		running = false
 		stopRustle()
+		stopTravel()
 		leaving:Disconnect()
 	end
 end

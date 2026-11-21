@@ -94,6 +94,10 @@ WorldService.start({
 			log("BiomeReached", { player = player.UserId, biome = here })
 		end
 	end,
+	hasReached = function(player, biomeNumber)
+		local profile = DataService.get(player)
+		return profile ~= nil and biomeNumber <= profile.Story.biomeReached
+	end,
 	mayEnter = function(player, biomeNumber)
 		-- A biome is earned with the badge of the one before it.
 		local profile = DataService.get(player)

@@ -211,6 +211,14 @@ function WorldView.start(openShop: () -> ())
 			local role = prompt:GetAttribute("Role")
 			if role == "Shop" then
 				openShop()
+			elseif role == "Teleport" then
+				-- Travel to the next town the player has reached (round and round).
+				local state = ClientState.get()
+				local reached = if state then math.max(1, state.BiomeReached) else 1
+				local here = prompt:GetAttribute("Biome")
+				if reached > 1 and typeof(here) == "number" then
+					Net.Travel.Fire({ BiomeNumber = here % reached + 1 })
+				end
 			elseif role == "Healer" then
 				Net.HealAtHealer.Fire(true) -- free; the server checks the player is standing here
 			end

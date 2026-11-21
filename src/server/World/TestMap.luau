@@ -193,6 +193,7 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		)
 		talk:SetAttribute("Place", building.name)
 		talk:SetAttribute("Role", building.role)
+		talk:SetAttribute("Biome", biome.number)
 	end
 
 	-- The routes, their stretches, rustle spots and tamers.
