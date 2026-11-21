@@ -12,6 +12,15 @@ BattleConfig.DAMAGE_SCALE = 0.95
 -- Fights against the game have a little variance; ranked has none. No misses, no critical hits.
 BattleConfig.PVE_VARIANCE_MIN = 0.96
 
+-- Items used in a battle. Using one spends the player's turn. A tonic heals a share of a
+-- standing creature's full health; a Rally Root brings a fallen one back at a share of it.
+export type FieldEffect = { kind: "Heal" | "Revive", share: number }
+BattleConfig.FIELD_ITEMS = {
+	Tonic = { kind = "Heal", share = 0.4 },
+	GreatTonic = { kind = "Heal", share = 1 },
+	Revive = { kind = "Revive", share = 0.5 },
+} :: { Tonic: FieldEffect, GreatTonic: FieldEffect, Revive: FieldEffect }
+
 -- Turn order and what Speed is worth.
 -- Strict "faster always goes first" makes a 1% Speed edge decide a mirror match, and makes Speed
 -- worthless beyond that first strike (research/market/09). Two rules replace it:

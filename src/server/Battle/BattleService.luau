@@ -88,6 +88,9 @@ end
 function BattleService.setBusyCheck(check: (player: Player) -> boolean)
 	busy = check
 end
+function BattleService.isBusy(player: Player): boolean
+	return busy(player)
+end
 
 local finished: OnFinished = function() end
 

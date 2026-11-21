@@ -68,7 +68,7 @@ function TestPanel.start(parent: Instance)
 	buttons.BackgroundTransparency = 1
 	buttons.Parent = root
 	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.new(0, 84, 0, 30)
+	grid.CellSize = UDim2.new(0, 84, 0, 26)
 	grid.Parent = buttons
 	local function button(text: string, onClick: () -> ())
 		local b = Instance.new("TextButton")
@@ -96,6 +96,7 @@ function TestPanel.start(parent: Instance)
 
 	local battleId: number? = nil
 	local nextTurn = 1
+	local active = 1 -- the team position of the creature that is out now
 	local playing: LassoPlayer.Playing? = nil
 
 	-- Battles start from the prompts in the world (walk up to a creature or a person).
@@ -140,6 +141,19 @@ function TestPanel.start(parent: Instance)
 			Net.ThrowLasso.Fire({ BattleId = battleId, Turn = nextTurn, Tier = "Basic" })
 		end
 	end)
+	button("Tonic", function()
+		if battleId then
+			Net.UseItem.Fire({
+				BattleId = battleId,
+				Turn = nextTurn,
+				Item = "Tonic",
+				Target = active,
+			})
+		end
+	end)
+	button("Buy 5 lassos", function()
+		Net.BuyItem.Fire({ Item = "Basic", Count = 5 })
+	end)
 	local function tap()
 		local current = playing
 		if not current then
@@ -171,12 +185,13 @@ function TestPanel.start(parent: Instance)
 	end)
 
 	Net.BattleStarted.On(function(value)
-		battleId, nextTurn = value.BattleId, 1
+		battleId, nextTurn, active = value.BattleId, 1, 1
 		local foe = value.Theirs[1]
 		log(`Battle {value.BattleId}: a level {foe.Level} {foe.Rarity} {foe.Torso} ({foe.Hp} HP)`)
 	end)
 	Net.BattleTurn.On(function(value)
 		nextTurn = value.Turn + 1
+		active = value.YourActive
 		for _, event in value.Events do
 			log(
 				`  turn {value.Turn}: side {event.Side} {event.Kind} {event.Move or ""} -{event.Damage} -> {event.TargetHp}`
@@ -222,6 +237,13 @@ function TestPanel.start(parent: Instance)
 				end
 			end
 		end
+	end)
+	Net.BuyResult.On(function(value)
+		log(
+			if value.Ok
+				then `Bought {value.Count} {value.Item} for {value.Coins} coins`
+				else `Shop: {value.Reason}`
+		)
 	end)
 	Net.QuestUpdate.On(function(value)
 		local quest = Quests[value.QuestId]

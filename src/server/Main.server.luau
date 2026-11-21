@@ -27,6 +27,7 @@ local BattleService = require(script.Parent.Battle.BattleService)
 local BreedingService = require(script.Parent.Breeding.BreedingService)
 local CaptureService = require(script.Parent.Capture.CaptureService)
 local DataService = require(script.Parent.Data.DataService)
+local InventoryService = require(script.Parent.Inventory.InventoryService)
 local QuestService = require(script.Parent.Quests.QuestService)
 local StateSync = require(script.Parent.State.StateSync)
 local StoryService = require(script.Parent.Story.StoryService)
@@ -305,6 +306,13 @@ end)
 CaptureService.start(DataService.get, log, StateSync.changed)
 StateSync.start(DataService.get)
 
+InventoryService.start({
+	getData = DataService.get,
+	changed = StateSync.changed,
+	claimWaiting = claimWaiting,
+	log = log,
+})
+
 -- Breeding and hatching ----------------------------------------------------------------------
 
 local breeding = BreedingService.new(DataService.get, BattleService.isInBattle, log)
@@ -355,42 +363,6 @@ task.spawn(function()
 	end
 end)
 
--- Releasing ----------------------------------------------------------------------------------
-
-local lastRelease: { [Player]: number } = {}
-Net.ReleaseCreature.On(function(player, value)
-	local now = os.clock()
-	if now - (lastRelease[player] or -math.huge) < 0.3 then
-		return
-	end
-	lastRelease[player] = now
-	local profile = DataService.get(player)
-	if not profile then
-		return
-	end
-	Grants.rollDay(profile, os.time()) -- the release falloff counts by the server's date
-	local before = profile.Coins
-	local grant = Grants.release(profile, value.Id, BattleService.isInBattle(player, value.Id))
-	local ok = grant.outcome == "Granted"
-	Net.ReleaseResult.Fire(player, {
-		Id = value.Id,
-		Ok = ok,
-		Reason = string.sub(grant.reason or "", 1, 80),
-		Coins = math.max(0, profile.Coins - before),
-		Candy = grant.candy or 0,
-		Element = grant.element,
-	})
-	if ok then
-		StateSync.changed(player)
-		claimWaiting(player, profile)
-		log(
-			"Release",
-			{ player = player.UserId, creature = value.Id, coins = profile.Coins - before }
-		)
-	end
-end)
-
 Players.PlayerRemoving:Connect(function(player)
 	breeding:playerRemoving(player)
-	lastRelease[player] = nil
 end)

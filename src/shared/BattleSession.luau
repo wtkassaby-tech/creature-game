@@ -8,6 +8,7 @@
 
 local Battle = require("./Battle")
 local BattleAi = require("./BattleAi")
+local BattleConfig = require("../config/BattleConfig")
 local Rng = require("./Rng")
 local Stats = require("./Stats")
 local Types = require("./Types")
@@ -258,6 +259,72 @@ function BattleSession.pass(session: Session, turn: unknown): (TurnResult?, stri
 		return nil, "That turn has already been played"
 	end
 	local logStart = #state.log + 1
+	Battle.step(state, { kind = "Pass" }, session.chooser(state, FOE))
+	return result(session, logStart), nil
+end
+
+export type FieldItem = "Tonic" | "GreatTonic" | "Revive"
+local FIELD_ITEMS: { FieldItem } = { "Tonic", "GreatTonic", "Revive" }
+
+function BattleSession.parseFieldItem(value: unknown): FieldItem?
+	for _, item: FieldItem in FIELD_ITEMS do
+		if item == value then
+			return item
+		end
+	end
+	return nil
+end
+
+-- Uses a tonic or a Rally Root on one of the player's creatures. It spends the turn: the
+-- opponent still acts. A tonic needs a standing creature that is hurt; a Rally Root needs a
+-- fallen one. `target` is a team position. Returns the turn's result, or nil and a reason.
+function BattleSession.useItem(
+	session: Session,
+	turn: unknown,
+	item: FieldItem,
+	target: unknown
+): (TurnResult?, string?)
+	local state = session.state
+	if session.ran or state.winner ~= nil then
+		return nil, "The battle is over"
+	end
+	if typeof(turn) ~= "number" or turn ~= state.turn + 1 then
+		return nil, "That turn has already been played"
+	end
+	if typeof(target) ~= "number" or target % 1 ~= 0 then
+		return nil, "Bad choice"
+	end
+	local fighter = state.sides[PLAYER].team[target]
+	if not fighter then
+		return nil, "Bad choice"
+	end
+	local effect = BattleConfig.FIELD_ITEMS[item]
+	local full = fighter.stats.Hp
+	if effect.kind == "Heal" then
+		if fighter.hp <= 0 then
+			return nil, "That creature has fainted"
+		elseif fighter.hp >= full then
+			return nil, "That creature is not hurt"
+		end
+		fighter.hp = math.min(full, fighter.hp + math.max(1, math.floor(full * effect.share)))
+	else
+		if fighter.hp > 0 then
+			return nil, "That creature has not fainted"
+		end
+		fighter.hp = math.max(1, math.floor(full * effect.share))
+	end
+	local logStart = #state.log + 1
+	local event: Battle.Event = {
+		turn = state.turn + 1,
+		side = PLAYER,
+		text = `{item} on {fighter.creature.id}`,
+		kind = "Item",
+		move = item :: string,
+		damage = 0,
+		targetHp = fighter.hp,
+		slot = target,
+	}
+	table.insert(state.log, event)
 	Battle.step(state, { kind = "Pass" }, session.chooser(state, FOE))
 	return result(session, logStart), nil
 end

@@ -26,7 +26,7 @@ export type Action =
 	{ kind: "Move", move: string }
 	| { kind: "Switch", to: number }
 	| { kind: "Pass" }
-export type EventKind = "Move" | "FollowUp" | "Switch" | "Faint"
+export type EventKind = "Move" | "FollowUp" | "Switch" | "Faint" | "Item"
 -- One thing that happened in a turn. `text` is for logs; the other fields are what the
 -- player's screen needs to replay it. `side` is who acted (for a faint, whose creature fell).
 export type Event = {
@@ -34,10 +34,10 @@ export type Event = {
 	side: number,
 	text: string,
 	kind: EventKind,
-	move: string?, -- Move and FollowUp
+	move: string?, -- Move and FollowUp; for Item, the item's id
 	damage: number?, -- Move and FollowUp
 	targetHp: number?, -- the struck creature's health afterwards
-	slot: number?, -- Switch: the team position now active; Faint: the position that fell
+	slot: number?, -- Switch: the position now active; Faint: the one that fell; Item: the one treated
 }
 export type State = {
 	sides: { Side },

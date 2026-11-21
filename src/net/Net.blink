@@ -9,7 +9,7 @@ option Casing = Pascal
 
 enum BattleKind = { Wild, Tamer, Rival, Friendly }
 enum ActionKind = { Move, Switch, Run }
-enum EventKind = { Move, FollowUp, Switch, Faint }
+enum EventKind = { Move, FollowUp, Switch, Faint, Item }
 enum BodyPlan = { Quad, Biped, Winged, Serpent }
 enum Element = { Leaf, Sand, Water, Toxic, Frost, Crystal, Fire, Storm, Arcane, Cosmic }
 enum Rarity = { Common, Uncommon, Gem, Ruby, Diamond, Cosmic }
@@ -440,5 +440,41 @@ event QuestUpdate {
 		Progress: u16,
 		Needed: u16,
 		Gifts: GiftView[0..12],
+	},
+}
+
+-- Items. Using a tonic or a Rally Root in a battle spends the turn. Buying happens at a shop:
+-- the server checks the player is standing there, the price and the coins.
+enum FieldItem = { Tonic, GreatTonic, Revive }
+event UseItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Item: FieldItem,
+		Target: u8(1..6),
+	},
+}
+event BuyItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Count: u8(1..99),
+	},
+}
+event BuyResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Ok: boolean,
+		Reason: string(0..80),
+		Count: u8,
+		Coins: u32,
 	},
 }
