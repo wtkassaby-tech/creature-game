@@ -2,14 +2,12 @@
 -- Starts the server and connects its services: saving, the world, battles, catching, breeding
 -- and the story all share the one loaded profile per player from the data service.
 --
--- Still to come: giants, quests, shops and the real screens. In Studio only, a new player is
--- given Mossmitt through the real story path until the starter screen exists.
+-- Still to come: purchases, trading and the Circuit.
 -- Not yet run in Studio.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Grants = require(ReplicatedStorage.shared.Grants)
 local Health = require(ReplicatedStorage.shared.Health)
@@ -35,7 +33,6 @@ local StoryService = require(script.Parent.Story.StoryService)
 local WorldService = require(script.Parent.World.WorldService)
 
 local HATCH_CHECK_SECONDS = 5
-local IS_STUDIO = RunService:IsStudio()
 
 -- One line per event in the server log, ready for the analytics service later.
 local function log(event: string, fields: { [string]: any })
@@ -173,10 +170,6 @@ DataService.start(log, function(player: Player)
 	StateSync.changed(player)
 	Grants.rollDay(profile, os.time())
 	claimWaiting(player, profile)
-	if IS_STUDIO and profile.Story.starter == nil then
-		-- Studio only, until the starter screen exists: pick Mossmitt through the real story path.
-		StoryService.event(player, { kind = "Ask", at = nil }, "Mossmitt", true)
-	end
 end)
 
 -- Battles ---------------------------------------------------------------------------------
