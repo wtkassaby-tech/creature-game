@@ -27,6 +27,8 @@ export type GetData = (player: Player) -> Profile.Profile?
 -- creature locked for good.
 export type IsLocked = (player: Player, creatureId: string) -> boolean
 export type Log = (event: string, fields: { [string]: any }) -> ()
+-- Supplied by the story: true once the player has reached the beat that opens breeding.
+export type IsOpen = (data: Profile.Profile) -> boolean
 
 local MIN_SECONDS_BETWEEN_REQUESTS = 1
 local CHARM_ITEM = "BondCharm"
@@ -38,6 +40,7 @@ export type BreedingService = typeof(setmetatable(
 	{} :: {
 		getData: GetData,
 		isLocked: IsLocked,
+		isOpen: IsOpen,
 		log: Log,
 		lastRequest: { [Player]: number },
 		random: Random,
@@ -45,10 +48,16 @@ export type BreedingService = typeof(setmetatable(
 	BreedingService
 ))
 
-function BreedingService.new(getData: GetData, isLocked: IsLocked, log: Log): BreedingService
+function BreedingService.new(
+	getData: GetData,
+	isLocked: IsLocked,
+	isOpen: IsOpen,
+	log: Log
+): BreedingService
 	return setmetatable({
 		getData = getData,
 		isLocked = isLocked,
+		isOpen = isOpen,
 		log = log,
 		lastRequest = {},
 		random = Random.new(),
@@ -91,6 +100,9 @@ function BreedingService.requestBreed(
 	local data = self.getData(player)
 	if not data then
 		return false, "Data not loaded"
+	end
+	if not self.isOpen(data) then
+		return false, "Breeding is not open to you yet"
 	end
 	local a, b = data.Creatures[idA], data.Creatures[idB]
 	if not a or not b then

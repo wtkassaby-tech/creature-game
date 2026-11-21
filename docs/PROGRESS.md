@@ -2,6 +2,20 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (latest): giants, the shop, real screens
+
+**In one line:** Greenwood can be played from the first minute to the badge, with wild creatures, tamers, the rival, quests, the shop, breeding and the giant fight, on real (first-cut) screens. 958 checks pass. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Giant fights: horn, turns, items, rewards, giving up; the giant quest | Tested (31), reviewed | `src/shared/GiantSession.luau`, `src/server/Giants/` |
+| Choosing the team; story gates on breeding and the shop | Tested (12) | `src/shared/Team.luau`, `src/shared/World.luau` |
+| Screens: battle, lasso, giant fight, shop, creatures (team, breeding with cost and odds, eggs, release), a coin and candy bar | Type-checked. **Not yet seen in Studio**: expect layout fixes | `src/client/` |
+| Sixth independent exploit review (giants) | Done: one must-fix (saved-up cheap horns), fixed | `docs/REVIEWS.md` |
+| Approval pack 4: what a captured giant is | **Waiting for Ayrton** | `docs/plans/04_GIANT_CAPTURE.md` |
+
+**First thing to do in Studio** (with Claude Code and the Studio MCP on the laptop): `rokit install`, `wally install`, `lune run check`, then press Play and walk the list under "What Ayrton can playtest" below. Expect the first run to turn up errors that only Roblox can show (anything about parts, prompts, screens and data stores); the rules underneath are tested.
+
 ## 21 November 2026 (later): a world to walk in, tamers, the rival, quests
 
 | Piece | State | Where |

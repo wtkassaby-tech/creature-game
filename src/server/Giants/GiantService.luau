@@ -26,6 +26,7 @@ export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
 	team: (player: Player) -> ({ Types.Creature }?, number?), -- the team and the level cap
 	inOtherBattle: (player: Player) -> boolean,
+	isOpen: (profile: Profile.Profile) -> boolean, -- has the story shown this player the giant yet?
 	biome: () -> WorldTypes.Biome,
 	map: () -> Layout.Map,
 	position: (player: Player) -> Layout.Point?,
@@ -125,10 +126,14 @@ function GiantService.start(hooks: Hooks): () -> ()
 		if not at or not Layout.isNear(hooks.map(), lair.id, at, lair.arenaSize / 2) then
 			return hooks.refuse(player, "You are too far away")
 		end
+		if not hooks.isOpen(profile) then
+			return hooks.refuse(player, "The giant does not stir. Come back later in your journey")
+		end
 		nextBattleId += 1
 		local session, problem = GiantSession.begin(profile, {
 			battleId = nextBattleId,
 			giant = giant,
+			biome = hooks.biome().number,
 			yours = creatures,
 			levelCap = cap,
 			seed = random:NextInteger(1, 2147483646),
@@ -184,39 +189,74 @@ function GiantService.start(hooks: Hooks): () -> ()
 		if not session or not profile or session.battleId ~= value.BattleId then
 			return hooks.refuse(player, "That fight is over")
 		end
-		local view, problem =
-			GiantSession.act(profile, session, value.Turn, value.Kind, value.Index, value.Item)
+		-- If the turn itself fails, the fight is ended rather than left half played.
+		local ok, view, problem = pcall(
+			GiantSession.act,
+			profile,
+			session,
+			value.Turn,
+			value.Kind,
+			value.Index,
+			value.Item
+		)
+		if not ok then
+			sessions[player] = nil
+			hooks.log("GiantFailed", { player = player.UserId, problem = tostring(view) })
+			return hooks.refuse(player, "The fight was stopped. Your Giant Horn is spent")
+		end
 		if not view then
 			return hooks.refuse(player, problem or "That choice is not allowed")
 		end
 		if value.Kind == "Item" then
 			hooks.changed(player)
 		end
-		Net.GiantTurn.Fire(player, wire(view))
 		if not view.finished then
-			return
+			return Net.GiantTurn.Fire(player, wire(view))
 		end
+
+		-- The fight is over: end it and pay before anything is sent, so nothing that goes wrong
+		-- in sending can lose a win or leave the fight open.
 		sessions[player] = nil
 		local giant = session.state.giant
 		hooks.log(
 			"GiantFinished",
 			{ player = player.UserId, giant = giant.id, won = view.won, turns = view.turn }
 		)
-		if not view.won then
+		local paid: Rewards.GiantPaid? = nil
+		if view.won then
+			local team = {}
+			for _, fighter in session.state.team do
+				table.insert(team, { id = fighter.creature.id, fainted = fighter.hp <= 0 })
+			end
+			paid = Rewards.giantWin(profile, giant, session.state.boss.creature, {
+				biome = hooks.biome().number,
+				team = team,
+				cap = Xp.levelCap(profile.Story.badges),
+				unixTime = os.time(),
+			})
+			hooks.changed(player)
+		end
+		Net.GiantTurn.Fire(player, wire(view))
+		if paid then
+			hooks.onWon(player, session.battleId, giant.id, paid)
+		end
+	end)
+
+	local stopLeave = Net.LeaveGiant.On(function(player, value)
+		local now = os.clock()
+		if now - (lastAction[player] or -math.huge) < MIN_SECONDS_BETWEEN_ACTIONS then
 			return
 		end
-		local team = {}
-		for _, fighter in session.state.team do
-			table.insert(team, { id = fighter.creature.id, fainted = fighter.hp <= 0 })
+		lastAction[player] = now
+		local session = sessions[player]
+		if session and session.battleId == value.BattleId then
+			sessions[player] = nil
+			hooks.log("GiantLeft", {
+				player = player.UserId,
+				giant = session.state.giant.id,
+				turns = session.state.turn,
+			})
 		end
-		local paid = Rewards.giantWin(profile, giant, session.state.boss.creature, {
-			biome = hooks.biome().number,
-			team = team,
-			cap = Xp.levelCap(profile.Story.badges),
-			unixTime = os.time(),
-		})
-		hooks.changed(player)
-		hooks.onWon(player, session.battleId, giant.id, paid)
 	end)
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)
@@ -228,6 +268,7 @@ function GiantService.start(hooks: Hooks): () -> ()
 	return function()
 		stopStart()
 		stopAction()
+		stopLeave()
 		leaving:Disconnect()
 	end
 end

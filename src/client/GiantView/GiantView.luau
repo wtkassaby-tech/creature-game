@@ -70,7 +70,7 @@ function GiantView.start(playerGui: Instance)
 	side.BackgroundTransparency = 1
 	side.Parent = actions
 	local sideList = Instance.new("UIGridLayout")
-	sideList.CellSize = UDim2.new(1, 0, 0.5, -4)
+	sideList.CellSize = UDim2.new(1, 0, 0.333, -6)
 	sideList.CellPadding = UDim2.fromOffset(0, 8)
 	sideList.Parent = side
 
@@ -201,6 +201,16 @@ function GiantView.start(playerGui: Instance)
 			end
 		end
 		choose(options)
+	end)
+
+	Kit.button(side, "Give up", Kit.COLOURS.bad, function()
+		local current = model
+		if current and not current.over then
+			-- The horn stays spent; the server just ends the fight.
+			Net.LeaveGiant.Fire({ BattleId = current.battleId })
+			gui.Enabled = false
+			model = nil
+		end
 	end)
 
 	local function showEnd(current: Model)

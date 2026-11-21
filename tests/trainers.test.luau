@@ -207,6 +207,30 @@ do
 	)
 end
 
+print("\n== Features the story opens ==")
+do
+	local profile = Profile.template()
+	local chapters = { Chapter1 }
+	check(
+		"breeding is closed before the mentor's lesson",
+		not World.isUnlocked(chapters, profile.Story.flags, "breeding")
+	)
+	check(
+		"the shop is closed before the first route",
+		not World.isUnlocked(chapters, profile.Story.flags, "shop")
+	)
+	advance(profile, "third_creature")
+	check(
+		"both open once their beats are done",
+		World.isUnlocked(chapters, profile.Story.flags, "breeding")
+			and World.isUnlocked(chapters, profile.Story.flags, "shop")
+	)
+	check(
+		"a feature the story never mentions is not locked",
+		World.isUnlocked(chapters, {}, "weather")
+	)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("trainer checks failed")

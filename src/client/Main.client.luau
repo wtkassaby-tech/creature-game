@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 
 local BattleView = require(script.Parent.BattleView.BattleView)
 local ClientState = require(script.Parent.State.ClientState)
+local CreaturesView = require(script.Parent.Creatures.CreaturesView)
 local GiantView = require(script.Parent.GiantView.GiantView)
 local ShopView = require(script.Parent.Shop.ShopView)
 local WorldView = require(script.Parent.World.WorldView)
@@ -30,6 +31,7 @@ local shop = ShopView.start(playerGui)
 WorldView.start(shop.open)
 BattleView.start(playerGui)
 GiantView.start(playerGui)
+CreaturesView.start(playerGui)
 
 if RunService:IsStudio() then
 	local TestPanel = require(script.Parent.Debug.TestPanel)

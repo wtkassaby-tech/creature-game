@@ -2,6 +2,22 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: giant fights (commit f094181)
+
+Reviewer: a separate read-only agent. Found sound: a fight cannot pay twice; the horn is used up only after every check and never refunded; battles of different kinds cannot overlap; every choice is checked and items are capped at five; creature locks cover giant fights.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Giant Horns bought cheaply in Greenwood could be saved up and used on later giants, whose rematches pay far more than those horns cost (about +3,650 coins a fight in biome 3) | Must fix (before later giants ship) | Horns are graded by the biome they were priced for: a horn wakes its own biome's giant or an earlier one, never a later one. Tests added, including "a rematch pays less than any horn that can start it, in every biome" |
+| 2 | No way to give up a fight; an error mid-turn could leave the player stuck in it | Should fix | A give-up message ends the fight (the horn stays spent); a turn that errors ends the fight |
+| 3 | The turn was sent to the device before the fight was closed and paid | Note | The fight is closed and paid first |
+| 4 | Nothing in the story gated starting a giant fight | Note | The giant stirs only once the story has shown it to the player |
+| 5 | The fight log showed creature ids, not names | Note | It shows species names |
+
+Found by a new test before the review: a Greenwood giant rematch paid 910 coins for a 900-coin horn. A rematch is now capped at 85% of its biome's horn price.
+
+Not separately reviewed: choosing the team (`src/shared/Team.luau`, tested) and the story gates on breeding and the shop. Neither grants anything; both only refuse requests.
+
 ## 21 November 2026: quests, the shop, items in battle (commits 3520b21, b6d0d45)
 
 Reviewer: a separate read-only agent. No must-fix findings: a quest cannot pay twice or be handed in without its objective; counts and item ids at the shop are checked; an item is used up only when it was really used; a Rally Root cannot un-lose a battle.

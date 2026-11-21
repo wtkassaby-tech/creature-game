@@ -58,7 +58,8 @@ function ShopView.start(playerGui: Instance): View
 			if Economy.itemAvailable(item, reached) then
 				local def = EconomyConfig.ITEMS[item]
 				local price = math.floor(Economy.itemPrice(item, reached))
-				local key: string = item
+				-- Giant Horns are kept by the grade they were bought at.
+				local key: string = if item == "GiantCall" then Economy.hornKey(reached) else item
 				local row =
 					Kit.panel(list, UDim2.new(1, -8, 0, 58), UDim2.new(), Kit.COLOURS.panelLight)
 				Kit.label(
@@ -75,7 +76,7 @@ function ShopView.start(playerGui: Instance): View
 					`{price} coins`,
 					if state.Coins >= price then Kit.COLOURS.good else Kit.COLOURS.panel,
 					function()
-						Net.BuyItem.Fire({ Item = key, Count = 1 })
+						Net.BuyItem.Fire({ Item = item :: string, Count = 1 })
 					end
 				)
 				buy.Size = UDim2.new(0.32, 0, 0, 42)

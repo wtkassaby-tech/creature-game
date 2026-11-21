@@ -80,6 +80,10 @@ do
 	far.Story.biomeReached = 3
 	local bought = assert(Shop.buy(far, "GiantCall", 1, true, 1), "horn is bought")
 	check(
+		"the horn is kept at the grade it was priced at",
+		far.Items[Economy.hornKey(3)] == 1 and (far.Items.GiantCall or 0) == 0
+	)
+	check(
 		"a player who has reached a later biome pays its price in the first town",
 		bought.coins == Economy.itemPrice("GiantCall", 3)
 			and bought.coins > Economy.itemPrice("GiantCall", 1)

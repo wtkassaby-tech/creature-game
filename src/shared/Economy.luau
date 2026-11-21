@@ -111,6 +111,26 @@ function Economy.itemPrice(item: ItemId, biome: number): number
 	return def.price
 end
 
+-- Giant Horns are graded by the biome they were priced for: a horn wakes the giant of its own
+-- biome or an earlier one, never a later one. Without this, cheap horns bought early could be
+-- saved up and used on later giants, whose rematches pay more than those horns cost.
+-- Grade 1 is plain "GiantCall"; later grades are "GiantCall_2", "GiantCall_3", and so on.
+function Economy.hornKey(grade: number): string
+	local whole = math.max(1, math.floor(grade))
+	return if whole == 1 then "GiantCall" else `GiantCall_{whole}`
+end
+
+-- The cheapest horn the player holds that can wake a giant of this biome, or nil.
+function Economy.hornFor(items: { [string]: number }, biome: number): string?
+	for grade = math.max(1, math.floor(biome)), #EconomyConfig.BIOME_MULT do
+		local key = Economy.hornKey(grade)
+		if (items[key] or 0) >= 1 then
+			return key
+		end
+	end
+	return nil
+end
+
 -- Whether a shop sells the item to a player whose furthest biome is this one.
 function Economy.itemAvailable(item: ItemId, furthestBiome: number): boolean
 	if item == "Bait" then

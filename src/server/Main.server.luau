@@ -20,6 +20,7 @@ local Rewards = require(ReplicatedStorage.shared.Rewards)
 local StoryProgress = require(ReplicatedStorage.shared.StoryProgress)
 local Trainers = require(ReplicatedStorage.shared.Trainers)
 local Types = require(ReplicatedStorage.shared.Types)
+local World = require(ReplicatedStorage.shared.World)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local Xp = require(ReplicatedStorage.shared.Xp)
 
@@ -309,7 +310,12 @@ BattleService.start(resolveTarget, playerTeam, battleFinished, battleStarted, fu
 	end
 end)
 
--- A creature in any kind of battle cannot be bred or released.
+-- True once the story has opened a feature (breeding, the shop, the giant) for this player.
+local function isUnlocked(profile: Profile.Profile, feature: string): boolean
+	return World.isUnlocked({ StoryService.chapter() }, profile.Story.flags, feature)
+end
+
+-- A creature in any kind of battle cannot be bred, released or moved on or off the team.
 local function isLocked(player: Player, creatureId: string): boolean
 	return BattleService.isInBattle(player, creatureId)
 		or GiantService.isInBattle(player, creatureId)
@@ -320,6 +326,9 @@ GiantService.start({
 	team = playerTeam,
 	inOtherBattle = function(player)
 		return BattleService.session(player) ~= nil
+	end,
+	isOpen = function(profile)
+		return isUnlocked(profile, "giant_marker")
 	end,
 	biome = WorldService.biome,
 	map = WorldService.map,
@@ -344,16 +353,19 @@ InventoryService.start({
 	getData = DataService.get,
 	changed = StateSync.changed,
 	claimWaiting = claimWaiting,
-	isLocked = function(player, creatureId)
-		return BattleService.isInBattle(player, creatureId)
-			or GiantService.isInBattle(player, creatureId)
+	isLocked = isLocked,
+	isUnlocked = isUnlocked,
+	notify = function(player, text)
+		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })
 	end,
 	log = log,
 })
 
 -- Breeding and hatching ----------------------------------------------------------------------
 
-local breeding = BreedingService.new(DataService.get, isLocked, log)
+local breeding = BreedingService.new(DataService.get, isLocked, function(profile)
+	return isUnlocked(profile, "breeding")
+end, log)
 
 Net.RequestBreed.On(function(player, value)
 	local ok, detail = breeding:requestBreed(

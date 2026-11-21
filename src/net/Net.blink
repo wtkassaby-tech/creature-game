@@ -549,3 +549,26 @@ event GiantTurn {
 	Call: SingleAsync,
 	Data: GiantView,
 }
+
+-- Device -> server: the whole new team, as creature ids in battle order. Refused during a battle.
+event SetTeam {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Ids: string(1..40)[1..6] },
+}
+-- Server -> device: a short notice for the screen (a refusal outside battle, a confirmation).
+event Notice {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Text: string(1..120) },
+}
+
+-- Device -> server: give up the giant fight. The horn stays spent; nothing is paid.
+event LeaveGiant {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { BattleId: u32 },
+}

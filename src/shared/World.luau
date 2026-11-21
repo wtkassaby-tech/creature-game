@@ -141,4 +141,21 @@ function World.nextBeat(chapter: WorldTypes.Chapter, flags: Flags): WorldTypes.B
 	return nil
 end
 
+-- True once a beat that opens this feature ("breeding", "shop", ...) has finished. A feature no
+-- beat mentions is never locked.
+function World.isUnlocked(chapters: { WorldTypes.Chapter }, flags: Flags, feature: string): boolean
+	local mentioned = false
+	for _, chapter in chapters do
+		for _, beat in chapter.beats do
+			if table.find(beat.unlocks, feature) then
+				mentioned = true
+				if flags[beat.id] then
+					return true
+				end
+			end
+		end
+	end
+	return not mentioned
+end
+
 return World

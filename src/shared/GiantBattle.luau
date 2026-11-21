@@ -331,7 +331,7 @@ local function playerActs(state: State, action: Action)
 	local me = state.team[state.active]
 	if action.kind == "Switch" then
 		state.active = action.to
-		note(state, `{state.team[action.to].creature.id} takes the front`)
+		note(state, `{state.team[action.to].creature.parts.Torso.species} takes the front`)
 	elseif action.kind == "Item" then
 		local target = state.team[action.target]
 		state.itemsUsed += 1
@@ -341,14 +341,14 @@ local function playerActs(state: State, action: Action)
 		else
 			target.hp = math.max(1, math.floor(target.stats.Hp * action.effect.share))
 		end
-		note(state, `{action.name} on {target.creature.id}`)
+		note(state, `{action.name} on {target.creature.parts.Torso.species}`)
 	else
 		local damage = math.max(
 			1,
 			math.floor(Battle.previewDamage(me, state.boss, action.move) * variance(state))
 		)
 		state.boss.hp = math.max(0, state.boss.hp - damage)
-		note(state, `{me.creature.id} uses {action.move} for {damage}`)
+		note(state, `{me.creature.parts.Torso.species} uses {action.move} for {damage}`)
 		-- A weak-point hit while the big attack is charged interrupts it.
 		local charged = state.charged
 		local element: Types.Element = Moves[action.move].element
@@ -368,7 +368,7 @@ local function hit(state: State, target: Fighter, attackId: string, share: numbe
 	target.hp = math.max(0, target.hp - damage)
 	note(
 		state,
-		`{state.giant.name}'s {state.giant.attacks[attackId].name} hits {target.creature.id} for {damage}`
+		`{state.giant.name}'s {state.giant.attacks[attackId].name} hits {target.creature.parts.Torso.species} for {damage}`
 	)
 end
 
@@ -451,7 +451,7 @@ function GiantBattle.step(state: State, requested: Action)
 	giantActs(state)
 	for index, fighter in state.team do
 		if standing[index] and fighter.hp == 0 then
-			note(state, `{fighter.creature.id} faints`)
+			note(state, `{fighter.creature.parts.Torso.species} faints`)
 		end
 	end
 	if state.team[state.active].hp == 0 then

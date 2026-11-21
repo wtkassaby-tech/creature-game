@@ -49,7 +49,7 @@ local function begin(profile: Profile.Profile, team: { Types.Creature }): GiantS
 	return (
 		GiantSession.begin(
 			profile,
-			{ battleId = 1, giant = giant, yours = team, levelCap = 15, seed = 3 }
+			{ battleId = 1, giant = giant, biome = 1, yours = team, levelCap = 15, seed = 3 }
 		)
 	)
 end
@@ -79,6 +79,56 @@ do
 		"the fight starts in the first phase with all five items",
 		view.phase == giant.phases[1].name and view.itemsLeft == GiantConfig.MAX_ITEMS
 	)
+end
+
+print("\n== Horns are graded by biome ==")
+do
+	local profile, team = setup(3)
+	local function tryBiome(biome: number): boolean
+		return GiantSession.begin(
+			profile,
+			{ battleId = 9, giant = giant, biome = biome, yours = team, levelCap = 15, seed = 3 }
+		) ~= nil
+	end
+	check(
+		"a first-biome horn does not wake a later giant",
+		not tryBiome(2) and not tryBiome(3) and profile.Items.GiantCall == 3
+	)
+	profile.Items[Economy.hornKey(3)] = 1
+	check(
+		"a later horn wakes its own biome's giant",
+		tryBiome(3) and profile.Items[Economy.hornKey(3)] == 0
+	)
+	profile.Items[Economy.hornKey(3)] = 1
+	check(
+		"the cheapest horn that fits is used first",
+		tryBiome(1) and profile.Items.GiantCall == 2 and profile.Items[Economy.hornKey(3)] == 1
+	)
+	profile.Items.GiantCall = 0
+	check(
+		"a later horn still wakes an earlier giant",
+		tryBiome(1) and profile.Items[Economy.hornKey(3)] == 0
+	)
+	local sink = true
+	for biome = 1, 11 do
+		for level = 1, 120 do
+			-- Any horn that can wake this giant cost at least this biome's price.
+			if
+				Economy.battleCoins("Giant", biome, level, 0, false)
+				>= Economy.itemPrice("GiantCall", biome)
+			then
+				sink = false
+			end
+		end
+		if
+			biome > 1
+			and Economy.itemPrice("GiantCall", biome)
+				<= Economy.itemPrice("GiantCall", biome - 1)
+		then
+			sink = false -- horn prices must rise with the biome for the grades to mean anything
+		end
+	end
+	check("a rematch pays less than any horn that can start it, in every biome", sink)
 end
 
 print("\n== Choices ==")

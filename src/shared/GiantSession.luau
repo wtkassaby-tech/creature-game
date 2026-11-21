@@ -9,6 +9,7 @@
 local Battle = require("./Battle")
 local BattleConfig = require("../config/BattleConfig")
 local BattleSession = require("./BattleSession")
+local Economy = require("./Economy")
 local GiantBattle = require("./GiantBattle")
 local Profile = require("./Profile")
 local Types = require("./Types")
@@ -17,6 +18,7 @@ local Xp = require("./Xp")
 export type StartInput = {
 	battleId: number,
 	giant: GiantBattle.GiantDef,
+	biome: number, -- the giant's biome: the horn used must be of this grade or a later one
 	yours: { Types.Creature }, -- the player's team, in order
 	levelCap: number,
 	seed: number,
@@ -53,8 +55,6 @@ export type View = {
 }
 
 local GiantSession = {}
-
-local HORN = "GiantCall"
 
 -- What the device should show now. Each log line is sent once.
 function GiantSession.view(session: Session): View
@@ -105,7 +105,8 @@ function GiantSession.begin(profile: Profile.Profile, input: StartInput): (Sessi
 	if #input.yours < 1 or #input.yours > 6 then
 		return nil, "You need between one and six creatures on your team"
 	end
-	if (profile.Items[HORN] or 0) < 1 then
+	local horn = Economy.hornFor(profile.Items, input.biome)
+	if not horn then
 		return nil, "You need a Giant Horn to wake the giant"
 	end
 	local team: { Battle.Fighter } = {}
@@ -117,7 +118,7 @@ function GiantSession.begin(profile: Profile.Profile, input: StartInput): (Sessi
 	end
 	local state = GiantBattle.new(input.giant, team, input.seed)
 	-- The horn goes the moment the fight starts: leaving part way does not bring it back.
-	profile.Items[HORN] -= 1
+	profile.Items[horn] -= 1
 	return { battleId = input.battleId, state = state, shown = 0 }, nil
 end
 

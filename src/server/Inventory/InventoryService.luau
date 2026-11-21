@@ -12,6 +12,7 @@ local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Shop = require(ReplicatedStorage.shared.Shop)
+local Team = require(ReplicatedStorage.shared.Team)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 
 local BattleService = require(script.Parent.Parent.Battle.BattleService)
@@ -22,6 +23,8 @@ export type Hooks = {
 	changed: (player: Player) -> (),
 	claimWaiting: (player: Player, profile: Profile.Profile) -> (), -- hand over gifts that waited for room
 	isLocked: (player: Player, creatureId: string) -> boolean, -- in a battle or a giant fight
+	isUnlocked: (profile: Profile.Profile, feature: string) -> boolean, -- opened by the story yet?
+	notify: (player: Player, text: string) -> (),
 	log: (event: string, fields: { [string]: any }) -> (),
 }
 
@@ -83,7 +86,10 @@ function InventoryService.start(hooks: Hooks)
 				atShop = true
 			end
 		end
-		local bought, problem = Shop.buy(profile, value.Item, value.Count, atShop, biome.number)
+		local bought: Shop.Bought?, problem: string? = nil, "The shop is not open to you yet"
+		if hooks.isUnlocked(profile, "shop") then
+			bought, problem = Shop.buy(profile, value.Item, value.Count, atShop, biome.number)
+		end
 		Net.BuyResult.Fire(player, {
 			Item = value.Item,
 			Ok = bought ~= nil,
@@ -135,7 +141,24 @@ function InventoryService.start(hooks: Hooks)
 		end
 	end)
 
+	local lastTeam: { [Player]: number } = {}
+	Net.SetTeam.On(function(player, value)
+		local profile = hooks.getData(player)
+		if not profile or tooFast(lastTeam, player) then
+			return
+		end
+		local ok, problem = Team.set(profile, value.Ids, function(creatureId)
+			return hooks.isLocked(player, creatureId)
+		end)
+		if ok then
+			hooks.changed(player)
+		else
+			hooks.notify(player, problem or "Your team could not be changed")
+		end
+	end)
+
 	Players.PlayerRemoving:Connect(function(player)
+		lastTeam[player] = nil
 		lastItem[player] = nil
 		lastBuy[player] = nil
 		lastRelease[player] = nil

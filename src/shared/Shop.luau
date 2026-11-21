@@ -50,19 +50,21 @@ function Shop.buy(
 	if not Economy.itemAvailable(id, profile.Story.biomeReached) then
 		return nil, "The shop does not sell that yet"
 	end
-	local held = profile.Items[id] or 0
-	if held + count > Shop.MAX_HELD then
-		return nil, "You cannot carry any more of those"
-	end
 	-- Items that cost more in later biomes are priced by how far the player has got, wherever
 	-- they shop, so walking back to the first town is never a discount.
 	local priceBiome = math.max(biome, profile.Story.biomeReached)
 	local coins = math.floor(Economy.itemPrice(id, priceBiome)) * count
+	-- A Giant Horn is kept by the grade it was priced at (Economy.hornKey).
+	local key: string = if id == "GiantCall" then Economy.hornKey(priceBiome) else id
+	local held = profile.Items[key] or 0
+	if held + count > Shop.MAX_HELD then
+		return nil, "You cannot carry any more of those"
+	end
 	if coins ~= coins or coins < 0 or profile.Coins < coins then
 		return nil, "You do not have enough coins"
 	end
 	profile.Coins -= coins
-	profile.Items[id] = held + count
+	profile.Items[key] = held + count
 	return { item = id, count = count, coins = coins }, nil
 end
 
