@@ -8,6 +8,7 @@
 
 local Breeding = require("./Breeding")
 local Profile = require("./Profile")
+local Rewards = require("./Rewards")
 local Rng = require("./Rng")
 local Species = require("../content/Species")
 local StoryProgress = require("./StoryProgress")
@@ -65,6 +66,11 @@ function Trainers.resolve(
 	end
 	local beat = World.nextBeat(chapter, profile.Story.flags)
 	if beat == nil or beat.trigger.kind ~= "Win" or beat.trigger.target ~= id then
+		return nil, "That battle is not available"
+	end
+	-- Once won it is over, even if its beat has not finished yet (the win is on record and the
+	-- story catches up by itself), so a story battle can never be replayed for XP.
+	if Rewards.hasBeaten(profile, id) then
 		return nil, "That battle is not available"
 	end
 	for _, rival in Tamers.rivals do

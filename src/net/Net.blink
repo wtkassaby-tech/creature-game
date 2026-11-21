@@ -373,6 +373,9 @@ event PlayerState {
 		Badges: u8,
 		Starter: string(0..24),
 		Flags: string(1..40)[0..200],
+		-- Quests taken (id -> progress so far) and quests handed in.
+		QuestsActive: map { [string(1..40)]: u16 },
+		QuestsDone: string(1..40)[0..200],
 		Waiting: u8,
 	},
 }
@@ -408,4 +411,34 @@ event Rustle {
 	Type: Reliable,
 	Call: SingleAsync,
 	Data: struct { SpotId: string(1..40) },
+}
+
+-- Quests. The device names a quest; the server checks it is open to the player and that their
+-- character is standing at the quest giver's place. Progress is counted only from things the
+-- server itself judged.
+event AcceptQuest {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { QuestId: string(1..40) },
+}
+event HandInQuest {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { QuestId: string(1..40) },
+}
+-- Server -> device: a quest was taken, moved on, or handed in (with what it paid).
+enum QuestChange = { Taken, Progress, Ready, Done }
+event QuestUpdate {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		QuestId: string(1..40),
+		Change: QuestChange,
+		Progress: u16,
+		Needed: u16,
+		Gifts: GiftView[0..12],
+	},
 }

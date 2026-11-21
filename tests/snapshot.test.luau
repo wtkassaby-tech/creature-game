@@ -52,6 +52,13 @@ check(
 	egg.HatchAt == 1234 and egg.child == nil and egg.Id == nil
 )
 check("the team is listed", state.Team[1] == "b")
+profile.Quests.active.gw_fresh_tracks = 2
+profile.Quests.done.gw_old = true
+local withQuests = Snapshot.build(profile)
+check(
+	"quests taken and done are shown",
+	withQuests.QuestsActive.gw_fresh_tracks == 2 and withQuests.QuestsDone[1] == "gw_old"
+)
 
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then

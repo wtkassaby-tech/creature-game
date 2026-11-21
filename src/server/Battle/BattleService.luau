@@ -41,12 +41,14 @@ export type OnFinished = (
 export type OnStarted = (player: Player, session: BattleSession.Session, ref: any?) -> ()
 
 local MIN_SECONDS_BETWEEN_ACTIONS = 0.25
+local MIN_SECONDS_BETWEEN_STARTS = 0.5
 
 local BattleService = {}
 
 local sessions: { [Player]: BattleSession.Session } = {}
 local refs: { [Player]: any } = {}
 local lastAction: { [Player]: number } = {}
+local lastStart: { [Player]: number } = {}
 local nextBattleId = 0
 
 local function toWire(creatures: { BattleSession.CreatureView }): { any }
@@ -143,6 +145,11 @@ function BattleService.start(
 	finished = onFinished
 
 	local stopStart = Net.StartBattle.On(function(player, value)
+		local now = os.clock()
+		if now - (lastStart[player] or -math.huge) < MIN_SECONDS_BETWEEN_STARTS then
+			return
+		end
+		lastStart[player] = now
 		if sessions[player] then
 			return refuse(player, "You are already in a battle")
 		end
@@ -155,28 +162,35 @@ function BattleService.start(
 			return refuse(player, why or "That battle is not available")
 		end
 		nextBattleId = (nextBattleId + 1) % 4294967295
-		local session, problem = BattleSession.start({
-			battleId = nextBattleId,
-			kind = value.Kind,
-			yours = creatures,
-			theirs = opponent.creatures,
-			theirMoves = opponent.moves,
-			tier = opponent.tier,
-			seed = random:NextInteger(1, 2147483646),
-			levelCap = cap,
-		})
-		if not session then
-			-- Hand the opponent back (a wild creature must not stay marked as in a battle).
+		-- If anything here fails, even by an error, the opponent is handed back: a wild creature
+		-- must not stay marked as in a battle, and no half-started battle may be left behind.
+		local ok, session, problem = pcall(function(): (BattleSession.Session?, string?)
+			local made, why = BattleSession.start({
+				battleId = nextBattleId,
+				kind = value.Kind,
+				yours = creatures,
+				theirs = opponent.creatures,
+				theirMoves = opponent.moves,
+				tier = opponent.tier,
+				seed = random:NextInteger(1, 2147483646),
+				levelCap = cap,
+			})
+			if made and onStarted then
+				onStarted(player, made, opponent.ref)
+			end
+			return made, why
+		end)
+		if not ok or not session then
 			if onDropped then
 				onDropped(player, opponent.ref)
 			end
-			return refuse(player, problem or "That battle cannot start")
+			if not ok then
+				warn(`[BattleStart] {player.UserId}: {session}`)
+			end
+			return refuse(player, if ok and problem then problem else "That battle cannot start")
 		end
 		sessions[player] = session
 		refs[player] = opponent.ref
-		if onStarted then
-			onStarted(player, session, opponent.ref)
-		end
 		local started = BattleSession.started(session)
 		Net.BattleStarted.Fire(player, {
 			BattleId = started.battleId,
@@ -211,6 +225,7 @@ function BattleService.start(
 		sessions[player] = nil
 		refs[player] = nil
 		lastAction[player] = nil
+		lastStart[player] = nil
 	end)
 
 	return function()

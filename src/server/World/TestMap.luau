@@ -70,7 +70,7 @@ local function prompt(
 	action: string,
 	object: string,
 	reach: number
-)
+): ProximityPrompt
 	local p = Instance.new("ProximityPrompt")
 	p.ActionText = action
 	p.ObjectText = object
@@ -80,6 +80,7 @@ local function prompt(
 	p:SetAttribute("PromptKind", kind)
 	p:SetAttribute("PromptId", id)
 	p.Parent = part
+	return p
 end
 
 local function at(point: Layout.Point, height: number): CFrame
@@ -139,16 +140,26 @@ function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
 	spawn.Color = STONE
 	spawn.Parent = hub
 	for _, building in biome.hub.buildings do
-		local point = map.places[building.id]
-		local house = block(hub, building.id, Vector3.new(24, 18, 24), at(point, 9.4), WOOD)
+		local house = block(
+			hub,
+			building.id,
+			Vector3.new(24, 18, 24),
+			at(map.buildings[building.id], 9.4),
+			WOOD
+		)
 		label(house, building.name)
-		if building.npc then
-			-- The character stands at the door, on the side facing the square.
-			local toCentre = Vector3.new(-point.x, 0, -point.z).Unit * 16
-			local body =
-				person(hub, building.npc, { x = point.x + toCentre.X, z = point.z + toCentre.Z })
-			prompt(body, "Talk", building.npc, "Talk", building.name, WorldConfig.TALK_RADIUS)
-		end
+		-- Every building's keeper stands at its door. Talking to one moves the story on if the
+		-- story is waiting for them, and offers or takes in that place's quests.
+		local body = person(hub, building.npc or `{building.id}_keeper`, map.places[building.id])
+		local talk = prompt(
+			body,
+			"Talk",
+			building.npc or building.id,
+			"Talk",
+			building.name,
+			WorldConfig.TALK_RADIUS
+		)
+		talk:SetAttribute("Place", building.name)
 	end
 
 	-- The routes, their stretches, rustle spots and tamers.

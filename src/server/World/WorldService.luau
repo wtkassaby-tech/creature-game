@@ -35,6 +35,10 @@ local WorldService = {}
 local biome: WorldTypes.Biome
 local map: Layout.Map
 local books: { [Player]: Encounters.Book } = {}
+-- Rest timers of players who left, by user id, kept for a while (see `book`).
+type Timers = { rustledAt: { [string]: number }, freeAt: { [string]: number }, leftAt: number }
+local timers: { [number]: Timers } = {}
+local KEEP_TIMERS_SECONDS = 600
 local lastRustle: { [Player]: number } = {}
 local random = Random.new()
 
@@ -58,7 +62,9 @@ end
 function WorldService.position(player: Player): Layout.Point?
 	local character = player.Character
 	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
-	if root and root:IsA("BasePart") then
+	local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+	-- A fallen character is nowhere: it cannot start a battle or reach a place.
+	if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
 		return { x = root.Position.X, z = root.Position.Z }
 	end
 	return nil
@@ -69,13 +75,22 @@ function WorldService.isNear(player: Player, placeId: string, radius: number): b
 	return at ~= nil and Layout.isNear(map, placeId, at, radius)
 end
 
+-- A player's book, made when first needed. Its rest timers (rustle spots, stretches waiting to
+-- refill) are carried over from their last visit to this server, so leaving and rejoining is
+-- not a way round them.
 local function book(player: Player): Encounters.Book
 	local found = books[player]
-	if not found then
-		found = Encounters.new()
-		books[player] = found
+	if found then
+		return found
 	end
-	return found
+	local made = Encounters.new()
+	local kept = timers[player.UserId]
+	if kept then
+		made.rustledAt, made.freeAt = kept.rustledAt, kept.freeAt
+		timers[player.UserId] = nil
+	end
+	books[player] = made
+	return made
 end
 
 local function send(player: Player)
@@ -105,7 +120,8 @@ end
 
 -- One of the player's wild creatures by id, or nil.
 function WorldService.spawn(player: Player, spawnId: number): Encounters.Spawn?
-	return book(player).spawns[spawnId]
+	local found = books[player]
+	return if found then found.spawns[spawnId] else nil
 end
 
 -- Starts a battle with one of the player's wild creatures, or returns nil and a reason.
@@ -129,7 +145,11 @@ function WorldService.finish(
 	ending: BattleSession.Ending?,
 	misses: number
 )
-	Encounters.finish(book(player), spawnId, ending, misses, os.clock())
+	local found = books[player]
+	if not found then
+		return -- the player has left; their book is gone
+	end
+	Encounters.finish(found, spawnId, ending, misses, os.clock())
 	send(player)
 end
 
@@ -182,8 +202,18 @@ function WorldService.start(hooks: Hooks): () -> ()
 	end)
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)
+		local left = books[player]
+		if left then
+			timers[player.UserId] =
+				{ rustledAt = left.rustledAt, freeAt = left.freeAt, leftAt = os.clock() }
+		end
 		books[player] = nil
 		lastRustle[player] = nil
+		for userId, kept in timers do
+			if os.clock() - kept.leftAt > KEEP_TIMERS_SECONDS then
+				timers[userId] = nil
+			end
+		end
 	end)
 
 	return function()

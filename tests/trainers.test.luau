@@ -85,6 +85,12 @@ do
 		first ~= nil and first.team.members[1].species == "Spadesnout"
 	)
 	check("a loss in the first battle costs nothing", first ~= nil and first.mayRetryAtOnce)
+	profile.Story.flags["won:rival_first"] = true
+	check(
+		"once won it cannot be replayed, even before its beat finishes",
+		Trainers.resolve("rival_first", profile, Chapter1, greenwood) == nil
+	)
+	profile.Story.flags["won:rival_first"] = nil
 	check(
 		"the gate battle is not open yet",
 		Trainers.resolve("rival_gate", profile, Chapter1, greenwood) == nil

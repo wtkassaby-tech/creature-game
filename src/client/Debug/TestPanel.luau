@@ -13,6 +13,7 @@ local ClientState = require(script.Parent.Parent.State.ClientState)
 local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoPlayer = require(script.Parent.Parent.Lasso.LassoPlayer)
 local Net = require(ReplicatedStorage.net.generated.Client)
+local Quests = require(ReplicatedStorage.content.Quests)
 local World = require(ReplicatedStorage.shared.World)
 local WorldView = require(script.Parent.Parent.World.WorldView)
 
@@ -220,6 +221,21 @@ function TestPanel.start(parent: Instance)
 					log(`  {line.speaker}: {line.text}`)
 				end
 			end
+		end
+	end)
+	Net.QuestUpdate.On(function(value)
+		local quest = Quests[value.QuestId]
+		local name = if quest then quest.name else value.QuestId
+		if value.Change == "Taken" and quest then
+			log(`Quest taken: {name}. {quest.goal}`)
+		elseif value.Change == "Done" then
+			log(`Quest done: {name} ({#value.Gifts} reward(s))`)
+		else
+			log(
+				`Quest {name}: {value.Progress}/{value.Needed}{if value.Change == "Ready"
+					then " - go back to hand it in"
+					else ""}`
+			)
 		end
 	end)
 	Net.ReleaseResult.On(function(value)

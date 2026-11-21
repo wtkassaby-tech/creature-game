@@ -27,6 +27,7 @@ local BattleService = require(script.Parent.Battle.BattleService)
 local BreedingService = require(script.Parent.Breeding.BreedingService)
 local CaptureService = require(script.Parent.Capture.CaptureService)
 local DataService = require(script.Parent.Data.DataService)
+local QuestService = require(script.Parent.Quests.QuestService)
 local StateSync = require(script.Parent.State.StateSync)
 local StoryService = require(script.Parent.Story.StoryService)
 local WorldService = require(script.Parent.World.WorldService)
@@ -57,7 +58,7 @@ end
 -- Gifts waiting for room ---------------------------------------------------------------------
 
 local function rebuildGift(source: string, ref: string): Types.Creature?
-	if source == "Starter" or source == "Token" then
+	if source == "Starter" or source == "Token" or source == "Quest" then
 		return StoryProgress.rebuild(ref, newId(), seed())
 	end
 	return nil
@@ -90,6 +91,15 @@ StoryService.start({
 	getData = DataService.get,
 	map = WorldService.map,
 	position = WorldService.position,
+	refuse = BattleService.refuse,
+	changed = StateSync.changed,
+	log = log,
+})
+
+QuestService.start({
+	getData = DataService.get,
+	biome = WorldService.biome,
+	isNear = WorldService.isNear,
 	refuse = BattleService.refuse,
 	changed = StateSync.changed,
 	log = log,
@@ -215,9 +225,17 @@ local function battleFinished(
 		"BattleFinished",
 		{ player = player.UserId, battle = session.battleId, kind = session.kind, ending = ending }
 	)
+	local wildRoute: string? = nil
 	if ref and ref.kind == "Wild" then
-		local misses = CaptureService.missesFor(player, session.battleId)
-		WorldService.finish(player, (ref :: WildRef).spawnId, ending, misses)
+		local spawnId = (ref :: WildRef).spawnId
+		local spawn = WorldService.spawn(player, spawnId)
+		wildRoute = if spawn then spawn.route else nil
+		WorldService.finish(
+			player,
+			spawnId,
+			ending,
+			CaptureService.missesFor(player, session.battleId)
+		)
 	end
 	local profile = DataService.get(player)
 	if not profile or outcome ~= 1 then
@@ -241,7 +259,12 @@ local function battleFinished(
 				biome = WorldService.biome().number,
 			})
 		)
+		if wildRoute then
+			QuestService.record(player, { kind = "WinWild", route = wildRoute })
+		end
 		if ending == "Caught" then
+			local caught = BattleSession.foe(session)
+			QuestService.record(player, { kind = "Tame", species = caught.parts.Torso.species })
 			StoryService.event(player, { kind = "Tame" }, nil, true)
 		end
 	elseif ref and ref.kind == "Trained" then
@@ -260,7 +283,16 @@ local function battleFinished(
 				unixTime = os.time(),
 			})
 		)
-		StoryService.event(player, { kind = "Win", battle = trained.opponent.id }, nil, true)
+		if trained.opponent.kind == "Tamer" then
+			QuestService.record(player, { kind = "BeatTamer", tamer = trained.opponent.id })
+		end
+		local moved =
+			StoryService.event(player, { kind = "Win", battle = trained.opponent.id }, nil, true)
+		if trained.opponent.kind == "Rival" and not moved then
+			-- The win is on record, so the battle cannot be replayed and the story will catch
+			-- up; but a story battle whose beat did not finish means something is wrong.
+			log("StoryWinNotFinished", { player = player.UserId, battle = trained.opponent.id })
+		end
 	end
 end
 

@@ -2,6 +2,22 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: the world, tamers, the rival, story triggers (commit e39b0f5)
+
+Reviewer: a separate read-only agent. Scope: `Encounters`, `Layout`, `Trainers`, `StoryTriggers`, `Rewards.trainedWin`, the world and story services, the rewritten `Main.server.luau`, and the battle and capture service changes. No must-fix findings. The open item from 20 November ("misses must follow the wild creature, not the battle") is closed.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Starting a battle had no rate limit | Should fix | Limited like every other request |
+| 2 | Rejoining reset rustle-spot rests and refill waits (rustle spots are the only source of uncommon species) | Should fix | The timers are kept in server memory for ten minutes after a player leaves and given back when they return. They still reset on a different server; saving them would need a schema change, so that waits until it is shown to matter |
+| 3 | Walking out of range and back rerolled a stretch at once (unlimited rerolls for rare colours) | Should fix | A cleared stretch waits before it refills, like a beaten one. Test added |
+| 4 | A creature could reach its flee count and stay in the world if the battle ended as a loss on the same turn | Should fix | A creature at its flee count is gone however the battle ended. Test added |
+| 5 | An error while starting a battle left the wild creature marked as busy, or a battle half started | Note | The start is wrapped; any failure hands the creature back |
+| 6 | Tamer rematches give XP every time (coins stop after the paid rematch) | Note | Intended: wild battles also give XP without limit, XP falls off as the player out-levels a fixed-level tamer, and the badge level cap bounds it. Logged in `DECISIONS.md` |
+| 7 | A fallen character still passed position checks | Note | A character with no health has no position |
+| 8 | A refused rustle reveals the rest timer | Note | Harmless; left as it is |
+| 9 | If a story battle's beat could not finish, the battle could be replayed for XP | Note | A story battle once won is closed for good; the story catches up from the recorded win; a failure is logged loudly. Test added |
+
 ## 21 November 2026: battle rewards, story gifts, releasing (commit 4e4f438)
 
 Reviewer: a separate read-only agent. Scope: `src/shared/Rewards.luau`, `src/shared/StoryProgress.luau`, the handlers in `src/server/Main.server.luau`, and the new messages. No must-fix findings: no battle pays twice, no client value reaches a payout, no story gift pays twice.

@@ -2,6 +2,20 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (later): a world to walk in, tamers, the rival, quests
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Map layout generated from the biome data, and a grey-box Greenwood built from it | Tested; the map itself not yet seen in Studio | `src/shared/Layout.luau`, `src/server/World/TestMap.luau` |
+| Each player's own wild creatures on the routes, rustle spots, position checks | Tested (32), reviewed | `src/shared/Encounters.luau`, `src/server/World/WorldService.luau` |
+| Tamers and the rival's two story battles, with rewards | Tested (27), reviewed | `src/shared/Trainers.luau`, `src/shared/Rewards.luau` |
+| Story triggers confirmed by the server (place, win, catch, talk) | Tested, reviewed | `src/shared/StoryTriggers.luau`, `src/server/Story/` |
+| Quests: take, count, hand in; Greenwood's five quests | Tested (22). Review pending | `src/shared/QuestProgress.luau`, `src/server/Quests/` |
+| Gift paying shared by the story and quests | Tested | `src/shared/Gifts.luau` |
+| Fourth independent exploit review (the world) | Done: 4 should-fix and 5 notes, fixed or logged | `docs/REVIEWS.md` |
+
+**What Ayrton can playtest in Studio now:** press Play. A grey-box Greenwood is built: the town square, Route A to the west, Route B to the east. Walk west along the path: wild creatures (coloured balls with name tags) stand by it; walk up to one and press the prompt to battle. The whole of chapter 1 can be played in order: beat the rival in the square, walk onto Route A, beat Pip, reach the clover meadow, talk to the mentor, catch a creature, talk to the shopkeeper (who also gives the first quest), reach the gate, beat the rival there, walk on past the gate. The test panel still drives the battle itself.
+
 ## 21 November 2026: rewards, the story, releasing, and a Studio test panel
 
 | Piece | State | Where |

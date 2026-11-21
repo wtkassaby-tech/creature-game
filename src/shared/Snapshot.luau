@@ -55,6 +55,8 @@ export type State = {
 	Badges: number,
 	Starter: string,
 	Flags: { string },
+	QuestsActive: { [string]: number },
+	QuestsDone: { string },
 	Waiting: number,
 }
 
@@ -133,6 +135,20 @@ function Snapshot.build(profile: Profile.Profile): State
 	end
 	table.sort(flags)
 
+	local questsActive: { [string]: number } = {}
+	for id, progress in profile.Quests.active do
+		if #id >= 1 and #id <= 40 then
+			questsActive[id] = whole(progress, 65535)
+		end
+	end
+	local questsDone: { string } = {}
+	for id, done in profile.Quests.done do
+		if done and #questsDone < MAX_FLAGS and #id >= 1 and #id <= 40 then
+			table.insert(questsDone, id)
+		end
+	end
+	table.sort(questsDone)
+
 	local eggs: { { HatchAt: number } } = {}
 	for index, egg in profile.Eggs do
 		if index > 4 then
@@ -175,6 +191,8 @@ function Snapshot.build(profile: Profile.Profile): State
 		Badges = whole(profile.Story.badges, 255),
 		Starter = profile.Story.starter or "",
 		Flags = flags,
+		QuestsActive = questsActive,
+		QuestsDone = questsDone,
 		Waiting = whole(#profile.Pending, 255),
 	}
 end

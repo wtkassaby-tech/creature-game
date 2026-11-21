@@ -8,6 +8,7 @@
 -- leaving a battle and coming back never resets how close it is to fleeing.
 
 local BattleSession = require("./BattleSession")
+local Lasso = require("./Lasso")
 local Layout = require("./Layout")
 local Rng = require("./Rng")
 local Types = require("./Types")
@@ -98,7 +99,10 @@ function Encounters.tick(
 			for id, spawn in book.spawns do
 				if spawn.area == area.id then
 					if not active and not spawn.busy then
+						-- Walking away and back must not be a quick way to reroll a stretch for
+						-- rare finds: a cleared stretch waits before it refills, like a beaten one.
 						book.spawns[id] = nil
+						book.freeAt[area.id] = now + WorldConfig.RESPAWN_SECONDS
 						total -= 1
 						changed = true
 					elseif spawn.spot == nil then
@@ -208,7 +212,11 @@ function Encounters.finish(
 	if spawn == nil then
 		return
 	end
-	if ending == "Won" or ending == "Caught" or ending == "Fled" then
+	-- A creature that has dodged its last allowed throw is gone however the battle ended (it may
+	-- have ended as a loss on the same turn): it must not stay to be fought for rewards.
+	local flee = Lasso.missesBeforeFlee(spawn.creature.rarity)
+	local fled = flee ~= nil and math.max(spawn.misses, misses) >= flee
+	if ending == "Won" or ending == "Caught" or ending == "Fled" or fled then
 		book.spawns[id] = nil
 		if spawn.spot == nil then
 			book.freeAt[spawn.area] = now + WorldConfig.RESPAWN_SECONDS

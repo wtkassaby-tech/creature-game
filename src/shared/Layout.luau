@@ -18,6 +18,7 @@ export type Map = {
 	-- Every named place: buildings, characters, routes (their entry), areas (their middle),
 	-- rustle spots, tamers, the lair, the gate and the sealed path.
 	places: { [string]: Point },
+	buildings: { [string]: Point }, -- each building's middle, for the map builder
 	lairSpur: { Point },
 }
 
@@ -82,17 +83,24 @@ function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Ta
 		hub = { x = 0, z = 0, size = biome.hub.size },
 		routes = {},
 		places = {},
+		buildings = {},
 		lairSpur = {},
 	}
 
-	-- Buildings stand in a ring inside the square; a character stands at their building's door.
+	-- Buildings stand in a ring inside the square. A building's place is its door, on the side
+	-- facing the square, where its keeper stands; a named character's place is the same spot.
 	local count = #biome.hub.buildings
 	for index, building in biome.hub.buildings do
 		local angle = (index - 1) / math.max(count, 1) * math.pi * 2 + math.pi / 2
-		local at: Point = { x = math.cos(angle) * half * 0.6, z = math.sin(angle) * half * 0.6 }
-		map.places[building.id] = at
+		local ring = half * 0.6
+		map.buildings[building.id] = { x = math.cos(angle) * ring, z = math.sin(angle) * ring }
+		local door: Point = {
+			x = math.cos(angle) * (ring - WorldConfig.DOOR_DISTANCE),
+			z = math.sin(angle) * (ring - WorldConfig.DOOR_DISTANCE),
+		}
+		map.places[building.id] = door
 		if building.npc then
-			map.places[building.npc] = at
+			map.places[building.npc] = door
 		end
 	end
 	map.places[biome.hub.id] = { x = 0, z = 0 }

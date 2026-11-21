@@ -13,8 +13,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Net = require(ReplicatedStorage.net.generated.Client)
+local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
+local Quests = require(ReplicatedStorage.content.Quests)
 local World = require(ReplicatedStorage.shared.World)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
+local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 export type Wild = {
 	Id: number,
@@ -92,15 +95,55 @@ local function draw(parent: Instance, wild: Wild): BasePart
 	return ball
 end
 
-local function nextBeatId(): string?
+local function flagsSeen(): { [string]: boolean }
 	local state = ClientState.get()
 	local flags: { [string]: boolean } = {}
 	local seen: { string } = if state then state.Flags else {}
 	for _, flag in seen do
 		flags[flag] = true
 	end
+	return flags
+end
+
+-- Talking to someone: move the story on if it is waiting for them, and take or hand in one of
+-- the quests given at their place. The server checks every part of this again.
+local function talk(who: string, place: string?)
+	local flags = flagsSeen()
 	local beat = World.nextBeat(Chapter1, flags)
-	return if beat then beat.id else nil
+	if beat and beat.trigger.kind == "Talk" and beat.trigger.target == who then
+		Net.CompleteBeat.Fire({ BeatId = beat.id, Choice = nil })
+	end
+	local state = ClientState.get()
+	if not state or not place then
+		return
+	end
+	local done: { [string]: boolean } = {}
+	for _, id in state.QuestsDone do
+		done[id] = true
+	end
+	local here: { WorldTypes.Quest } = {}
+	for _, quest in Quests do
+		if quest.giver.place == place then
+			table.insert(here, quest)
+		end
+	end
+	table.sort(here, function(a, b)
+		return a.step < b.step
+	end)
+	-- Hand in a finished quest first; otherwise take the first one that is open.
+	for _, quest in here do
+		local progress = state.QuestsActive[quest.id]
+		if progress ~= nil and progress >= QuestProgress.needed(quest) then
+			Net.HandInQuest.Fire({ QuestId = quest.id })
+			return
+		end
+	end
+	for _, quest in World.availableQuests(here, done, flags) do
+		if state.QuestsActive[quest.id] == nil then
+			Net.AcceptQuest.Fire({ QuestId = quest.id })
+			return
+		end
+	end
 end
 
 function WorldView.start()
@@ -157,12 +200,8 @@ function WorldView.start()
 		elseif kind == "Rustle" then
 			Net.Rustle.Fire({ SpotId = id })
 		elseif kind == "Talk" then
-			-- Talking moves the story on only if the story is waiting for this character;
-			-- the server checks that, and that the player is standing beside them.
-			local beat = nextBeatId()
-			if beat then
-				Net.CompleteBeat.Fire({ BeatId = beat, Choice = nil })
-			end
+			local place = prompt:GetAttribute("Place")
+			talk(id, if typeof(place) == "string" then place else nil)
 		end
 	end)
 end

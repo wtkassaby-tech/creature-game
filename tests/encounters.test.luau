@@ -4,6 +4,7 @@
 
 local Biomes = require("../src/content/Biomes")
 local Encounters = require("../src/shared/Encounters")
+local Lasso = require("../src/shared/Lasso")
 local Layout = require("../src/shared/Layout")
 local Tamers = require("../src/content/Tamers")
 local WorldConfig = require("../src/config/WorldConfig")
@@ -184,6 +185,47 @@ do
 	check("its stretch does not refill at once", Encounters.count(book) == before)
 	Encounters.tick(book, greenwood, map, glade, 20 + WorldConfig.RESPAWN_SECONDS, 7, newId)
 	check("and refills after the wait", Encounters.count(book) == before + 1)
+end
+
+print("\n== Review fixes ==")
+do
+	local book = Encounters.new()
+	local glade = map.places.mossy_glade
+	Encounters.tick(book, greenwood, map, glade, 0, 11, newId)
+	Encounters.tick(book, greenwood, map, map.places.greenwood_gate, 5, 12, newId)
+	Encounters.tick(book, greenwood, map, glade, 10, 13, newId)
+	local back = 0
+	for _, spawn in book.spawns do
+		if spawn.area == "mossy_glade" then
+			back += 1
+		end
+	end
+	check("walking away and straight back does not reroll a stretch", back == 0)
+	Encounters.tick(book, greenwood, map, glade, 5 + WorldConfig.RESPAWN_SECONDS, 14, newId)
+	local refilled = 0
+	for _, spawn in book.spawns do
+		if spawn.area == "mossy_glade" then
+			refilled += 1
+		end
+	end
+	check("it refills after the usual wait", refilled == WorldConfig.SPAWNS_PER_AREA)
+
+	local rare: Encounters.Spawn? = nil
+	for _, spawn in book.spawns do
+		if spawn.area == "mossy_glade" then
+			rare = spawn
+			break
+		end
+	end
+	local gem = assert(rare, "a creature is in the glade")
+	gem.creature.rarity = "Gem"
+	local limit = assert(Lasso.missesBeforeFlee("Gem"), "gem creatures flee")
+	Encounters.engage(book, gem.id, gem.at)
+	Encounters.finish(book, gem.id, "Lost", limit, 100)
+	check(
+		"a creature that dodged its last throw is gone, even if the battle was lost",
+		book.spawns[gem.id] == nil
+	)
 end
 
 print("\n== Rustle spots ==")
