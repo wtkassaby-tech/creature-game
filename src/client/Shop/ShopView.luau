@@ -116,6 +116,28 @@ function ShopView.start(playerGui: Instance): View
 				)
 				buy.Size = UDim2.new(0.32, 0, 0, 42)
 				buy.Position = UDim2.new(0.66, 0, 0, 8)
+				-- Some items can also be made from a biome's material.
+				local recipe: EconomyConfig.Recipe? = nil
+				if item == "Tonic" then
+					recipe = EconomyConfig.RECIPES.Tonic
+				elseif item == "GreatTonic" then
+					recipe = EconomyConfig.RECIPES.GreatTonic
+				elseif item == "Bait" then
+					recipe = EconomyConfig.RECIPES.Bait
+				end
+				if recipe then
+					local have = state.Items[recipe.material :: string] or 0
+					about.Text =
+						`{def.note}. Or make one: {recipe.count} {recipe.material} (you have {have})`
+					if have >= recipe.count and state.Coins >= recipe.coins then
+						buy.Size = UDim2.new(0.16, -2, 0, 42)
+						local make = Kit.button(row, "Make", Kit.COLOURS.accent, function()
+							Net.CraftItem.Fire({ Item = item :: string })
+						end)
+						make.Size = UDim2.new(0.16, -2, 0, 42)
+						make.Position = UDim2.new(0.82, 2, 0, 8)
+					end
+				end
 			end
 		end
 	end

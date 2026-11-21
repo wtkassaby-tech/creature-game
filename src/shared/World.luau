@@ -11,7 +11,8 @@ local WorldTypes = require("./WorldTypes")
 
 -- `area` limits the draw to one stretch of the route; `spot` draws from a rustle spot instead of
 -- the open table. With neither, the whole open table of the route is used.
-export type PickOptions = { area: string?, spot: string? }
+-- `rarity` overrides the drawn row's tier (bait can bring out a gem-tier creature).
+export type PickOptions = { area: string?, spot: string?, rarity: Types.Rarity? }
 export type WildPick = {
 	creature: Types.Creature,
 	entry: WorldTypes.SpawnEntry,
@@ -90,7 +91,9 @@ function World.pickWild(
 		chosen.species,
 		id or `wild_{seed}`,
 		level,
-		chosen.rarity or Species[chosen.species].baseRarity,
+		(if options then options.rarity else nil)
+			or chosen.rarity
+			or Species[chosen.species].baseRarity,
 		colour,
 		rng
 	)

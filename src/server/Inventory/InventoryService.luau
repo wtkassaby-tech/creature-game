@@ -144,6 +144,23 @@ function InventoryService.start(hooks: Hooks)
 		end
 	end)
 
+	-- Making an item from materials: anywhere, since the materials are the cost.
+	local lastCraft: { [Player]: number } = {}
+	Net.CraftItem.On(function(player, value)
+		local profile = hooks.getData(player)
+		if not profile or tooFast(lastCraft, player) then
+			return
+		end
+		local made, problem = Shop.craft(profile, value.Item)
+		if made then
+			hooks.changed(player)
+			hooks.notify(player, `Made 1 {made}`)
+			hooks.log("Crafted", { player = player.UserId, item = made })
+		else
+			hooks.notify(player, problem or "That cannot be made")
+		end
+	end)
+
 	-- More stable room, bought with coins at a shop or stall.
 	local lastExpand: { [Player]: number } = {}
 	Net.ExpandStable.On(function(player)
@@ -241,6 +258,7 @@ function InventoryService.start(hooks: Hooks)
 		lastTeam[player] = nil
 		lastHeal[player] = nil
 		lastExpand[player] = nil
+		lastCraft[player] = nil
 		lastTreat[player] = nil
 		lastItem[player] = nil
 		lastBuy[player] = nil

@@ -147,6 +147,55 @@ check(
 	Profile.template().StableCapacity == EconomyConfig.STABLE_FREE_SLOTS
 )
 
+print("\n== Crafting ==")
+do
+	local profile = Profile.template()
+	local recipe = EconomyConfig.RECIPES.Tonic
+	check(
+		"something with no recipe cannot be made",
+		Shop.craft(profile, "Gilded") == nil and Shop.craft(profile, 5) == nil
+	)
+	check("without the material nothing is made", Shop.craft(profile, "Tonic") == nil)
+	profile.Items.Fernfluff = recipe.count * 2 + 1
+	local coins = profile.Coins
+	check(
+		"with the material, one is made and the material is used up",
+		Shop.craft(profile, "Tonic") == "Tonic"
+			and profile.Items.Tonic == 1
+			and profile.Items.Fernfluff == recipe.count + 1
+			and profile.Coins == coins - recipe.coins
+	)
+	profile.Items.BrineShell = 100
+	profile.Coins = 10000
+	check(
+		"bait cannot be made before Tide Flats",
+		Shop.craft(profile, "Bait") == nil and profile.Items.BrineShell == 100
+	)
+	profile.Story.biomeReached = 3
+	local before = profile.Coins
+	check(
+		"from Tide Flats on it can, for its shells and coins",
+		Shop.craft(profile, "Bait") == "Bait"
+			and profile.Items.BrineShell == 100 - EconomyConfig.RECIPES.Bait.count
+			and profile.Coins == before - EconomyConfig.RECIPES.Bait.coins
+	)
+	profile.Coins = 0
+	check(
+		"a recipe that costs coins needs them",
+		Shop.craft(profile, "Bait") == nil and profile.Items.Bait == 1
+	)
+	check(
+		"making an item is cheaper than buying it, but never free of materials",
+		EconomyConfig.RECIPES.Bait.coins < Economy.itemPrice("Bait", 3)
+			and EconomyConfig.RECIPES.Bait.count > 0
+	)
+	check(
+		"the record is sound",
+		#Profile.validate(profile) == 0,
+		table.concat(Profile.validate(profile), "; ")
+	)
+end
+
 print("\n== Items in a battle ==")
 do
 	local function setup(): (Profile.Profile, BattleSession.Session)

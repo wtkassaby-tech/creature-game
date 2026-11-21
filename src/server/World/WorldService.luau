@@ -34,6 +34,8 @@ export type Hooks = {
 	onAmbush: (player: Player, spawn: Encounters.Spawn) -> (), -- a creature jumped out of long grass
 	mayEnter: (player: Player, biomeNumber: number) -> boolean, -- has the player earned this biome?
 	hasReached: (player: Player, biomeNumber: number) -> boolean, -- have they stood in it before?
+	hasBait: (player: Player) -> boolean,
+	spendBait: (player: Player) -> (),
 	canBeAmbushed: (player: Player) -> boolean, -- wild battles are open and someone can fight
 }
 
@@ -351,6 +353,39 @@ function WorldService.start(hooks: Hooks): () -> ()
 		end
 	end)
 
+	local stopBait = Net.UseBait.On(function(player, value)
+		local now = os.clock()
+		if now - (lastRustle[player] or -math.huge) < MIN_SECONDS_BETWEEN_RUSTLES then
+			return
+		end
+		lastRustle[player] = now
+		local at = WorldService.position(player)
+		if not at or not hooks.isReady(player) then
+			return
+		end
+		if not hooks.hasBait(player) then
+			return hooks.refuse(player, "You have no bait")
+		end
+		local spawn: Encounters.Spawn? = nil
+		local why: string? = "There is nothing there"
+		for _, biome in biomes do
+			if not spawn and world.biomeOfPlace[value.SpotId] == biome.number then
+				if hooks.mayEnter(player, biome.number) then
+					spawn, why =
+						Encounters.bait(book(player), biome, map, value.SpotId, at, seed(), newId)
+				else
+					why = "You have not earned your way here yet"
+				end
+			end
+		end
+		if spawn then
+			hooks.spendBait(player) -- taken only now that a creature has come out
+			send(player)
+		else
+			hooks.refuse(player, why or "Nothing stirs")
+		end
+	end)
+
 	local stopTravel = Net.Travel.On(function(player, value)
 		local now = os.clock()
 		if now - (lastTravel[player] or -math.huge) < MIN_SECONDS_BETWEEN_TRAVELS then
@@ -398,6 +433,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 	return function()
 		running = false
 		stopRustle()
+		stopBait()
 		stopTravel()
 		leaving:Disconnect()
 	end

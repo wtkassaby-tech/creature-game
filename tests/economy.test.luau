@@ -445,7 +445,7 @@ local ASSUME = {
 	MISS = { Basic = 0.45, Braided = 0.30, Gilded = 0.15 },
 	MAX_THROWS = 3, -- then the creature flees
 	GEM_SPAWN = EconomyConfig.GEM_WILD_SHARE, -- chance a wild encounter in biome 2 or later is a gem creature
-	BAIT_GEM = 0.35, -- chance a bait spawn is a gem creature
+	BAIT_GEM = EconomyConfig.BAIT_GEM_CHANCE, -- chance a bait spawn is a gem creature
 	GATE_WIN = 0.85,
 	REMATCH_WIN = 0.8,
 	GIANT_LEARN = 0.15, -- added to the win chance per earlier failed attempt

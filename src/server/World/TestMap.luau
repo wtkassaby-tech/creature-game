@@ -236,6 +236,11 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 				block(folder, spot.id, Vector3.new(20, 1.2, 20), at(map.places[spot.id], 1), REEDS)
 			label(patch, spot.name)
 			prompt(patch, "Rustle", spot.id, "Search", spot.name, WorldConfig.RUSTLE_RADIUS)
+			-- A second prompt for bait, on its own key and drawn beside the first.
+			local bait =
+				prompt(patch, "Bait", spot.id, "Use bait", spot.name, WorldConfig.RUSTLE_RADIUS)
+			bait.KeyboardKeyCode = Enum.KeyCode.F
+			bait.UIOffset = Vector2.new(0, 70)
 		end
 		for _, tamerId in route.tamers do
 			local tamer = Tamers.locals[tamerId]

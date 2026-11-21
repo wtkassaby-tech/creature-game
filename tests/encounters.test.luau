@@ -3,6 +3,7 @@
 -- Run from the project folder:  lune run tests/encounters.test
 
 local Biomes = require("../src/content/Biomes")
+local EconomyConfig = require("../src/config/EconomyConfig")
 local Encounters = require("../src/shared/Encounters")
 local Lasso = require("../src/shared/Lasso")
 local Layout = require("../src/shared/Layout")
@@ -443,6 +444,47 @@ do
 		"a rustle gives an uncommon creature about half the time",
 		uncommon / tries > 0.35 and uncommon / tries < 0.65,
 		`{uncommon / tries}`
+	)
+end
+
+print("\n== Bait ==")
+do
+	local reeds = map.places.reed_bed
+	check(
+		"bait draws nothing out before Tide Flats",
+		Encounters.bait(Encounters.new(), greenwood, map, "reed_bed", reeds, 1, newId) == nil
+	)
+	-- The same spots as a third biome, to test the rule without Tide Flats' own data.
+	local third: any = table.clone(greenwood)
+	third.number = 3
+	check(
+		"it must be used at a rustle spot the player is standing in",
+		Encounters.bait(Encounters.new(), third, map, "reed_bed", map.places.mentor, 1, newId)
+				== nil
+			and Encounters.bait(Encounters.new(), third, map, "gold_mine", reeds, 1, newId)
+				== nil
+	)
+	local book = Encounters.new()
+	local first = Encounters.bait(book, third, map, "reed_bed", reeds, 1, newId)
+	local second = Encounters.bait(book, third, map, "reed_bed", reeds, 2, newId)
+	check(
+		"bait always brings a creature out, with no rest between uses",
+		first ~= nil and second ~= nil and Encounters.count(book) == 2
+	)
+	local gems, tries = 0, 600
+	for seed = 1, tries do
+		local found = assert(
+			Encounters.bait(Encounters.new(), third, map, "reed_bed", reeds, seed, newId),
+			"a creature steps out"
+		)
+		if found.creature.rarity == "Gem" then
+			gems += 1
+		end
+	end
+	check(
+		"a bait creature is gem-tier at the economy's bait chance",
+		math.abs(gems / tries - EconomyConfig.BAIT_GEM_CHANCE) < 0.06,
+		`{gems / tries}`
 	)
 end
 

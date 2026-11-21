@@ -258,6 +258,9 @@ EconomyConfig.ITEM_IDS = ITEM_IDS
 local LASSO_TIERS: { LassoTier } = { "Basic", "Braided", "Gilded" }
 EconomyConfig.LASSO_TIERS = LASSO_TIERS
 EconomyConfig.BAIT_MIN_BIOME = 3
+-- Bait is used at a rustle spot (from Tide Flats on) and always brings a creature out; this is
+-- the chance that it is a gem-tier one. The economy simulation is balanced at this number.
+EconomyConfig.BAIT_GEM_CHANCE = 0.35
 
 -- The cheapest lasso that can catch each rarity (a gem creature's zone is too small for a rope).
 -- Used for the release rule: a release always pays less than this lasso costs.

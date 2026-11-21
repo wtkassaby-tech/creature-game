@@ -8,6 +8,7 @@
 -- leaving a battle and coming back never resets how close it is to fleeing.
 
 local BattleSession = require("./BattleSession")
+local EconomyConfig = require("../config/EconomyConfig")
 local Lasso = require("./Lasso")
 local Layout = require("./Layout")
 local Rng = require("./Rng")
@@ -58,9 +59,12 @@ local function add(
 	spot: string?,
 	at: Layout.Point,
 	seed: number,
-	newId: () -> string
+	newId: () -> string,
+	rarity: Types.Rarity?
 ): Spawn
-	local options: World.PickOptions = if spot then { spot = spot } else { area = area }
+	local options: World.PickOptions = if spot
+		then { spot = spot, rarity = rarity }
+		else { area = area, rarity = rarity }
 	local pick = World.pickWild(route, seed, options, newId())
 	local spawn: Spawn = {
 		id = book.nextId,
@@ -180,6 +184,56 @@ function Encounters.rustle(
 					map.places[spot.id],
 					seed,
 					newId
+				),
+					nil
+			end
+		end
+	end
+	return nil, "There is nothing there"
+end
+
+-- Bait, used at a rustle spot from Tide Flats on: a creature from the spot's own table always
+-- steps out, whatever the spot's rest, and it is gem-tier with the economy's bait chance.
+-- `spotId` comes from the device; the caller has checked the player holds a bait and takes it
+-- only if this returns a creature.
+function Encounters.bait(
+	book: Book,
+	biome: WorldTypes.Biome,
+	map: Layout.Map,
+	spotId: unknown,
+	player: Layout.Point,
+	seed: number,
+	newId: () -> string
+): (Spawn?, string?)
+	if typeof(spotId) ~= "string" then
+		return nil, "Bad request"
+	end
+	if biome.number < EconomyConfig.BAIT_MIN_BIOME then
+		return nil, "Bait only draws creatures out from Tide Flats on"
+	end
+	for _, route in biome.routes do
+		for _, spot in route.rustleSpots do
+			if spot.id == spotId then
+				if not Layout.isNear(map, spot.id, player, WorldConfig.RUSTLE_RADIUS) then
+					return nil, "You are too far away"
+				end
+				if Encounters.count(book) >= WorldConfig.MAX_SPAWNS then
+					return nil, "Too many creatures are about: deal with some first"
+				end
+				local rng = Rng.new(seed)
+				local rarity: Types.Rarity? = if Rng.chance(rng, EconomyConfig.BAIT_GEM_CHANCE)
+					then "Gem"
+					else nil
+				return add(
+					book,
+					biome.number,
+					route,
+					spot.area,
+					spot.id,
+					map.places[spot.id],
+					Rng.int(rng, 1, 2147483646),
+					newId,
+					rarity
 				),
 					nil
 			end

@@ -653,3 +653,19 @@ event ExpandStable {
 	Call: SingleAsync,
 	Data: boolean,
 }
+
+-- Device -> server: use a Tide Bait at a rustle spot (from Tide Flats on). The server checks
+-- the player holds one and is standing at the spot, and takes it only if a creature comes out.
+event UseBait {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { SpotId: string(1..40) },
+}
+-- Device -> server: make one item from materials (a tonic, a deep tonic, a bait).
+event CraftItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Item: string(1..24) },
+}

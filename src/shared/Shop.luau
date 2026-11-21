@@ -68,6 +68,42 @@ function Shop.buy(
 	return { item = id, count = count, coins = coins }, nil
 end
 
+export type Craftable = "Tonic" | "GreatTonic" | "Bait"
+local CRAFTABLE: { Craftable } = { "Tonic", "GreatTonic", "Bait" }
+
+-- Makes one item from a biome's material and a few coins (EconomyConfig.RECIPES). `item` comes
+-- from the device. It can be done anywhere: the materials are the cost.
+function Shop.craft(profile: Profile.Profile, item: unknown): (Craftable?, string?)
+	local id: Craftable? = nil
+	for _, each: Craftable in CRAFTABLE do
+		if each == item then
+			id = each
+		end
+	end
+	if not id then
+		return nil, "That cannot be made"
+	end
+	if not Economy.itemAvailable(id, profile.Story.biomeReached) then
+		return nil, "You do not know how to make that yet"
+	end
+	local recipe = EconomyConfig.RECIPES[id]
+	local material: string = recipe.material
+	local key: string = id
+	if (profile.Items[material] or 0) < recipe.count then
+		return nil, `You need {recipe.count} {material}`
+	end
+	if profile.Coins < recipe.coins then
+		return nil, "You do not have enough coins"
+	end
+	if (profile.Items[key] or 0) + 1 > Shop.MAX_HELD then
+		return nil, "You cannot carry any more of those"
+	end
+	profile.Items[material] -= recipe.count
+	profile.Coins -= recipe.coins
+	profile.Items[key] = (profile.Items[key] or 0) + 1
+	return id, nil
+end
+
 -- How many coin-bought stable expansions the player has, from their stable's size. (Stable
 -- room bought any other way will need its own count before it exists.)
 function Shop.stableExpansions(profile: Profile.Profile): number

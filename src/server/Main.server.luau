@@ -95,6 +95,18 @@ WorldService.start({
 			log("BiomeReached", { player = player.UserId, biome = here })
 		end
 	end,
+	hasBait = function(player)
+		local profile = DataService.get(player)
+		return profile ~= nil and (profile.Items.Bait or 0) >= 1
+	end,
+	spendBait = function(player)
+		local profile = DataService.get(player)
+		if profile and (profile.Items.Bait or 0) >= 1 then
+			profile.Items.Bait -= 1
+			StateSync.changed(player)
+			log("BaitUsed", { player = player.UserId })
+		end
+	end,
 	hasReached = function(player, biomeNumber)
 		local profile = DataService.get(player)
 		return profile ~= nil and biomeNumber <= profile.Story.biomeReached

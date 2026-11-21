@@ -201,6 +201,8 @@ function WorldView.start(openShop: () -> ())
 			Net.StartBattle.Fire({ Kind = "Rival", TargetId = 0, TargetName = id })
 		elseif kind == "Rustle" then
 			Net.Rustle.Fire({ SpotId = id })
+		elseif kind == "Bait" then
+			Net.UseBait.Fire({ SpotId = id })
 		elseif kind == "Giant" then
 			Net.StartGiant.Fire({ GiantId = id })
 		elseif kind == "Shop" then
