@@ -28,6 +28,7 @@ local DailyService = require(script.Parent.Daily.DailyService)
 local DataService = require(script.Parent.Data.DataService)
 local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
+local LiveConfigService = require(script.Parent.LiveConfig.LiveConfigService)
 local QuestService = require(script.Parent.Quests.QuestService)
 local SerialGrants = require(script.Parent.Serials.SerialGrants)
 local SerialService = require(script.Parent.Serials.SerialService)
@@ -164,6 +165,8 @@ DailyService.start({
 })
 
 -- Saving (started after the world and the story, which a loading player needs) ---------------
+
+LiveConfigService.start(log)
 
 AnalyticsFeed.start(function(player: Player, currency: AnalyticsMap.Currency): number?
 	local profile = DataService.get(player)

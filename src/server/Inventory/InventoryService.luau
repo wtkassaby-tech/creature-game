@@ -17,6 +17,7 @@ local Team = require(ReplicatedStorage.shared.Team)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 
 local BattleService = require(script.Parent.Parent.Battle.BattleService)
+local LiveConfigService = require(script.Parent.Parent.LiveConfig.LiveConfigService)
 local WorldService = require(script.Parent.Parent.World.WorldService)
 
 export type Hooks = {
@@ -90,7 +91,9 @@ function InventoryService.start(hooks: Hooks)
 		local atShop = shopBiome ~= nil
 		local shopNumber = if shopBiome then shopBiome.number else 1
 		local bought: Shop.Bought?, problem: string? = nil, "The shop is not open to you yet"
-		if hooks.isUnlocked(profile, "shop") then
+		if not LiveConfigService.isOn("shop_open") then
+			problem = LiveConfigService.closedText()
+		elseif hooks.isUnlocked(profile, "shop") then
 			bought, problem = Shop.buy(profile, value.Item, value.Count, atShop, shopNumber)
 		end
 		Net.BuyResult.Fire(player, {
@@ -151,6 +154,9 @@ function InventoryService.start(hooks: Hooks)
 		if not profile or tooFast(lastCraft, player) then
 			return
 		end
+		if not LiveConfigService.isOn("shop_open") then
+			return hooks.notify(player, LiveConfigService.closedText())
+		end
 		local made, problem = Shop.craft(profile, value.Item)
 		if made then
 			hooks.changed(player)
@@ -174,7 +180,9 @@ function InventoryService.start(hooks: Hooks)
 				or WorldService.isNear(player, Layout.stallId(biome), WorldConfig.TALK_RADIUS)
 		end
 		local price: number?, problem: string? = nil, "The shop is not open to you yet"
-		if hooks.isUnlocked(profile, "shop") then
+		if not LiveConfigService.isOn("shop_open") then
+			problem = LiveConfigService.closedText()
+		elseif hooks.isUnlocked(profile, "shop") then
 			price, problem = Shop.expandStable(profile, atShop)
 		end
 		if price then

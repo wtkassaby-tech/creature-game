@@ -10,6 +10,7 @@ local DailyProgress = require(ReplicatedStorage.shared.DailyProgress)
 local DailyTasks = require(ReplicatedStorage.content.DailyTasks)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
+local LiveConfigService = require(script.Parent.Parent.LiveConfig.LiveConfigService)
 
 local MIN_SECONDS_BETWEEN_CLAIMS = 0.3
 
@@ -53,6 +54,9 @@ function DailyService.start(given: Hooks): () -> ()
 		local profile = hooks.getData(player)
 		if not profile then
 			return
+		end
+		if not LiveConfigService.isOn("daily_rewards_open") then
+			return hooks.notify(player, LiveConfigService.closedText())
 		end
 		local claimed, problem = DailyProgress.claim(profile, value.TaskId, os.time())
 		if not claimed then

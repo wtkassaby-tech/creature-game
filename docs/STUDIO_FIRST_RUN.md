@@ -56,6 +56,9 @@ Play chapter 1 to the badge (about 50 minutes at the story's pace): the tracker 
 - The giant: walk the spur off Route B past the stall, use the horn at the giant, win, and take the capture throw (needs a Braided Lasso).
 - Daily tasks appear at the top of the Creatures screen after the first badge.
 - Dust Canyon: walk east past the Greenwood gate along the grey road. Its creatures should appear only once you hold the Acorn Badge.
+- Tide Flats: the same again past the Dust Canyon gate, once you hold the Cairn Badge. Tide Bait (made from Brine Shells) works at its rustle spots.
+- The off-switches: in the Output window's command bar, run `game:GetService("ConfigService"):SetTestingValue("shop_open", false)` on the server, then try to buy something. It should say the shop is closed for a moment. Set it back to `true` afterwards. The same works for `breeding_open`, `giants_open` and `daily_rewards_open`. For the real game, create these four keys as booleans on the Creator Hub's Configs page (all `true`); until they exist the game simply stays open.
+- Analytics send nothing in Studio (Roblox only takes them from a published game). After the first published playtest, the Creator Hub's Funnel page should show "Joined for the first time" and then each beat of chapter 1.
 
 ## 5. What to send back
 

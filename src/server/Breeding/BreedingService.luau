@@ -18,6 +18,7 @@ local Grants = require(ReplicatedStorage.shared.Grants)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rng = require(ReplicatedStorage.shared.Rng)
 local Types = require(ReplicatedStorage.shared.Types)
+local LiveConfigService = require(script.Parent.Parent.LiveConfig.LiveConfigService)
 
 -- Supplied by the data service: the loaded profile, or nil if it is not loaded on this server
 -- right now (never a stale copy: once a session ends this must return nil at once).
@@ -100,6 +101,9 @@ function BreedingService.requestBreed(
 	local data = self.getData(player)
 	if not data then
 		return false, "Data not loaded"
+	end
+	if not LiveConfigService.isOn("breeding_open") then
+		return false, LiveConfigService.closedText()
 	end
 	if not self.isOpen(data) then
 		return false, "Breeding is not open to you yet"

@@ -13,6 +13,9 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | The rival's first battle truly cannot be lost: the player's last creature holds on with 1 health | Tested, reviewed | `src/shared/BattleSession.luau` |
 | Levelling about three times quicker; gates one level easier | Changed after the robots' findings | `src/config/ProgressionConfig.luau`, `docs/DECISIONS.md` |
 | Twelfth independent exploit review (the unlosable battle) | Done: one must-fix, fixed | `docs/REVIEWS.md` |
+| Analytics: the first-session funnel, coins and candy in and out, counts of catches, hatches and lost battles | Written and tested as rules; only sends from a published game | `src/shared/AnalyticsMap.luau`, `src/server/Analytics/` |
+| Live off-switches for the shop, breeding, giants and daily claims | Written and tested as rules; not yet run in Studio | `src/config/LiveConfig.luau`, `src/server/LiveConfig/` |
+| The "biome reached" rule for teams | Tested | `src/shared/Team.luau` |
 
 **What the robots found** (each was a real problem, now fixed):
 

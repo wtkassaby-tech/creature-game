@@ -23,6 +23,7 @@ local Rewards = require(ReplicatedStorage.shared.Rewards)
 local Types = require(ReplicatedStorage.shared.Types)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 local Xp = require(ReplicatedStorage.shared.Xp)
+local LiveConfigService = require(script.Parent.Parent.LiveConfig.LiveConfigService)
 
 local MIN_SECONDS_BETWEEN_STARTS = 1
 local MIN_SECONDS_BETWEEN_ACTIONS = 0.25
@@ -166,6 +167,9 @@ function GiantService.start(given: Hooks): () -> ()
 		end
 		if not hooks.mayEnter(player, hooks.biome(player).number) then
 			return hooks.refuse(player, "You have not earned your way here yet")
+		end
+		if not LiveConfigService.isOn("giants_open") then
+			return hooks.refuse(player, LiveConfigService.closedText())
 		end
 		if not hooks.isOpen(profile) then
 			return hooks.refuse(player, "The giant does not stir. Come back later in your journey")
