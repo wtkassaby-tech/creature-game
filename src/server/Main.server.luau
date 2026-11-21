@@ -294,6 +294,8 @@ task.spawn(function()
 				local hatched = breeding:collectHatched(player)
 				local profile = DataService.get(player)
 				if profile then
+					-- Time played, for the first-session numbers (how far players get, how fast).
+					profile.PlayStats.playSeconds += HATCH_CHECK_SECONDS
 					claimWaiting(player, profile) -- a freed pen may take a waiting gift egg
 				end
 				if #hatched > 0 then

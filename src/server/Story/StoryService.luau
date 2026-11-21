@@ -87,7 +87,14 @@ function StoryService.event(
 	end
 	hooks.changed(player)
 	Net.BeatCompleted.Fire(player, { BeatId = done.beat.id, Gifts = gifts, Unlocks = done.unlocks })
-	hooks.log("StoryBeat", { player = player.UserId, beat = done.beat.id, gifts = #done.gifts })
+	-- `minute` is how long the player has played in all: the first-session funnel reads it
+	-- against each beat's target time in the story data.
+	hooks.log("StoryBeat", {
+		player = player.UserId,
+		beat = done.beat.id,
+		gifts = #done.gifts,
+		minute = math.floor(profile.PlayStats.playSeconds / 6) / 10,
+	})
 
 	-- If the next beat just follows this one, it starts by itself after a moment.
 	local nextBeat = World.nextBeat(Storyline, profile.Story.flags)
