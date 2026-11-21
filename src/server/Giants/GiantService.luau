@@ -34,7 +34,7 @@ export type Hooks = {
 	team: (player: Player) -> ({ Types.Creature }?, number?), -- the team and the level cap
 	inOtherBattle: (player: Player) -> boolean,
 	isOpen: (profile: Profile.Profile) -> boolean, -- has the story shown this player the giant yet?
-	biome: () -> WorldTypes.Biome,
+	biome: (player: Player) -> WorldTypes.Biome, -- the biome the player is standing in
 	map: () -> Layout.Map,
 	position: (player: Player) -> Layout.Point?,
 	refuse: (player: Player, reason: string) -> (),
@@ -249,7 +249,7 @@ function GiantService.start(given: Hooks): () -> ()
 			return hooks.refuse(player, "Your data is not loaded")
 		end
 		-- The only giant that can be fought is the one whose lair the player is standing in.
-		local lair = hooks.biome().lair
+		local lair = hooks.biome(player).lair
 		local giant = Giants[lair.giant]
 		local at = hooks.position(player)
 		if not giant or value.GiantId ~= giant.id then
@@ -265,7 +265,7 @@ function GiantService.start(given: Hooks): () -> ()
 		local session, problem = GiantSession.begin(profile, {
 			battleId = nextBattleId,
 			giant = giant,
-			biome = hooks.biome().number,
+			biome = hooks.biome(player).number,
 			yours = creatures,
 			levelCap = cap,
 			seed = random:NextInteger(1, 2147483646),
@@ -363,7 +363,7 @@ function GiantService.start(given: Hooks): () -> ()
 				table.insert(team, { id = fighter.creature.id, fainted = fighter.hp <= 0 })
 			end
 			paid = Rewards.giantWin(profile, giant, session.state.boss.creature, {
-				biome = hooks.biome().number,
+				biome = hooks.biome(player).number,
 				team = team,
 				cap = Xp.levelCap(profile.Story.badges),
 				unixTime = os.time(),

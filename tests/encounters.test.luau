@@ -94,6 +94,85 @@ do
 	)
 end
 
+print("\n== More than one biome ==")
+do
+	-- A second biome made from Greenwood's own data under new ids, to check the world layout
+	-- without needing a real second biome.
+	local function renamed(text: string): string
+		return "b2_" .. text
+	end
+	local second: any = table.clone(greenwood)
+	second.id, second.number = "b2", 2
+	second.hub = table.clone(greenwood.hub)
+	second.hub.id = renamed(greenwood.hub.id)
+	second.hub.buildings = {}
+	for _, building in greenwood.hub.buildings do
+		table.insert(
+			second.hub.buildings,
+			{ id = renamed(building.id), name = building.name, role = building.role }
+		)
+	end
+	second.routes = {}
+	for _, route in greenwood.routes do
+		local copy: any = table.clone(route)
+		copy.id = renamed(route.id)
+		copy.areas, copy.rustleSpots, copy.tamers = {}, {}, {}
+		for _, area in route.areas do
+			local a: any = table.clone(area)
+			a.id = renamed(area.id)
+			table.insert(copy.areas, a)
+		end
+		table.insert(second.routes, copy)
+	end
+	second.lair = table.clone(greenwood.lair)
+	second.lair.id, second.lair.joinsRoute =
+		renamed(greenwood.lair.id), renamed(greenwood.lair.joinsRoute)
+	second.gate = table.clone(greenwood.gate)
+	second.gate.id, second.gate.route = renamed(greenwood.gate.id), renamed(greenwood.gate.route)
+	second.gate.sealedPath = renamed(greenwood.gate.sealedPath)
+
+	local world = Layout.world({ second, greenwood }, Tamers.locals)
+	local firstHub, secondHub = world.maps[1].hub, world.maps[2].hub
+	check(
+		"the first biome stays where it was",
+		firstHub.x == 0 and firstHub.z == 0 and world.map.places.mentor ~= nil
+	)
+	local sealed = world.map.places.greenwood_sealed_path
+	check(
+		"the second biome's hub lies beyond the first one's sealed road",
+		secondHub.x > sealed.x and Layout.distance(secondHub, sealed) > secondHub.size / 2 + 50
+	)
+	local clear = true
+	for id, place in world.maps[2].places do
+		for otherId, other in world.maps[1].places do
+			if Layout.distance(place, other) < 30 then
+				clear = false
+				print(`    too close: {id} and {otherId}`)
+			end
+		end
+	end
+	check("no place of one biome sits on top of a place of the other", clear)
+	check("a point in the first hub is in biome 1", Layout.biomeAt(world, { x = 0, z = 0 }) == 1)
+	check(
+		"a point in the second hub is in biome 2",
+		Layout.biomeAt(world, { x = secondHub.x, z = secondHub.z }) == 2
+	)
+	check(
+		"the end of the first biome's last route is still biome 1",
+		Layout.biomeAt(world, world.map.places.greenwood_gate) == 1
+	)
+	local routeLengthsOk = true
+	for _, route in second.routes do
+		local line = world.map.routes[route.id]
+		local length = 0
+		for index = 1, #line.points - 1 do
+			length += Layout.distance(line.points[index], line.points[index + 1])
+		end
+		routeLengthsOk = routeLengthsOk and math.abs(length - route.length) < 0.001
+	end
+	check("the second biome's routes keep their exact lengths", routeLengthsOk)
+end
+
 print("\n== Wild creatures near the player ==")
 do
 	local book = Encounters.new()

@@ -118,28 +118,59 @@ end
 
 -- Builds the map under workspace.World. Does nothing if a World folder already exists (the real
 -- map, or an earlier build).
-function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
-	if workspace:FindFirstChild("World") then
-		return
-	end
+local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.Map, first: boolean)
 	local world = Instance.new("Folder")
-	world.Name = "World"
-	world:SetAttribute("Generated", true)
+	world.Name = biome.id
+	world.Parent = parent
 
-	block(world, "Ground", Vector3.new(2048, 4, 1024), CFrame.new(95, -2, 0), GROUND)
+	-- A slab of ground under everything in this biome, with room to spare.
+	local minX, maxX, minZ, maxZ = math.huge, -math.huge, math.huge, -math.huge
+	for _, place in map.places do
+		minX, maxX = math.min(minX, place.x), math.max(maxX, place.x)
+		minZ, maxZ = math.min(minZ, place.z), math.max(maxZ, place.z)
+	end
+	local margin = 220
+	block(
+		world,
+		"Ground",
+		Vector3.new(
+			math.min(2048, maxX - minX + margin * 2),
+			4,
+			math.min(2048, maxZ - minZ + margin * 2)
+		),
+		CFrame.new((minX + maxX) / 2, -2, (minZ + maxZ) / 2),
+		GROUND
+	)
 
 	-- The hub.
 	local hub = Instance.new("Folder")
 	hub.Name = "Hub"
 	hub.Parent = world
-	block(hub, "Square", Vector3.new(map.hub.size, 0.4, map.hub.size), CFrame.new(0, 0.2, 0), PATH)
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "Spawn"
-	spawn.Anchored = true
-	spawn.Size = Vector3.new(12, 1, 12)
-	spawn.CFrame = CFrame.new(0, 0.9, 0)
-	spawn.Color = STONE
-	spawn.Parent = hub
+	block(
+		hub,
+		"Square",
+		Vector3.new(map.hub.size, 0.4, map.hub.size),
+		CFrame.new(map.hub.x, 0.2, map.hub.z),
+		PATH
+	)
+	local sign = block(
+		hub,
+		biome.hub.id,
+		Vector3.new(1, 10, 1),
+		CFrame.new(map.hub.x, 5.4, map.hub.z + 12),
+		WOOD
+	)
+	label(sign, `{biome.hub.name} ({biome.name})`)
+	if first then
+		-- Everyone arrives in the first biome's square.
+		local spawn = Instance.new("SpawnLocation")
+		spawn.Name = "Spawn"
+		spawn.Anchored = true
+		spawn.Size = Vector3.new(12, 1, 12)
+		spawn.CFrame = CFrame.new(map.hub.x, 0.9, map.hub.z)
+		spawn.Color = STONE
+		spawn.Parent = hub
+	end
 	for _, building in biome.hub.buildings do
 		local house = block(
 			hub,
@@ -274,8 +305,24 @@ function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
 			)
 		end
 	end
+end
 
-	world.Parent = workspace
+-- Builds every biome under workspace.World, laid out as the world layout says. Does nothing if
+-- a World folder already exists (the real map, or an earlier build).
+function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
+	if workspace:FindFirstChild("World") then
+		return
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "World"
+	folder:SetAttribute("Generated", true)
+	for index, biome in biomes do
+		local map = world.maps[biome.number]
+		if map then
+			buildBiome(folder, biome, map, index == 1)
+		end
+	end
+	folder.Parent = workspace
 end
 
 return TestMap

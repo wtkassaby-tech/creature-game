@@ -85,12 +85,29 @@ function Layout.stallId(biome: WorldTypes.Biome): string
 	return `{biome.lair.id}_stall`
 end
 
+-- Where a biome sits in the world: its hub's centre, and the directions its routes leave in.
+export type Siting = { origin: Point, headings: { number } }
+
+-- The first biome: the first route runs west, the second east, any more north and south.
+local FIRST_SITING: Siting =
+	{ origin = { x = 0, z = 0 }, headings = { math.pi, 0, math.pi / 2, -math.pi / 2 } }
+-- Later biomes are entered from the west, so their first route runs north and their second
+-- carries on east to the next gate.
+local LATER_HEADINGS: { number } = { math.pi / 2, 0, -math.pi / 2 }
+
 -- Builds the map for a biome. `tamers` are the local tamers by id (each names its route and
--- distance); ones on other biomes' routes are skipped.
-function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Tamer }): Map
+-- distance); ones on other biomes' routes are skipped. `siting` places the biome in the world
+-- (the first biome's place when left out).
+function Layout.build(
+	biome: WorldTypes.Biome,
+	tamers: { [string]: WorldTypes.Tamer },
+	siting: Siting?
+): Map
 	local half = biome.hub.size / 2
+	local sited = siting or FIRST_SITING
+	local origin = sited.origin
 	local map: Map = {
-		hub = { x = 0, z = 0, size = biome.hub.size },
+		hub = { x = origin.x, z = origin.z, size = biome.hub.size },
 		routes = {},
 		places = {},
 		buildings = {},
@@ -103,23 +120,24 @@ function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Ta
 	for index, building in biome.hub.buildings do
 		local angle = (index - 1) / math.max(count, 1) * math.pi * 2 + math.pi / 2
 		local ring = half * 0.6
-		map.buildings[building.id] = { x = math.cos(angle) * ring, z = math.sin(angle) * ring }
+		map.buildings[building.id] =
+			{ x = origin.x + math.cos(angle) * ring, z = origin.z + math.sin(angle) * ring }
 		local door: Point = {
-			x = math.cos(angle) * (ring - WorldConfig.DOOR_DISTANCE),
-			z = math.sin(angle) * (ring - WorldConfig.DOOR_DISTANCE),
+			x = origin.x + math.cos(angle) * (ring - WorldConfig.DOOR_DISTANCE),
+			z = origin.z + math.sin(angle) * (ring - WorldConfig.DOOR_DISTANCE),
 		}
 		map.places[building.id] = door
 		if building.npc then
 			map.places[building.npc] = door
 		end
 	end
-	map.places[biome.hub.id] = { x = 0, z = 0 }
+	map.places[biome.hub.id] = { x = origin.x, z = origin.z }
 
-	-- The first route runs west, the second east, any more alternate north and south.
-	local headings: { number } = { math.pi, 0, math.pi / 2, -math.pi / 2 }
+	local headings = sited.headings
 	for index, route in biome.routes do
 		local heading = headings[(index - 1) % #headings + 1]
-		local start: Point = { x = math.cos(heading) * half, z = math.sin(heading) * half }
+		local start: Point =
+			{ x = origin.x + math.cos(heading) * half, z = origin.z + math.sin(heading) * half }
 		local side = if index % 2 == 0 then 1 else -1
 		local line = routeLine(route, start, heading, side)
 		map.routes[route.id] = line
@@ -171,6 +189,73 @@ function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Ta
 			Layout.pointAt(lairLine, biome.lair.joinsAt, WorldConfig.STALL_DISTANCE * lairLine.side)
 	end
 	return map
+end
+
+-- Every biome laid out in one world, in order: each later biome's hub lies beyond the sealed
+-- road of the one before it.
+export type World = {
+	map: Map, -- every biome's places, routes and buildings together (ids are unique across biomes)
+	maps: { [number]: Map }, -- each biome's own map, by biome number
+	biomeOfPlace: { [string]: number }, -- which biome a place belongs to
+}
+
+function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTypes.Tamer }): World
+	local ordered = table.clone(biomes)
+	table.sort(ordered, function(a, b)
+		return a.number < b.number
+	end)
+	local merged: Map = {
+		hub = { x = 0, z = 0, size = 0 },
+		routes = {},
+		places = {},
+		buildings = {},
+		lairSpur = {},
+	}
+	local maps: { [number]: Map } = {}
+	local biomeOfPlace: { [string]: number } = {}
+	local siting: Siting? = nil
+	for index, biome in ordered do
+		local map = Layout.build(biome, tamers, siting)
+		maps[biome.number] = map
+		if index == 1 then
+			merged.hub, merged.lairSpur = map.hub, map.lairSpur
+		end
+		for id, line in map.routes do
+			merged.routes[id] = line
+		end
+		for id, point in map.places do
+			merged.places[id] = point
+			biomeOfPlace[id] = biome.number
+		end
+		for id, point in map.buildings do
+			merged.buildings[id] = point
+		end
+		-- The next biome's hub: straight on past this biome's sealed road.
+		local gate, sealed = map.places[biome.gate.id], map.places[biome.gate.sealedPath]
+		if gate and sealed then
+			local length = math.max(Layout.distance(gate, sealed), 1e-6)
+			local dx, dz = (sealed.x - gate.x) / length, (sealed.z - gate.z) / length
+			local reach = WorldConfig.BIOME_GAP + WorldConfig.NEXT_HUB_ALLOWANCE
+			siting = {
+				origin = { x = sealed.x + dx * reach, z = sealed.z + dz * reach },
+				headings = LATER_HEADINGS,
+			}
+		end
+	end
+	return { map = merged, maps = maps, biomeOfPlace = biomeOfPlace }
+end
+
+-- The biome a point is in: the one that owns the nearest named place. Nil with no places at all.
+function Layout.biomeAt(world: World, at: Point): number?
+	local best: number? = nil
+	local bestDistance = math.huge
+	for id, place in world.map.places do
+		local distance = Layout.distance(place, at)
+		if distance < bestDistance then
+			best, bestDistance = world.biomeOfPlace[id], distance
+		end
+	end
+	return best
 end
 
 -- True if `at` is within `radius` (plus the lag allowance) of the named place.

@@ -77,19 +77,21 @@ function InventoryService.start(hooks: Hooks)
 				{ Item = value.Item, Ok = false, Reason = "Too fast", Count = 0, Coins = 0 }
 			)
 		end
-		local biome = WorldService.biome()
-		local atShop = WorldService.isNear(player, Layout.stallId(biome), WorldConfig.TALK_RADIUS)
-		for _, building in biome.hub.buildings do
+		-- A shop in any town, or the supply stall on the way to any lair.
+		local shopBiome = WorldService.buildingAt(player, "Shop", WorldConfig.TALK_RADIUS)
+		for _, biome in WorldService.biomes() do
 			if
-				building.role == "Shop"
-				and WorldService.isNear(player, building.id, WorldConfig.TALK_RADIUS)
+				not shopBiome
+				and WorldService.isNear(player, Layout.stallId(biome), WorldConfig.TALK_RADIUS)
 			then
-				atShop = true
+				shopBiome = biome
 			end
 		end
+		local atShop = shopBiome ~= nil
+		local shopNumber = if shopBiome then shopBiome.number else 1
 		local bought: Shop.Bought?, problem: string? = nil, "The shop is not open to you yet"
 		if hooks.isUnlocked(profile, "shop") then
-			bought, problem = Shop.buy(profile, value.Item, value.Count, atShop, biome.number)
+			bought, problem = Shop.buy(profile, value.Item, value.Count, atShop, shopNumber)
 		end
 		Net.BuyResult.Fire(player, {
 			Item = value.Item,
@@ -149,15 +151,7 @@ function InventoryService.start(hooks: Hooks)
 		if not profile or tooFast(lastHeal, player) then
 			return
 		end
-		local atHealer = false
-		for _, building in WorldService.biome().hub.buildings do
-			if
-				building.role == "Healer"
-				and WorldService.isNear(player, building.id, WorldConfig.TALK_RADIUS)
-			then
-				atHealer = true
-			end
-		end
+		local atHealer = WorldService.buildingAt(player, "Healer", WorldConfig.TALK_RADIUS) ~= nil
 		if not atHealer then
 			return hooks.notify(player, "You are too far from the healer")
 		end

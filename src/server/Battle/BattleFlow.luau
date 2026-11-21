@@ -151,8 +151,8 @@ function BattleFlow.wakeAtHealerIfBeaten(player: Player, profile: Profile.Profil
 	end
 	Health.healTeam(profile) -- only the team that fought; the stable stays as it was
 	StateSync.changed(player)
-	-- When more biomes exist this must be the healer of the player's own town.
-	for _, building in WorldService.biome().hub.buildings do
+	-- The healer of the biome they were fighting in.
+	for _, building in WorldService.biomeOf(player).hub.buildings do
 		if building.role == "Healer" then
 			WorldService.sendTo(player, building.id)
 		end
@@ -181,10 +181,12 @@ local function battleFinished(
 		{ player = player.UserId, battle = session.battleId, kind = session.kind, ending = ending }
 	)
 	local wildRoute: string? = nil
+	local wildBiome = 1 -- where the wild creature lives: its rewards follow its biome
 	if ref and ref.kind == "Wild" then
 		local spawnId = (ref :: WildRef).spawnId
 		local spawn = WorldService.spawn(player, spawnId)
 		wildRoute = if spawn then spawn.route else nil
+		wildBiome = if spawn then spawn.biome else wildBiome
 		WorldService.finish(
 			player,
 			spawnId,
@@ -216,7 +218,7 @@ local function battleFinished(
 				cap = cap,
 				unixTime = os.time(),
 				seed = seed(),
-				biome = WorldService.biome().number,
+				biome = wildBiome,
 			})
 		)
 		DailyService.record(player, "WinBattle")
@@ -238,7 +240,7 @@ local function battleFinished(
 			opponentId = trained.opponent.id,
 			xpKind = trained.opponent.xpKind,
 			coinKind = if trained.opponent.paysCoins then "Tamer" else nil,
-			biome = WorldService.biome().number,
+			biome = WorldService.biomeOfPlace(trained.opponent.place).number,
 			foes = trained.foes,
 			team = team,
 			cap = cap,

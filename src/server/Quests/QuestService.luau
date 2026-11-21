@@ -19,7 +19,7 @@ local MIN_SECONDS_BETWEEN_REQUESTS = 0.5
 
 export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
-	biome: () -> WorldTypes.Biome,
+	biomes: () -> { WorldTypes.Biome },
 	isNear: (player: Player, placeId: string, radius: number) -> boolean,
 	refuse: (player: Player, reason: string) -> (),
 	changed: (player: Player) -> (),
@@ -38,9 +38,15 @@ local function atGiver(player: Player, questId: string): boolean
 	if not quest then
 		return false
 	end
-	for _, building in hooks.biome().hub.buildings do
-		if building.name == quest.giver.place then
-			return hooks.isNear(player, building.id, WorldConfig.TALK_RADIUS)
+	-- The giver's building may be in any biome's town.
+	for _, biome in hooks.biomes() do
+		for _, building in biome.hub.buildings do
+			if
+				building.name == quest.giver.place
+				and hooks.isNear(player, building.id, WorldConfig.TALK_RADIUS)
+			then
+				return true
+			end
 		end
 	end
 	return false

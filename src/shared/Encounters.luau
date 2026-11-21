@@ -18,6 +18,7 @@ local WorldTypes = require("./WorldTypes")
 
 export type Spawn = {
 	id: number,
+	biome: number, -- the biome it lives in (its rewards and its horn price follow this)
 	route: string,
 	area: string,
 	spot: string?, -- the rustle spot it came from, if any
@@ -51,6 +52,7 @@ end
 
 local function add(
 	book: Book,
+	biome: number,
 	route: WorldTypes.Route,
 	area: string,
 	spot: string?,
@@ -62,6 +64,7 @@ local function add(
 	local pick = World.pickWild(route, seed, options, newId())
 	local spawn: Spawn = {
 		id = book.nextId,
+		biome = biome,
 		route = route.id,
 		area = area,
 		spot = spot,
@@ -121,6 +124,7 @@ function Encounters.tick(
 					local side = (Rng.next(rng) * 2 - 1) * WorldConfig.SPAWN_SIDE_OFFSET
 					add(
 						book,
+						biome.number,
 						route,
 						area.id,
 						nil,
@@ -167,7 +171,17 @@ function Encounters.rustle(
 					return nil, "Nothing stirs yet"
 				end
 				book.rustledAt[spot.id] = now
-				return add(book, route, spot.area, spot.id, map.places[spot.id], seed, newId), nil
+				return add(
+					book,
+					biome.number,
+					route,
+					spot.area,
+					spot.id,
+					map.places[spot.id],
+					seed,
+					newId
+				),
+					nil
 			end
 		end
 	end
@@ -205,6 +219,7 @@ function Encounters.grass(
 				book.grassAt = now + WorldConfig.GRASS_REST_SECONDS
 				local spawn = add(
 					book,
+					biome.number,
 					route,
 					area.id,
 					nil,

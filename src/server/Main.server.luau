@@ -84,6 +84,20 @@ WorldService.start({
 	onAt = function(player, at)
 		-- Places the story is waiting for the player to reach.
 		StoryService.event(player, { kind = "At", at = at }, nil, true)
+		-- Standing in a later biome they have earned moves their "furthest biome" on (shop
+		-- prices and some rewards follow it).
+		local profile = DataService.get(player)
+		local here = WorldService.biomeOf(player).number
+		if profile and here > profile.Story.biomeReached and here <= profile.Story.badges + 1 then
+			profile.Story.biomeReached = here
+			StateSync.changed(player)
+			log("BiomeReached", { player = player.UserId, biome = here })
+		end
+	end,
+	mayEnter = function(player, biomeNumber)
+		-- A biome is earned with the badge of the one before it.
+		local profile = DataService.get(player)
+		return profile ~= nil and biomeNumber <= profile.Story.badges + 1
 	end,
 	canBeAmbushed = function(player)
 		-- Only once the story has opened wild battles, and only if someone on the team can fight.
@@ -116,7 +130,7 @@ StoryService.start({
 
 QuestService.start({
 	getData = DataService.get,
-	biome = WorldService.biome,
+	biomes = WorldService.biomes,
 	isNear = WorldService.isNear,
 	refuse = BattleService.refuse,
 	changed = StateSync.changed,
@@ -172,7 +186,7 @@ GiantService.start({
 	isOpen = function(profile)
 		return isUnlocked(profile, "giant_marker")
 	end,
-	biome = WorldService.biome,
+	biome = WorldService.biomeOf,
 	map = WorldService.map,
 	position = WorldService.position,
 	refuse = BattleService.refuse,
