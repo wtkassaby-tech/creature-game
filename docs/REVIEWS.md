@@ -2,6 +2,19 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: the battle that cannot be lost (commit 597d303)
+
+Reviewer: a separate read-only agent. It did not run the tests.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The Tide Flats champion (being written at the same time) carried the old "try again at once" setting, which now means "cannot be lost" | Must fix | Set to false in the Tide Flats content. A test now fails if any story battle other than the rival's first one cannot be lost |
+| 2 | If both last creatures fell on the same turn, the player held on and then had to play one more turn against an opponent that had already fallen | Should fix | A double knockout in this battle is now a win at once, with a test |
+| 3 | The "holds on" event arrives after a "faints" event for the same creature | Note | Checked: the battle screen sets the creature's health back to 1 and keeps it in play |
+| 4 | The team is mended after this battle, so a player who walks in hurt is healed once | Note | Accepted: it can happen once per account, at the very start of the game |
+
+Found sound: the setting comes only from content data, never from the device; wild battles, local tamers and giants never have it; the battle cannot be replayed once won, and pays experience only; nothing grows with the length of the battle, which is capped at 60 turns; leaving part way gives no reward and no mending; running is refused.
+
 ## 21 November 2026: bait and crafting (commit 966744a)
 
 Reviewer: a separate read-only agent. No must-fix findings: a bait cannot be used without owning one, used twice, or used where it should not work; the device cannot influence the gem chance; crafting cannot go below zero, make anything without a recipe, or be turned back into coins.

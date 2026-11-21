@@ -180,6 +180,37 @@ do
 		end
 	end
 	check("the same battle without the rule is lost", lost == "Lost", tostring(lost))
+
+	-- Both last creatures falling on one turn is a draw in an ordinary battle. Here it is a
+	-- win at once, with no extra turn against an opponent that has already fallen.
+	local both = assert(
+		BattleSession.start({
+			battleId = 7,
+			kind = "Rival",
+			yours = { Breeding.wild("Mossmitt", "w3", 2, "Common", "Moss", Rng.new(21)) },
+			theirs = { Breeding.wild("Spadesnout", "s3", 12, "Common", "Sand", Rng.new(22)) },
+			theirMoves = nil,
+			tier = "Rival",
+			seed = 3,
+			levelCap = 15,
+			cannotLose = true,
+		}),
+		"battle starts"
+	)
+	for _, side in both.state.sides do
+		side.team[side.active].hp = 0
+	end
+	local together =
+		assert(BattleSession.act(both, both.state.turn + 1, "Move", 1), "a turn is played")
+	local heldOn = false
+	for _, event in together.events do
+		heldOn = heldOn or event.kind == "Endure"
+	end
+	check(
+		"both sides falling together is a win at once, with no holding on",
+		together.finished and together.outcome == 1 and not heldOn,
+		`finished {together.finished}, outcome {together.outcome}`
+	)
 end
 
 print("\n== Giant fights ==")

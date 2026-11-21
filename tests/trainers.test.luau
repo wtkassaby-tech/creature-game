@@ -85,6 +85,17 @@ do
 		first ~= nil and first.team.members[1].species == "Spadesnout"
 	)
 	check("the first battle cannot be lost", first ~= nil and first.cannotLose)
+	local unlosable: { string } = {}
+	for id, battle in Tamers.story do
+		if battle.mayRetryAtOnce then
+			table.insert(unlosable, id)
+		end
+	end
+	check(
+		"it is the only battle in the whole story that cannot be lost",
+		#unlosable == 1 and unlosable[1] == "rival_first",
+		table.concat(unlosable, ", ")
+	)
 	profile.Story.flags["won:rival_first"] = true
 	check(
 		"once won it cannot be replayed, even before its beat finishes",

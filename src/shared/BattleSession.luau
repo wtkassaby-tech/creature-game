@@ -234,7 +234,9 @@ local function holdOn(session: Session)
 	if not session.cannotLose or state.winner == nil or state.winner == PLAYER then
 		return
 	end
-	if state.turn >= BattleConfig.MAX_TURNS then
+	-- Both sides fell on the same turn, or the turn limit was reached: the opponent has nothing
+	-- left to fight with (or gives up), so the player wins outright.
+	if state.winner == 0 or state.turn >= BattleConfig.MAX_TURNS then
 		state.winner = PLAYER
 		return
 	end
