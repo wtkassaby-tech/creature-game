@@ -72,6 +72,10 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 21 Nov 2026 | The team is chosen on the creatures screen: any creatures the player owns, up to the number their badges allow, never changed during a battle. Breeding and the shop open when their story beats are done | Claude (Default) | 4, 9 |
 | 21 Nov 2026 | **A captured giant is a normal-sized creature version of the giant** (approval pack 4, option A), with its own parts and signature moves. **It can breed**, but the candy for breeding it is harder to get than ordinary candy. This settles the brief's open question "can giants breed" as yes | Ayrton | 6, 7, 15 |
 | 21 Nov 2026 | Losing a battle has a cost: consumables used are gone, and damage should matter if the player keeps fighting. Details being agreed with Ayrton (see Still open) | Ayrton | 5, 10 |
+| 21 Nov 2026 | **Damage lasts between battles.** A hurt creature stays hurt until a tonic or the healer mends it; the healer in town is free; when the whole team faints the player wakes at the healer with everyone mended. Losing costs the walk back and whatever was used in the battle. This builds the brief's locked rule that consumables are needed to heal damaged creatures | Ayrton | 5, 10 |
+| 21 Nov 2026 | **Wild creatures are met both ways.** Creatures standing in the open are for picking the one you want; every stretch of route also has long grass where walking can start a battle you did not choose (22% each second of walking, then 8 seconds of rest), drawn from the same stretch's table; rustle spots stay the only source of uncommon species | Ayrton (the mix); Claude (the numbers) | 3, 6 |
+| 21 Nov 2026 | Items: a tonic or Rally Root can be used between fights at no cost in turns, or in a battle at the cost of that turn. No limit per ordinary battle (tonics cost coins, which is the limit); giant fights keep their limit of five. This is how the mainline games of the genre work; I could not find a written source for Project Pokemon itself | Ayrton (the style); Claude (Default) | 5, 10 |
+| 21 Nov 2026 | Giant Candy (proposed to Ayrton, numbers open): a breed with a giant parent needs 10 Giant Candy of that giant, earned only by beating it again (1 a win, up to 2 a day); Prism Candy cannot stand in for it | Claude (Default, awaiting Ayrton) | 7, 10 |
 
 ## Still open
 
@@ -87,8 +91,4 @@ Only Ayrton can decide these:
 - Greenwood has only one Sand species, the Sand starter. Swap a Water species for a second Sand one?
 - Mixed Greenwood and Dust Canyon balance: give Greenwood's Leaf creatures more non-Leaf moves, or judge mixed balance by 3v3 teams rather than one-on-one?
 - Giant capture: how the harder-to-get giant candy is earned and what a giant breed costs (Claude to propose numbers); whether a captured giant looks bigger; whether a missed capture keeps the win's rewards.
-- Damage that lasts between battles: the brief says consumables are needed to heal damaged creatures (locked), but today every creature starts every battle at full health. To build once Ayrton confirms how healing in town works.
-- How wild creatures are met: built as creatures you can see and walk up to, each player's own (21 November). The other way is hidden encounters in long grass. Say if you want that instead.
-- Should there be a limit on items used in one ordinary battle? Today a player with many tonics can outlast a tamer. Giant fights already have a limit of five.
-- Should losing a battle cost anything (a walk back to the healer, a few coins)? Nothing yet.
 - The live brief doc still shows coin bets, the original breeding formulas and the section 15 list as they were; this log overrides it until the doc is updated.
