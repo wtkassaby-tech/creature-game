@@ -1,11 +1,9 @@
 --!strict
 -- Test fixtures: moves for the placeholder species. NOT game content.
 
-local Types = require("../../src/shared/Types")
+local RealMoves = require("../../src/content/Moves")
 
-export type MoveDef = { element: Types.Element, power: number }
-
-local Moves: { [string]: MoveDef } = {
+local Moves: { [string]: RealMoves.MoveDef } = {
 	-- Mossback
 	Headbutt = { element = "Sand", power = 55 },
 	["Moss Spit"] = { element = "Leaf", power = 50 },

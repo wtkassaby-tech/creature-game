@@ -382,6 +382,18 @@ function BattleView.start(playerGui: Instance)
 					fallen.hp = 0
 					message.Text = `{fallen.name} fainted`
 				end
+			elseif event.Kind == "Poisoned" then
+				local victim = current.sides[actor][event.Slot]
+				message.Text = `{if victim then victim.name else "It"} is poisoned!`
+			elseif event.Kind == "Poison" then
+				local victim = current.sides[actor][event.Slot]
+				if victim then
+					victim.hp = event.TargetHp
+					message.Text = `{victim.name} is hurt by poison`
+				end
+			elseif event.Kind == "Cured" then
+				local victim = current.sides[actor][event.Slot]
+				message.Text = `{if victim then victim.name else "It"} shook off the poison`
 			elseif event.Kind == "Endure" then
 				local holding = current.sides[actor][event.Slot]
 				if holding then

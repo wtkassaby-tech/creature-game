@@ -42,11 +42,12 @@ end
 
 -- Shared helpers ----------------------------------------------------------------------------
 
--- Best (highest preview damage) move of `me` against `foe`; ties go to the earlier move.
+-- Best move of `me` against `foe` (its damage now plus what its poison would do); ties go to
+-- the earlier move.
 local function bestMove(me: Battle.Fighter, foe: Battle.Fighter): (string, number)
 	local best, bestDamage = me.moves[1], -1
 	for _, name in me.moves do
-		local damage = Battle.previewDamage(me, foe, name)
+		local damage = Battle.moveValue(me, foe, name)
 		if damage > bestDamage then
 			best, bestDamage = name, damage
 		end

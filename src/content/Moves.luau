@@ -4,7 +4,9 @@
 
 local Types = require("../shared/Types")
 
-export type MoveDef = { element: Types.Element, power: number }
+-- What a move does besides damage. "Poison" poisons the creature it hits (BattleConfig).
+export type MoveEffect = "Poison"
+export type MoveDef = { element: Types.Element, power: number, effect: MoveEffect? }
 
 local Moves: { [string]: MoveDef } = {
 	-- Greenwood (biome 1). No status effects yet: those arrive with the Mire.

@@ -19,6 +19,7 @@ export type Fighter = {
 	hp: number,
 	tempo: number, -- 0..1, fills while this creature is the faster one
 	moves: { string },
+	poison: number?, -- turns of poison left; nil or 0 when not poisoned
 }
 export type Side = { team: { Fighter }, active: number }
 -- "Pass" spends the turn doing nothing in the battle itself: a lasso throw or an item uses it.
@@ -26,7 +27,16 @@ export type Action =
 	{ kind: "Move", move: string }
 	| { kind: "Switch", to: number }
 	| { kind: "Pass" }
-export type EventKind = "Move" | "FollowUp" | "Switch" | "Faint" | "Item" | "Endure"
+export type EventKind =
+	"Move"
+	| "FollowUp"
+	| "Switch"
+	| "Faint"
+	| "Item"
+	| "Endure"
+	| "Poisoned" -- a creature has just been poisoned
+	| "Poison" -- poison hurt it at the end of the turn
+	| "Cured" -- the poison wore off
 -- One thing that happened in a turn. `text` is for logs; the other fields are what the
 -- player's screen needs to replay it. `side` is who acted (for a faint, whose creature fell).
 export type Event = {
@@ -38,7 +48,8 @@ export type Event = {
 	damage: number?, -- Move and FollowUp
 	targetHp: number?, -- the struck creature's health afterwards
 	-- Switch: the position now active; Faint: the one that fell; Item: the one treated;
-	-- Endure: the one that held on with 1 health in a battle that cannot be lost.
+	-- Endure: the one that held on with 1 health in a battle that cannot be lost;
+	-- Poisoned, Poison and Cured: the creature it happened to (and `side` is its side).
 	slot: number?,
 }
 export type State = {
@@ -120,12 +131,36 @@ function Battle.previewDamage(attacker: Fighter, defender: Fighter, moveName: st
 	)
 end
 
--- A simple opponent: use the move that does the most damage right now.
+-- Would this move poison `defender` if it hit now?
+function Battle.wouldPoison(defender: Fighter, moveName: string): boolean
+	return Moves[moveName].effect == "Poison"
+		and (defender.poison or 0) == 0
+		and defender.element ~= BattleConfig.POISON_IMMUNE_ELEMENT
+end
+
+-- What one tick of poison takes from a creature.
+function Battle.poisonDamage(fighter: Fighter): number
+	return math.max(1, math.floor(fighter.stats.Hp * BattleConfig.POISON_SHARE))
+end
+
+-- What a move is worth to a simple opponent: its damage now, plus the damage its poison would
+-- go on to do (never more than the health the hit leaves). A move with no effect is worth
+-- exactly its damage, so opponents choose as they always have where nothing poisons.
+function Battle.moveValue(attacker: Fighter, defender: Fighter, moveName: string): number
+	local value = Battle.previewDamage(attacker, defender, moveName)
+	if Battle.wouldPoison(defender, moveName) then
+		local later = Battle.poisonDamage(defender) * BattleConfig.POISON_TURNS
+		value += math.min(later, math.max(0, defender.hp - value))
+	end
+	return value
+end
+
+-- A simple opponent: use the move that is worth the most right now.
 function Battle.chooseAction(state: State, side: number): Action
 	local me, foe = active(state, side), active(state, 3 - side)
 	local best, bestDamage = me.moves[1], -1
 	for _, name in me.moves do
-		local damage = Battle.previewDamage(me, foe, name)
+		local damage = Battle.moveValue(me, foe, name)
 		if damage > bestDamage then
 			best, bestDamage = name, damage
 		end
@@ -233,6 +268,19 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 			damage,
 			foe.hp
 		)
+		if foe.hp > 0 and Battle.wouldPoison(foe, moveName) then
+			foe.poison = BattleConfig.POISON_TURNS
+			note(
+				state,
+				3 - side,
+				"Poisoned",
+				`{foe.creature.id} is poisoned`,
+				moveName,
+				nil,
+				foe.hp,
+				state.sides[3 - side].active
+			)
+		end
 	end
 
 	local first = Battle.firstMover(state)
@@ -263,6 +311,41 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 			if me.tempo >= 1 then
 				me.tempo -= 1
 				strike(side, action.move, BattleConfig.TEMPO_POWER, "follows up with")
+			end
+		end
+	end
+
+	-- Poison: each active creature that is poisoned and still standing loses a share of its
+	-- full health, and the poison runs down by a turn.
+	for side = 1, 2 do
+		local fighter = active(state, side)
+		local left = fighter.poison or 0
+		if fighter.hp > 0 and left > 0 then
+			local damage = Battle.poisonDamage(fighter)
+			fighter.hp = math.max(0, fighter.hp - damage)
+			fighter.poison = left - 1
+			local slot = state.sides[side].active
+			note(
+				state,
+				side,
+				"Poison",
+				`{fighter.creature.id} is hurt by poison for {damage}`,
+				nil,
+				damage,
+				fighter.hp,
+				slot
+			)
+			if left == 1 and fighter.hp > 0 then
+				note(
+					state,
+					side,
+					"Cured",
+					`{fighter.creature.id} shakes off the poison`,
+					nil,
+					nil,
+					fighter.hp,
+					slot
+				)
 			end
 		end
 	end

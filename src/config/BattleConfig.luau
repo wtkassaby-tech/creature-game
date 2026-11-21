@@ -21,6 +21,15 @@ BattleConfig.FIELD_ITEMS = {
 	Revive = { kind = "Revive", share = 0.5 },
 } :: { Tonic: FieldEffect, GreatTonic: FieldEffect, Revive: FieldEffect }
 
+-- Poison, the first status effect (it arrives with the Mire; no earlier move has it).
+-- A poisoned creature loses POISON_SHARE of its full health at the end of each turn it spends
+-- as its side's active creature, for POISON_TURNS turns, then shakes it off. A third of its
+-- health in all. Nothing is left to chance: a move that poisons always does, unless the target
+-- is of the immune type or already poisoned. Poison ends with the battle.
+BattleConfig.POISON_SHARE = 1 / 12
+BattleConfig.POISON_TURNS = 4
+BattleConfig.POISON_IMMUNE_ELEMENT = "Toxic"
+
 -- Turn order and what Speed is worth.
 -- Strict "faster always goes first" makes a 1% Speed edge decide a mirror match, and makes Speed
 -- worthless beyond that first strike (research/market/09). Two rules replace it:
