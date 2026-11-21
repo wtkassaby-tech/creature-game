@@ -56,6 +56,16 @@ local function missesSoFar(player: Player, battleId: number): number
 end
 
 -- `changed` is told whenever a throw changes the player's saved state (a lasso spent, a catch).
+-- The battle service tells us how many throws this wild creature has already dodged (it may have
+-- been battled before), and reads the count back when the battle ends.
+function CaptureService.setMisses(player: Player, battleId: number, count: number)
+	misses[player] = { battleId = battleId, count = count }
+end
+
+function CaptureService.missesFor(player: Player, battleId: number): number
+	return missesSoFar(player, battleId)
+end
+
 function CaptureService.start(getData: GetData, log: Log, changed: (player: Player) -> ()): () -> ()
 	local random = Random.new()
 

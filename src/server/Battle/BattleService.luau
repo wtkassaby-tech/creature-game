@@ -21,21 +21,31 @@ export type Opponent = {
 	creatures: { Types.Creature },
 	moves: { { string } }?,
 	tier: BattleAi.Tier,
+	ref: any?, -- whatever the resolver needs back when the battle ends (a spawn, a tamer)
 }
+-- Returns the opponent, or nil and a reason for the screen.
 export type ResolveTarget = (
 	player: Player,
 	kind: BattleSession.Kind,
-	targetId: number
-) -> Opponent?
+	targetId: number,
+	targetName: string?
+) -> (Opponent?, string?)
 -- The player's team and level cap, or nil if their data is not loaded.
 export type PlayerTeam = (player: Player) -> ({ Types.Creature }?, number?)
-export type OnFinished = (player: Player, session: BattleSession.Session, outcome: number) -> ()
+export type OnFinished = (
+	player: Player,
+	session: BattleSession.Session,
+	outcome: number,
+	ref: any?
+) -> ()
+export type OnStarted = (player: Player, session: BattleSession.Session, ref: any?) -> ()
 
 local MIN_SECONDS_BETWEEN_ACTIONS = 0.25
 
 local BattleService = {}
 
 local sessions: { [Player]: BattleSession.Session } = {}
+local refs: { [Player]: any } = {}
 local lastAction: { [Player]: number } = {}
 local nextBattleId = 0
 
@@ -110,8 +120,10 @@ function BattleService.publishTurn(
 		Outcome = turn.outcome,
 	})
 	if turn.finished and sessions[player] == session then
+		local ref = refs[player]
 		sessions[player] = nil
-		finished(player, session, turn.outcome)
+		refs[player] = nil
+		finished(player, session, turn.outcome, ref)
 	end
 end
 
@@ -123,7 +135,9 @@ end
 function BattleService.start(
 	resolveTarget: ResolveTarget,
 	playerTeam: PlayerTeam,
-	onFinished: OnFinished
+	onFinished: OnFinished,
+	onStarted: OnStarted?,
+	onDropped: ((player: Player, ref: any?) -> ())? -- the battle could not start after all
 ): () -> ()
 	local random = Random.new()
 	finished = onFinished
@@ -136,9 +150,9 @@ function BattleService.start(
 		if not creatures or not cap then
 			return refuse(player, "Your data is not loaded")
 		end
-		local opponent = resolveTarget(player, value.Kind, value.TargetId)
+		local opponent, why = resolveTarget(player, value.Kind, value.TargetId, value.TargetName)
 		if not opponent then
-			return refuse(player, "That battle is not available")
+			return refuse(player, why or "That battle is not available")
 		end
 		nextBattleId = (nextBattleId + 1) % 4294967295
 		local session, problem = BattleSession.start({
@@ -152,9 +166,17 @@ function BattleService.start(
 			levelCap = cap,
 		})
 		if not session then
+			-- Hand the opponent back (a wild creature must not stay marked as in a battle).
+			if onDropped then
+				onDropped(player, opponent.ref)
+			end
 			return refuse(player, problem or "That battle cannot start")
 		end
 		sessions[player] = session
+		refs[player] = opponent.ref
+		if onStarted then
+			onStarted(player, session, opponent.ref)
+		end
 		local started = BattleSession.started(session)
 		Net.BattleStarted.Fire(player, {
 			BattleId = started.battleId,
@@ -187,6 +209,7 @@ function BattleService.start(
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)
 		sessions[player] = nil
+		refs[player] = nil
 		lastAction[player] = nil
 	end)
 

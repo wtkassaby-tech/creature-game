@@ -1,0 +1,120 @@
+--!strict
+-- Battles against people: the local tamers along the routes and the rival's story battles.
+-- Pure rules: who can be battled now, where the player must stand, and the team they bring.
+--
+-- A local tamer can always be battled (the first win pays most; rematches pay once a day).
+-- A rival battle exists only while the story is waiting for it: it is the next story beat's
+-- battle, so it can never be replayed for XP once the story has moved on.
+
+local Breeding = require("./Breeding")
+local Profile = require("./Profile")
+local Rng = require("./Rng")
+local Species = require("../content/Species")
+local StoryProgress = require("./StoryProgress")
+local Tamers = require("../content/Tamers")
+local Types = require("./Types")
+local World = require("./World")
+local WorldTypes = require("./WorldTypes")
+local Xp = require("./Xp")
+
+export type Opponent = {
+	id: string, -- the tamer id or the story battle id
+	kind: "Tamer" | "Rival",
+	xpKind: Xp.OpponentKind,
+	place: string, -- the place id the player must be standing at
+	team: WorldTypes.TamerTeam,
+	paysCoins: boolean, -- rival battles are paid by their story beat, not by the battle
+	mayRetryAtOnce: boolean, -- a loss costs nothing and the battle is offered again
+}
+
+local Trainers = {}
+
+local STARTERS: { WorldTypes.Starter } = { "Mossmitt", "Spadesnout", "Sloshcalf" }
+
+local function byStarter<T>(teams: WorldTypes.ByStarter<T>, starter: string?): T?
+	for _, name: WorldTypes.Starter in STARTERS do
+		if name == starter then
+			return teams[name]
+		end
+	end
+	return nil
+end
+
+-- The opponent for a battle the device asked for, or nil and a reason. `id` comes from the device.
+function Trainers.resolve(
+	id: unknown,
+	profile: Profile.Profile,
+	chapter: WorldTypes.Chapter,
+	biome: WorldTypes.Biome
+): (Opponent?, string?)
+	if typeof(id) ~= "string" then
+		return nil, "Bad request"
+	end
+	local tamer = Tamers.locals[id]
+	if tamer then
+		return {
+			id = tamer.id,
+			kind = "Tamer",
+			xpKind = "Tamer",
+			place = tamer.id,
+			team = tamer.team,
+			paysCoins = true,
+			mayRetryAtOnce = false,
+		},
+			nil
+	end
+	local beat = World.nextBeat(chapter, profile.Story.flags)
+	if beat == nil or beat.trigger.kind ~= "Win" or beat.trigger.target ~= id then
+		return nil, "That battle is not available"
+	end
+	for _, rival in Tamers.rivals do
+		local first = id == rival.firstBattle
+		if first or id == rival.gateBattle then
+			local team = byStarter(if first then rival.first else rival.gate, profile.Story.starter)
+			if team == nil then
+				return nil, "Pick your first creature before this battle"
+			end
+			return {
+				id = id,
+				kind = "Rival",
+				xpKind = if first then "Rival" else "Gate",
+				place = if first then biome.hub.id else biome.gate.id,
+				team = team,
+				paysCoins = false,
+				mayRetryAtOnce = first and rival.firstCannotBeLost,
+			},
+				nil
+		end
+	end
+	return nil, "That battle is not available"
+end
+
+-- Builds a team's creatures and their chosen moves. The same opponent always brings the same
+-- creatures: the seed comes from the opponent's id, not from chance.
+function Trainers.build(opponent: Opponent): ({ Types.Creature }, { { string } })
+	local seed = 7
+	for index = 1, #opponent.id do
+		seed = (seed * 31 + string.byte(opponent.id, index)) % 2147483647
+	end
+	local rng = Rng.new(math.max(1, seed))
+	local creatures: { Types.Creature } = {}
+	local moves: { { string } } = {}
+	for index, member in opponent.team.members do
+		local def = Species[member.species]
+		table.insert(
+			creatures,
+			Breeding.wild(
+				member.species,
+				`{opponent.id}#{index}`,
+				member.level,
+				def.baseRarity,
+				StoryProgress.giftColour(member.species),
+				rng
+			)
+		)
+		table.insert(moves, table.clone(member.moves))
+	end
+	return creatures, moves
+end
+
+return Trainers

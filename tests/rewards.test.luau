@@ -147,6 +147,67 @@ do
 	)
 end
 
+print("\n== Tamers and the rival ==")
+do
+	local profile, team = setup()
+	local foes = { foe(4), foe(5, "Mossmitt") }
+	local function win(paysCoins: boolean, id: string, day: number?): Rewards.TrainedPaid
+		return Rewards.trainedWin(profile, {
+			opponentId = id,
+			xpKind = "Tamer",
+			paysCoins = paysCoins,
+			biome = 1,
+			foes = foes,
+			team = team,
+			cap = 15,
+			unixTime = day or DAY,
+		})
+	end
+	local first = win(true, "gw_pip")
+	check(
+		"the first win against a tamer pays the first-clear coins",
+		first.firstClear and first.coins == Economy.battleCoins("Tamer", 1, 5, 0, true)
+	)
+	check("and is remembered", Rewards.hasBeaten(profile, "gw_pip"))
+	local rematch = win(true, "gw_pip")
+	check(
+		"a rematch pays less",
+		not rematch.firstClear and rematch.coins > 0 and rematch.coins < first.coins
+	)
+	local third = win(true, "gw_pip")
+	check("only the paid rematches of the day pay coins", third.coins == 0)
+	check("XP is still earned", third.members[1].gained > 0)
+	local nextDay = win(true, "gw_pip", DAY + 86400)
+	check(
+		"the next day's rematch pays again, never the first-clear amount",
+		nextDay.coins == rematch.coins
+	)
+	local story = win(false, "rival_first")
+	check(
+		"a story battle pays XP but no coins (its beat pays)",
+		story.coins == 0 and story.members[1].gained > 0
+	)
+	local wild = Rewards.wildWin(
+		setup(),
+		{ foe = foe(5, "Mossmitt"), team = team, cap = 15, unixTime = DAY, seed = 1 }
+	)
+	local fresh, freshTeam = setup()
+	local trained = Rewards.trainedWin(fresh, {
+		opponentId = "x",
+		xpKind = "Tamer",
+		paysCoins = true,
+		biome = 1,
+		foes = { foe(5, "Mossmitt") },
+		team = freshTeam,
+		cap = 15,
+		unixTime = DAY,
+	})
+	check(
+		"a tamer's creature gives more XP than the same creature wild",
+		trained.members[1].gained > wild.members[1].gained
+	)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("rewards checks failed")

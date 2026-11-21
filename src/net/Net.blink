@@ -52,7 +52,10 @@ event StartBattle {
 	Call: SingleAsync,
 	Data: struct {
 		Kind: BattleKind,
+		-- A wild creature's id from WildSpawns; 0 for a tamer or the rival.
 		TargetId: u32,
+		-- A tamer's id or a story battle's id; absent for a wild creature.
+		TargetName: string(1..40)?,
 	},
 }
 
@@ -372,4 +375,37 @@ event PlayerState {
 		Flags: string(1..40)[0..200],
 		Waiting: u8,
 	},
+}
+
+-- The world. Each player has their own wild creatures: the server tells the device where they
+-- are, and the device asks to battle one by its id. The server checks the id is in that
+-- player's list and that their character is standing next to it.
+struct WildView {
+	Id: u32,
+	X: f32,
+	Z: f32,
+	BodyPlan: BodyPlan,
+	Head: string(1..24),
+	Torso: string(1..24),
+	FrontLimbs: string(1..24),
+	Legs: string(1..24),
+	Tail: string(1..24),
+	Colour: string(1..24),
+	Size: f32,
+	Rarity: Rarity,
+	Level: u8,
+}
+event WildSpawns {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Spawns: WildView[0..32] },
+}
+
+-- Device -> server: the player stepped into a rustle spot.
+event Rustle {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { SpotId: string(1..40) },
 }

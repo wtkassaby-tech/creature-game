@@ -63,12 +63,18 @@ export type TurnResult = {
 	ran: boolean,
 }
 
+-- How a battle ended, for the world and the rewards: a caught or fled creature is gone, one the
+-- player ran from or lost to is still there.
+export type Ending = "Won" | "Lost" | "Draw" | "Ran" | "Caught" | "Fled"
+
 export type Session = {
 	battleId: number,
 	kind: Kind,
 	state: Battle.State,
 	chooser: BattleAi.Chooser,
 	ran: boolean,
+	caught: boolean?, -- set by endCaught
+	fled: boolean?, -- set by endFled
 }
 
 local BattleSession = {}
@@ -267,7 +273,34 @@ end
 function BattleSession.endCaught(session: Session): TurnResult
 	local state = session.state
 	state.winner = PLAYER
+	session.caught = true
 	return result(session, #state.log + 1)
+end
+
+-- Marks a wild battle as over because its creature fled after too many missed throws.
+function BattleSession.endFled(session: Session)
+	session.ran = true
+	session.fled = true
+end
+
+-- How the battle ended, or nil while it is still going.
+function BattleSession.ending(session: Session): Ending?
+	local winner = session.state.winner
+	local ending: Ending? = nil
+	if session.fled then
+		ending = "Fled"
+	elseif session.ran then
+		ending = "Ran"
+	elseif session.caught then
+		ending = "Caught"
+	elseif winner == PLAYER then
+		ending = "Won"
+	elseif winner == FOE then
+		ending = "Lost"
+	elseif winner ~= nil then
+		ending = "Draw"
+	end
+	return ending
 end
 
 return BattleSession

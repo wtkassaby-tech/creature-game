@@ -1,6 +1,7 @@
 --!strict
 -- Starts the device side: answers the server's round-trip pings, keeps the latest saved state
--- for the screens, and in Studio opens the test panel.
+-- for the screens, draws the player's wild creatures and handles the world's prompts, and in
+-- Studio opens the test panel.
 -- Not yet run in Studio.
 
 local Players = game:GetService("Players")
@@ -8,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local ClientState = require(script.Parent.State.ClientState)
+local WorldView = require(script.Parent.World.WorldView)
 local Net = require(ReplicatedStorage.net.generated.Client)
 
 -- Answer at once: the server times the reply to judge lasso taps fairly.
@@ -18,6 +20,8 @@ end)
 Net.PlayerState.On(function(value)
 	ClientState.set(value)
 end)
+
+WorldView.start()
 
 if RunService:IsStudio() then
 	local TestPanel = require(script.Parent.Debug.TestPanel)

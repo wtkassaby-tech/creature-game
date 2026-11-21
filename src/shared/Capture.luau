@@ -188,7 +188,7 @@ function Capture.finish(
 	end
 	local flee = Lasso.missesBeforeFlee(creature.rarity)
 	if flee ~= nil and missesAfter >= flee and not turn.finished then
-		session.ran = true
+		BattleSession.endFled(session)
 		turn.finished, turn.ran, turn.outcome = true, true, 2
 		return { outcome = "Fled", judgement = judgement, turn = turn }, nil
 	end

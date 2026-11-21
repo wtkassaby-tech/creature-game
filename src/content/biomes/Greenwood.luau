@@ -47,8 +47,8 @@ local hub: WorldTypes.Hub = {
 	size = 300,
 	landmark = "The giant old tree over the lair, seen from the square",
 	buildings = {
-		{ id = "mentor_cottage", name = "The Mentor's Cottage", role = "Mentor" },
-		{ id = "shop", name = "Tuppence's Shop", role = "Shop" },
+		{ id = "mentor_cottage", name = "The Mentor's Cottage", role = "Mentor", npc = "mentor" },
+		{ id = "shop", name = "Tuppence's Shop", role = "Shop", npc = "marlow_tuppence" },
 		{ id = "healer", name = "Brightwater House", role = "Healer" },
 		{ id = "breeder", name = "The Nesting House", role = "Breeder" },
 		{ id = "notice_oak", name = "The Notice Oak", role = "Quests" },

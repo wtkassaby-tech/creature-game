@@ -4,6 +4,7 @@
 -- TODO(art): replaced by the battle, lasso and team screens.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -13,6 +14,7 @@ local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoPlayer = require(script.Parent.Parent.Lasso.LassoPlayer)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local World = require(ReplicatedStorage.shared.World)
+local WorldView = require(script.Parent.Parent.World.WorldView)
 
 local TestPanel = {}
 
@@ -95,8 +97,25 @@ function TestPanel.start(parent: Instance)
 	local nextTurn = 1
 	local playing: LassoPlayer.Playing? = nil
 
-	button("Wild battle", function()
-		Net.StartBattle.Fire({ Kind = "Wild", TargetId = 0 })
+	-- Battles start from the prompts in the world (walk up to a creature or a person).
+	button("Nearest wild", function()
+		local character = Players.LocalPlayer.Character
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if not (root and root:IsA("BasePart")) then
+			return
+		end
+		local best: number? = nil
+		local bestDistance = math.huge
+		for id, wild in WorldView.spawns() do
+			local distance = (Vector3.new(wild.X, root.Position.Y, wild.Z) - root.Position).Magnitude
+			if distance < bestDistance then
+				best, bestDistance = id, distance
+			end
+		end
+		if best then
+			log(`Nearest wild is {math.floor(bestDistance)} studs away`)
+			Net.StartBattle.Fire({ Kind = "Wild", TargetId = best, TargetName = nil })
+		end
 	end)
 	for index = 1, 4 do
 		button(`Move {index}`, function()
@@ -195,6 +214,13 @@ function TestPanel.start(parent: Instance)
 	end)
 	Net.BeatCompleted.On(function(value)
 		log(`Story: {value.BeatId} ({#value.Gifts} gift(s))`)
+		for _, beat in Chapter1.beats do
+			if beat.id == value.BeatId then
+				for _, line in beat.lines do
+					log(`  {line.speaker}: {line.text}`)
+				end
+			end
+		end
 	end)
 	Net.ReleaseResult.On(function(value)
 		log(

@@ -82,7 +82,8 @@ export type RustleSpot = {
 
 -- The world -----------------------------------------------------------------------------------
 
-export type Building = { id: string, name: string, role: string }
+-- `npc` is the id of the character who lives there, for story beats that start by talking to them.
+export type Building = { id: string, name: string, role: string, npc: string? }
 
 export type Hub = {
 	id: string,
@@ -166,6 +167,8 @@ export type RivalDef = {
 	look: string,
 	tier: BattleAi.Tier,
 	first: ByStarter<TamerTeam>, -- the first battle, keyed by the player's starter
+	firstBattle: string, -- the story battle id of the first battle (a beat's Win target)
+	gateBattle: string, -- the story battle id of the gate battle
 	firstCannotBeLost: boolean, -- the server never lets the player lose it
 	gate: ByStarter<TamerTeam>, -- the gate battle, keyed by the player's starter
 	firstBefore: string,
