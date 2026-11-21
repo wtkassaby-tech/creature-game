@@ -113,7 +113,9 @@ function BattleService.publishTurn(
 	local events = {}
 	for index, event in turn.events do
 		if index > BattleConfig.MAX_EVENTS_A_TURN then
-			break -- more than the message can carry; cannot happen under the rules as written
+			-- More than the message can carry: cannot happen under the rules as written.
+			warn(`[BattleService] a turn had {#turn.events} events; the rest were not sent`)
+			break
 		end
 		table.insert(events, {
 			Side = event.side,

@@ -3,12 +3,18 @@
 -- with no new release: an emergency brake for each part of the game that hands out or takes
 -- value. The key names here are the keys to create on that page, each as a boolean.
 -- A key that is missing, or is not a boolean, counts as its default below.
+--
+-- What has no switch, on purpose: battles and their rewards, catching, quests and the story,
+-- eggs hatching, gifts that were waiting for room, and healing. Switching those off would stop
+-- the game itself; if one of them goes wrong the answer is a fixed release, not a switch.
+-- A giant fight already under way when giants are switched off is played to its end.
 
 export type Key =
 	"shop_open"
 	| "breeding_open"
 	| "giants_open"
 	| "daily_rewards_open"
+	| "release_open"
 	| "purchases_open"
 	| "trading_open"
 	| "pvp_open"
@@ -18,6 +24,7 @@ export type Values = {
 	breeding_open: boolean, -- starting a new breed (eggs already in pens still hatch)
 	giants_open: boolean, -- starting a giant fight
 	daily_rewards_open: boolean, -- claiming a daily task
+	release_open: boolean, -- releasing a creature for coins, candy and materials
 	purchases_open: boolean, -- the Gem shop and anything bought with Robux
 	trading_open: boolean,
 	pvp_open: boolean,
@@ -30,6 +37,7 @@ local KEYS: { Key } = {
 	"breeding_open",
 	"giants_open",
 	"daily_rewards_open",
+	"release_open",
 	"purchases_open",
 	"trading_open",
 	"pvp_open",
@@ -41,6 +49,7 @@ local DEFAULTS: Values = {
 	breeding_open = true,
 	giants_open = true,
 	daily_rewards_open = true,
+	release_open = true,
 	purchases_open = false,
 	trading_open = false,
 	pvp_open = false,

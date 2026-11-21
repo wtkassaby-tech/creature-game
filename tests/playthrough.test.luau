@@ -630,11 +630,11 @@ end
 -- One robot plays from the first beat to the last. Each seed is a different player: different
 -- wild creatures, different luck in battle.
 type Leg = { wild: number, minutes: number, level: number, coins: number }
-type Run = { bot: Bot, stuckAt: string?, legs: { Leg } }
+type Run = { bot: Bot, stuckAt: string?, legs: { Leg }, barred: string? }
 
 local function play(seed: number): Run
 	local bot = newBot(seed)
-	local run: Run = { bot = bot, stuckAt = nil, legs = {} }
+	local run: Run = { bot = bot, stuckAt = nil, legs = {}, barred = nil }
 	local start = { wild = 0, time = bot.time }
 	local badges = 0
 	for _ = 1, #Storyline.beats + 5 do
@@ -645,6 +645,12 @@ local function play(seed: number): Run
 		if not step(bot) then
 			run.stuckAt = `{beat.id} ({beat.trigger.kind} {beat.trigger.target or ""})`
 			break
+		end
+		-- Whatever the robot has just been given or has caught, it must be allowed to use.
+		for _, creature in bot.profile.Creatures do
+			if not Team.mayBattle(bot.profile, creature) and not run.barred then
+				run.barred = `{creature.parts.Torso.species} after {beat.id}`
+			end
 		end
 		if bot.profile.Story.badges > badges then
 			badges = bot.profile.Story.badges
@@ -696,11 +702,11 @@ do
 	)
 	check("the robot caught creatures along the way", first.bot.catches >= 1, `{first.bot.catches}`)
 	check("coins never go below zero", first.bot.profile.Coins >= 0, `{first.bot.profile.Coins}`)
-	local allMayBattle = true
-	for _, creature in first.bot.profile.Creatures do
-		allMayBattle = allMayBattle and Team.mayBattle(first.bot.profile, creature)
-	end
-	check("every creature the robot was given or caught may battle for it", allMayBattle)
+	check(
+		"every creature the robot was given or caught could battle for it from that moment",
+		first.barred == nil,
+		first.barred
+	)
 	check(
 		"the save is sound at the end",
 		#Profile.validate(first.bot.profile) == 0,
@@ -712,6 +718,7 @@ print("\n== Twelve different robots: is the story fair and well paced for all of
 do
 	local SEEDS: { number } = { 1, 7, 13, 99, 1234, 5555, 31337, 77777, 424242, 8675309, 2026, 11 }
 	local stuck: { string } = {}
+	local barred: { string } = {}
 	local wild: { { number } } = {}
 	local minutes: { { number } } = {}
 	local total: { number } = {}
@@ -719,6 +726,9 @@ do
 	local firstTryWins, storyBattles = 0, 0
 	for _, seed in SEEDS do
 		local run = play(seed)
+		if run.barred then
+			table.insert(barred, `seed {seed}: {run.barred}`)
+		end
 		if run.stuckAt or World.nextBeat(Storyline, run.bot.profile.Story.flags) ~= nil then
 			table.insert(stuck, `seed {seed}: {run.stuckAt or "ran out of steps"}`)
 			continue
@@ -744,6 +754,11 @@ do
 		end
 	end
 	check("every robot finishes the story", #stuck == 0, table.concat(stuck, "; "))
+	check(
+		"no robot is ever handed a creature it is not yet allowed to use",
+		#barred == 0,
+		table.concat(barred, "; ")
+	)
 	if #stuck == 0 then
 		for number in wild do
 			print(

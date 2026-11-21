@@ -1,7 +1,7 @@
 --!strict
 -- Who chooses what for the side the game controls, as pure functions of the battle state.
 -- Three tiers: Wild (simple), Tamer (medium), Rival (one step ahead). Deterministic given the state
--- and any Rng passed in, so a battle replays. Battle.luau is untouched; these only build Actions.
+-- and any Rng passed in, so a battle replays. These only build Actions; the rules are in Battle.luau.
 
 local AiConfig = require("../config/AiConfig")
 local Battle = require("./Battle")

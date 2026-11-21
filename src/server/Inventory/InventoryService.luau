@@ -125,6 +125,9 @@ function InventoryService.start(hooks: Hooks)
 		if not profile then
 			return
 		end
+		if not LiveConfigService.isOn("release_open") then
+			return hooks.notify(player, LiveConfigService.closedText())
+		end
 		Grants.rollDay(profile, os.time()) -- the release falloff counts by the server's date
 		local before = profile.Coins
 		local grant = Grants.release(profile, value.Id, hooks.isLocked(player, value.Id))

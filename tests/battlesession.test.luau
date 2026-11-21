@@ -156,6 +156,30 @@ do
 	check("nothing more can be done after running", BattleSession.act(session, 1, "Move", 1) == nil)
 end
 
+print("\n== Poison and fainting ==")
+do
+	local Battle = require("../src/shared/Battle")
+	local Moves = require("../src/content/Moves")
+	Moves["Test Venom"] = { element = "Toxic", power = 20, effect = "Poison" }
+	Moves["Test Tap"] = { element = "Storm", power = 1 }
+	local function fighter(species: string, id: string): Battle.Fighter
+		return Battle.fighter(
+			Breeding.wild(species, id, 20, "Common", "Moss", Rng.new(#id + 3)),
+			{ "Test Venom", "Test Tap" }
+		)
+	end
+	local a, b = fighter("Mossmitt", "pa"), fighter("Spadesnout", "pb")
+	local spare = fighter("Sloshcalf", "pc")
+	local state = Battle.new({ a }, { b, spare }, 9, true)
+	Battle.step(state, { kind = "Move", move = "Test Venom" }, { kind = "Move", move = "Test Tap" })
+	b.hp = 1
+	Battle.step(state, { kind = "Move", move = "Test Tap" }, { kind = "Pass" })
+	check(
+		"a creature that faints is no longer poisoned, so one brought back starts clean",
+		b.hp == 0 and (b.poison or 0) == 0 and state.sides[2].active == 2
+	)
+end
+
 print("\n== The network message for a turn ==")
 do
 	-- The message's list of events has a fixed room (src/net/Net.blink). It must hold the

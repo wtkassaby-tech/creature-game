@@ -2,6 +2,22 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: poison, the off-switches, analytics, the "biome reached" rule (commits 0c892db to a47513d)
+
+Reviewer: a separate read-only agent. It did not run the tests. No must-fix findings.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | If Roblox hiccuped at the moment a switch was flipped, that server kept the old value until it restarted | Should fix | A failed refresh is tried again, with the same waits as the first fetch, until it works |
+| 2 | Only the analytics call itself was protected: a strange log line could have thrown into the game logic that logged it | Should fix | The whole of the feed's work is protected; a problem is a warning in the log and nothing more |
+| 3 | No switch covered releasing a creature, which pays coins, candy and materials | Should fix | Added `release_open`. Battles, catching, quests, hatching and healing have no switch on purpose (it would stop the game); `LiveConfig.luau` says so. A giant fight already under way is played to its end |
+| 4 | A creature that fainted while poisoned came back still poisoned if revived, and in the battle that cannot be lost it "held on" turn after turn | Note | Fainting now ends the poison, with a test |
+| 5 | The "biome reached" rule was only checked on the team screen, not where a creature joins the team or a battle by itself | Note | Also checked when a gift joins the team and when the server builds the battle team. Tests: no route holds a species from a later biome, and no robot player is ever handed a creature it cannot yet use |
+| 6 | If a turn ever had more events than the message holds, the rest were dropped silently | Note | It now warns in the log. It cannot happen under the rules as written (16 at most, room for 24) |
+| 7 | One player spamming buy or release can use up the server's analytics budget for a minute | Note | Accepted: it costs some analytics, nothing in the game |
+
+Found sound: poison cannot be caused or dodged except by an ordinary choice of move; it never ticks on a fainted or benched creature, never twice, and is never saved; rewards and experience do not read it; moves without an effect behave exactly as before; the switches only believe a real true or false and cannot turn on anything that is not built; a switched-off path refuses before anything is spent; analytics names all come from the game's own data, never from the device, and no personal data is sent.
+
 ## 21 November 2026: the battle that cannot be lost (commit 597d303)
 
 Reviewer: a separate read-only agent. It did not run the tests.

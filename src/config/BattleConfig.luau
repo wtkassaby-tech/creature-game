@@ -25,7 +25,8 @@ BattleConfig.FIELD_ITEMS = {
 -- A poisoned creature loses POISON_SHARE of its full health at the end of each turn it spends
 -- as its side's active creature, for POISON_TURNS turns, then shakes it off. A third of its
 -- health in all. Nothing is left to chance: a move that poisons always does, unless the target
--- is of the immune type or already poisoned. Poison ends with the battle.
+-- is of the immune type or already poisoned. Poison ends when the creature faints, and with
+-- the battle.
 BattleConfig.POISON_SHARE = 1 / 12
 BattleConfig.POISON_TURNS = 4
 BattleConfig.POISON_IMMUNE_ELEMENT = "Toxic"

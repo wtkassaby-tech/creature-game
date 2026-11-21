@@ -13,6 +13,7 @@ local Health = require(ReplicatedStorage.shared.Health)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rewards = require(ReplicatedStorage.shared.Rewards)
+local Team = require(ReplicatedStorage.shared.Team)
 local Trainers = require(ReplicatedStorage.shared.Trainers)
 local Types = require(ReplicatedStorage.shared.Types)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
@@ -59,7 +60,9 @@ function BattleFlow.team(player: Player): ({ Types.Creature }?, number?)
 	local team: { Types.Creature } = {}
 	for _, id in profile.Team do
 		local creature = profile.Creatures[id]
-		if creature then
+		-- The "biome reached" rule again, for a creature that reached the team some other way
+		-- than the team screen (Team.mayBattle).
+		if creature and Team.mayBattle(profile, creature) then
 			table.insert(team, creature)
 		end
 	end

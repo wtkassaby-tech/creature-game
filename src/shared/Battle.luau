@@ -352,6 +352,9 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 
 	for side = 1, 2 do
 		if active(state, side).hp == 0 then
+			-- Fainting ends the poison: a creature brought back with an item, or one that holds
+			-- on in a battle that cannot be lost, starts clean.
+			active(state, side).poison = nil
 			note(
 				state,
 				side,

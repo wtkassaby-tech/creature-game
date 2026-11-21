@@ -16,6 +16,7 @@ local Profile = require("./Profile")
 local ProfileConfig = require("../config/ProfileConfig")
 local Rng = require("./Rng")
 local Species = require("../content/Species")
+local Team = require("./Team")
 local Types = require("./Types")
 local WorldTypes = require("./WorldTypes")
 
@@ -95,8 +96,10 @@ function Gifts.rebuild(ref: string, id: string, seed: number): Types.Creature?
 end
 
 local function addToTeam(profile: Profile.Profile, id: string)
+	local creature = profile.Creatures[id]
 	if
-		profile.Creatures[id]
+		creature
+		and Team.mayBattle(profile, creature)
 		and not table.find(profile.Team, id)
 		and #profile.Team < Profile.teamSize(profile.Story.badges)
 	then

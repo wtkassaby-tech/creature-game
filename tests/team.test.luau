@@ -105,6 +105,28 @@ do
 	profile.Story.biomeReached = 1
 end
 
+-- No biome hands out a creature the player could not then use: every wild species on a
+-- biome's routes belongs to that biome or an earlier one.
+do
+	local Biomes = require("../src/content/Biomes")
+	local Species = require("../src/content/Species")
+	local early: { string } = {}
+	for _, biome in Biomes do
+		for _, route in biome.routes do
+			for _, entry in route.spawns do
+				if Species[entry.species].biome > biome.number then
+					table.insert(early, `{entry.species} in biome {biome.number}`)
+				end
+			end
+		end
+	end
+	check(
+		"no route holds a wild species from a later biome",
+		#early == 0,
+		table.concat(early, ", ")
+	)
+end
+
 check(
 	"the record is sound",
 	#Profile.validate(profile) == 0,

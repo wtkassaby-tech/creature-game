@@ -76,12 +76,7 @@ function AnalyticsFeed.start(balance: Balance)
 	balanceOf = balance
 end
 
--- Called for every server log line. `fields.player` is the player's user id when the line is
--- about a player; lines about nobody in particular report nothing.
-function AnalyticsFeed.record(event: string, fields: { [string]: any })
-	if inStudio then
-		return
-	end
+local function report(event: string, fields: { [string]: any })
 	local userId = fields.player
 	if typeof(userId) ~= "number" then
 		return
@@ -96,14 +91,24 @@ function AnalyticsFeed.record(event: string, fields: { [string]: any })
 	end
 	for _, call in calls do
 		if mayPost() then
-			local ok, problem = pcall(function(): string?
-				post(player, call)
-				return nil
-			end)
-			if not ok then
-				warn(`[AnalyticsFeed] {event}: {problem}`)
-			end
+			post(player, call)
 		end
+	end
+end
+
+-- Called for every server log line. `fields.player` is the player's user id when the line is
+-- about a player; lines about nobody in particular report nothing. Nothing in here can throw
+-- into the game logic that logged the line.
+function AnalyticsFeed.record(event: string, fields: { [string]: any })
+	if inStudio then
+		return
+	end
+	local ok, problem = pcall(function(): string?
+		report(event, fields)
+		return nil
+	end)
+	if not ok then
+		warn(`[AnalyticsFeed] {event}: {problem}`)
 	end
 end
 

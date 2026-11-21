@@ -59,23 +59,50 @@ local function fetch(): ConfigSnapshot
 	end
 end
 
+-- Brings the snapshot up to date and applies it. Tries again, with the same waits as the first
+-- fetch, until it works: a switch flipped during a Roblox hiccup must still arrive.
+local refreshing = false
+local function refresh(snapshot: ConfigSnapshot)
+	if refreshing then
+		return -- the loop below is already on its way to the newest values
+	end
+	refreshing = true
+	local attempt = 0
+	while true do
+		local ok, problem = pcall(function(): string?
+			snapshot:Refresh()
+			apply(snapshot)
+			return nil
+		end)
+		if ok then
+			break
+		end
+		attempt += 1
+		log("SwitchesRefreshFailed", { attempt = attempt, problem = tostring(problem) })
+		local waits = LiveConfig.RETRY_SECONDS
+		task.wait(waits[math.min(attempt, #waits)])
+	end
+	refreshing = false
+	if snapshot.Outdated then
+		refresh(snapshot) -- something newer arrived while this was retrying
+	end
+end
+
 -- Starts fetching the live values. Returns at once; the game runs on the defaults until the
 -- first answer arrives.
 function LiveConfigService.start(logger: Log)
 	log = logger
 	task.spawn(function()
 		local snapshot = fetch()
-		apply(snapshot)
+		local ok, problem = pcall(function(): string?
+			apply(snapshot)
+			return nil
+		end)
+		if not ok then
+			log("SwitchesRefreshFailed", { attempt = 0, problem = tostring(problem) })
+		end
 		snapshot.UpdateAvailable:Connect(function()
-			local ok, problem = pcall(function(): string?
-				snapshot:Refresh()
-				return nil
-			end)
-			if ok then
-				apply(snapshot)
-			else
-				log("SwitchesRefreshFailed", { problem = tostring(problem) })
-			end
+			refresh(snapshot)
 		end)
 	end)
 end
