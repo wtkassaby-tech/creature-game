@@ -129,6 +129,12 @@ local beats: { WorldTypes.Beat } = {
 				speaker = "Mentor",
 				text = "Battle what you find. Spend your coins at Tuppence's shop.",
 			},
+			{
+				-- Lasting damage, taught at the moment it starts to matter (the robot players
+				-- walked to the healer after nearly every battle until they did this).
+				speaker = "Mentor",
+				text = "Hurts last out here. Lead with whoever is freshest. The healer in town is free.",
+			},
 		},
 	},
 	{

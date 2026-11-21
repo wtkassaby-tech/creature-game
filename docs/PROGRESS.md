@@ -19,7 +19,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 1. Two of the three starters lost the "cannot be lost" first battle every time.
 2. Three biomes took about 14 hours of battling, against a plan of 4 to 5 hours in all. Now about two and a half hours of battling.
 3. Most robots could never pass the Dust Canyon gate, even at full level with tonics. Now every robot passes every gate within three tries, and about half of story battles are still lost first time.
-4. With lasting damage, a player who always leads with the same creature walks to the healer after almost every wild battle. Rotating the healthiest creature to the front fixes it; the game should teach this early (a line from the mentor, to be written).
+4. With lasting damage, a player who always leads with the same creature walks to the healer after almost every wild battle. Rotating the healthiest creature to the front fixes it, and the mentor now says so when the player first steps onto Route A.
 
 **To try in Studio:** play Greenwood from the start and note the time when you win the Acorn Badge (the plan says within an hour), and whether the rival at the gate feels fair. Then say whether levelling feels too quick, too slow or right.
 
