@@ -100,6 +100,17 @@ BreedConfig.COOLDOWN = {
 	Diamond = { 48 * HOUR, 72 * HOUR },
 	Cosmic = {},
 } :: Types.ByRarity<{ number }>
+-- Wild-caught creatures of these tiers get a serial number among their kind ("Amber Duneskit
+-- No. 12"). Bred ones do not: a serial marks a find, not a product.
+BreedConfig.SERIAL_RARITIES = {
+	Common = false,
+	Uncommon = false,
+	Gem = true,
+	Ruby = true,
+	Diamond = true,
+	Cosmic = false,
+} :: Types.ByRarity<boolean>
+
 -- A captured giant can breed, but each giant parent needs this much Giant Candy of its own kind
 -- in place of ordinary candy (about five days of daily rematches for one breed).
 BreedConfig.GIANT_CANDY_COST = 10

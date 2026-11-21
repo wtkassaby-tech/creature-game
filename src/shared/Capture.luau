@@ -168,7 +168,9 @@ function Capture.finish(
 
 	if judgement.verdict == "Hit" then
 		local granted = Grants.capture(profile, creature)
-		if granted.outcome == "Granted" then
+		-- "Waiting" is a gem-tier find whose serial number is being fetched: it is caught, and
+		-- joins the stable with its number a moment later.
+		if granted.outcome == "Granted" or granted.outcome == "Waiting" then
 			return {
 				outcome = "Caught",
 				judgement = judgement,

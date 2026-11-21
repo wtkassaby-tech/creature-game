@@ -205,15 +205,7 @@ end
 -- Writes a fetched serial number onto the waiting capture (saved with the profile). Returns
 -- false, changing nothing, if the capture is not waiting or already has a number.
 function GiantCapture.keepSerial(profile: Profile.Profile, giantId: string, serial: number): boolean
-	local waitingEntry = entry(profile, giantId)
-	if not waitingEntry or waitingEntry.serial ~= nil then
-		return false
-	end
-	if typeof(serial) ~= "number" or serial % 1 ~= 0 or serial < 1 then
-		return false
-	end
-	waitingEntry.serial = serial
-	return true
+	return Grants.keepSerial(profile, "Giant", giantId, serial)
 end
 
 -- Finishes a waiting capture that has its serial number (step 3): the giant is added, marked

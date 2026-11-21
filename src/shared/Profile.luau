@@ -42,7 +42,9 @@ export type Daily = {
 -- stable, or a captured giant waiting for its serial number. Saved, so it survives leaving.
 -- A captured giant's entry also keeps its serial number once fetched (`serial`), so the number
 -- is asked for once and never wasted if the giant then has to wait for room.
-export type PendingGrant = { source: string, ref: string, serial: number? }
+-- A wild gem-tier catch waits the same way, and its entry holds the creature itself until then.
+export type PendingGrant =
+	{ source: string, ref: string, serial: number?, creature: Types.Creature? }
 
 export type Settings = {
 	battleSpeed: number,
@@ -450,6 +452,11 @@ local function validateUnsafe(profile: Profile): { string }
 			pending.serial ~= nil and (not isWholeNumber(pending.serial) or pending.serial < 1)
 		then
 			table.insert(problems, `pending grant {index} has a bad serial number`)
+		elseif
+			pending.source == "Gem"
+			and (typeof(pending.creature) ~= "table" or pending.creature.id ~= pending.ref)
+		then
+			table.insert(problems, `pending grant {index} is a gem catch with no creature`)
 		elseif pending.source == "Giant" and profile.Story.giantsCaptured[pending.ref] then
 			table.insert(
 				problems,

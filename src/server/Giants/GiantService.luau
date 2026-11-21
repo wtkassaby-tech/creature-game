@@ -49,8 +49,7 @@ export type Hooks = {
 		battleId: number,
 		onDone: (claims: { number }, arrivals: { number }, throwId: number) -> ()
 	) -> boolean,
-	nextSerial: (kind: string) -> number?, -- waits on the data store
-	registerSerial: (kind: string, serial: number, userId: number) -> (),
+	finishSerials: (player: Player) -> (), -- finish anything waiting for a serial number
 	notify: (player: Player, text: string) -> (),
 	save: (player: Player) -> (),
 	log: (event: string, fields: { [string]: any }) -> (),
@@ -63,8 +62,6 @@ local sessions: { [Player]: GiantSession.Session } = {}
 type Offer = { giant: GiantBattle.GiantDef, battleId: number, expiresAt: number }
 local offers: { [Player]: Offer } = {}
 local throwing: { [Player]: boolean } = {} -- a capture throw is in the air
-local fetching: { [Player]: { [string]: boolean } } = {} -- serial numbers being fetched
-local toldNoRoom: { [Player]: boolean } = {}
 local hooks: Hooks
 local lastStart: { [Player]: number } = {}
 local lastAction: { [Player]: number } = {}
@@ -84,99 +81,6 @@ end
 -- Nothing else (a battle, long grass, a team change) may start in that time.
 function GiantService.active(player: Player): boolean
 	return sessions[player] ~= nil or offerFor(player) ~= nil or throwing[player] == true
-end
-
-local function serialKind(giantId: string): string
-	return `Giant:{giantId}`
-end
-
--- Finishes every capture of this player's that hit but is still waiting. Safe to call at any
--- time and more than once; called when a capture hits, when the player joins, and whenever
--- room may have appeared in the stable.
---
--- A serial number is fetched once per capture and written onto the saved waiting entry, so a
--- full stable or a retry can never use numbers up. Only then is the giant added.
-function GiantService.finishWaiting(player: Player)
-	local profile = hooks.getData(player)
-	if not profile then
-		return
-	end
-	if GiantCapture.tidy(profile) > 0 then
-		hooks.changed(player)
-	end
-	for _, giantId in GiantCapture.waitingGiants(profile) do
-		local giant = Giants[giantId]
-		if giant then
-			if GiantCapture.needsSerial(profile, giant) then
-				local mine = fetching[player]
-				if not mine then
-					mine = {}
-					fetching[player] = mine
-				end
-				if not mine[giantId] then
-					mine[giantId] = true
-					task.spawn(function()
-						local serial = hooks.nextSerial(serialKind(giantId)) -- waits
-						local still = fetching[player]
-						if still then
-							still[giantId] = nil
-						end
-						-- The wait is over: look at the player's record afresh.
-						local now = hooks.getData(player)
-						if
-							serial
-							and now
-							and player.Parent == Players
-							and GiantCapture.keepSerial(now, giantId, serial)
-						then
-							hooks.save(player) -- the number is theirs from here on
-							GiantService.finishWaiting(player)
-						else
-							-- The player left or the store failed: nothing was written. A
-							-- fetched number is skipped for ever; the capture still waits.
-							hooks.log(
-								"GiantSerialUnused",
-								{ player = player.UserId, giant = giantId, serial = serial }
-							)
-						end
-					end)
-				end
-			else
-				local grant, creature = GiantCapture.complete(
-					profile,
-					giant,
-					HttpService:GenerateGUID(false),
-					random:NextInteger(1, 2147483646)
-				)
-				if grant.outcome == "Granted" and creature then
-					toldNoRoom[player] = nil
-					hooks.changed(player)
-					hooks.save(player)
-					hooks.notify(player, `{giant.name} No. {creature.serial} is yours!`)
-					hooks.log("GiantCaptured", {
-						player = player.UserId,
-						giant = giantId,
-						serial = creature.serial,
-						creature = creature.id,
-					})
-					if creature.serial then
-						task.spawn(
-							hooks.registerSerial,
-							serialKind(giantId),
-							creature.serial,
-							player.UserId
-						)
-					end
-				elseif grant.outcome == "NoRoom" and not toldNoRoom[player] then
-					toldNoRoom[player] = true -- say it once, not every few seconds
-					hooks.notify(
-						player,
-						`Make room in your stable: {giant.name} is waiting to join you`
-					)
-				end
-			end
-		end
-	end
 end
 
 -- True while the creature is in this player's giant fight; a lock for breeding and releasing.
@@ -481,7 +385,7 @@ function GiantService.start(given: Hooks): () -> ()
 				if hit then
 					hooks.changed(player)
 					hooks.save(player) -- the waiting capture is worth saving at once
-					GiantService.finishWaiting(player)
+					hooks.finishSerials(player)
 				end
 			end
 		)
@@ -494,8 +398,6 @@ function GiantService.start(given: Hooks): () -> ()
 	local leaving = Players.PlayerRemoving:Connect(function(player)
 		offers[player] = nil
 		throwing[player] = nil
-		fetching[player] = nil
-		toldNoRoom[player] = nil
 		sessions[player] = nil
 		lastStart[player] = nil
 		lastAction[player] = nil

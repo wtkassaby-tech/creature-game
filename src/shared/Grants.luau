@@ -8,6 +8,7 @@
 --   * One-time gifts are never lost: with no room they wait in the saved Pending list.
 --   * A giant is captured in two steps around the wait for its serial number (pack 2 section 5).
 
+local BreedConfig = require("../config/BreedConfig")
 local Economy = require("./Economy")
 local Profile = require("./Profile")
 local Species = require("../content/Species")
@@ -16,7 +17,7 @@ local Types = require("./Types")
 type Profile = Profile.Profile
 type Creature = Types.Creature
 
-export type Source = "Starter" | "MentorEgg" | "Quest" | "Token" | "Giant" | "Wild"
+export type Source = "Starter" | "MentorEgg" | "Quest" | "Token" | "Giant" | "Wild" | "Gem"
 export type Outcome = "Granted" | "Waiting" | "AlreadyGranted" | "NoRoom" | "Refused"
 export type Grant = { outcome: Outcome, reason: string?, candy: number?, element: Types.Element? }
 
@@ -164,16 +165,97 @@ function Grants.capture(profile: Profile, creature: Creature): Grant
 	if profile.Creatures[creature.id] then
 		return { outcome = "Refused", reason = "That creature is already yours" }
 	end
+	if isWaiting(profile, "Gem", creature.id) then
+		return { outcome = "Refused", reason = "That creature is already yours" }
+	end
 	local element: Types.Element = Grants.element(creature)
 	local prior = profile.Daily.catches[element]
 	local candy = Economy.catchCandy(creature.rarity, prior)
 	profile.Daily.catches[element] = prior + 1
 	profile.Candy.typed[element] += candy
 	-- A copy, so the battle's (or a spawner's) table can never be shared with the saved record.
-	profile.Creatures[creature.id] = deepCopy(creature)
-	Grants.recordOwned(profile, creature)
+	local caught = deepCopy(creature)
+	if Grants.needsSerial(caught) then
+		-- A gem-tier find gets a serial number, which takes a moment to fetch. Until then the
+		-- catch waits in the saved list, creature and all; it joins the stable with its number
+		-- (Grants.finishGem). The candy is paid now: the catch has happened.
+		table.insert(profile.Pending, { source = "Gem", ref = caught.id, creature = caught })
+		local waiting: Grant = { outcome = "Waiting", candy = candy, element = element }
+		return waiting
+	end
+	profile.Creatures[caught.id] = caught
+	Grants.recordOwned(profile, caught)
 	local granted: Grant = { outcome = "Granted", candy = candy, element = element }
 	return granted
+end
+
+-- True for a wild catch that must carry a serial number: a gem tier, not a giant, with none yet.
+function Grants.needsSerial(creature: Creature): boolean
+	return BreedConfig.SERIAL_RARITIES[creature.rarity]
+		and not creature.isGiant
+		and creature.serial == nil
+end
+
+-- The kind a serial number counts within: each giant, and each tier of each species.
+function Grants.serialKind(source: string, ref: string, creature: Creature?): string
+	if source == "Gem" and creature then
+		return `Gem:{creature.rarity}:{creature.parts.Torso.species}`
+	end
+	return `{source}:{ref}`
+end
+
+-- Waiting catches and captures (gem finds, giants) that have no serial number yet.
+function Grants.awaitingSerial(profile: Profile): { Profile.PendingGrant }
+	local list: { Profile.PendingGrant } = {}
+	for _, pending in profile.Pending do
+		if (pending.source == "Gem" or pending.source == "Giant") and pending.serial == nil then
+			table.insert(list, pending)
+		end
+	end
+	return list
+end
+
+-- Writes a fetched serial number onto a waiting entry (saved with the profile), once. Returns
+-- false, changing nothing, if nothing of that kind is waiting or it already has a number.
+function Grants.keepSerial(profile: Profile, source: string, ref: string, serial: number): boolean
+	if typeof(serial) ~= "number" or serial % 1 ~= 0 or serial < 1 then
+		return false
+	end
+	for _, pending in profile.Pending do
+		if pending.source == source and pending.ref == ref then
+			if pending.serial ~= nil then
+				return false
+			end
+			pending.serial = serial
+			return true
+		end
+	end
+	return false
+end
+
+-- A waiting gem catch whose number has arrived joins the stable, carrying it. With a full
+-- stable it keeps waiting, number and all ("NoRoom").
+function Grants.finishGem(profile: Profile, creatureId: string): Grant
+	for index, pending in profile.Pending do
+		if pending.source == "Gem" and pending.ref == creatureId then
+			local creature = pending.creature
+			if not creature or pending.serial == nil then
+				return { outcome = "Refused", reason = "That catch has no number yet" }
+			end
+			if Grants.room(profile) < 1 then
+				return {
+					outcome = "NoRoom",
+					reason = "Your stable is full: it waits until there is room",
+				}
+			end
+			creature.serial = pending.serial
+			table.remove(profile.Pending, index)
+			profile.Creatures[creature.id] = creature
+			Grants.recordOwned(profile, creature)
+			return { outcome = "Granted" }
+		end
+	end
+	return { outcome = "Refused", reason = "No such catch is waiting" }
 end
 
 -- Giant step 1, on the winning lasso hit and with no pause: the capture is written into the

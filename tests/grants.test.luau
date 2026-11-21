@@ -260,6 +260,68 @@ do
 	)
 end
 
+print("\n== Gem-tier finds and their serial numbers ==")
+do
+	local p = fresh(100)
+	Grants.rollDay(p, 86400 * 200)
+	local gem = creature("Duneskit", "Gem")
+	check(
+		"a gem-tier wild creature needs a serial number",
+		Grants.needsSerial(gem) and not Grants.needsSerial(creature())
+	)
+	local before = p.Candy.typed.Sand
+	local grant = Grants.capture(p, gem)
+	check(
+		"catching one puts it in the saved waiting list, not the stable",
+		grant.outcome == "Waiting" and p.Creatures[gem.id] == nil and #p.Pending == 1
+	)
+	check("the candy for the catch is paid at once", p.Candy.typed.Sand > before)
+	check(
+		"the waiting entry holds a copy of the creature",
+		p.Pending[1].creature ~= nil and p.Pending[1].creature ~= gem and p.Pending[1].ref == gem.id
+	)
+	check(
+		"the same creature cannot be caught twice while it waits",
+		Grants.capture(p, gem).outcome == "Refused" and #p.Pending == 1
+	)
+	check("it is listed as waiting for its number", #Grants.awaitingSerial(p) == 1)
+	check(
+		"its number counts within its tier and species",
+		Grants.serialKind("Gem", gem.id, gem) == "Gem:Gem:Duneskit"
+	)
+	check("without a number it cannot join", Grants.finishGem(p, gem.id).outcome == "Refused")
+	check(
+		"a bad number is refused",
+		not Grants.keepSerial(p, "Gem", gem.id, 0) and not Grants.keepSerial(p, "Gem", "nobody", 4)
+	)
+	check(
+		"the number is kept on the waiting entry, once",
+		Grants.keepSerial(p, "Gem", gem.id, 12)
+			and not Grants.keepSerial(p, "Gem", gem.id, 13)
+			and #Grants.awaitingSerial(p) == 0
+	)
+	check(
+		"the record is sound while it waits",
+		#Profile.validate(p) == 0,
+		table.concat(Profile.validate(p), "; ")
+	)
+	p.StableCapacity = 0
+	check(
+		"with a full stable it keeps waiting, number and all",
+		Grants.finishGem(p, gem.id).outcome == "NoRoom" and p.Pending[1].serial == 12
+	)
+	p.StableCapacity = 100
+	check(
+		"with room it joins the stable carrying its number",
+		Grants.finishGem(p, gem.id).outcome == "Granted"
+			and p.Creatures[gem.id].serial == 12
+			and #p.Pending == 0
+	)
+	check("it is in the Index", p.Index.owned.Duneskit == true)
+	check("it cannot be finished twice", Grants.finishGem(p, gem.id).outcome == "Refused")
+	check("the record is sound", #Profile.validate(p) == 0, table.concat(Profile.validate(p), "; "))
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("grant checks failed")

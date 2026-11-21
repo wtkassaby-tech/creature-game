@@ -90,7 +90,7 @@ function World.pickWild(
 		chosen.species,
 		id or `wild_{seed}`,
 		level,
-		Species[chosen.species].baseRarity,
+		chosen.rarity or Species[chosen.species].baseRarity,
 		colour,
 		rng
 	)

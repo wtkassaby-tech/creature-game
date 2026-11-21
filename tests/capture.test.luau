@@ -209,6 +209,25 @@ do
 	}) == nil)
 end
 
+print("\n== Catching a gem-tier creature ==")
+do
+	local profile, session = setup(8, "Gem")
+	local throw = assert(Capture.begin(input(profile, session, "Braided")), "throw should start")
+	local taps = perfectTaps(throw)
+	local result =
+		assert(Capture.finish(profile, session, throw, taps, taps, 0), "throw should be judged")
+	check(
+		"a hit catches it and ends the battle",
+		result.outcome == "Caught" and result.turn.finished
+	)
+	check(
+		"it waits for its serial number before joining the stable",
+		profile.Creatures.wild == nil
+			and #profile.Pending == 1
+			and profile.Pending[1].source == "Gem"
+	)
+end
+
 print("\n== A run during the throw ==")
 do
 	local profile, session = setup(6)

@@ -28,6 +28,7 @@ local DataService = require(script.Parent.Data.DataService)
 local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
 local QuestService = require(script.Parent.Quests.QuestService)
+local SerialGrants = require(script.Parent.Serials.SerialGrants)
 local SerialService = require(script.Parent.Serials.SerialService)
 local StateSync = require(script.Parent.State.StateSync)
 local StoryService = require(script.Parent.Story.StoryService)
@@ -65,7 +66,7 @@ end
 local function claimWaiting(player: Player, profile: Profile.Profile)
 	local handed = Grants.claimPending(profile, rebuildGift)
 	local eggs = StoryProgress.claimEggs(profile, newId, os.time(), seed())
-	GiantService.finishWaiting(player) -- a captured giant waiting for its number or for room
+	SerialGrants.finish(player) -- a giant or a gem find waiting for its number or for room
 	if handed + eggs > 0 then
 		StateSync.changed(player)
 		log("PendingClaimed", { player = player.UserId, creatures = handed, eggs = eggs })
@@ -209,8 +210,7 @@ GiantService.start({
 	end,
 	roundTrip = CaptureService.roundTrip,
 	playThrow = CaptureService.play,
-	nextSerial = SerialService.next,
-	registerSerial = SerialService.register,
+	finishSerials = SerialGrants.finish,
 	notify = function(player, text)
 		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })
 	end,
@@ -225,8 +225,20 @@ GiantService.start({
 })
 
 SerialService.start(log)
+SerialGrants.start({
+	getData = DataService.get,
+	changed = StateSync.changed,
+	notify = function(player, text)
+		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })
+	end,
+	save = DataService.saveSoon,
+	log = log,
+})
 CaptureService.setAlsoPing(GiantService.active) -- a giant capture needs a fresh reading too
-CaptureService.start(DataService.get, log, StateSync.changed)
+CaptureService.start(DataService.get, log, function(player)
+	StateSync.changed(player)
+	SerialGrants.finish(player) -- a gem-tier catch waits for its serial number
+end)
 StateSync.start(DataService.get)
 
 InventoryService.start({

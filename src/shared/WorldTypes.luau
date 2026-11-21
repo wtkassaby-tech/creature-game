@@ -68,6 +68,9 @@ export type SpawnEntry = {
 	area: string, -- an Area id on this route
 	spot: string?, -- a RustleSpot id, or nil
 	colours: { string }, -- the ordinary colours (names from BreedConfig.COLOURS)
+	-- The tier of creature this row gives; left out, it is the species' usual tier. A gem-tier
+	-- row is a rare find: caught, it gets a serial number.
+	rarity: Types.Rarity?,
 	rareColourChance: number, -- chance of one of the rare colours instead
 }
 
