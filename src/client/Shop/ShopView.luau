@@ -53,6 +53,41 @@ function ShopView.start(playerGui: Instance): View
 				child:Destroy()
 			end
 		end
+		-- More stable room, while there is any left to buy (the server knows the real price).
+		local bought = math.max(
+			0,
+			(state.StableCapacity - EconomyConfig.STABLE_FREE_SLOTS)
+				// EconomyConfig.STABLE_EXPANSION_SLOTS
+		)
+		local roomPrice = Economy.stableExpansionPrice(bought)
+		if roomPrice then
+			local row =
+				Kit.panel(list, UDim2.new(1, -8, 0, 58), UDim2.new(), Kit.COLOURS.panelLight)
+			Kit.label(
+				row,
+				`Stable room +{EconomyConfig.STABLE_EXPANSION_SLOTS}  (now {state.StableCapacity})`,
+				UDim2.new(0.62, 0, 0, 26),
+				UDim2.new(0, 10, 0, 4)
+			)
+			local about = Kit.label(
+				row,
+				"Room for more creatures, for good",
+				UDim2.new(0.62, 0, 0, 20),
+				UDim2.new(0, 10, 0, 32),
+				14
+			)
+			about.TextColor3 = Kit.COLOURS.textDim
+			local buy = Kit.button(
+				row,
+				`{roomPrice} coins`,
+				if state.Coins >= roomPrice then Kit.COLOURS.good else Kit.COLOURS.panel,
+				function()
+					Net.ExpandStable.Fire(true)
+				end
+			)
+			buy.Size = UDim2.new(0.32, 0, 0, 42)
+			buy.Position = UDim2.new(0.66, 0, 0, 8)
+		end
 		local reached = math.max(1, state.BiomeReached)
 		for _, item: EconomyConfig.ItemId in EconomyConfig.ITEM_IDS do
 			if Economy.itemAvailable(item, reached) then

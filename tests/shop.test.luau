@@ -100,6 +100,48 @@ do
 	check("every price in every biome is a whole number of coins", whole)
 end
 
+print("\n== Stable room ==")
+do
+	local profile = Profile.template()
+	local start = profile.StableCapacity
+	profile.Coins = EconomyConfig.STABLE_EXPANSION_COINS[1] - 1
+	check(
+		"too few coins buys nothing",
+		Shop.expandStable(profile, true) == nil and profile.StableCapacity == start
+	)
+	profile.Coins = 10000000
+	check("it must be bought at the shop", Shop.expandStable(profile, false) == nil)
+	local paid = Shop.expandStable(profile, true)
+	check(
+		"the first expansion costs its listed price and adds room",
+		paid == EconomyConfig.STABLE_EXPANSION_COINS[1]
+			and profile.StableCapacity == start + EconomyConfig.STABLE_EXPANSION_SLOTS
+	)
+	local rising = true
+	local last = paid or 0
+	for _ = 2, #EconomyConfig.STABLE_EXPANSION_COINS do
+		local price = Shop.expandStable(profile, true)
+		rising = rising and price ~= nil and price > last
+		last = price or last
+	end
+	check("each expansion costs more than the one before", rising)
+	check(
+		"when every expansion is bought there are no more",
+		Shop.expandStable(profile, true) == nil and Shop.nextStablePrice(profile) == nil
+	)
+	check(
+		"the stable ends at its full size",
+		profile.StableCapacity
+			== start
+				+ #EconomyConfig.STABLE_EXPANSION_COINS * EconomyConfig.STABLE_EXPANSION_SLOTS
+	)
+	check(
+		"the record is sound",
+		#Profile.validate(profile) == 0,
+		table.concat(Profile.validate(profile), "; ")
+	)
+end
+
 print("\n== Items in a battle ==")
 do
 	local function setup(): (Profile.Profile, BattleSession.Session)

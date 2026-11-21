@@ -68,6 +68,35 @@ function Shop.buy(
 	return { item = id, count = count, coins = coins }, nil
 end
 
+-- How many coin-bought stable expansions the player has, from their stable's size. (Stable
+-- room bought any other way will need its own count before it exists.)
+function Shop.stableExpansions(profile: Profile.Profile): number
+	local extra = profile.StableCapacity - EconomyConfig.STABLE_FREE_SLOTS
+	return math.max(0, math.floor(extra / EconomyConfig.STABLE_EXPANSION_SLOTS))
+end
+
+-- The price of the next stable expansion, or nil when every one has been bought.
+function Shop.nextStablePrice(profile: Profile.Profile): number?
+	return Economy.stableExpansionPrice(Shop.stableExpansions(profile))
+end
+
+-- Buys the next stable expansion with coins: more room, for good. A long-term coin sink.
+function Shop.expandStable(profile: Profile.Profile, atShop: boolean): (number?, string?)
+	if not atShop then
+		return nil, "You are too far away"
+	end
+	local price = Shop.nextStablePrice(profile)
+	if not price then
+		return nil, "Your stable cannot grow any more"
+	end
+	if profile.Coins < price then
+		return nil, "You do not have enough coins"
+	end
+	profile.Coins -= price
+	profile.StableCapacity += EconomyConfig.STABLE_EXPANSION_SLOTS
+	return price, nil
+end
+
 -- Uses a tonic or a Rally Root in a battle. The item is taken only if it was really used.
 function Shop.useInBattle(
 	profile: Profile.Profile,

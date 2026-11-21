@@ -144,6 +144,35 @@ function InventoryService.start(hooks: Hooks)
 		end
 	end)
 
+	-- More stable room, bought with coins at a shop or stall.
+	local lastExpand: { [Player]: number } = {}
+	Net.ExpandStable.On(function(player)
+		local profile = hooks.getData(player)
+		if not profile or tooFast(lastExpand, player) then
+			return
+		end
+		local atShop = WorldService.buildingAt(player, "Shop", WorldConfig.TALK_RADIUS) ~= nil
+		for _, biome in WorldService.biomes() do
+			atShop = atShop
+				or WorldService.isNear(player, Layout.stallId(biome), WorldConfig.TALK_RADIUS)
+		end
+		local price: number?, problem: string? = nil, "The shop is not open to you yet"
+		if hooks.isUnlocked(profile, "shop") then
+			price, problem = Shop.expandStable(profile, atShop)
+		end
+		if price then
+			hooks.changed(player)
+			hooks.claimWaiting(player, profile) -- something may have been waiting for room
+			hooks.notify(player, `Your stable now holds {profile.StableCapacity} creatures`)
+			hooks.log(
+				"StableExpanded",
+				{ player = player.UserId, coins = price, capacity = profile.StableCapacity }
+			)
+		else
+			hooks.notify(player, problem or "That cannot be bought")
+		end
+	end)
+
 	-- The healer in town: free, and mends every creature the player owns.
 	local lastHeal: { [Player]: number } = {}
 	Net.HealAtHealer.On(function(player)
@@ -211,6 +240,7 @@ function InventoryService.start(hooks: Hooks)
 	Players.PlayerRemoving:Connect(function(player)
 		lastTeam[player] = nil
 		lastHeal[player] = nil
+		lastExpand[player] = nil
 		lastTreat[player] = nil
 		lastItem[player] = nil
 		lastBuy[player] = nil

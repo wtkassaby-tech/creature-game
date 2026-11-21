@@ -644,3 +644,12 @@ event Travel {
 	Call: SingleAsync,
 	Data: struct { BiomeNumber: u8(1..11) },
 }
+
+-- Device -> server: buy the next stable expansion with coins, at a shop. The answer comes as a
+-- Notice and the new state.
+event ExpandStable {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: boolean,
+}
