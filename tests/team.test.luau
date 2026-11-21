@@ -78,6 +78,33 @@ check(
 check("or while a creature being added is in a battle", not Team.set(profile, { "c8" }, function(id)
 	return id == "c8"
 end))
+-- The "biome reached" rule.
+do
+	local far = Breeding.wild("Mossmitt", "far", 5, "Common", "Moss", Rng.new(99))
+	far.originBiome = 2
+	profile.Creatures[far.id] = far
+	local before = table.clone(profile.Team)
+	local ok, problem = Team.set(profile, { "far" }, free)
+	check(
+		"a creature from a biome the player has not reached cannot join the team",
+		not ok and not Team.mayBattle(profile, far) and #profile.Team == #before,
+		problem
+	)
+	profile.Story.biomeReached = 2
+	check(
+		"once the player has reached its biome it can",
+		Team.mayBattle(profile, far) and (Team.set(profile, { "far", "c1" }, free))
+	)
+	check(
+		"a creature from an earlier biome always can",
+		Team.mayBattle(profile, profile.Creatures.c1)
+	)
+	-- Put things back for the checks below.
+	profile.Team = before
+	profile.Creatures[far.id] = nil
+	profile.Story.biomeReached = 1
+end
+
 check(
 	"the record is sound",
 	#Profile.validate(profile) == 0,

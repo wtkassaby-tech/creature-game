@@ -21,6 +21,7 @@ local StoryProgress = require("../src/shared/StoryProgress")
 local StoryTriggers = require("../src/shared/StoryTriggers")
 local Storyline = require("../src/content/Storyline")
 local Tamers = require("../src/content/Tamers")
+local Team = require("../src/shared/Team")
 local Trainers = require("../src/shared/Trainers")
 local TypeChart = require("../src/shared/TypeChart")
 local Types = require("../src/shared/Types")
@@ -695,6 +696,11 @@ do
 	)
 	check("the robot caught creatures along the way", first.bot.catches >= 1, `{first.bot.catches}`)
 	check("coins never go below zero", first.bot.profile.Coins >= 0, `{first.bot.profile.Coins}`)
+	local allMayBattle = true
+	for _, creature in first.bot.profile.Creatures do
+		allMayBattle = allMayBattle and Team.mayBattle(first.bot.profile, creature)
+	end
+	check("every creature the robot was given or caught may battle for it", allMayBattle)
 	check(
 		"the save is sound at the end",
 		#Profile.validate(first.bot.profile) == 0,

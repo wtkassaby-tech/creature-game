@@ -3,12 +3,21 @@
 -- Pure rules. The device sends the whole new team as a list of creature ids.
 
 local Profile = require("./Profile")
+local Types = require("./Types")
 
 local Team = {}
 
+-- The "biome reached" rule: a creature can battle only if it comes from a biome the player has
+-- reached (a bred child counts as its later parent's biome). Nothing in the game hands a player
+-- a creature from further on today; the rule is here so that trading, when it opens, cannot be
+-- used to carry a new player through the early biomes with a late-biome creature.
+function Team.mayBattle(profile: Profile.Profile, creature: Types.Creature): boolean
+	return creature.originBiome <= profile.Story.biomeReached
+end
+
 -- Replaces the team. `ids` comes from the device. Every id must be a different creature the
--- player owns, the team must hold at least one and no more than their badges allow, and nothing
--- may change while any of the creatures involved is in a battle.
+-- player owns and may battle with, the team must hold at least one and no more than their
+-- badges allow, and nothing may change while any of the creatures involved is in a battle.
 function Team.set(
 	profile: Profile.Profile,
 	ids: unknown,
@@ -34,8 +43,12 @@ function Team.set(
 		if seen[id] then
 			return false, "A creature can only be on the team once"
 		end
-		if profile.Creatures[id] == nil then
+		local creature = profile.Creatures[id]
+		if creature == nil then
 			return false, "You do not own that creature"
+		end
+		if not Team.mayBattle(profile, creature) then
+			return false, "That creature comes from a place you have not reached yet"
 		end
 		seen[id] = true
 		list[index] = id
