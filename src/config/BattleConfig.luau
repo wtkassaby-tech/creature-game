@@ -30,6 +30,12 @@ BattleConfig.POISON_SHARE = 1 / 12
 BattleConfig.POISON_TURNS = 4
 BattleConfig.POISON_IMMUNE_ELEMENT = "Toxic"
 
+-- The most things that can happen in one turn, which is also the most the network message for
+-- a turn can carry (`Events` in src/net/Net.blink; tests/battlesession.test checks they agree).
+-- The real worst case is 16: two switches, two moves, two follow-ups, two poisonings, two
+-- poison ticks, two recoveries, two faints, an item and a creature holding on.
+BattleConfig.MAX_EVENTS_A_TURN = 24
+
 -- Turn order and what Speed is worth.
 -- Strict "faster always goes first" makes a 1% Speed edge decide a mirror match, and makes Speed
 -- worthless beyond that first strike (research/market/09). Two rules replace it:

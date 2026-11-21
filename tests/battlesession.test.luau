@@ -156,6 +156,31 @@ do
 	check("nothing more can be done after running", BattleSession.act(session, 1, "Move", 1) == nil)
 end
 
+print("\n== The network message for a turn ==")
+do
+	-- The message's list of events has a fixed room (src/net/Net.blink). It must hold the
+	-- busiest turn the rules allow, or that turn could not be sent at all.
+	-- Lune's own file library: asked for through a cast, because the type checker (which
+	-- checks this file as Roblox code) does not know it.
+	local fs = (require :: any)("@lune/fs")
+	local blink: string = fs.readFile("src/net/Net.blink")
+	local room = tonumber(string.match(blink, "Events: BattleEvent%[0%.%.(%d+)%]"))
+	local BattleConfig = require("../src/config/BattleConfig")
+	check(
+		"the turn message has room for the configured number of events",
+		room ~= nil and room >= BattleConfig.MAX_EVENTS_A_TURN,
+		`{room} in the message, {BattleConfig.MAX_EVENTS_A_TURN} in the config`
+	)
+	-- Two of each thing that can happen to both sides, plus an item and a creature holding on.
+	local kinds = { "Switch", "Move", "FollowUp", "Poisoned", "Poison", "Cured", "Faint" }
+	local worst = #kinds * 2 + 2
+	check(
+		"which is more than the busiest possible turn",
+		BattleConfig.MAX_EVENTS_A_TURN >= worst,
+		`busiest turn {worst}`
+	)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("battle session checks failed")

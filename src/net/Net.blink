@@ -96,7 +96,7 @@ event BattleTurn {
 	Data: struct {
 		BattleId: u32,
 		Turn: u16,
-		Events: BattleEvent[0..12],
+		Events: BattleEvent[0..24],
 		YourActive: u8(1..6),
 		TheirActive: u8(1..6),
 		-- Tempo meters, 0..100.

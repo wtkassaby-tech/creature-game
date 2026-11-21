@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BattleAi = require(ReplicatedStorage.shared.BattleAi)
+local BattleConfig = require(ReplicatedStorage.config.BattleConfig)
 local BattleSession = require(ReplicatedStorage.shared.BattleSession)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Types = require(ReplicatedStorage.shared.Types)
@@ -110,7 +111,10 @@ function BattleService.publishTurn(
 	turn: BattleSession.TurnResult
 )
 	local events = {}
-	for _, event in turn.events do
+	for index, event in turn.events do
+		if index > BattleConfig.MAX_EVENTS_A_TURN then
+			break -- more than the message can carry; cannot happen under the rules as written
+		end
 		table.insert(events, {
 			Side = event.side,
 			Kind = event.kind,
