@@ -2,6 +2,22 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: lasting damage, healing, long grass, team choice (commit ec0a7a0)
+
+Reviewer: a separate read-only agent. No must-fix findings. Found sound: health values stay valid; damage is written back every turn, so leaving never heals; nothing but the healer, a tonic or waking at the healer resets health; team changes are locked during every kind of battle; the story gates cannot be bypassed.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Waking at the healer was a cheap trip home and a full heal: put one nearly fainted creature on the team, lose on purpose, and the whole stable was mended | Should fix | Waking at the healer mends only the team that fought. A team with nobody able to fight is refused while the player owns a creature that can. Whether waking at the healer should also cost coins is a question for Ayrton. Tests added |
+| 2 | A grass battle that could not start (a fainted team) left the creature standing in the world, so walking in grass with a fainted team revealed creature after creature | Should fix | Grass does nothing unless wild battles are open and someone on the team can fight; a grass battle that fails to start removes its creature |
+| 3 | After a draw the knocked-out wild creature stayed in the world and could not be fought | Should fix | A wild creature with no health left is gone. Test added |
+| 4 | The first look after a battle compared against the position from before it, so standing still could count as walking | Should fix | The walking check starts fresh after any time out of the world |
+| 5 | Running gives a free moment to use tonics before re-engaging a hurt wild creature | Note | Intended: it is the "weaken it, then catch it" play, and missed throws and fleeing are still counted |
+| 6 | A giant turn that errored skipped the faint check | Note | It runs there too |
+| 7 | Grass ignored the story's "wild battles" gate; the healer ignores its gate | Note | Grass is gated. The healer is left open on purpose: free healing is harmless and a new player may need it after the first battle |
+| 8 | A server-started battle relied on its caller to rule out a giant fight | Note | The battle service checks it itself |
+| 9 | Waking at the healer uses the current biome's healer | Note | Marked in the code for when more biomes exist |
+
 ## 21 November 2026: giant fights (commit f094181)
 
 Reviewer: a separate read-only agent. Found sound: a fight cannot pay twice; the horn is used up only after every check and never refunded; battles of different kinds cannot overlap; every choice is checked and items are capped at five; creature locks cover giant fights.

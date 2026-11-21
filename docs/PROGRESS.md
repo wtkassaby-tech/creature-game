@@ -2,6 +2,17 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (after Ayrton's answers): lasting damage, the healer, long grass
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Damage lasts between battles; the free healer; waking at the healer when the team faints; tonics between fights | Tested (28), reviewed | `src/shared/Health.luau`, `src/shared/BattleSession.luau` |
+| Long grass in every stretch of route (battles you did not choose), beside the creatures you can see | Tested, reviewed | `src/shared/Encounters.luau`, `src/server/World/` |
+| Seventh independent exploit review | Done: no must-fix; four should-fix, all fixed | `docs/REVIEWS.md` |
+| Next: capturing a giant (option A, breedable, Giant Candy) | Not started | `docs/plans/04_GIANT_CAPTURE.md` |
+
+**To try in Studio:** walk through a "Long grass" patch beside a route and a battle should start by itself. Get hurt, then check the creatures screen shows the lost health and a Tonic button; talk to the healer at Brightwater House to mend everyone; lose a battle with your whole team and you should wake at the healer.
+
 ## 21 November 2026 (latest): giants, the shop, real screens
 
 **In one line:** Greenwood can be played from the first minute to the badge, with wild creatures, tamers, the rival, quests, the shop, breeding and the giant fight, on real (first-cut) screens. 958 checks pass. **None of it has run in Roblox Studio yet.**

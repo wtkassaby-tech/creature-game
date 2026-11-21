@@ -49,6 +49,20 @@ function Health.healAll(profile: Profile.Profile): number
 	return mended
 end
 
+-- Waking at the healer after the whole team fainted: only the team that fought is mended.
+-- Creatures left in the stable stay as they were, so a lost battle is not a free heal for all.
+function Health.healTeam(profile: Profile.Profile): number
+	local mended = 0
+	for _, id in profile.Team do
+		local creature = profile.Creatures[id]
+		if creature and creature.hurt ~= nil then
+			creature.hurt = nil
+			mended += 1
+		end
+	end
+	return mended
+end
+
 -- Uses a tonic or a Rally Root on a creature outside a battle. `item` and `creatureId` come from
 -- the device. The item is taken only if it did something. Returns the creature's new share of
 -- health, or nil and a reason.

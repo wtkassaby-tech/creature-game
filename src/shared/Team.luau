@@ -56,6 +56,18 @@ function Team.set(
 			return false, "You cannot change your team during a battle"
 		end
 	end
+	-- A team nobody on which can fight is refused while the player owns a creature that can:
+	-- fielding a fainted team to lose on purpose is not a way to be carried home and healed.
+	local teamStanding, anyStanding = false, false
+	for _, id in list do
+		teamStanding = teamStanding or (profile.Creatures[id].hurt or 0) < 1
+	end
+	for _, creature in profile.Creatures do
+		anyStanding = anyStanding or (creature.hurt or 0) < 1
+	end
+	if anyStanding and not teamStanding then
+		return false, "At least one creature on your team must be able to fight"
+	end
 	profile.Team = list
 	return true, nil
 end

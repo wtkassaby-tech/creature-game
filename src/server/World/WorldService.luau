@@ -30,6 +30,7 @@ export type Hooks = {
 	refuse: (player: Player, reason: string) -> (),
 	onAt: (player: Player, at: Layout.Point) -> (), -- the regular look at where a player is
 	onAmbush: (player: Player, spawn: Encounters.Spawn) -> (), -- a creature jumped out of long grass
+	canBeAmbushed: (player: Player) -> boolean, -- wild battles are open and someone can fight
 }
 
 local WorldService = {}
@@ -131,6 +132,16 @@ function WorldService.sendTo(player: Player, placeId: string)
 	end
 end
 
+-- Takes one of the player's wild creatures out of the world at once (a grass battle that
+-- could not start).
+function WorldService.remove(player: Player, spawnId: number)
+	local found = books[player]
+	if found then
+		Encounters.remove(found, spawnId)
+		send(player)
+	end
+end
+
 -- One of the player's wild creatures by id, or nil.
 function WorldService.spawn(player: Player, spawnId: number): Encounters.Spawn?
 	local found = books[player]
@@ -191,19 +202,25 @@ function WorldService.start(hooks: Hooks): () -> ()
 						lastAt[player] = at
 						local walking = before ~= nil
 							and Layout.distance(before, at) >= WorldConfig.GRASS_MIN_MOVE
-						local jumped = Encounters.grass(
-							book(player),
-							biome,
-							map,
-							at,
-							walking,
-							os.clock(),
-							seed(),
-							newId
-						)
+						local jumped = if hooks.canBeAmbushed(player)
+							then Encounters.grass(
+								book(player),
+								biome,
+								map,
+								at,
+								walking,
+								os.clock(),
+								seed(),
+								newId
+							)
+							else nil
 						if jumped then
 							hooks.onAmbush(player, jumped)
 						end
+					else
+						-- Not walking the world (in a battle, loading): the next look starts
+						-- fresh, so standing still after a battle never counts as walking.
+						lastAt[player] = nil
 					end
 				end)
 				if not ok then

@@ -221,6 +221,19 @@ do
 	check("a health value out of range is reported", #Profile.validate(profile) > 0)
 end
 
+print("\n== Waking at the healer ==")
+do
+	local profile, a, b = setup()
+	local resting = Breeding.wild("Mossmitt", "r", 5, "Common", "Moss", Rng.new(12))
+	profile.Creatures.r = resting
+	a.hurt, b.hurt, resting.hurt = 1, 1, 0.6
+	check(
+		"only the team that fought is mended",
+		Health.healTeam(profile) == 2 and a.hurt == nil and b.hurt == nil
+	)
+	check("a creature left in the stable stays hurt", resting.hurt == 0.6)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("health checks failed")

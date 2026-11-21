@@ -40,7 +40,7 @@ local HATCH_CHECK_SECONDS = 5
 local IS_STUDIO = RunService:IsStudio()
 
 -- What a battle was against, kept by the battle service and handed back when it ends.
-type WildRef = { kind: "Wild", spawnId: number }
+type WildRef = { kind: "Wild", spawnId: number, ambush: boolean? }
 type TrainedRef = { kind: "Trained", opponent: Trainers.Opponent, foes: { Types.Creature } }
 
 -- One line per event in the server log, ready for the analytics service later.
@@ -91,9 +91,26 @@ WorldService.start({
 		-- Places the story is waiting for the player to reach.
 		StoryService.event(player, { kind = "At", at = at }, nil, true)
 	end,
+	canBeAmbushed = function(player)
+		-- Only once the story has opened wild battles, and only if someone on the team can fight.
+		local profile = DataService.get(player)
+		if
+			not profile
+			or not World.isUnlocked({ StoryService.chapter() }, profile.Story.flags, "wild_battles")
+		then
+			return false
+		end
+		for _, id in profile.Team do
+			local creature = profile.Creatures[id]
+			if creature and not Health.isFainted(creature) then
+				return true
+			end
+		end
+		return false
+	end,
 	onAmbush = function(player, spawn)
 		-- A creature jumped out of long grass: the battle starts by itself.
-		local ref: WildRef = { kind = "Wild", spawnId = spawn.id }
+		local ref: WildRef = { kind = "Wild", spawnId = spawn.id, ambush = true }
 		BattleService.begin(
 			player,
 			"Wild",
@@ -237,8 +254,9 @@ local function wakeAtHealerIfBeaten(player: Player, profile: Profile.Profile)
 	if #team == 0 or Health.anyStanding(team) then
 		return
 	end
-	Health.healAll(profile)
+	Health.healTeam(profile) -- only the team that fought; the stable stays as it was
 	StateSync.changed(player)
+	-- When more biomes exist this must be the healer of the player's own town.
 	for _, building in WorldService.biome().hub.buildings do
 		if building.role == "Healer" then
 			WorldService.sendTo(player, building.id)
@@ -345,9 +363,16 @@ end
 
 BattleService.start(resolveTarget, playerTeam, battleFinished, battleStarted, function(player, ref)
 	if ref and ref.kind == "Wild" then
-		WorldService.finish(player, (ref :: WildRef).spawnId, nil, 0)
+		local wild = ref :: WildRef
+		if wild.ambush then
+			WorldService.remove(player, wild.spawnId) -- it never really appeared
+		else
+			WorldService.finish(player, wild.spawnId, nil, 0)
+		end
 	end
 end)
+-- A battle cannot open while the player is in a giant fight, whoever asks for it.
+BattleService.setElsewhereCheck(GiantService.active)
 
 -- True once the story has opened a feature (breeding, the shop, the giant) for this player.
 local function isUnlocked(profile: Profile.Profile, feature: string): boolean

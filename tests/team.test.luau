@@ -84,6 +84,20 @@ check(
 	table.concat(Profile.validate(profile), "; ")
 )
 
+profile.Creatures.c1.hurt, profile.Creatures.c2.hurt = 1, 1
+check(
+	"a team with nobody able to fight is refused while a healthy creature is owned",
+	not Team.set(profile, { "c1", "c2" }, free)
+)
+check("a team with one standing creature is taken", (Team.set(profile, { "c1", "c3" }, free)))
+for index = 1, 8 do
+	profile.Creatures[`c{index}`].hurt = 1
+end
+check(
+	"if every creature has fainted, any team is taken (the healer is the way out)",
+	(Team.set(profile, { "c4" }, free))
+)
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("team checks failed")

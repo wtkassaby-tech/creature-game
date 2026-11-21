@@ -228,6 +228,30 @@ do
 	)
 end
 
+print("\n== Fainted and never-there creatures ==")
+do
+	local book = Encounters.new()
+	local glade = map.places.mossy_glade
+	Encounters.tick(book, greenwood, map, glade, 0, 21, newId)
+	local first: Encounters.Spawn? = nil
+	for _, spawn in book.spawns do
+		first = first or spawn
+	end
+	local spawn = assert(first, "a creature is there")
+	Encounters.engage(book, spawn.id, spawn.at)
+	spawn.creature.hurt = 1
+	Encounters.finish(book, spawn.id, "Draw", 0, 5)
+	check("a wild creature knocked out in a draw is gone", book.spawns[spawn.id] == nil)
+	local before = Encounters.count(book)
+	local second: Encounters.Spawn? = nil
+	for _, other in book.spawns do
+		second = second or other
+	end
+	local gone = assert(second, "another creature is there")
+	Encounters.remove(book, gone.id)
+	check("a creature can be taken out of the world outright", Encounters.count(book) == before - 1)
+end
+
 print("\n== Long grass ==")
 do
 	local patch = map.places[Layout.grassId("clover_meadow")]

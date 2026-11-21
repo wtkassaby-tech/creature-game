@@ -88,6 +88,13 @@ end
 function BattleService.setBusyCheck(check: (player: Player) -> boolean)
 	busy = check
 end
+-- Set by the bootstrap: true while the player is in some other kind of battle (a giant fight).
+local elsewhere: (player: Player) -> boolean = function()
+	return false
+end
+function BattleService.setElsewhereCheck(check: (player: Player) -> boolean)
+	elsewhere = check
+end
 function BattleService.isBusy(player: Player): boolean
 	return busy(player)
 end
@@ -168,7 +175,7 @@ function BattleService.start(
 			refuse(player, reason)
 			return false
 		end
-		if sessions[player] then
+		if sessions[player] or elsewhere(player) then
 			return drop("You are already in a battle")
 		end
 		local creatures, cap = playerTeam(player)

@@ -247,6 +247,12 @@ function Encounters.engage(book: Book, id: unknown, player: Layout.Point): (Spaw
 	return spawn, nil
 end
 
+-- Takes a creature out of the world without any wait before its stretch refills (a grass
+-- battle that could not start: the creature was never really there).
+function Encounters.remove(book: Book, id: number)
+	book.spawns[id] = nil
+end
+
 -- Ends a battle with a wild creature. `misses` is the creature's missed-throw count after it.
 function Encounters.finish(
 	book: Book,
@@ -263,7 +269,9 @@ function Encounters.finish(
 	-- have ended as a loss on the same turn): it must not stay to be fought for rewards.
 	local flee = Lasso.missesBeforeFlee(spawn.creature.rarity)
 	local fled = flee ~= nil and math.max(spawn.misses, misses) >= flee
-	if ending == "Won" or ending == "Caught" or ending == "Fled" or fled then
+	-- So is one with no health left (a draw knocks out both sides): it cannot be fought again.
+	local down = (spawn.creature.hurt or 0) >= 1
+	if ending == "Won" or ending == "Caught" or ending == "Fled" or fled or down then
 		book.spawns[id] = nil
 		if spawn.spot == nil then
 			book.freeAt[spawn.area] = now + WorldConfig.RESPAWN_SECONDS

@@ -90,5 +90,6 @@ Only Ayrton can decide these:
 - Switching creatures in battle usually loses under the current rules (it costs a free hit and resets Tempo). Should switching be made cheaper so it is a real tactic?
 - Greenwood has only one Sand species, the Sand starter. Swap a Water species for a second Sand one?
 - Mixed Greenwood and Dust Canyon balance: give Greenwood's Leaf creatures more non-Leaf moves, or judge mixed balance by 3v3 teams rather than one-on-one?
+- Should waking at the healer after a lost battle also cost coins? Today it costs the walk back and what was used in the fight, and only the team that fought is mended.
 - Giant capture: how the harder-to-get giant candy is earned and what a giant breed costs (Claude to propose numbers); whether a captured giant looks bigger; whether a missed capture keeps the win's rewards.
 - The live brief doc still shows coin bets, the original breeding formulas and the section 15 list as they were; this log overrides it until the doc is updated.

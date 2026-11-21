@@ -203,6 +203,8 @@ function GiantService.start(hooks: Hooks): () -> ()
 		if not ok then
 			sessions[player] = nil
 			hooks.log("GiantFailed", { player = player.UserId, problem = tostring(view) })
+			hooks.changed(player)
+			hooks.onEnded(player)
 			return hooks.refuse(player, "The fight was stopped. Your Giant Horn is spent")
 		end
 		if not view then
