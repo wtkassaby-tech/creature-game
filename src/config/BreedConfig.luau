@@ -100,6 +100,9 @@ BreedConfig.COOLDOWN = {
 	Diamond = { 48 * HOUR, 72 * HOUR },
 	Cosmic = {},
 } :: Types.ByRarity<{ number }>
+-- The mentor's egg hatches quickly, so the first hatch lands in the first session.
+BreedConfig.GIFT_EGG_SECONDS = 3 * MIN
+
 BreedConfig.HATCH_SECONDS = {
 	Common = 30 * MIN,
 	Uncommon = 45 * MIN,

@@ -2,10 +2,11 @@
 -- Starts the server: saving first, then battles, catching and breeding, all sharing the one
 -- loaded profile per player from the data service.
 --
--- Not yet in this file, and still to come: the world service (real wild spawns, tamers, giants),
--- battle rewards, the starter pick, quests and the economy screens. Until the world service
--- exists, Studio playtests get a Greenwood wild creature for any wild battle request and a test
--- starter, so the battle and lasso can be tried; neither happens on a live server.
+-- Still to come: the world service (real wild spawns, tamers, giants, and confirming story
+-- triggers by place), tamer and giant rewards, quests and the economy screens. Until the world
+-- service exists, Studio playtests pick Mossmitt as the starter through the real story path, get
+-- a Greenwood wild creature for any wild battle request, and may finish any story beat in order;
+-- none of that happens on a live server.
 -- Not yet run in Studio.
 
 local HttpService = game:GetService("HttpService")
@@ -14,10 +15,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Biomes = require(ReplicatedStorage.content.Biomes)
-local Breeding = require(ReplicatedStorage.shared.Breeding)
+local BattleSession = require(ReplicatedStorage.shared.BattleSession)
+local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
+local Profile = require(ReplicatedStorage.shared.Profile)
 local Grants = require(ReplicatedStorage.shared.Grants)
 local Net = require(ReplicatedStorage.net.generated.Server)
-local Rng = require(ReplicatedStorage.shared.Rng)
+local Rewards = require(ReplicatedStorage.shared.Rewards)
+local StoryProgress = require(ReplicatedStorage.shared.StoryProgress)
 local Types = require(ReplicatedStorage.shared.Types)
 local World = require(ReplicatedStorage.shared.World)
 local Xp = require(ReplicatedStorage.shared.Xp)
@@ -38,30 +42,83 @@ end
 
 local random = Random.new()
 
+-- Rebuilds a gift that waited for room in the stable.
+local function rebuildGift(source: string, ref: string): Types.Creature?
+	if source == "Starter" or source == "Token" then
+		return StoryProgress.rebuild(
+			ref,
+			HttpService:GenerateGUID(false),
+			random:NextInteger(1, 2147483646)
+		)
+	end
+	return nil
+end
+
+-- Story beats whose trigger the server can confirm today. Places, sightings, talks, wins and
+-- tames are confirmed by the world service once it exists; Studio accepts them for testing.
+local function triggerMet(profile: Profile.Profile, beatId: string): boolean
+	local beat = World.nextBeat(Chapter1, profile.Story.flags)
+	if beat == nil or beat.id ~= beatId then
+		return false
+	end
+	return IS_STUDIO or beat.trigger.kind == "Start" or beat.trigger.kind == "Follow"
+end
+
+local function completeBeat(player: Player, beatId: string, choice: string?)
+	local profile = DataService.get(player)
+	if not profile then
+		return
+	end
+	local done, problem = StoryProgress.complete(profile, Chapter1, {
+		beatId = beatId,
+		choice = choice,
+		triggerMet = triggerMet(profile, beatId),
+		newId = function()
+			return HttpService:GenerateGUID(false)
+		end,
+		seed = random:NextInteger(1, 2147483646),
+		unixTime = os.time(),
+	})
+	if not done then
+		return BattleService.refuse(player, problem or "Not yet")
+	end
+	local gifts: { { Kind: string, Detail: string, Waiting: boolean } } = {}
+	for _, gift in done.gifts do
+		table.insert(gifts, {
+			Kind = gift.kind :: string,
+			Detail = string.sub(gift.detail or "", 1, 40),
+			Waiting = gift.waiting == true,
+		})
+	end
+	Net.BeatCompleted.Fire(player, { BeatId = done.beat.id, Gifts = gifts, Unlocks = done.unlocks })
+	log("StoryBeat", { player = player.UserId, beat = done.beat.id, gifts = #done.gifts })
+end
+
 local function onLoaded(player: Player)
 	local profile = DataService.get(player)
 	if not profile then
 		return
 	end
 	Grants.rollDay(profile, os.time())
-	if IS_STUDIO and #profile.Team == 0 then
-		-- Studio only: a test starter until the starter pick exists.
-		local id = HttpService:GenerateGUID(false)
-		local grant = Grants.giveOnce(profile, "Starter", "studio-test", function()
-			return Breeding.wild(
-				"Mossmitt",
-				id,
-				5,
-				"Common",
-				"Moss",
-				Rng.new(random:NextInteger(1, 2147483646))
-			)
-		end)
-		if grant.outcome == "Granted" then
-			table.insert(profile.Team, id)
-		end
+	local handed = Grants.claimPending(profile, rebuildGift)
+	if handed > 0 then
+		log("PendingClaimed", { player = player.UserId, count = handed })
+	end
+	if IS_STUDIO and profile.Story.starter == nil then
+		-- Studio only, until the starter screen exists: pick Mossmitt through the real story path.
+		completeBeat(player, "starter_choice", "Mossmitt")
 	end
 end
+
+local lastStoryRequest: { [Player]: number } = {}
+Net.CompleteBeat.On(function(player, value)
+	local now = os.clock()
+	if now - (lastStoryRequest[player] or -math.huge) < 0.5 then
+		return
+	end
+	lastStoryRequest[player] = now
+	completeBeat(player, value.BeatId, value.Choice)
+end)
 
 DataService.start(log, onLoaded)
 
@@ -101,15 +158,57 @@ local function resolveTarget(
 	return { creatures = { pick.creature }, moves = nil, tier = "Wild" }
 end
 
-BattleService.start(resolveTarget, playerTeam, function(player, session, outcome)
-	-- Battle rewards (coins, XP) come with the economy work; for now the result is logged.
+local function payBattle(player: Player, session: BattleSession.Session, outcome: number)
 	log("BattleFinished", {
 		player = player.UserId,
 		battle = session.battleId,
 		kind = session.kind,
 		outcome = outcome,
 	})
-end)
+	-- Only a won (or caught) wild battle pays for now; tamers, giants and gates come with the world.
+	if outcome ~= 1 or session.kind ~= "Wild" then
+		return
+	end
+	local profile = DataService.get(player)
+	if not profile then
+		return
+	end
+	local team = {}
+	for _, fighter in session.state.sides[1].team do
+		table.insert(team, { id = fighter.creature.id, fainted = fighter.hp <= 0 })
+	end
+	local paid = Rewards.wildWin(profile, {
+		foe = BattleSession.foe(session),
+		team = team,
+		cap = Xp.levelCap(profile.Story.badges),
+		unixTime = os.time(),
+		seed = random:NextInteger(1, 2147483646),
+	})
+	local members = {}
+	for _, member in paid.members do
+		table.insert(members, {
+			Id = member.id,
+			Gained = member.gained,
+			Level = member.level,
+			LevelsGained = member.levelsGained,
+			NewMoves = member.newMoves,
+		})
+	end
+	Net.BattleRewards.Fire(player, {
+		BattleId = session.battleId,
+		Coins = paid.coins,
+		Material = paid.material or "",
+		Members = members,
+	})
+	log("BattleRewards", {
+		player = player.UserId,
+		battle = session.battleId,
+		coins = paid.coins,
+		material = paid.material,
+	})
+end
+
+BattleService.start(resolveTarget, playerTeam, payBattle)
 
 CaptureService.start(DataService.get, log)
 
@@ -128,6 +227,37 @@ Net.RequestBreed.On(function(player, value)
 		Reason = if ok then "" else string.sub(tostring(detail), 1, 80),
 		HatchAt = if ok and type(detail) == "number" then detail else 0,
 	})
+end)
+
+local lastRelease: { [Player]: number } = {}
+Net.ReleaseCreature.On(function(player, value)
+	local now = os.clock()
+	if now - (lastRelease[player] or -math.huge) < 0.3 then
+		return
+	end
+	lastRelease[player] = now
+	local profile = DataService.get(player)
+	if not profile then
+		return
+	end
+	Grants.rollDay(profile, os.time()) -- the release falloff counts by the server's date
+	local before = profile.Coins
+	local grant = Grants.release(profile, value.Id, BattleService.isInBattle(player, value.Id))
+	local ok = grant.outcome == "Granted"
+	Net.ReleaseResult.Fire(player, {
+		Id = value.Id,
+		Ok = ok,
+		Reason = string.sub(grant.reason or "", 1, 80),
+		Coins = math.max(0, profile.Coins - before),
+		Candy = grant.candy or 0,
+		Element = grant.element,
+	})
+	if ok then
+		log(
+			"Release",
+			{ player = player.UserId, creature = value.Id, coins = profile.Coins - before }
+		)
+	end
 end)
 
 task.spawn(function()
@@ -151,4 +281,6 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	breeding:playerRemoving(player)
+	lastStoryRequest[player] = nil
+	lastRelease[player] = nil
 end)

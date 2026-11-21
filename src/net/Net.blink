@@ -236,3 +236,74 @@ event Hatched {
 	Call: SingleAsync,
 	Data: struct { Ids: string(1..40)[1..8] },
 }
+
+-- Server -> device: what a won battle paid, after its last BattleTurn.
+struct MemberReward {
+	Id: string(1..40),
+	Gained: u32,
+	Level: u8,
+	LevelsGained: u8,
+	NewMoves: string(1..24)[0..8],
+}
+event BattleRewards {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Coins: u32,
+		Material: string(0..24),
+		Members: MemberReward[0..6],
+	},
+}
+
+-- Story (approval pack 2: one-time gifts). The device says which beat it reached and, for the
+-- first beat, which starter it picked; the server checks the beat is next and its trigger is met.
+event CompleteBeat {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BeatId: string(1..40),
+		Choice: string(1..24)?,
+	},
+}
+
+struct GiftView {
+	Kind: string(1..16),
+	Detail: string(0..40),
+	Waiting: boolean,
+}
+
+event BeatCompleted {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BeatId: string(1..40),
+		Gifts: GiftView[0..12],
+		Unlocks: string(1..40)[0..8],
+	},
+}
+
+-- Releasing a creature back to the wild (approval pack 2): pays a few coins, maybe a material,
+-- and typed candy, always less than catching it. Giants and a team's last creature cannot go.
+event ReleaseCreature {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Id: string(1..40) },
+}
+event ReleaseResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Id: string(1..40),
+		Ok: boolean,
+		Reason: string(0..80),
+		Coins: u32,
+		Candy: f32,
+		Element: Element?,
+	},
+}
