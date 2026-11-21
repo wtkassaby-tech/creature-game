@@ -102,7 +102,8 @@ export type TrainedWinInput = {
 	unixTime: number,
 }
 
-export type TrainedPaid = Paid & { firstClear: boolean }
+-- `rematchesBefore`: wins against this opponent already taken today, before this one.
+export type TrainedPaid = Paid & { firstClear: boolean, rematchesBefore: number }
 
 local function wonFlag(opponentId: string): string
 	return `won:{opponentId}`
@@ -174,7 +175,13 @@ function Rewards.trainedWin(profile: Profile.Profile, input: TrainedWinInput): T
 		local creature = profile.Creatures[result.id]
 		creature.level, creature.xp = result.level, xpAfter[index]
 	end
-	return { coins = coins, material = nil, members = members, firstClear = firstClear }
+	return {
+		coins = coins,
+		material = nil,
+		members = members,
+		firstClear = firstClear,
+		rematchesBefore = rematches,
+	}
 end
 
 export type GiantPaid = TrainedPaid & { prism: number, giantCandy: number }
@@ -236,6 +243,7 @@ function Rewards.giantWin(
 		material = paid.material,
 		members = paid.members,
 		firstClear = paid.firstClear,
+		rematchesBefore = paid.rematchesBefore,
 		prism = prism,
 		giantCandy = giantCandy,
 	}

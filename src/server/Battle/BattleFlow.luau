@@ -247,7 +247,13 @@ local function battleFinished(
 		})
 		BattleFlow.sendRewards(player, session.battleId, paid)
 		DailyService.record(player, "WinBattle")
-		if trained.opponent.kind == "Tamer" and not paid.firstClear then
+		-- Only the first rematch of each tamer today counts toward "win 5 tamer rematches":
+		-- beating one weak tamer five times is not five rematches.
+		if
+			trained.opponent.kind == "Tamer"
+			and not paid.firstClear
+			and paid.rematchesBefore == 0
+		then
 			DailyService.record(player, "TamerRematch")
 		end
 		if trained.opponent.kind == "Tamer" then

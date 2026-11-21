@@ -9,7 +9,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | Hollowbough as a creature of its own, with two signature moves | Tested | `src/content/species/Hollowbough.luau` |
 | One capture throw after a giant win; the serial number steps; once per player | Tested (51), reviewed | `src/shared/GiantCapture.luau`, `src/server/Giants/`, `src/server/Serials/` |
 | Giant Candy and breeding from a captured giant | Tested, reviewed | `src/shared/Breeding.luau`, `src/shared/Rewards.luau` |
-| Daily tasks: three easy, three harder, from the first badge | Tested (16). Not yet reviewed | `src/shared/DailyProgress.luau`, `src/server/Daily/` |
+| Daily tasks: three easy, three harder, from the first badge | Tested (22), reviewed | `src/shared/DailyProgress.luau`, `src/server/Daily/` |
 | Eighth independent exploit review (giant capture) | Done: no must-fix; four should-fix, all fixed | `docs/REVIEWS.md` |
 
 1068 checks pass. **To try in Studio:** buy a Giant Horn and a Braided Lasso, walk to the lair past the stall on Route B, wake Hollowbough and win. A panel offers one throw: three loops. On a hit, "Hollowbough No. 1 is yours!" should appear and it should be on the creatures screen.

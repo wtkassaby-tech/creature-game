@@ -141,6 +141,57 @@ do
 	)
 end
 
+print("\n== Review fixes ==")
+do
+	local profile = Profile.template()
+	profile.Story.badges = 1
+	DailyProgress.record(profile, "Tame", DAY)
+	local coins, prism = profile.Coins, profile.Candy.prism
+	local day = profile.Daily.day
+	DailyProgress.view(profile, DAY + 86400)
+	check(
+		"looking at tomorrow's tasks changes nothing saved",
+		profile.Daily.day == day and profile.Daily.tasksDone["task:tame_one"] == 1
+	)
+	check(
+		"tomorrow's view shows fresh tasks",
+		(function()
+			for _, task in DailyProgress.view(profile, DAY + 86400) do
+				if task.progress ~= 0 or task.claimed then
+					return false
+				end
+			end
+			return true
+		end)()
+	)
+	DailyProgress.record(profile, "WinBattle", DAY + 86400)
+	check(
+		"a task finished but not claimed is paid when the day ends, not lost",
+		profile.Coins == coins + EconomyConfig.DAILY_TASK_COINS and profile.Candy.prism == prism + 1
+	)
+	check(
+		"and the new day starts counting from nothing",
+		profile.Daily.tasksDone["task:win_three"] == 1
+			and profile.Daily.tasksDone["task:tame_one"] == nil
+	)
+
+	local unfinished = Profile.template()
+	unfinished.Story.badges = 1
+	DailyProgress.record(unfinished, "WinBattle", DAY)
+	local before = unfinished.Coins
+	DailyProgress.record(unfinished, "WinBattle", DAY + 86400)
+	check("an unfinished task pays nothing at the day's end", unfinished.Coins == before)
+
+	local back = Profile.template()
+	back.Story.badges = 1
+	DailyProgress.record(back, "Tame", DAY + 86400)
+	DailyProgress.record(back, "WinBattle", DAY) -- a server whose clock is a day behind
+	check(
+		"a clock that is behind neither pays early nor clears the day",
+		back.Daily.tasksDone["task:tame_one"] == 1 and back.Coins == Profile.template().Coins
+	)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("daily task checks failed")

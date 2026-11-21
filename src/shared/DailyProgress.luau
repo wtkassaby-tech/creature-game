@@ -65,24 +65,59 @@ function DailyProgress.record(
 	return ready
 end
 
--- Today's tasks as the screen shows them.
+-- Today's tasks as the screen shows them. Read-only: it never changes the profile. If the saved
+-- counters belong to an earlier day, the tasks show as fresh (the counters themselves roll over
+-- the next time something is counted, claimed or loaded).
 function DailyProgress.view(profile: Profile.Profile, unixTime: number): { View }
-	Grants.rollDay(profile, unixTime)
 	local list: { View } = {}
 	if not DailyProgress.isOpen(profile) then
 		return list
 	end
+	local today = profile.Daily.day >= math.floor(unixTime / 86400)
 	for _, task in DailyTasks do
+		local key = progressKey(task.id)
 		table.insert(list, {
 			id = task.id,
 			hard = task.hard,
 			goal = task.goal,
-			progress = math.min(task.count, profile.Daily.tasksDone[progressKey(task.id)] or 0),
+			progress = if today then math.min(task.count, profile.Daily.tasksDone[key] or 0) else 0,
 			count = task.count,
-			claimed = profile.Daily.claimed[progressKey(task.id)] == true,
+			claimed = today and profile.Daily.claimed[key] == true,
 		})
 	end
 	return list
+end
+
+-- Pays one finished, unpaid task from the counters as they stand.
+local function pay(profile: Profile.Profile, task: DailyTasks.Task): Claimed
+	-- How many of this kind (easy or hard) have been paid today decides what this one pays;
+	-- the economy's caps apply even if more tasks are ever added.
+	local paidToday = 0
+	for _, other in DailyTasks do
+		if other.hard == task.hard and profile.Daily.claimed[progressKey(other.id)] then
+			paidToday += 1
+		end
+	end
+	local coins = Economy.dailyTaskCoins(task.hard, profile.Story.biomeReached, paidToday)
+	local prism = Economy.candyFor(if task.hard then "DailyHardTask" else "DailyTask", paidToday)
+	profile.Daily.claimed[progressKey(task.id)] = true
+	profile.Coins += coins
+	profile.Candy.prism += prism
+	return { task = task, coins = coins, prism = prism }
+end
+
+-- When the day ends, tasks that were finished but not claimed are paid, not lost. This runs
+-- just before the day's counters are cleared, wherever that happens (Grants.rollDay).
+Grants.beforeRoll = function(profile: Profile.Profile)
+	if not DailyProgress.isOpen(profile) then
+		return
+	end
+	for _, task in DailyTasks do
+		local key = progressKey(task.id)
+		if not profile.Daily.claimed[key] and (profile.Daily.tasksDone[key] or 0) >= task.count then
+			pay(profile, task)
+		end
+	end
 end
 
 -- Pays a finished task, once. `taskId` comes from the device.
@@ -106,20 +141,7 @@ function DailyProgress.claim(
 	if (profile.Daily.tasksDone[key] or 0) < task.count then
 		return nil, "That task is not finished yet"
 	end
-	-- How many of this kind (easy or hard) have been paid today decides what this one pays;
-	-- the economy's caps apply even if more tasks are ever added.
-	local paidToday = 0
-	for _, other in DailyTasks do
-		if other.hard == task.hard and profile.Daily.claimed[progressKey(other.id)] then
-			paidToday += 1
-		end
-	end
-	local coins = Economy.dailyTaskCoins(task.hard, profile.Story.biomeReached, paidToday)
-	local prism = Economy.candyFor(if task.hard then "DailyHardTask" else "DailyTask", paidToday)
-	profile.Daily.claimed[key] = true
-	profile.Coins += coins
-	profile.Candy.prism += prism
-	return { task = task, coins = coins, prism = prism }, nil
+	return pay(profile, task), nil
 end
 
 return DailyProgress

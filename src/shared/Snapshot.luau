@@ -114,8 +114,8 @@ function Snapshot.creature(c: Types.Creature): CreatureView
 	}
 end
 
--- `unixTime` is the server's clock; with it, today's daily tasks are included (and the day's
--- counters roll over if the date has changed).
+-- `unixTime` is the server's clock; with it, today's daily tasks are included. Building the
+-- view never changes the profile.
 function Snapshot.build(profile: Profile.Profile, unixTime: number?): State
 	local daily: { DailyView } = {}
 	if unixTime then

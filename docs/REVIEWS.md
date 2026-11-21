@@ -2,6 +2,17 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: daily tasks (commits 9f49d29, e471c7d)
+
+Reviewer: a separate read-only agent. No must-fix findings: a task cannot be paid twice or before it is finished; nothing that did not happen is counted; the daily caps match the economy's (3 easy and 3 harder payouts); the move of the battle wiring into `BattleFlow` dropped nothing.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | "Win 5 tamer rematches" could be done by beating one weak tamer five times in a row | Should fix | Only the first rematch of each tamer in a day counts. Test added |
+| 2 | A task finished late in the day and not claimed before the server's midnight was lost, and the screen's view of tasks changed saved data as a side effect | Should fix | Finished tasks are paid automatically when the day ends; the view is read-only. Tests added |
+| 3 | The win that earns the first badge does not count toward that day's tasks | Note | Harmless; left as it is |
+| 4 | Catching a giant does not count as "tame a creature" | Note | Left as it is |
+
 ## 21 November 2026: giant capture, serial numbers, Giant Candy (commit 51481a4)
 
 Reviewer: a separate read-only agent. Found sound: no way to capture the same giant twice, forge a hit, reuse an attempt or get more than one throw per win; a rejoin during the serial wait is safe; the capture throw cannot be mixed up with a battle throw or lock a player out; Giant Candy comes only from wins and is taken in the same step as the breed; breeding from a giant is not a cheap way to make gem-tier creatures (one breed takes about five days and ten horns).

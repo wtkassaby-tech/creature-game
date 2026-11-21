@@ -182,6 +182,13 @@ do
 		"the next day's rematch pays again, never the first-clear amount",
 		nextDay.coins == rematch.coins
 	)
+	check(
+		"each win reports how many rematches of that tamer came before it today",
+		first.rematchesBefore == 0
+			and rematch.rematchesBefore == 0
+			and third.rematchesBefore == 1
+			and nextDay.rematchesBefore == 0
+	)
 	local story = win(false, "rival_first")
 	check(
 		"a story battle pays XP but no coins (its beat pays)",

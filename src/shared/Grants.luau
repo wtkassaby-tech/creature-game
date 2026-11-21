@@ -60,10 +60,17 @@ local function isWaiting(profile: Profile, source: Source, ref: string): boolean
 	return false
 end
 
+-- Set by src/shared/DailyProgress: called just before a day's counters are cleared.
+Grants.beforeRoll = nil :: ((profile: Profile) -> ())?
+
 -- Starts a new day's counters if the server's date has moved on. Only the server's clock is
 -- ever used, so changing a device's clock cannot reset anything.
 function Grants.rollDay(profile: Profile, unixTime: number)
 	local day = math.floor(unixTime / SECONDS_PER_DAY)
+	if day > profile.Daily.day and Grants.beforeRoll then
+		-- Last chance to settle the old day (finished daily tasks are paid, not lost).
+		Grants.beforeRoll(profile)
+	end
 	-- Only forwards: servers whose clocks disagree near midnight cannot reset a day twice.
 	if day > profile.Daily.day then
 		profile.Daily.day = day
