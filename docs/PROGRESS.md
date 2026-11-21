@@ -2,6 +2,29 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (Tide Flats, and robots that play the whole game)
+
+**In one line:** all three launch biomes can now be played end to end on the server, and twelve robot players prove it on every check: each one plays from the starter pick to the third badge through the real rules. 1,910 checks pass. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Tide Flats: the town of Saltwick, two routes, five tamers, Captain Marr mid-biome, the rival at the gate, the giant Carrackon and its creature form, a bait quest line, chapter 3 | Tested (356). Data only | `src/content/`, `docs/content/TIDE_FLATS_WORLD.md` |
+| Robot players: twelve play the whole story with different luck; all must finish, inside the pacing targets | New test | `tests/playthrough.test.luau` |
+| The rival's first battle truly cannot be lost: the player's last creature holds on with 1 health | Tested, reviewed | `src/shared/BattleSession.luau` |
+| Levelling about three times quicker; gates one level easier | Changed after the robots' findings | `src/config/ProgressionConfig.luau`, `docs/DECISIONS.md` |
+| Twelfth independent exploit review (the unlosable battle) | Done: one must-fix, fixed | `docs/REVIEWS.md` |
+
+**What the robots found** (each was a real problem, now fixed):
+
+1. Two of the three starters lost the "cannot be lost" first battle every time.
+2. Three biomes took about 14 hours of battling, against a plan of 4 to 5 hours in all. Now about two and a half hours of battling.
+3. Most robots could never pass the Dust Canyon gate, even at full level with tonics. Now every robot passes every gate within three tries, and about half of story battles are still lost first time.
+4. With lasting damage, a player who always leads with the same creature walks to the healer after almost every wild battle. Rotating the healthiest creature to the front fixes it; the game should teach this early (a line from the mentor, to be written).
+
+**To try in Studio:** play Greenwood from the start and note the time when you win the Acorn Badge (the plan says within an hour), and whether the rival at the gate feels fair. Then say whether levelling feels too quick, too slow or right.
+
+**Still to build on the logic side:** purchases (after pack 5); trading and the Circuit (after launch, per the plan).
+
 ## 21 November 2026 (Dust Canyon and the multi-biome world)
 
 **In one line:** two biomes can now be played end to end on the server: Greenwood, then Dust Canyon, with its own town, routes, tamers, giant, quests and story chapter. 1463 checks pass. **None of it has run in Roblox Studio yet.**

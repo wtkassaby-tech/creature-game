@@ -310,13 +310,14 @@ for _, starter in STARTERS do
 			and gate.members[1].species == first.members[1].species
 	)
 	check(`rival gate vs {starter}: three creatures`, #gate.members == 3)
-	local gateOk = gate.members[1].level == 14
+	local gateTop = ProgressionConfig.CAP_BASE - ProgressionConfig.GATE_TOP_UNDER_CAP
+	local gateOk = gate.members[1].level == gateTop
 	for _, m in gate.members do
-		if m.level < 13 or m.level > 14 then
+		if m.level < gateTop - ProgressionConfig.GATE_TEAM_SPREAD or m.level > gateTop then
 			gateOk = false
 		end
 	end
-	check(`rival gate vs {starter}: levels 13 to 14, lead 14`, gateOk)
+	check(`rival gate vs {starter}: two levels under the cap at most, led by the strongest`, gateOk)
 	check(`rival gate vs {starter}: tint has grown`, gate.tint > first.tint)
 end
 check("the Rival tier exists in BattleAi", (("Rival" :: any) :: BattleAi.Tier) == "Rival")

@@ -87,7 +87,7 @@ do
 	check("the first battle cannot be lost", first ~= nil and first.cannotLose)
 	local unlosable: { string } = {}
 	for id, battle in Tamers.story do
-		if battle.mayRetryAtOnce then
+		if battle.cannotLose then
 			table.insert(unlosable, id)
 		end
 	end

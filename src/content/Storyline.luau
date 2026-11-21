@@ -5,9 +5,10 @@
 
 local Chapter1 = require("./story/Chapter1")
 local Chapter2 = require("./story/Chapter2")
+local Chapter3 = require("./story/Chapter3")
 local WorldTypes = require("../shared/WorldTypes")
 
-local chapters: { WorldTypes.Chapter } = { Chapter1, Chapter2 }
+local chapters: { WorldTypes.Chapter } = { Chapter1, Chapter2, Chapter3 }
 
 local beats: { WorldTypes.Beat } = {}
 for _, chapter in chapters do

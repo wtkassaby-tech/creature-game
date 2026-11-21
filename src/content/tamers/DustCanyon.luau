@@ -175,7 +175,7 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		teams = rivalTeams,
 		before = "You keep up, I will give you that. But I have help now. Watch this.",
 		after = "It hums louder when I lose. I do not like that. Not one bit.",
-		mayRetryAtOnce = false, -- he can be lost to here; only the very first battle cannot
+		cannotLose = false, -- he can be lost to here; only the very first battle cannot
 	},
 	{
 		id = "champion_karrow",
@@ -186,15 +186,15 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		xpKind = "Gate",
 		team = {
 			members = {
-				member("Whirlgrit", 22, { "Grit Whirl", "Dune Dash", "Pebble Pelt", "Sand Flick" }),
+				member("Whirlgrit", 21, { "Grit Whirl", "Dune Dash", "Pebble Pelt", "Sand Flick" }),
 				member(
 					"Cairnback",
-					23,
+					22,
 					{ "Mesa Slam", "Capstone Crash", "Talus Tumble", "Tumbleweed Toss" }
 				),
 				member(
 					"Thatchling",
-					24,
+					23,
 					{ "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }
 				),
 			},
@@ -202,7 +202,7 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		},
 		before = "The Stair is not climbed, it is earned. Show me a team worth a badge.",
 		after = "Fast, and calm with it. The Cairn Badge is yours. Go well.",
-		mayRetryAtOnce = false,
+		cannotLose = false,
 	},
 }
 

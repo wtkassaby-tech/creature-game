@@ -4,11 +4,12 @@
 
 local DustCanyon = require("./quests/DustCanyon")
 local Greenwood = require("./quests/Greenwood")
+local TideFlats = require("./quests/TideFlats")
 local WorldTypes = require("../shared/WorldTypes")
 
 local Quests: { [string]: WorldTypes.Quest } = {}
 
-for _, list in { Greenwood, DustCanyon } do
+for _, list in { Greenwood, DustCanyon, TideFlats } do
 	for _, quest in list do
 		Quests[quest.id] = quest
 	end

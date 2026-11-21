@@ -64,23 +64,31 @@ type Bot = {
 	wildBattles: number,
 	catches: number,
 	losses: number,
+	storyBattles: number,
+	healerTrips: number,
+	tonicsUsed: number,
 	log: { string },
 	against: Types.Element?, -- the type of the lead creature of the opponent it is preparing for
+	alsoAgainst: { Types.Element }, -- the types of the creatures that were still standing when it lost
 }
 
-local function newBot(): Bot
+local function newBot(seed: number): Bot
 	return {
 		profile = Profile.template(),
 		book = Encounters.new(),
 		time = 86400 * 400,
-		seed = 1,
+		seed = seed,
 		nextId = 0,
 		battleId = 0,
 		wildBattles = 0,
 		catches = 0,
 		losses = 0,
+		storyBattles = 0,
+		healerTrips = 0,
+		tonicsUsed = 0,
 		log = {},
 		against = nil,
+		alsoAgainst = {},
 	}
 end
 
@@ -118,15 +126,29 @@ local function teamMembers(session: BattleSession.Session): { { id: string, fain
 	return list
 end
 
--- The healer: the robot walks back whenever anyone is badly hurt (free, as in the game).
+-- Between wild battles the robot does what a player does with lasting damage: it sends out
+-- whichever creature is in the best shape, and walks back to the healer (free, as in the game)
+-- only when none of them is fit to fight.
 local function healIfNeeded(bot: Bot)
-	for _, creature in team(bot) do
-		if Health.share(creature) < 0.6 then
-			Health.healAll(bot.profile)
-			bot.time += 60
-			return
-		end
+	local list = team(bot)
+	table.sort(list, function(a, b)
+		local sa, sb = Health.share(a), Health.share(b)
+		return if sa == sb then a.id < b.id else sa > sb
+	end)
+	if #list == 0 then
+		return
 	end
+	if Health.share(list[1]) < 0.5 then
+		Health.healAll(bot.profile)
+		bot.time += 60
+		bot.healerTrips += 1
+		return
+	end
+	local ids: { string } = {}
+	for _, creature in list do
+		table.insert(ids, creature.id)
+	end
+	bot.profile.Team = ids
 end
 
 local function elementOf(creature: Types.Creature): Types.Element
@@ -147,7 +169,17 @@ local function pickTeam(bot: Bot)
 	end
 	local against: Types.Element? = bot.against
 	local function score(creature: Types.Creature): number
-		return creature.level + (if against and beats(elementOf(creature), against) then 100 else 0)
+		local total = creature.level
+		if against and beats(elementOf(creature), against) then
+			total += 100
+		end
+		for _, element: Types.Element in bot.alsoAgainst do
+			if beats(elementOf(creature), element) then
+				total += 50
+				break
+			end
+		end
+		return total
 	end
 	table.sort(all, function(a, b)
 		local sa, sb = score(a), score(b)
@@ -160,22 +192,47 @@ local function pickTeam(bot: Bot)
 	bot.profile.Team = ids
 end
 
--- Plays a battle by always using the move that does the most damage. Returns how it ended.
-local function fight(bot: Bot, session: BattleSession.Session): BattleSession.Ending?
+-- Plays a battle by always using the move that does the most damage. With `tonics`, the robot
+-- also does what a player who has just lost does: when its creature is badly hurt it spends the
+-- turn on a Field Tonic, up to three a battle.
+local TONICS_A_BATTLE = 3
+local function fight(
+	bot: Bot,
+	session: BattleSession.Session,
+	tonics: boolean?
+): BattleSession.Ending?
 	local previews = BattleSession.started(session).previews
+	local used = 0
 	for _ = 1, 200 do
-		local best, bestDamage = 1, -1
-		for index, damage in previews do
-			if damage > bestDamage then
-				best, bestDamage = index, damage
+		local side = session.state.sides[1]
+		local fighter = side.team[side.active]
+		local turn: BattleSession.TurnResult? = nil
+		if
+			tonics
+			and used < TONICS_A_BATTLE
+			and fighter.hp > 0
+			and fighter.hp < fighter.stats.Hp * 0.35
+			and (bot.profile.Items.Tonic or 0) > 0
+		then
+			turn =
+				Shop.useInBattle(bot.profile, session, session.state.turn + 1, "Tonic", side.active)
+			if turn then
+				used += 1
+				bot.tonicsUsed += 1
 			end
 		end
-		local turn = assert(
-			BattleSession.act(session, session.state.turn + 1, "Move", best),
-			"a move is played"
-		)
-		previews = turn.previews
-		if turn.finished then
+		if not turn then
+			local best, bestDamage = 1, -1
+			for index, damage in previews do
+				if damage > bestDamage then
+					best, bestDamage = index, damage
+				end
+			end
+			turn = BattleSession.act(session, session.state.turn + 1, "Move", best)
+		end
+		local played = assert(turn, "a turn is played")
+		previews = played.previews
+		if played.finished then
 			break
 		end
 	end
@@ -417,12 +474,18 @@ local function storyBattle(bot: Bot, id: string): boolean
 		local lead: Types.Element = Species[opponent.team.members[1].species].element
 		if attempt > 1 then
 			bot.against = lead
-			local covered = false
-			for _, creature in bot.profile.Creatures do
-				covered = covered or beats(elementOf(creature), lead)
+			local wanted: { Types.Element } = { lead }
+			for _, element: Types.Element in bot.alsoAgainst do
+				table.insert(wanted, element)
 			end
-			if not covered then
-				hunt(bot, lead)
+			for _, element: Types.Element in wanted do
+				local covered = false
+				for _, creature in bot.profile.Creatures do
+					covered = covered or beats(elementOf(creature), element)
+				end
+				if not covered then
+					hunt(bot, element)
+				end
 			end
 			pickTeam(bot)
 		end
@@ -434,12 +497,23 @@ local function storyBattle(bot: Bot, id: string): boolean
 			end
 			return low
 		end
+		-- First try: the team is about level with the opponent. After a loss: everyone is
+		-- trained up to the goal, and the robot stocks up on Field Tonics at the shop.
+		local floor = if attempt == 1 then math.min(goal, theirTop) - 2 else goal
 		local guard = 0
-		while (topLevel(bot) < goal or lowest() < math.min(goal, theirTop) - 2) and guard < 400 do
+		while (topLevel(bot) < goal or lowest() < floor) and guard < 400 do
 			wildBattle(bot, false)
 			guard += 1
 		end
+		if attempt > 1 then
+			local short = TONICS_A_BATTLE - (bot.profile.Items.Tonic or 0)
+			if short > 0 then
+				Shop.buy(bot.profile, "Tonic", short, true, bot.profile.Story.biomeReached)
+			end
+		end
 		Health.healAll(bot.profile)
+		pickTeam(bot)
+		bot.storyBattles += 1
 		local creatures, moves = Trainers.build(opponent)
 		local kind: BattleSession.Kind = opponent.kind
 		local session = startBattle(
@@ -450,10 +524,11 @@ local function storyBattle(bot: Bot, id: string): boolean
 			if opponent.kind == "Rival" then "Rival" else "Tamer",
 			opponent.cannotLose
 		)
-		local ending = fight(bot, session)
+		local ending = fight(bot, session, attempt > 1)
 		bot.time += 110 -- a battle against a person is longer: about two and a half minutes in all
 		if ending == "Won" then
 			bot.against = nil
+			bot.alsoAgainst = {}
 			Rewards.trainedWin(bot.profile, {
 				opponentId = opponent.id,
 				xpKind = opponent.xpKind,
@@ -471,8 +546,17 @@ local function storyBattle(bot: Bot, id: string): boolean
 			return true
 		end
 		bot.losses += 1
+		-- Whatever was still standing is what the robot prepares for next.
+		for _, fighter in session.state.sides[2].team do
+			local element = elementOf(fighter.creature)
+			if fighter.hp > 0 and not table.find(bot.alsoAgainst, element) then
+				table.insert(bot.alsoAgainst, element)
+			end
+		end
 		Health.healAll(bot.profile)
 	end
+	bot.against = nil
+	bot.alsoAgainst = {}
 	return false
 end
 
@@ -542,11 +626,15 @@ end
 
 -- The run ------------------------------------------------------------------------------------
 
-print("\n== A robot plays the whole story ==")
-do
-	local bot = newBot()
-	local stuckAt: string? = nil
-	local chapterStart = { wild = 0, time = bot.time }
+-- One robot plays from the first beat to the last. Each seed is a different player: different
+-- wild creatures, different luck in battle.
+type Leg = { wild: number, minutes: number, level: number, coins: number }
+type Run = { bot: Bot, stuckAt: string?, legs: { Leg } }
+
+local function play(seed: number): Run
+	local bot = newBot(seed)
+	local run: Run = { bot = bot, stuckAt = nil, legs = {} }
+	local start = { wild = 0, time = bot.time }
 	local badges = 0
 	for _ = 1, #Storyline.beats + 5 do
 		local beat = World.nextBeat(Storyline, bot.profile.Story.flags)
@@ -554,44 +642,146 @@ do
 			break
 		end
 		if not step(bot) then
-			stuckAt = `{beat.id} ({beat.trigger.kind} {beat.trigger.target or ""})`
+			run.stuckAt = `{beat.id} ({beat.trigger.kind} {beat.trigger.target or ""})`
 			break
 		end
 		if bot.profile.Story.badges > badges then
 			badges = bot.profile.Story.badges
-			local minutes = math.floor((bot.time - chapterStart.time) / 60)
-			print(
-				`    badge {badges}: team level {topLevel(bot)}, {bot.wildBattles - chapterStart.wild} wild battles, about {minutes} minutes, {bot.profile.Coins} coins`
-			)
-			chapterStart = { wild = bot.wildBattles, time = bot.time }
+			table.insert(run.legs, {
+				wild = bot.wildBattles - start.wild,
+				minutes = math.floor((bot.time - start.time) / 60),
+				level = topLevel(bot),
+				coins = bot.profile.Coins,
+			})
+			start = { wild = bot.wildBattles, time = bot.time }
 		end
 	end
-	for _, line in bot.log do
+	return run
+end
+
+local function middle(values: { number }): number
+	table.sort(values)
+	return values[math.ceil(#values / 2)]
+end
+
+-- What the pacing decision in docs/DECISIONS.md asks for: a first badge within the hour and the
+-- three launch biomes in four to five hours. The robot only counts time spent in battles and at
+-- the healer (no walking, talking or shopping), so its clock has to come in well under that.
+local FIRST_BADGE_BATTLE_MINUTES = 45
+local LAUNCH_BATTLE_MINUTES = 210
+local TYPICAL_WILD_BATTLES_A_BADGE = 60 -- training and hunting for the right type, together
+local MOST_WILD_BATTLES_A_BADGE = 100 -- the unluckiest robot; more than this is a wall, not a game
+
+print("\n== A robot plays the whole story ==")
+do
+	local first = play(1)
+	for number, leg in first.legs do
+		print(
+			`    badge {number}: team level {leg.level}, {leg.wild} wild battles, about {leg.minutes} minutes, {leg.coins} coins`
+		)
+	end
+	for _, line in first.bot.log do
 		print(line)
 	end
 	check(
 		"the story can be played from the first beat to the last",
-		stuckAt == nil and World.nextBeat(Storyline, bot.profile.Story.flags) == nil,
-		stuckAt
+		first.stuckAt == nil and World.nextBeat(Storyline, first.bot.profile.Story.flags) == nil,
+		first.stuckAt
 	)
 	check(
 		"a badge is earned for every biome with a story",
-		bot.profile.Story.badges == #biomes or bot.profile.Story.badges >= 1,
-		`{bot.profile.Story.badges} badges, {#biomes} biomes`
+		first.bot.profile.Story.badges == #biomes,
+		`{first.bot.profile.Story.badges} badges, {#biomes} biomes`
 	)
-	check("the robot caught creatures along the way", bot.catches >= 1, `{bot.catches}`)
-	check(
-		"training never becomes a wall: fewer than 150 wild battles a badge",
-		bot.wildBattles < 150 * math.max(1, bot.profile.Story.badges),
-		`{bot.wildBattles} in all`
-	)
-	check("coins never go below zero", bot.profile.Coins >= 0, `{bot.profile.Coins}`)
-	check("losses happen but do not pile up", bot.losses < 40, `{bot.losses}`)
+	check("the robot caught creatures along the way", first.bot.catches >= 1, `{first.bot.catches}`)
+	check("coins never go below zero", first.bot.profile.Coins >= 0, `{first.bot.profile.Coins}`)
 	check(
 		"the save is sound at the end",
-		#Profile.validate(bot.profile) == 0,
-		table.concat(Profile.validate(bot.profile), "; ")
+		#Profile.validate(first.bot.profile) == 0,
+		table.concat(Profile.validate(first.bot.profile), "; ")
 	)
+end
+
+print("\n== Twelve different robots: is the story fair and well paced for all of them? ==")
+do
+	local SEEDS: { number } = { 1, 7, 13, 99, 1234, 5555, 31337, 77777, 424242, 8675309, 2026, 11 }
+	local stuck: { string } = {}
+	local wild: { { number } } = {}
+	local minutes: { { number } } = {}
+	local total: { number } = {}
+	local worstLosses, worstTries, mostWild = 0, 0, 0
+	local firstTryWins, storyBattles = 0, 0
+	for _, seed in SEEDS do
+		local run = play(seed)
+		if run.stuckAt or World.nextBeat(Storyline, run.bot.profile.Story.flags) ~= nil then
+			table.insert(stuck, `seed {seed}: {run.stuckAt or "ran out of steps"}`)
+			continue
+		end
+		local sum = 0
+		for number, leg in run.legs do
+			wild[number] = wild[number] or {}
+			minutes[number] = minutes[number] or {}
+			table.insert(wild[number], leg.wild)
+			table.insert(minutes[number], leg.minutes)
+			mostWild = math.max(mostWild, leg.wild)
+			sum += leg.minutes
+		end
+		table.insert(total, sum)
+		worstLosses = math.max(worstLosses, run.bot.losses)
+		for _, line in run.bot.log do
+			local tries = tonumber(string.match(line, "try (%d+)")) or 1
+			worstTries = math.max(worstTries, tries)
+			storyBattles += 1
+			if tries == 1 then
+				firstTryWins += 1
+			end
+		end
+	end
+	check("every robot finishes the story", #stuck == 0, table.concat(stuck, "; "))
+	if #stuck == 0 then
+		for number in wild do
+			print(
+				`    badge {number}: typically {middle(wild[number])} wild battles and {middle(
+					minutes[number]
+				)} minutes of battling`
+			)
+		end
+		check(
+			"the first badge takes well under an hour of battling",
+			middle(minutes[1]) <= FIRST_BADGE_BATTLE_MINUTES,
+			`{middle(minutes[1])} minutes`
+		)
+		check(
+			"the launch biomes take about three hours of battling or less",
+			middle(total) <= LAUNCH_BATTLE_MINUTES,
+			`{middle(total)} minutes`
+		)
+		local typicalMost = 0
+		for number in wild do
+			typicalMost = math.max(typicalMost, middle(wild[number]))
+		end
+		check(
+			"a badge typically takes 60 wild battles or fewer",
+			typicalMost <= TYPICAL_WILD_BATTLES_A_BADGE,
+			`{typicalMost} in the longest biome`
+		)
+		check(
+			"training never becomes a wall, even for the unluckiest robot",
+			mostWild <= MOST_WILD_BATTLES_A_BADGE,
+			`at most {mostWild} wild battles for one badge`
+		)
+		check(
+			"no story battle takes more than four tries",
+			worstTries <= 4,
+			`worst: {worstTries} tries`
+		)
+		check(
+			"losses happen, so the battles are not a formality",
+			firstTryWins < storyBattles,
+			`{firstTryWins} of {storyBattles} story battles won first time`
+		)
+		check("losses do not pile up", worstLosses < 25, `at most {worstLosses} in one playthrough`)
+	end
 end
 
 print(`\n{passed} passed, {failed} failed`)

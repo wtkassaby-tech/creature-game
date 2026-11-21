@@ -16,15 +16,25 @@ export type KindMultipliers = {
 local ProgressionConfig = {}
 
 -- Level curve: XP to go from level L to L + 1 is floor(CURVE_BASE x L ^ CURVE_EXPONENT).
--- A low base keeps the first levels quick (a new player sees a level-up within two or three
--- fights); an exponent above 1 steepens the curve smoothly, with no jumps.
-ProgressionConfig.CURVE_BASE = 14
-ProgressionConfig.CURVE_EXPONENT = 1.6
+-- A wild win at the same level pays REWARD_FLAT + REWARD_PER_LEVEL x L, so with an exponent just
+-- above 1 the number of wild battles a level takes stays almost flat: about 2 at level 10, 3 at
+-- level 30 and 4 at level 100. Levels are held back by the badge cap, not by the grind: the
+-- robot players in tests/playthrough.test need about 30 wild battles a badge on top of the
+-- story's own battles. (The first curve, 14 and 1.6, needed 90, 140 and 290.)
+ProgressionConfig.CURVE_BASE = 10
+ProgressionConfig.CURVE_EXPONENT = 1.2
 ProgressionConfig.MAX_LEVEL = 100
 
 -- Level cap: CAP_BASE with no badge, then CAP_STEP more for each badge held.
 ProgressionConfig.CAP_BASE = 15
 ProgressionConfig.CAP_STEP = 10
+
+-- The strongest creature in a badge battle is this many levels under the player's level cap,
+-- and the rest of that team within GATE_TEAM_SPREAD levels below it. A team trained to the cap
+-- then has a small edge: at one level under the cap, the robot players in tests/playthrough.test
+-- could not beat the Dust Canyon gate in eight runs out of twelve.
+ProgressionConfig.GATE_TOP_UNDER_CAP = 2
+ProgressionConfig.GATE_TEAM_SPREAD = 2
 
 -- XP paid for one defeated creature, before the share and gap rules below:
 --   (REWARD_FLAT + REWARD_PER_LEVEL x defeatedLevel) x kind x rarity

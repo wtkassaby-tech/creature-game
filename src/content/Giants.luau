@@ -6,10 +6,11 @@
 local GiantBattle = require("../shared/GiantBattle")
 local DustCanyon = require("./giants/DustCanyon")
 local Greenwood = require("./giants/Greenwood")
+local TideFlats = require("./giants/TideFlats")
 
 local Giants: { [string]: GiantBattle.GiantDef } = {}
 
-for _, giant in { Greenwood, DustCanyon } do
+for _, giant in { Greenwood, DustCanyon, TideFlats } do
 	Giants[giant.id] = giant
 end
 

@@ -4,11 +4,12 @@
 
 local DustCanyon = require("./biomes/DustCanyon")
 local Greenwood = require("./biomes/Greenwood")
+local TideFlats = require("./biomes/TideFlats")
 local WorldTypes = require("../shared/WorldTypes")
 
 local Biomes: { [string]: WorldTypes.Biome } = {}
 
-for _, biome in { Greenwood, DustCanyon } do
+for _, biome in { Greenwood, DustCanyon, TideFlats } do
 	Biomes[biome.id] = biome
 end
 

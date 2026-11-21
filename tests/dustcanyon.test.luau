@@ -30,6 +30,7 @@ local TypeChart = require("../src/shared/TypeChart")
 local Types = require("../src/shared/Types")
 local World = require("../src/shared/World")
 local WorldTypes = require("../src/shared/WorldTypes")
+local ProgressionConfig = require("../src/config/ProgressionConfig")
 local Xp = require("../src/shared/Xp")
 
 type Fighter = Battle.Fighter
@@ -570,17 +571,23 @@ do
 	local team = champion.team :: WorldTypes.TamerTeam
 	checkTeam("champion", team, MAX_LEVEL)
 	check("the champion brings three creatures", #team.members == 3)
-	local levelsOk = true
+	local gateTop = MAX_LEVEL - ProgressionConfig.GATE_TOP_UNDER_CAP
+	local levelsOk, top = true, 0
 	for _, m in team.members do
-		if m.level < 22 or m.level > 24 then
+		top = math.max(top, m.level)
+		if m.level < gateTop - ProgressionConfig.GATE_TEAM_SPREAD or m.level > gateTop then
 			levelsOk = false
 		end
 	end
-	check("the champion's levels are 22 to 24", levelsOk)
+	check(
+		"the champion's strongest creature is two levels under the player's cap",
+		levelsOk and top == gateTop,
+		`top {top}`
+	)
 	check("the champion's team is not tinted", team.tint == 0)
 	check(
 		"the champion's lines are short and a loss is not free",
-		#champion.before <= MAX_LINE and #champion.after <= MAX_LINE and not champion.mayRetryAtOnce
+		#champion.before <= MAX_LINE and #champion.after <= MAX_LINE and not champion.cannotLose
 	)
 end
 
@@ -785,7 +792,7 @@ print("\nStory")
 local chapter1 = Story.chapter_1
 check("chapter 2 is registered", chapter ~= nil and chapter.number == 2)
 check(
-	"the storyline holds both chapters in order",
+	"the storyline starts with chapters 1 and 2, in order",
 	(function(): boolean
 		local expectedIds: { string } = {}
 		for _, beat in chapter1.beats do
@@ -795,8 +802,10 @@ check(
 			table.insert(expectedIds, beat.id)
 		end
 		local actual: { string } = {}
-		for _, beat in Storyline.beats do
-			table.insert(actual, beat.id)
+		for index, beat in Storyline.beats do
+			if index <= #expectedIds then
+				table.insert(actual, beat.id)
+			end
 		end
 		return table.concat(expectedIds, ",") == table.concat(actual, ",")
 	end)()
@@ -1004,7 +1013,7 @@ check(
 		and World.nextBeat(chapter, { sealed_path = true }) == chapter.beats[1]
 )
 
--- Walk the whole story, both chapters, with StoryProgress.complete.
+-- Walk the story to the end of chapter 2 with StoryProgress.complete.
 do
 	local nextId = 0
 	local function newId(): string
@@ -1015,7 +1024,7 @@ do
 	local finished = 0
 	local choice: string? = "Mossmitt"
 	local total = #chapter1.beats + #chapter.beats
-	while true do
+	while finished < total do
 		local beat = World.nextBeat(Storyline, profile.Story.flags)
 		if not beat then
 			break
@@ -1125,7 +1134,14 @@ end
 
 print("\nUnique ids across Greenwood and Dust Canyon")
 do
-	local biomes: { WorldTypes.Biome } = { greenwood, canyon }
+	-- Every biome there is, so a later biome cannot reuse an id either.
+	local biomes: { WorldTypes.Biome } = {}
+	for _, biome in Biomes do
+		table.insert(biomes, biome)
+	end
+	table.sort(biomes, function(a, b)
+		return a.number < b.number
+	end)
 	local function unique(label: string, lists: { { string } })
 		local seenId: { [string]: boolean } = {}
 		local duplicate: string? = nil
@@ -1185,7 +1201,7 @@ do
 		table.insert(npcLists, npcList)
 		table.insert(tamerIds, tamerList)
 	end
-	unique("place ids on both maps", mapPlaces)
+	unique("place ids on every map", mapPlaces)
 	unique("place, building, area, spot and character ids in the data", dataPlaces)
 	unique("npc ids", npcLists)
 	unique("local tamer ids", tamerIds)
@@ -1233,7 +1249,13 @@ do
 	)
 
 	local questIds: { string } = {}
-	for _, list in { require("../src/content/quests/Greenwood"), QuestsDustCanyon } do
+	for _, list in
+		{
+			require("../src/content/quests/Greenwood"),
+			QuestsDustCanyon,
+			require("../src/content/quests/TideFlats"),
+		}
+	do
 		for _, quest in list do
 			table.insert(questIds, quest.id)
 		end

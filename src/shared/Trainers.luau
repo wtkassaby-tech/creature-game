@@ -94,7 +94,7 @@ function Trainers.resolve(
 		place = battle.place,
 		team = team,
 		paysCoins = false,
-		cannotLose = battle.mayRetryAtOnce,
+		cannotLose = battle.cannotLose,
 	},
 		nil
 end

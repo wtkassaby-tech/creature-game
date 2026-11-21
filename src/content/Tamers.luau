@@ -7,6 +7,7 @@
 
 local DustCanyon = require("./tamers/DustCanyon")
 local Greenwood = require("./tamers/Greenwood")
+local TideFlats = require("./tamers/TideFlats")
 local WorldTypes = require("../shared/WorldTypes")
 
 export type Registry = {
@@ -19,7 +20,7 @@ local locals: { [string]: WorldTypes.Tamer } = {}
 local rivals: { [string]: WorldTypes.RivalDef } = {}
 local story: { [string]: WorldTypes.StoryBattle } = {}
 
-local biomes: { WorldTypes.BiomeTamers } = { Greenwood, DustCanyon }
+local biomes: { WorldTypes.BiomeTamers } = { Greenwood, DustCanyon, TideFlats }
 
 for _, biome in biomes do
 	for _, tamer in biome.locals do
@@ -39,7 +40,7 @@ for _, biome in biomes do
 			teams = rival.first,
 			before = rival.firstBefore,
 			after = rival.firstAfter,
-			mayRetryAtOnce = rival.firstCannotBeLost,
+			cannotLose = rival.firstCannotBeLost,
 		}
 		story[rival.gateBattle] = {
 			id = rival.gateBattle,
@@ -51,7 +52,7 @@ for _, biome in biomes do
 			teams = rival.gate,
 			before = rival.gateBefore,
 			after = rival.gateAfter,
-			mayRetryAtOnce = false,
+			cannotLose = false,
 		}
 	end
 	local extra: { WorldTypes.StoryBattle } = biome.storyBattles or {}

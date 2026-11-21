@@ -129,22 +129,22 @@ local rival: WorldTypes.RivalDef = {
 		-- The player picked Mossmitt (Leaf): Sand leads, and Water is ready behind it.
 		Mossmitt = {
 			members = {
-				member("Spadesnout", 14, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
+				member("Spadesnout", 13, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
 				member(
 					"Splashjack",
-					13,
+					12,
 					{ "Ripple Ram", "Silt Surge", "Brook Rush", "Dew Splash" }
 				),
-				member("Gorsling", 13, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
+				member("Gorsling", 12, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
 			},
 			tint = 0.25,
 		},
 		-- The player picked Spadesnout (Sand): Water leads, with Storm and Leaf behind it.
 		Spadesnout = {
 			members = {
-				member("Sloshcalf", 14, { "Ripple Ram", "Mud Slap", "Brook Rush", "Spore Puff" }),
-				member("Gorsling", 13, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
-				member("Stumpwarden", 13, { "Sap Hammer", "Root Lash", "Moss Slam", "Twig Snap" }),
+				member("Sloshcalf", 13, { "Ripple Ram", "Mud Slap", "Brook Rush", "Spore Puff" }),
+				member("Gorsling", 12, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
+				member("Stumpwarden", 12, { "Sap Hammer", "Root Lash", "Moss Slam", "Twig Snap" }),
 			},
 			tint = 0.25,
 		},
@@ -153,11 +153,11 @@ local rival: WorldTypes.RivalDef = {
 			members = {
 				member(
 					"Mossmitt",
-					14,
+					13,
 					{ "Bramble Rake", "Thorn Volley", "Leaf Gust", "Moss Slam" }
 				),
-				member("Spadesnout", 13, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
-				member("Stumpwarden", 13, { "Sap Hammer", "Root Lash", "Moss Slam", "Twig Snap" }),
+				member("Spadesnout", 12, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
+				member("Stumpwarden", 12, { "Sap Hammer", "Root Lash", "Moss Slam", "Twig Snap" }),
 			},
 			tint = 0.25,
 		},

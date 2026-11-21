@@ -36,6 +36,8 @@ local Species: { [string]: Types.SpeciesDef } = {
 	Lanternell = require("./species/Lanternell"),
 	Moatkeep = require("./species/Moatkeep"),
 	Runnelfin = require("./species/Runnelfin"),
+	-- Tide Flats' giant in its creature form: captured, never met in the wild.
+	Carrackon = require("./species/Carrackon"),
 }
 
 return Species

@@ -96,6 +96,9 @@ local Moves: { [string]: MoveDef } = {
 	["Cockle Crack"] = { element = "Sand", power = 55 },
 	-- Toxic: a teaser for the Mire, on the two Sand torsos only (see the roster document)
 	["Red Tide"] = { element = "Toxic", power = 65 },
+	-- Carrackon's own (the captured giant's signature moves; see src/content/giants).
+	["Rolling Breaker"] = { element = "Water", power = 65 },
+	["Silt Cloud"] = { element = "Sand", power = 60 },
 }
 
 return Moves
