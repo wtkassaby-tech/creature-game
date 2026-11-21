@@ -2,6 +2,16 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026 (giant capture)
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Hollowbough as a creature of its own, with two signature moves | Tested | `src/content/species/Hollowbough.luau` |
+| One capture throw after a giant win; the serial number steps; once per player | Tested (41). Review running | `src/shared/GiantCapture.luau`, `src/server/Giants/`, `src/server/Serials/` |
+| Giant Candy and breeding from a captured giant | Tested | `src/shared/Breeding.luau`, `src/shared/Rewards.luau` |
+
+1040 checks pass. **To try in Studio:** buy a Giant Horn and a Braided Lasso, walk to the lair past the stall on Route B, wake Hollowbough and win. A panel offers one throw: three loops. On a hit, "Hollowbough No. 1 is yours!" should appear and it should be on the creatures screen, bigger than the rest.
+
 ## 21 November 2026 (after Ayrton's answers): lasting damage, the healer, long grass
 
 | Piece | State | Where |
@@ -9,7 +19,6 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | Damage lasts between battles; the free healer; waking at the healer when the team faints; tonics between fights | Tested (28), reviewed | `src/shared/Health.luau`, `src/shared/BattleSession.luau` |
 | Long grass in every stretch of route (battles you did not choose), beside the creatures you can see | Tested, reviewed | `src/shared/Encounters.luau`, `src/server/World/` |
 | Seventh independent exploit review | Done: no must-fix; four should-fix, all fixed | `docs/REVIEWS.md` |
-| Next: capturing a giant (option A, breedable, Giant Candy) | Not started | `docs/plans/04_GIANT_CAPTURE.md` |
 
 **To try in Studio:** walk through a "Long grass" patch beside a route and a battle should start by itself. Get hurt, then check the creatures screen shows the lost health and a Tonic button; talk to the healer at Brightwater House to mend everyone; lose a battle with your whole team and you should wake at the healer.
 

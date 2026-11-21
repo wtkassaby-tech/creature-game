@@ -1,6 +1,6 @@
 # Approval pack 4: capturing a giant
 
-Date: 21 November 2026. For: Ayrton. Status: **option A chosen by Ayrton on 21 November 2026, with one change: a captured giant can breed, and the candy for it is harder to get.** The smaller questions in section 3 are still open. Giant fights are built and tested; the capture is not, because the brief does not say what a captured giant *is* once it is yours.
+Date: 21 November 2026. For: Ayrton. Status: **option A chosen by Ayrton on 21 November 2026, with one change: a captured giant can breed, and the candy for it is harder to get.** **Built on 21 November 2026** (see `PROGRESS.md`). The smaller questions in section 3 were built with the recommended answers and can still be changed: a captured giant looks a third bigger; it stays bound to the account; a missed capture keeps the win's rewards. Giant fights are built and tested; the capture is not, because the brief does not say what a captured giant *is* once it is yours.
 
 ## 1. What is already decided
 
@@ -32,4 +32,10 @@ With option A, I would build each giant's creature form as data alongside its fi
 - [ ] Option A, B or C for what a captured giant is.
 - [ ] Answers to the three smaller questions.
 
-Until then: giants can be fought, give their rewards and finish the giant quest, but cannot be captured.
+## 5. As built
+
+- A win offers one throw, for 90 seconds. It needs at least a Braided lasso and has three loops.
+- A hit is saved at once as a waiting capture; the giant joins when its serial number has been fetched (a moment later, or the next time you join if you leave first, or when there is room in the stable).
+- A captured Hollowbough is a gem-tier Hollowbough at level 16 with two moves nothing else has: Heartwood Slam and Thorn Gale.
+- Breeding from it needs 10 Hollowbough Giant Candy for each giant parent, in place of ordinary candy. Beating Hollowbough gives 1, up to 2 a day. Prism Candy cannot stand in for it.
+- A child is an ordinary creature that can carry Hollowbough's parts (and so its moves). It is bound to the account like its parent.
