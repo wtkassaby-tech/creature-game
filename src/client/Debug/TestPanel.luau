@@ -1,0 +1,239 @@
+--!strict
+-- Studio-only test panel, so battles, the lasso, the story and releasing can be played before the
+-- real screens exist. Plain grey boxes on purpose: this is a tool, never shown on a live server.
+-- TODO(art): replaced by the battle, lasso and team screens.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
+local ClientState = require(script.Parent.Parent.State.ClientState)
+local Lasso = require(ReplicatedStorage.shared.Lasso)
+local LassoPlayer = require(script.Parent.Parent.Lasso.LassoPlayer)
+local Net = require(ReplicatedStorage.net.generated.Client)
+local World = require(ReplicatedStorage.shared.World)
+
+local TestPanel = {}
+
+local MAX_LOG_LINES = 10
+
+function TestPanel.start(parent: Instance)
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "TestPanel"
+	gui.ResetOnSpawn = false
+	gui.Parent = parent
+
+	local root = Instance.new("Frame")
+	root.Size = UDim2.new(0, 360, 1, -20)
+	root.Position = UDim2.new(0, 10, 0, 10)
+	root.BackgroundTransparency = 0.3
+	root.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	root.Parent = gui
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 4)
+	layout.Parent = root
+
+	local function label(height: number): TextLabel
+		local text = Instance.new("TextLabel")
+		text.Size = UDim2.new(1, 0, 0, height)
+		text.BackgroundTransparency = 1
+		text.TextColor3 = Color3.new(1, 1, 1)
+		text.TextXAlignment = Enum.TextXAlignment.Left
+		text.TextYAlignment = Enum.TextYAlignment.Top
+		text.TextWrapped = true
+		text.Font = Enum.Font.Code
+		text.TextSize = 13
+		text.Text = ""
+		text.Parent = root
+		return text
+	end
+
+	local status = label(90)
+	local logText = label(150)
+	local lines: { string } = {}
+	local function log(line: string)
+		table.insert(lines, line)
+		while #lines > MAX_LOG_LINES do
+			table.remove(lines, 1)
+		end
+		logText.Text = table.concat(lines, "\n")
+	end
+
+	local buttons = Instance.new("Frame")
+	buttons.Size = UDim2.new(1, 0, 0, 110)
+	buttons.BackgroundTransparency = 1
+	buttons.Parent = root
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0, 84, 0, 30)
+	grid.Parent = buttons
+	local function button(text: string, onClick: () -> ())
+		local b = Instance.new("TextButton")
+		b.Text = text
+		b.TextSize = 13
+		b.Parent = buttons
+		b.Activated:Connect(onClick)
+	end
+
+	-- The lasso bar: the zone in green, the marker in white.
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.new(1, 0, 0, 24)
+	bar.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	bar.Parent = root
+	local zoneBox = Instance.new("Frame")
+	zoneBox.BackgroundColor3 = Color3.fromRGB(80, 180, 90)
+	zoneBox.BorderSizePixel = 0
+	zoneBox.Size = UDim2.new(0, 0, 1, 0)
+	zoneBox.Parent = bar
+	local marker = Instance.new("Frame")
+	marker.BackgroundColor3 = Color3.new(1, 1, 1)
+	marker.BorderSizePixel = 0
+	marker.Size = UDim2.new(0, 4, 1, 0)
+	marker.Parent = bar
+
+	local battleId: number? = nil
+	local nextTurn = 1
+	local playing: LassoPlayer.Playing? = nil
+
+	button("Wild battle", function()
+		Net.StartBattle.Fire({ Kind = "Wild", TargetId = 0 })
+	end)
+	for index = 1, 4 do
+		button(`Move {index}`, function()
+			if battleId then
+				Net.BattleAction.Fire({
+					BattleId = battleId,
+					Turn = nextTurn,
+					Kind = "Move",
+					Index = index,
+				})
+			end
+		end)
+	end
+	button("Run", function()
+		if battleId then
+			Net.BattleAction.Fire({ BattleId = battleId, Turn = nextTurn, Kind = "Run", Index = 0 })
+		end
+	end)
+	button("Throw Basic", function()
+		if battleId then
+			Net.ThrowLasso.Fire({ BattleId = battleId, Turn = nextTurn, Tier = "Basic" })
+		end
+	end)
+	local function tap()
+		local current = playing
+		if not current then
+			return
+		end
+		local message = LassoPlayer.tap(current)
+		if message then
+			Net.LassoTap.Fire(message)
+		end
+	end
+	button("Tap (Space)", tap)
+	button("Next beat", function()
+		local state = ClientState.get()
+		local flags: { [string]: boolean } = {}
+		local seen: { string } = if state then state.Flags else {}
+		for _, flag in seen do
+			flags[flag] = true
+		end
+		local beat = World.nextBeat(Chapter1, flags)
+		if beat then
+			Net.CompleteBeat.Fire({ BeatId = beat.id, Choice = nil })
+		end
+	end)
+
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == Enum.KeyCode.Space then
+			tap()
+		end
+	end)
+
+	Net.BattleStarted.On(function(value)
+		battleId, nextTurn = value.BattleId, 1
+		local foe = value.Theirs[1]
+		log(`Battle {value.BattleId}: a level {foe.Level} {foe.Rarity} {foe.Torso} ({foe.Hp} HP)`)
+	end)
+	Net.BattleTurn.On(function(value)
+		nextTurn = value.Turn + 1
+		for _, event in value.Events do
+			log(
+				`  turn {value.Turn}: side {event.Side} {event.Kind} {event.Move or ""} -{event.Damage} -> {event.TargetHp}`
+			)
+		end
+		if value.Finished then
+			log(
+				`Battle over: {({ [0] = "draw / ran", [1] = "you won", [2] = "you lost" })[value.Outcome]}`
+			)
+			battleId = nil
+		end
+	end)
+	Net.BattleRefused.On(function(value)
+		log(`Refused: {value.Reason}`)
+	end)
+	Net.BattleRewards.On(function(value)
+		log(
+			`Rewards: {value.Coins} coins{if value.Material ~= ""
+				then ", 1 " .. value.Material
+				else ""}`
+		)
+	end)
+	Net.LassoPattern.On(function(value)
+		playing = LassoPlayer.begin(value)
+		log(
+			`Lasso: {#value.Zones} zone(s){if value.ConnectionAssist
+				then " (connection assist)"
+				else ""}`
+		)
+	end)
+	Net.LassoResult.On(function(value)
+		playing = nil
+		log(
+			`Lasso: {value.Outcome}, {value.ZonesHit} zone(s) hit, {value.Candy} {value.Element or ""} candy`
+		)
+	end)
+	Net.BeatCompleted.On(function(value)
+		log(`Story: {value.BeatId} ({#value.Gifts} gift(s))`)
+	end)
+	Net.ReleaseResult.On(function(value)
+		log(
+			if value.Ok
+				then `Released for {value.Coins} coins`
+				else `Release refused: {value.Reason}`
+		)
+	end)
+	Net.Hatched.On(function(value)
+		log(`Hatched: {#value.Ids}`)
+	end)
+
+	ClientState.onChanged(function(state)
+		status.Text = `Coins {state.Coins}  Prism {state.Candy.Prism}  Badges {state.Badges}\n`
+			.. `Lassos: Basic {state.Items.Basic or 0}, Braided {state.Items.Braided or 0}\n`
+			.. `Creatures {#state.Creatures}/{state.StableCapacity}  Team {#state.Team}  Eggs {#state.Eggs}/{state.Pens}\n`
+			.. `Starter {state.Starter}  Waiting gifts {state.Waiting}`
+	end)
+
+	RunService.RenderStepped:Connect(function()
+		local current = playing
+		if not current then
+			zoneBox.Visible, marker.Visible = false, false
+			return
+		end
+		local position, zone = LassoPlayer.marker(current)
+		if position == nil or zone == nil then
+			zoneBox.Visible, marker.Visible = false, false
+			return
+		end
+		local inSweep = LassoPlayer.elapsedMs(current) >= zone.startMs
+		zoneBox.Visible, marker.Visible = true, inSweep
+		zoneBox.Position = UDim2.new(zone.centre - zone.width / 2, 0, 0, 0)
+		zoneBox.Size = UDim2.new(zone.width, 0, 1, 0)
+		marker.Position = UDim2.new(position, -2, 0, 0)
+		marker.BackgroundColor3 = if Lasso.isInZone(zone, position)
+			then Color3.fromRGB(255, 240, 120)
+			else Color3.new(1, 1, 1)
+	end)
+end
+
+return TestPanel
