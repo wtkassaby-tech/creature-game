@@ -358,6 +358,13 @@ struct CandyView {
 	Cosmic: f32,
 	Prism: f32,
 }
+struct DailyView {
+	Id: string(1..24),
+	Hard: boolean,
+	Progress: u16,
+	Count: u16,
+	Claimed: boolean,
+}
 event PlayerState {
 	From: Server,
 	Type: Reliable,
@@ -379,6 +386,8 @@ event PlayerState {
 		-- Quests taken (id -> progress so far) and quests handed in.
 		QuestsActive: map { [string(1..40)]: u16 },
 		QuestsDone: string(1..40)[0..200],
+		-- Today's daily tasks (empty until the first badge).
+		Daily: DailyView[0..12],
 		Waiting: u8,
 	},
 }
@@ -617,4 +626,12 @@ event ThrowGiantLasso {
 		BattleId: u32,
 		Tier: LassoTier,
 	},
+}
+
+-- Device -> server: claim a finished daily task. The server checks it is finished and unpaid.
+event ClaimDailyTask {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { TaskId: string(1..24) },
 }

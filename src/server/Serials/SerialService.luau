@@ -53,12 +53,25 @@ function SerialService.next(kind: string): number?
 		memory[kind] = (memory[kind] or 0) + 1
 		return memory[kind]
 	end
+	local damaged = false
 	for attempt = 1, ATTEMPTS do
 		local ok, value = pcall(function()
 			return getStore():UpdateAsync(`counter/{kind}`, function(current)
-				return (if typeof(current) == "number" then current else 0) + 1
+				if current == nil then
+					return 1 -- the first of its kind
+				elseif typeof(current) ~= "number" then
+					-- A counter that is not a number must never be treated as zero: that
+					-- would give out numbers a second time. Leave it alone and raise an alarm.
+					damaged = true
+					return nil
+				end
+				return current + 1
 			end)
 		end)
+		if damaged then
+			log("SerialAlarm", { kind = kind, problem = "the counter is not a number" })
+			return nil
+		end
 		if ok and typeof(value) == "number" then
 			return value
 		end

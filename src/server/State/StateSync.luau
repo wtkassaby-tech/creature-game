@@ -30,7 +30,7 @@ function StateSync.start(getData: (player: Player) -> Profile.Profile?): () -> (
 				dirty[player] = nil
 				local profile = getData(player)
 				if profile and player.Parent == Players then
-					Net.PlayerState.Fire(player, Snapshot.build(profile))
+					Net.PlayerState.Fire(player, Snapshot.build(profile, os.time()))
 				end
 			end
 		end

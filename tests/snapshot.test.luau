@@ -55,6 +55,12 @@ check("the team is listed", state.Team[1] == "b")
 profile.Quests.active.gw_fresh_tracks = 2
 profile.Quests.done.gw_old = true
 local withQuests = Snapshot.build(profile)
+check("with no clock given, daily tasks are left out", #withQuests.Daily == 0)
+profile.Story.badges = 1
+check(
+	"with the server's clock, today's tasks are shown",
+	#Snapshot.build(profile, 86400 * 300).Daily == 6
+)
 check(
 	"quests taken and done are shown",
 	withQuests.QuestsActive.gw_fresh_tracks == 2 and withQuests.QuestsDone[1] == "gw_old"

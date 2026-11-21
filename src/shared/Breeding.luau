@@ -321,8 +321,15 @@ function Breeding.breed(a: Creature, b: Creature, rng: Rng.Rng, options: BreedOp
 	end
 
 	local jitter = (Rng.next(rng) * 2 - 1) * BreedConfig.SIZE_JITTER
-	local size =
-		math.clamp((a.size + b.size) / 2 + jitter, BreedConfig.SIZE_MIN, BreedConfig.SIZE_MAX)
+	-- A giant parent counts as the largest ordinary size, so its children are not all huge.
+	local function ordinary(parent: Creature): number
+		return math.clamp(parent.size, BreedConfig.SIZE_MIN, BreedConfig.SIZE_MAX)
+	end
+	local size = math.clamp(
+		(ordinary(a) + ordinary(b)) / 2 + jitter,
+		BreedConfig.SIZE_MIN,
+		BreedConfig.SIZE_MAX
+	)
 	local rarity: Types.Rarity = rollRarity(a, b, rng)
 
 	local child: Creature = {

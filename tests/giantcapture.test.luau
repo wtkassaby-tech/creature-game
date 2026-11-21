@@ -158,14 +158,41 @@ do
 	local throw = assert(GiantCapture.begin(profile, giant, "Braided", 5, 80), "the attempt starts")
 	GiantCapture.finish(profile, throw, perfect(throw), perfect(throw))
 
-	profile.StableCapacity = 0
-	local noRoom = GiantCapture.complete(profile, giant, "g1", 7, 11)
+	check("a fresh capture needs its number fetched", GiantCapture.needsSerial(profile, giant))
 	check(
-		"with a full stable the capture keeps waiting",
-		noRoom.outcome == "NoRoom" and #profile.Pending == 1
+		"without its number it cannot be finished",
+		GiantCapture.complete(profile, giant, "g0", 11).outcome == "Refused"
+			and #profile.Pending == 1
+	)
+	check(
+		"a number that is not a whole number above zero is refused",
+		not GiantCapture.keepSerial(profile, giant.id, 0)
+			and not GiantCapture.keepSerial(profile, giant.id, 2.5)
+	)
+	check(
+		"the fetched number is kept on the waiting capture",
+		GiantCapture.keepSerial(profile, giant.id, 7) and profile.Pending[1].serial == 7
+	)
+	check(
+		"it is asked for only once",
+		not GiantCapture.needsSerial(profile, giant)
+			and not GiantCapture.keepSerial(profile, giant.id, 8)
+			and profile.Pending[1].serial == 7
+	)
+
+	profile.StableCapacity = 0
+	local noRoom = GiantCapture.complete(profile, giant, "g1", 11)
+	check(
+		"with a full stable the capture keeps waiting, number and all",
+		noRoom.outcome == "NoRoom" and #profile.Pending == 1 and profile.Pending[1].serial == 7
+	)
+	check(
+		"the record is sound while it waits",
+		#Profile.validate(profile) == 0,
+		table.concat(Profile.validate(profile), "; ")
 	)
 	profile.StableCapacity = 30
-	local grant, creature = GiantCapture.complete(profile, giant, "g1", 7, 11)
+	local grant, creature = GiantCapture.complete(profile, giant, "g1", 11)
 	local owned = assert(creature, "the giant arrives")
 	check(
 		"with room, the giant arrives",
@@ -182,6 +209,12 @@ do
 			and owned.level == giant.level
 	)
 	check("it looks bigger than other creatures", owned.size == form.size)
+	local ordinary = table.clone(owned)
+	ordinary.size = BreedConfig.SIZE_MAX
+	check(
+		"but fights as the largest ordinary size, no stronger",
+		Battle.fighter(owned).stats.Hp == Battle.fighter(ordinary).stats.Hp
+	)
 	check(
 		"the waiting entry is cleared and the giant is marked captured",
 		#profile.Pending == 0 and profile.Story.giantsCaptured[giant.id] == true
@@ -191,8 +224,9 @@ do
 		profile.Index.owned.Hollowbough == true and profile.Team[1] == "g1"
 	)
 	check(
-		"a serial arriving twice gives nothing more",
-		GiantCapture.complete(profile, giant, "g2", 8, 12).outcome == "AlreadyGranted"
+		"nothing more can be finished or numbered afterwards",
+		GiantCapture.complete(profile, giant, "g2", 12).outcome == "Refused"
+			and not GiantCapture.keepSerial(profile, giant.id, 8)
 			and profile.Creatures.g2 == nil
 	)
 	check(
@@ -201,14 +235,20 @@ do
 			and GiantCapture.begin(profile, giant, "Braided", 6, 80) == nil
 	)
 	check(
-		"a serial with no waiting capture gives nothing",
-		GiantCapture.complete(fresh(), giant, "g3", 9, 13).outcome == "Refused"
+		"a number with no waiting capture is refused",
+		not GiantCapture.keepSerial(fresh(), giant.id, 9)
+			and GiantCapture.complete(fresh(), giant, "g3", 13).outcome == "Refused"
 	)
 	check(
 		"the record is sound",
 		#Profile.validate(profile) == 0,
 		table.concat(Profile.validate(profile), "; ")
 	)
+
+	table.insert(profile.Pending, { source = "Giant", ref = giant.id })
+	check("a stale waiting entry for a captured giant is reported", #Profile.validate(profile) > 0)
+	check("and never asks for a number", not GiantCapture.needsSerial(profile, giant))
+	check("and is cleared", GiantCapture.tidy(profile) == 1 and #profile.Pending == 0)
 
 	local fighter = Battle.fighter(owned)
 	check(

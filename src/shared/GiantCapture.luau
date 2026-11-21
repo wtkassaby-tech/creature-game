@@ -168,17 +168,68 @@ function GiantCapture.build(
 	return creature
 end
 
--- Finishes a waiting capture once its serial number has arrived (step 3): the giant is added,
--- marked as captured and the waiting entry cleared, in one step. Returns the grant; "NoRoom"
--- means the stable is full and the capture keeps waiting (ask for the serial only when there
--- is room, so numbers are not wasted).
+local function entry(profile: Profile.Profile, giantId: string): Profile.PendingGrant?
+	for _, pending in profile.Pending do
+		if pending.source == "Giant" and pending.ref == giantId then
+			return pending
+		end
+	end
+	return nil
+end
+
+-- Clears waiting captures that can never finish because the giant is already captured.
+-- Returns how many were cleared.
+function GiantCapture.tidy(profile: Profile.Profile): number
+	local cleared = 0
+	for index = #profile.Pending, 1, -1 do
+		local pending = profile.Pending[index]
+		if pending.source == "Giant" and profile.Story.giantsCaptured[pending.ref] then
+			table.remove(profile.Pending, index)
+			cleared += 1
+		end
+	end
+	return cleared
+end
+
+-- True if this waiting capture still needs its serial number fetched: it is waiting, it has no
+-- number yet, and the giant can really be built. A number is asked for only then, and only
+-- once: it is kept on the waiting entry (`keepSerial`), so nothing can waste numbers.
+function GiantCapture.needsSerial(profile: Profile.Profile, giant: GiantBattle.GiantDef): boolean
+	local waitingEntry = entry(profile, giant.id)
+	return waitingEntry ~= nil
+		and waitingEntry.serial == nil
+		and not profile.Story.giantsCaptured[giant.id]
+		and GiantCapture.build(giant, "check", 1, 1) ~= nil
+end
+
+-- Writes a fetched serial number onto the waiting capture (saved with the profile). Returns
+-- false, changing nothing, if the capture is not waiting or already has a number.
+function GiantCapture.keepSerial(profile: Profile.Profile, giantId: string, serial: number): boolean
+	local waitingEntry = entry(profile, giantId)
+	if not waitingEntry or waitingEntry.serial ~= nil then
+		return false
+	end
+	if typeof(serial) ~= "number" or serial % 1 ~= 0 or serial < 1 then
+		return false
+	end
+	waitingEntry.serial = serial
+	return true
+end
+
+-- Finishes a waiting capture that has its serial number (step 3): the giant is added, marked
+-- as captured and the waiting entry cleared, in one step. "NoRoom" means the stable is full:
+-- the capture keeps waiting, number and all, and is finished when there is room.
 function GiantCapture.complete(
 	profile: Profile.Profile,
 	giant: GiantBattle.GiantDef,
 	id: string,
-	serial: number,
 	seed: number
 ): (Grants.Grant, Types.Creature?)
+	local waitingEntry = entry(profile, giant.id)
+	local serial = if waitingEntry then waitingEntry.serial else nil
+	if not serial then
+		return { outcome = "Refused", reason = "No capture of that giant has its number yet" }, nil
+	end
 	local creature = GiantCapture.build(giant, id, serial, seed)
 	if not creature then
 		return { outcome = "Refused", reason = "This giant cannot be captured" }, nil

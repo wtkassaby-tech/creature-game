@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Breeding = require(ReplicatedStorage.shared.Breeding)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local DailyTasks = require(ReplicatedStorage.content.DailyTasks)
 local Economy = require(ReplicatedStorage.shared.Economy)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
@@ -17,6 +18,11 @@ local Snapshot = require(ReplicatedStorage.shared.Snapshot)
 local Types = require(ReplicatedStorage.shared.Types)
 
 local CreaturesView = {}
+
+local taskGoals: { [string]: string } = {}
+for _, task in DailyTasks do
+	taskGoals[task.id] = task.goal
+end
 
 -- The creature record the shared rules expect, rebuilt from what the server sent for display.
 -- (Parents are not sent: the server alone checks that two creatures are not close relatives.)
@@ -204,6 +210,25 @@ function CreaturesView.start(playerGui: Instance)
 		for _, child in list:GetChildren() do
 			if child:IsA("Frame") then
 				child:Destroy()
+			end
+		end
+		-- Today's tasks come first (they appear with the first badge).
+		for _, task in state.Daily do
+			local goal = taskGoals[task.Id] or task.Id
+			local row = Kit.panel(list, UDim2.new(1, -8, 0, 40), UDim2.new(), Kit.COLOURS.panel)
+			local text =
+				`{if task.Hard then "Hard task" else "Daily task"}: {goal}  {task.Progress}/{task.Count}`
+			Kit.label(row, text, UDim2.new(0.74, 0, 1, -8), UDim2.new(0, 10, 0, 4))
+			if task.Claimed then
+				local done =
+					Kit.label(row, "Claimed", UDim2.new(0.2, 0, 1, -8), UDim2.new(0.78, 0, 0, 4))
+				done.TextColor3 = Kit.COLOURS.textDim
+			elseif task.Progress >= task.Count then
+				local claim = Kit.button(row, "Claim", Kit.COLOURS.good, function()
+					Net.ClaimDailyTask.Fire({ TaskId = task.Id })
+				end)
+				claim.Size = UDim2.new(0.2, 0, 1, -8)
+				claim.Position = UDim2.new(0.78, 0, 0, 4)
 			end
 		end
 		for _, view in state.Creatures do

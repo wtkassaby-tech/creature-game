@@ -2,6 +2,20 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: giant capture, serial numbers, Giant Candy (commit 51481a4)
+
+Reviewer: a separate read-only agent. Found sound: no way to capture the same giant twice, forge a hit, reuse an attempt or get more than one throw per win; a rejoin during the serial wait is safe; the capture throw cannot be mixed up with a battle throw or lock a player out; Giant Candy comes only from wins and is taken in the same step as the breed; breeding from a giant is not a cheap way to make gem-tier creatures (one breed takes about five days and ten horns).
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A waiting capture that could never finish (already marked captured, or the giant's creature form removed) would fetch and throw away a serial number every five seconds | Should fix | A number is fetched only for a capture that really needs one; stale waiting entries are cleared; the save check reports a giant that is both captured and waiting. Tests added |
+| 2 | The stable could fill during the wait for a number, wasting it, and a player could do this on purpose to push the counter up | Should fix | The fetched number is written onto the saved waiting capture and reused: one number per capture, however long it waits for room. Tests added |
+| 3 | A counter value that was not a number was treated as zero, which would give numbers out a second time | Should fix | Only a missing counter starts at 1; anything else is left alone, raises an alarm and gives no number |
+| 4 | The captured giant's bigger size also raised its Hp and Defence beyond what any other creature can reach, and pushed nearly all its children to the largest size | Should fix | Size counts for stats and for breeding only within the ordinary range: the giant looks bigger but fights as the largest ordinary size. Test added |
+| 5 | A new giant fight could be started while a capture attempt was still on offer | Note | Refused while an attempt is on offer or in the air |
+| 6 | The check for scripted tapping is never run | Note | The capture throw now logs how far each tap was from its centre. Running the audit over each player's throws is still to build (listed in `PROGRESS.md`) |
+| 7 | The save check missed a giant with no serial number | Note | Reported now |
+
 ## 21 November 2026: lasting damage, healing, long grass, team choice (commit ec0a7a0)
 
 Reviewer: a separate read-only agent. No must-fix findings. Found sound: health values stay valid; damage is written back every turn, so leaving never heals; nothing but the healer, a tonic or waking at the healer resets health; team changes are locked during every kind of battle; the story gates cannot be bypassed.

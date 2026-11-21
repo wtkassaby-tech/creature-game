@@ -3,6 +3,7 @@
 -- Display only. Numbers are clamped to the message's ranges so an odd saved value can never stop
 -- the message being sent, and an egg's child stays secret until it hatches.
 
+local DailyProgress = require("./DailyProgress")
 local Profile = require("./Profile")
 local Types = require("./Types")
 
@@ -43,6 +44,13 @@ export type CandyView = {
 	Cosmic: number,
 	Prism: number,
 }
+export type DailyView = {
+	Id: string,
+	Hard: boolean,
+	Progress: number,
+	Count: number,
+	Claimed: boolean,
+}
 export type State = {
 	Coins: number,
 	Gems: number,
@@ -59,6 +67,7 @@ export type State = {
 	Flags: { string },
 	QuestsActive: { [string]: number },
 	QuestsDone: { string },
+	Daily: { DailyView },
 	Waiting: number,
 }
 
@@ -105,7 +114,24 @@ function Snapshot.creature(c: Types.Creature): CreatureView
 	}
 end
 
-function Snapshot.build(profile: Profile.Profile): State
+-- `unixTime` is the server's clock; with it, today's daily tasks are included (and the day's
+-- counters roll over if the date has changed).
+function Snapshot.build(profile: Profile.Profile, unixTime: number?): State
+	local daily: { DailyView } = {}
+	if unixTime then
+		for index, task in DailyProgress.view(profile, unixTime) do
+			if index > 12 then
+				break
+			end
+			table.insert(daily, {
+				Id = task.id,
+				Hard = task.hard,
+				Progress = whole(task.progress, 65535),
+				Count = whole(task.count, 65535),
+				Claimed = task.claimed,
+			})
+		end
+	end
 	local creatures: { CreatureView } = {}
 	for _, c in profile.Creatures do
 		if #creatures >= MAX_CREATURES then
@@ -197,6 +223,7 @@ function Snapshot.build(profile: Profile.Profile): State
 		Flags = flags,
 		QuestsActive = questsActive,
 		QuestsDone = questsDone,
+		Daily = daily,
 		Waiting = whole(#profile.Pending, 255),
 	}
 end

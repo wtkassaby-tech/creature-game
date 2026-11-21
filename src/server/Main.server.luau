@@ -11,23 +11,19 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local BattleSession = require(ReplicatedStorage.shared.BattleSession)
-local Encounters = require(ReplicatedStorage.shared.Encounters)
 local Grants = require(ReplicatedStorage.shared.Grants)
 local Health = require(ReplicatedStorage.shared.Health)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
-local Rewards = require(ReplicatedStorage.shared.Rewards)
 local StoryProgress = require(ReplicatedStorage.shared.StoryProgress)
-local Trainers = require(ReplicatedStorage.shared.Trainers)
 local Types = require(ReplicatedStorage.shared.Types)
 local World = require(ReplicatedStorage.shared.World)
-local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
-local Xp = require(ReplicatedStorage.shared.Xp)
 
+local BattleFlow = require(script.Parent.Battle.BattleFlow)
 local BattleService = require(script.Parent.Battle.BattleService)
 local BreedingService = require(script.Parent.Breeding.BreedingService)
 local CaptureService = require(script.Parent.Capture.CaptureService)
+local DailyService = require(script.Parent.Daily.DailyService)
 local DataService = require(script.Parent.Data.DataService)
 local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
@@ -39,10 +35,6 @@ local WorldService = require(script.Parent.World.WorldService)
 
 local HATCH_CHECK_SECONDS = 5
 local IS_STUDIO = RunService:IsStudio()
-
--- What a battle was against, kept by the battle service and handed back when it ends.
-type WildRef = { kind: "Wild", spawnId: number, ambush: boolean? }
-type TrainedRef = { kind: "Trained", opponent: Trainers.Opponent, foes: { Types.Creature } }
 
 -- One line per event in the server log, ready for the analytics service later.
 local function log(event: string, fields: { [string]: any })
@@ -110,15 +102,7 @@ WorldService.start({
 		end
 		return false
 	end,
-	onAmbush = function(player, spawn)
-		-- A creature jumped out of long grass: the battle starts by itself.
-		local ref: WildRef = { kind = "Wild", spawnId = spawn.id, ambush = true }
-		BattleService.begin(
-			player,
-			"Wild",
-			{ creatures = { spawn.creature }, moves = nil, tier = "Wild", ref = ref }
-		)
-	end,
+	onAmbush = BattleFlow.ambush,
 })
 
 StoryService.start({
@@ -139,6 +123,15 @@ QuestService.start({
 	log = log,
 })
 
+DailyService.start({
+	getData = DataService.get,
+	changed = StateSync.changed,
+	notify = function(player, text)
+		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })
+	end,
+	log = log,
+})
+
 -- Saving (started after the world and the story, which a loading player needs) ---------------
 
 DataService.start(log, function(player: Player)
@@ -155,226 +148,9 @@ DataService.start(log, function(player: Player)
 	end
 end)
 
--- Battles ------------------------------------------------------------------------------------
+-- Battles ---------------------------------------------------------------------------------
 
-local function playerTeam(player: Player): ({ Types.Creature }?, number?)
-	local profile = DataService.get(player)
-	if not profile then
-		return nil, nil
-	end
-	local team: { Types.Creature } = {}
-	for _, id in profile.Team do
-		local creature = profile.Creatures[id]
-		if creature then
-			table.insert(team, creature)
-		end
-	end
-	if #team == 0 then
-		return nil, nil
-	end
-	return team, Xp.levelCap(profile.Story.badges)
-end
-
--- Finds what the player asked to battle. The kind decides where to look, so a tamer can never
--- be battled as a wild creature (which could be run from or lassoed).
-local function resolveTarget(
-	player: Player,
-	kind: BattleSession.Kind,
-	targetId: number,
-	targetName: string?
-): (BattleService.Opponent?, string?)
-	if GiantService.active(player) then
-		return nil, "You are already in a battle"
-	end
-	if kind == "Wild" then
-		local spawn, why = WorldService.engage(player, targetId)
-		if not spawn then
-			return nil, why
-		end
-		local ref: WildRef = { kind = "Wild", spawnId = spawn.id }
-		return { creatures = { spawn.creature }, moves = nil, tier = "Wild", ref = ref }, nil
-	elseif kind == "Tamer" or kind == "Rival" then
-		local profile = DataService.get(player)
-		if not profile then
-			return nil, "Your data is not loaded"
-		end
-		local opponent, why =
-			Trainers.resolve(targetName, profile, StoryService.chapter(), WorldService.biome())
-		if not opponent or opponent.kind ~= kind then
-			return nil, why or "That battle is not available"
-		end
-		if not WorldService.isNear(player, opponent.place, WorldConfig.ENGAGE_RADIUS) then
-			return nil, "You are too far away"
-		end
-		local creatures, moves = Trainers.build(opponent)
-		local ref: TrainedRef = { kind = "Trained", opponent = opponent, foes = creatures }
-		return {
-			creatures = creatures,
-			moves = moves,
-			tier = if kind == "Rival" then "Rival" else "Tamer",
-			ref = ref,
-		},
-			nil
-	end
-	return nil, "That battle is not available"
-end
-
-local function sendRewards(player: Player, battleId: number, paid: Rewards.Paid)
-	local members = {}
-	for _, member in paid.members do
-		table.insert(members, {
-			Id = member.id,
-			Gained = member.gained,
-			Level = member.level,
-			LevelsGained = member.levelsGained,
-			NewMoves = member.newMoves,
-		})
-	end
-	StateSync.changed(player)
-	Net.BattleRewards.Fire(player, {
-		BattleId = battleId,
-		Coins = paid.coins,
-		Material = paid.material or "",
-		Members = members,
-	})
-	log(
-		"BattleRewards",
-		{ player = player.UserId, battle = battleId, coins = paid.coins, material = paid.material }
-	)
-end
-
--- A player whose whole team has fainted wakes up at the healer in town with everyone mended.
--- Losing costs the walk back and whatever was used in the battle.
-local function wakeAtHealerIfBeaten(player: Player, profile: Profile.Profile)
-	local team: { Types.Creature } = {}
-	for _, id in profile.Team do
-		local creature = profile.Creatures[id]
-		if creature then
-			table.insert(team, creature)
-		end
-	end
-	if #team == 0 or Health.anyStanding(team) then
-		return
-	end
-	Health.healTeam(profile) -- only the team that fought; the stable stays as it was
-	StateSync.changed(player)
-	-- When more biomes exist this must be the healer of the player's own town.
-	for _, building in WorldService.biome().hub.buildings do
-		if building.role == "Healer" then
-			WorldService.sendTo(player, building.id)
-		end
-	end
-	Net.Notice.Fire(player, { Text = "Your team fainted. You wake at the healer, rested." })
-	log("WokeAtHealer", { player = player.UserId })
-end
-
-local function battleStarted(player: Player, session: BattleSession.Session, ref: any?)
-	if ref and ref.kind == "Wild" then
-		-- A creature battled before keeps the throws it has already dodged.
-		local spawn: Encounters.Spawn? = WorldService.spawn(player, (ref :: WildRef).spawnId)
-		CaptureService.setMisses(player, session.battleId, if spawn then spawn.misses else 0)
-	end
-end
-
-local function battleFinished(
-	player: Player,
-	session: BattleSession.Session,
-	outcome: number,
-	ref: any?
-)
-	local ending: BattleSession.Ending? = BattleSession.ending(session)
-	log(
-		"BattleFinished",
-		{ player = player.UserId, battle = session.battleId, kind = session.kind, ending = ending }
-	)
-	local wildRoute: string? = nil
-	if ref and ref.kind == "Wild" then
-		local spawnId = (ref :: WildRef).spawnId
-		local spawn = WorldService.spawn(player, spawnId)
-		wildRoute = if spawn then spawn.route else nil
-		WorldService.finish(
-			player,
-			spawnId,
-			ending,
-			CaptureService.missesFor(player, session.battleId)
-		)
-	end
-	local profile = DataService.get(player)
-	if not profile then
-		return
-	end
-	StateSync.changed(player) -- health changed, whatever the result
-	wakeAtHealerIfBeaten(player, profile)
-	if outcome ~= 1 then
-		return
-	end
-	local team = {}
-	for _, fighter in session.state.sides[1].team do
-		table.insert(team, { id = fighter.creature.id, fainted = fighter.hp <= 0 })
-	end
-	local cap = Xp.levelCap(profile.Story.badges)
-	if ref and ref.kind == "Wild" then
-		sendRewards(
-			player,
-			session.battleId,
-			Rewards.wildWin(profile, {
-				foe = BattleSession.foe(session),
-				team = team,
-				cap = cap,
-				unixTime = os.time(),
-				seed = seed(),
-				biome = WorldService.biome().number,
-			})
-		)
-		if wildRoute then
-			QuestService.record(player, { kind = "WinWild", route = wildRoute })
-		end
-		if ending == "Caught" then
-			local caught = BattleSession.foe(session)
-			QuestService.record(player, { kind = "Tame", species = caught.parts.Torso.species })
-			StoryService.event(player, { kind = "Tame" }, nil, true)
-		end
-	elseif ref and ref.kind == "Trained" then
-		local trained = ref :: TrainedRef
-		sendRewards(
-			player,
-			session.battleId,
-			Rewards.trainedWin(profile, {
-				opponentId = trained.opponent.id,
-				xpKind = trained.opponent.xpKind,
-				coinKind = if trained.opponent.paysCoins then "Tamer" else nil,
-				biome = WorldService.biome().number,
-				foes = trained.foes,
-				team = team,
-				cap = cap,
-				unixTime = os.time(),
-			})
-		)
-		if trained.opponent.kind == "Tamer" then
-			QuestService.record(player, { kind = "BeatTamer", tamer = trained.opponent.id })
-		end
-		local moved =
-			StoryService.event(player, { kind = "Win", battle = trained.opponent.id }, nil, true)
-		if trained.opponent.kind == "Rival" and not moved then
-			-- The win is on record, so the battle cannot be replayed and the story will catch
-			-- up; but a story battle whose beat did not finish means something is wrong.
-			log("StoryWinNotFinished", { player = player.UserId, battle = trained.opponent.id })
-		end
-	end
-end
-
-BattleService.start(resolveTarget, playerTeam, battleFinished, battleStarted, function(player, ref)
-	if ref and ref.kind == "Wild" then
-		local wild = ref :: WildRef
-		if wild.ambush then
-			WorldService.remove(player, wild.spawnId) -- it never really appeared
-		else
-			WorldService.finish(player, wild.spawnId, nil, 0)
-		end
-	end
-end)
--- A battle cannot open while the player is in a giant fight, whoever asks for it.
-BattleService.setElsewhereCheck(GiantService.active)
+BattleFlow.start(log)
 
 -- True once the story has opened a feature (breeding, the shop, the giant) for this player.
 local function isUnlocked(profile: Profile.Profile, feature: string): boolean
@@ -389,7 +165,7 @@ end
 
 GiantService.start({
 	getData = DataService.get,
-	team = playerTeam,
+	team = BattleFlow.team,
 	inOtherBattle = function(player)
 		return BattleService.session(player) ~= nil
 	end,
@@ -402,12 +178,16 @@ GiantService.start({
 	refuse = BattleService.refuse,
 	changed = StateSync.changed,
 	onWon = function(player, battleId, giantId, paid)
-		sendRewards(player, battleId, paid)
+		BattleFlow.sendRewards(player, battleId, paid)
 		log(
 			"GiantWon",
 			{ player = player.UserId, giant = giantId, first = paid.firstClear, prism = paid.prism }
 		)
 		QuestService.record(player, { kind = "BeatGiant", giant = giantId })
+		DailyService.record(player, "WinBattle")
+		if not paid.firstClear then
+			DailyService.record(player, "GiantRematch")
+		end
 	end,
 	roundTrip = CaptureService.roundTrip,
 	playThrow = CaptureService.play,
@@ -420,7 +200,7 @@ GiantService.start({
 	onEnded = function(player)
 		local profile = DataService.get(player)
 		if profile then
-			wakeAtHealerIfBeaten(player, profile)
+			BattleFlow.wakeAtHealerIfBeaten(player, profile)
 		end
 	end,
 	log = log,
@@ -458,6 +238,9 @@ Net.RequestBreed.On(function(player, value)
 		value.CharmFavour
 	)
 	StateSync.changed(player)
+	if ok then
+		DailyService.record(player, "Breed")
+	end
 	Net.BreedResult.Fire(player, {
 		Ok = ok,
 		Reason = if ok then "" else string.sub(tostring(detail), 1, 80),

@@ -40,7 +40,9 @@ export type Daily = {
 
 -- Something the player has earned but not yet received: a one-time gift waiting for room in the
 -- stable, or a captured giant waiting for its serial number. Saved, so it survives leaving.
-export type PendingGrant = { source: string, ref: string }
+-- A captured giant's entry also keeps its serial number once fetched (`serial`), so the number
+-- is asked for once and never wasted if the giant then has to wait for room.
+export type PendingGrant = { source: string, ref: string, serial: number? }
 
 export type Settings = {
 	battleSpeed: number,
@@ -301,6 +303,9 @@ local function checkCreature(id: string, creature: Types.Creature, problems: { s
 	then
 		table.insert(problems, `creature {id} has bad health`)
 	end
+	if creature.isGiant and creature.serial == nil then
+		table.insert(problems, `creature {id} is a giant with no serial number`)
+	end
 	if creature.serial ~= nil and (not isWholeNumber(creature.serial) or creature.serial < 1) then
 		table.insert(problems, `creature {id} has a bad serial number`)
 	end
@@ -441,6 +446,15 @@ local function validateUnsafe(profile: Profile): { string }
 	for index, pending in profile.Pending do
 		if typeof(pending.source) ~= "string" or typeof(pending.ref) ~= "string" then
 			table.insert(problems, `pending grant {index} is malformed`)
+		elseif
+			pending.serial ~= nil and (not isWholeNumber(pending.serial) or pending.serial < 1)
+		then
+			table.insert(problems, `pending grant {index} has a bad serial number`)
+		elseif pending.source == "Giant" and profile.Story.giantsCaptured[pending.ref] then
+			table.insert(
+				problems,
+				`giant {pending.ref} is both captured and waiting to be captured`
+			)
 		end
 	end
 
