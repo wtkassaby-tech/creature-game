@@ -85,7 +85,7 @@ Only Ayrton can decide these:
 
 - Game name; names for the rival, the mentor, the entity, the player's title and biome 9; the first gem tier's name (placeholder "Amber").
 - Style references for biome 9.
-- The launch product list and prices (it touches Robux).
+- The launch product list and prices (it touches Robux): drafted as approval pack 5, `docs/plans/05_PURCHASES.md`. Nothing is built until you answer it.
 - Two proposed new systems that remove creatures from the game: Radiant fusion and move imprint. Not adopted until he says yes.
 - Breeding Candy's final name.
 - Bringing a small post-game forward to launch.
