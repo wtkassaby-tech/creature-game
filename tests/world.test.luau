@@ -180,7 +180,7 @@ end
 
 -- Only Greenwood's own species (biome 1); later biomes are checked by their own tests.
 for name, def in Species do
-	if def.biome == 1 then
+	if def.biome == 1 and not def.giantForm then
 		check(`{name}: appears in Greenwood`, seen[name] == true)
 		if def.baseRarity == "Common" then
 			check(`{name}: common species can be met in the open`, openSeen[name] == true)

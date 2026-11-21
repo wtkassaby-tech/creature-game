@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BattleSession = require(ReplicatedStorage.shared.BattleSession)
 local Capture = require(ReplicatedStorage.shared.Capture)
 local Grants = require(ReplicatedStorage.shared.Grants)
+local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoConfig = require(ReplicatedStorage.config.LassoConfig)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
@@ -64,6 +65,90 @@ end
 
 function CaptureService.missesFor(player: Player, battleId: number): number
 	return missesSoFar(player, battleId)
+end
+
+-- A throw played for another service (a giant capture): this service sends the sweep, stamps
+-- each tap on arrival and hands both lists to `onDone` when the last tap lands or time runs out.
+type External = {
+	throwId: number,
+	zones: number,
+	startedAt: number,
+	claims: { number },
+	arrivals: { number },
+	onDone: (claims: { number }, arrivals: { number }, throwId: number) -> (),
+}
+local external: { [Player]: External } = {}
+
+local function sendPattern(
+	player: Player,
+	battleId: number,
+	throwId: number,
+	pattern: Lasso.Pattern
+)
+	local zones = {}
+	for _, zone in pattern.zones do
+		table.insert(zones, {
+			Centre = zone.centre,
+			Width = zone.width,
+			Speed = zone.speed,
+			StartPhase = zone.startPhase,
+			StartMs = math.floor(zone.startMs),
+		})
+	end
+	Net.LassoPattern.Fire(player, {
+		BattleId = battleId,
+		ThrowId = throwId,
+		Zones = zones,
+		SlowMode = pattern.slowMode,
+		ConnectionAssist = pattern.connectionAssist,
+	})
+end
+
+local function finishExternal(player: Player, throwId: number)
+	local current = external[player]
+	if not current or current.throwId ~= throwId then
+		return -- already judged
+	end
+	external[player] = nil
+	current.onDone(current.claims, current.arrivals, throwId)
+end
+
+-- Plays a sweep for another service. Returns false if a throw is already in the air.
+function CaptureService.play(
+	player: Player,
+	pattern: Lasso.Pattern,
+	battleId: number,
+	onDone: (claims: { number }, arrivals: { number }, throwId: number) -> ()
+): boolean
+	if playing[player] or external[player] then
+		return false
+	end
+	nextThrowId = (nextThrowId + 1) % 4294967295
+	local throwId = nextThrowId
+	external[player] = {
+		throwId = throwId,
+		zones = #pattern.zones,
+		startedAt = os.clock(),
+		claims = {},
+		arrivals = {},
+		onDone = onDone,
+	}
+	sendPattern(player, battleId, throwId, pattern)
+	task.delay(TIME_LIMIT_SECONDS, finishExternal, player, throwId)
+	return true
+end
+
+-- The server's own round-trip reading for this player, for building a sweep.
+function CaptureService.roundTrip(player: Player): number
+	return RoundTrip.trustedMs(player)
+end
+
+-- Other times the round trip should be measured (a giant fight, a capture offer).
+local alsoPing: (player: Player) -> boolean = function()
+	return false
+end
+function CaptureService.setAlsoPing(check: (player: Player) -> boolean)
+	alsoPing = check
 end
 
 function CaptureService.start(getData: GetData, log: Log, changed: (player: Player) -> ()): () -> ()
@@ -133,7 +218,7 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 			return
 		end
 		lastThrow[player] = now
-		if playing[player] then
+		if playing[player] or external[player] then
 			return BattleService.refuse(player, "A throw is already in the air")
 		end
 		local session = BattleService.session(player)
@@ -170,27 +255,22 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 			arrivals = {},
 			misses = before,
 		}
-		local zones = {}
-		for _, zone in throw.pattern.zones do
-			table.insert(zones, {
-				Centre = zone.centre,
-				Width = zone.width,
-				Speed = zone.speed,
-				StartPhase = zone.startPhase,
-				StartMs = math.floor(zone.startMs),
-			})
-		end
-		Net.LassoPattern.Fire(player, {
-			BattleId = session.battleId,
-			ThrowId = throwId,
-			Zones = zones,
-			SlowMode = throw.pattern.slowMode,
-			ConnectionAssist = throw.pattern.connectionAssist,
-		})
+		sendPattern(player, session.battleId, throwId, throw.pattern)
 		task.delay(TIME_LIMIT_SECONDS, resolve, player, throwId)
 	end)
 
 	local stopTap = Net.LassoTap.On(function(player, value)
+		local other = external[player]
+		if other and other.throwId == value.ThrowId then
+			if value.Zone == #other.claims + 1 then
+				table.insert(other.claims, value.ClaimMs)
+				table.insert(other.arrivals, (os.clock() - other.startedAt) * 1000)
+				if #other.claims >= other.zones then
+					finishExternal(player, other.throwId)
+				end
+			end
+			return
+		end
 		local current = playing[player]
 		if not current or current.throwId ~= value.ThrowId then
 			return
@@ -212,11 +292,12 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 
 	local stopPing = RoundTrip.start(function(player)
 		local session = BattleService.session(player)
-		return session ~= nil and session.kind == "Wild"
+		return (session ~= nil and session.kind == "Wild") or alsoPing(player)
 	end)
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)
 		playing[player] = nil
+		external[player] = nil
 		misses[player] = nil
 		lastThrow[player] = nil
 	end)

@@ -120,6 +120,12 @@ function Economy.hornKey(grade: number): string
 	return if whole == 1 then "GiantCall" else `GiantCall_{whole}`
 end
 
+-- Where a giant's own candy is kept among the player's items, by the species name of the
+-- giant's creature form ("GiantCandy_Hollowbough").
+function Economy.giantCandyKey(species: string): string
+	return `GiantCandy_{species}`
+end
+
 -- The cheapest horn the player holds that can wake a giant of this biome, or nil.
 function Economy.hornFor(items: { [string]: number }, biome: number): string?
 	for grade = math.max(1, math.floor(biome)), #EconomyConfig.BIOME_MULT do

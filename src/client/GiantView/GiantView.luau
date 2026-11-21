@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local LassoView = require(script.Parent.Parent.Lasso.LassoView)
 local Net = require(ReplicatedStorage.net.generated.Client)
 
 type Fighter = { name: string, level: number, hp: number, maxHp: number, moves: { string } }
@@ -31,6 +32,7 @@ local MAX_LOG_LINES = 3
 function GiantView.start(playerGui: Instance)
 	local gui = Kit.screen(playerGui, "Giant", 11)
 	local model: Model? = nil
+	local offered = false -- a capture attempt is on offer and not yet thrown
 
 	local boss = Kit.panel(gui, UDim2.new(0.94, 0, 0, 80), UDim2.new(0.03, 0, 0.06, 0))
 	local bossName = Kit.label(boss, "", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 6), 24)
@@ -94,6 +96,12 @@ function GiantView.start(playerGui: Instance)
 	doneText.TextWrapped = true
 	doneText.ZIndex = 9
 	local close = Kit.button(done, "Continue", Kit.COLOURS.accent, function()
+		-- Leaving the screen declines a capture attempt that has not been thrown.
+		local current = model
+		if current and offered then
+			offered = false
+			Net.LeaveGiant.Fire({ BattleId = current.battleId })
+		end
 		gui.Enabled = false
 		done.Visible = false
 		model = nil
@@ -101,6 +109,30 @@ function GiantView.start(playerGui: Instance)
 	close.Size = UDim2.new(0.5, 0, 0.26, 0)
 	close.Position = UDim2.new(0.25, 0, 0.68, 0)
 	close.ZIndex = 9
+
+	-- The capture attempt after a win: a row of lassos to pick from, then the sweep.
+	local lasso = LassoView.new(gui)
+	local capture = Kit.panel(
+		gui,
+		UDim2.new(0.6, 0, 0, 150),
+		UDim2.new(0.2, 0, 0.52, 0),
+		Kit.COLOURS.panelLight
+	)
+	capture.Visible = false
+	capture.ZIndex = 8
+	local captureText = Kit.label(capture, "", UDim2.new(1, -24, 0, 50), UDim2.new(0, 12, 0, 6), 20)
+	captureText.TextWrapped = true
+	captureText.ZIndex = 9
+	local captureButtons = Instance.new("Frame")
+	captureButtons.Size = UDim2.new(1, -24, 0, 80)
+	captureButtons.Position = UDim2.new(0, 12, 0, 62)
+	captureButtons.BackgroundTransparency = 1
+	captureButtons.ZIndex = 9
+	captureButtons.Parent = capture
+	local captureGrid = Instance.new("UIGridLayout")
+	captureGrid.CellSize = UDim2.new(0.5, -4, 0.5, -4)
+	captureGrid.CellPadding = UDim2.fromOffset(8, 8)
+	captureGrid.Parent = captureButtons
 
 	local previews: { number } = {}
 	local refresh: () -> ()
@@ -314,7 +346,8 @@ function GiantView.start(playerGui: Instance)
 		}
 		giantName = `{value.Name}  Lv {value.Level}`
 		logLines = {}
-		done.Visible, picker.Visible = false, false
+		done.Visible, picker.Visible, capture.Visible = false, false, false
+		lasso.finish()
 		gui.Enabled = true
 		show(value.View)
 	end)
@@ -326,12 +359,84 @@ function GiantView.start(playerGui: Instance)
 		end
 	end)
 
+	Bus.listen(Net.GiantCaptureOffer, function(value)
+		local current = model
+		local state = ClientState.get()
+		if not current or current.battleId ~= value.BattleId or not state then
+			return
+		end
+		for _, child in captureButtons:GetChildren() do
+			if child:IsA("TextButton") then
+				child:Destroy()
+			end
+		end
+		local rank: { [string]: number } = { Basic = 1, Braided = 2, Gilded = 3 }
+		local any = false
+		local tiers: { "Basic" | "Braided" | "Gilded" } = { "Braided", "Gilded" }
+		for _, tier: "Basic" | "Braided" | "Gilded" in tiers do
+			local held = state.Items[tier :: string] or 0
+			if held > 0 and rank[tier :: string] >= rank[value.MinTier :: string] then
+				any = true
+				local button = Kit.button(
+					captureButtons,
+					`{tier} lasso x{held}`,
+					Kit.COLOURS.lasso,
+					function()
+						capture.Visible = false
+						Net.ThrowGiantLasso.Fire({ BattleId = value.BattleId, Tier = tier })
+					end
+				)
+				button.ZIndex = 10
+			end
+		end
+		local skip = Kit.button(captureButtons, "Not now", Kit.COLOURS.panel, function()
+			capture.Visible = false
+			offered = false
+			Net.LeaveGiant.Fire({ BattleId = value.BattleId })
+		end)
+		skip.ZIndex = 10
+		offered = true
+		captureText.Text = if any
+			then `One throw to capture {value.Name}! Three loops, no second chance. ({value.Seconds}s)`
+			else `{value.Name} can be captured, but it takes a {value.MinTier} lasso and you have none.`
+		capture.Visible = true
+	end)
+
+	Bus.listen(Net.LassoPattern, function(value)
+		local current = model
+		if current and current.battleId == value.BattleId then
+			offered = false -- the one attempt is being thrown
+			capture.Visible = false
+			done.Visible = false
+			lasso.begin(value)
+		end
+	end)
+
+	Bus.listen(Net.LassoResult, function(value)
+		local current = model
+		if not current or not current.over then
+			return
+		end
+		lasso.finish()
+		table.insert(
+			current.rewards,
+			if value.Outcome == "Caught"
+				then "The rope holds! It will join you in a moment."
+				else `The rope slips ({value.ZonesHit} of 3 loops). Beat it again for another try.`
+		)
+		showEnd(current)
+	end)
+
 	Bus.listen(Net.BattleRefused, function(value)
 		local current = model
 		if current and gui.Enabled and not current.over then
 			current.waiting = false
 			logText.Text = value.Reason
 			refresh()
+		elseif current and gui.Enabled and offered then
+			-- A lasso that was refused: say why and let the player pick again.
+			captureText.Text = value.Reason
+			capture.Visible = true
 		end
 	end)
 

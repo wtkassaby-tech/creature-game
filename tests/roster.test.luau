@@ -68,7 +68,8 @@ type Roster = { all: { string }, Quad: { string }, Biped: { string } }
 local function rosterOf(biome: number): Roster
 	local roster: Roster = { all = {}, Quad = {}, Biped = {} }
 	for name, def in Species do
-		if def.biome == biome then
+		-- A giant's creature form is not part of a biome's wild roster (tests/giantcapture.test).
+		if def.biome == biome and not def.giantForm then
 			table.insert(roster.all, name)
 			if def.bodyPlan == "Quad" then
 				table.insert(roster.Quad, name)

@@ -73,9 +73,6 @@ function Breeding.canBreed(a: Creature, b: Creature, now: number): (boolean, str
 	if a.bodyPlan ~= b.bodyPlan then
 		return false, "Parents must share a body plan"
 	end
-	if a.isGiant or b.isGiant then
-		return false, "Giants cannot breed"
-	end
 	if a.rarity == "Cosmic" or b.rarity == "Cosmic" then
 		return false, "Cosmic creatures cannot breed"
 	end
@@ -142,7 +139,8 @@ end
 function Breeding.candyCost(a: Creature, b: Creature): { Types.CandyNeed }
 	local needs: { Types.CandyNeed } = {}
 	for _, parent in { a, b } do
-		local amount: number = BreedConfig.CANDY_COST[parent.rarity]
+		-- A captured giant pays in its own Giant Candy instead (Breeding.giantCandyCost).
+		local amount: number = if parent.isGiant then 0 else BreedConfig.CANDY_COST[parent.rarity]
 		local element: Types.Element = Breeding.element(parent)
 		local merged = false
 		for _, need in needs do
@@ -157,6 +155,45 @@ function Breeding.candyCost(a: Creature, b: Creature): { Types.CandyNeed }
 		end
 	end
 	return needs
+end
+
+export type GiantCandyNeed = { species: string, amount: number }
+
+-- Giant Candy for this breed: each captured-giant parent needs GIANT_CANDY_COST of its own
+-- kind (two of the same giant need twice as much). Empty for a breed with no giant in it.
+function Breeding.giantCandyCost(a: Creature, b: Creature): { GiantCandyNeed }
+	local needs: { GiantCandyNeed } = {}
+	for _, parent in { a, b } do
+		if parent.isGiant then
+			local species = parent.parts.Torso.species
+			local merged = false
+			for _, need in needs do
+				if need.species == species then
+					need.amount += BreedConfig.GIANT_CANDY_COST
+					merged = true
+				end
+			end
+			if not merged then
+				table.insert(needs, { species = species, amount = BreedConfig.GIANT_CANDY_COST })
+			end
+		end
+	end
+	return needs
+end
+
+-- True if the player's items hold every Giant Candy this breed needs. `keyFor` gives the item
+-- key for a giant's species (Economy.giantCandyKey).
+function Breeding.hasGiantCandy(
+	items: { [string]: number },
+	needs: { GiantCandyNeed },
+	keyFor: (species: string) -> string
+): boolean
+	for _, need in needs do
+		if (items[keyFor(need.species)] or 0) < need.amount then
+			return false
+		end
+	end
+	return true
 end
 
 -- Total candy of every type a breed needs (for summaries; paying uses the list).

@@ -132,6 +132,11 @@ function BreedingService.requestBreed(
 	if not candyAfter then
 		return false, "Not enough Breeding Candy"
 	end
+	-- A captured giant needs its own Giant Candy, which nothing else can stand in for.
+	local giantNeeds = Breeding.giantCandyCost(a, b)
+	if not Breeding.hasGiantCandy(data.Items, giantNeeds, Economy.giantCandyKey) then
+		return false, "Not enough Giant Candy: beat the giant again to earn more"
+	end
 	-- A charm only counts if the player owns one; it is used up below with everything else.
 	if charm and (data.Items[CHARM_ITEM] or 0) < 1 then
 		return false, "No Bond Charm"
@@ -149,6 +154,9 @@ function BreedingService.requestBreed(
 	-- 4. Apply every change together. Nothing above this line has changed the player's data.
 	data.Coins -= result.cost
 	data.Candy = candyAfter -- worked out above from this same balance, with no pause since
+	for _, need in giantNeeds do
+		data.Items[Economy.giantCandyKey(need.species)] -= need.amount
+	end
 	if charm then
 		data.Items[CHARM_ITEM] -= 1
 	end
@@ -167,6 +175,7 @@ function BreedingService.requestBreed(
 		candy = result.candy,
 		candyTyped = payment.typed,
 		candyPrism = payment.prism,
+		giantCandy = giantNeeds,
 		charm = charm ~= nil,
 	})
 	return true, result.hatchAt

@@ -100,6 +100,10 @@ BreedConfig.COOLDOWN = {
 	Diamond = { 48 * HOUR, 72 * HOUR },
 	Cosmic = {},
 } :: Types.ByRarity<{ number }>
+-- A captured giant can breed, but each giant parent needs this much Giant Candy of its own kind
+-- in place of ordinary candy (about five days of daily rematches for one breed).
+BreedConfig.GIANT_CANDY_COST = 10
+
 -- The mentor's egg hatches quickly, so the first hatch lands in the first session.
 BreedConfig.GIFT_EGG_SECONDS = 3 * MIN
 

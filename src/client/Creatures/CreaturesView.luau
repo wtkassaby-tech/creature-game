@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Breeding = require(ReplicatedStorage.shared.Breeding)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local Economy = require(ReplicatedStorage.shared.Economy)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
@@ -160,6 +161,10 @@ function CreaturesView.start(playerGui: Instance)
 			local candy: { string } = {}
 			for _, need in Breeding.candyCost(a, b) do
 				table.insert(candy, `{need.amount} {need.element}`)
+			end
+			for _, need in Breeding.giantCandyCost(a, b) do
+				local have = state.Items[Economy.giantCandyKey(need.species)] or 0
+				table.insert(candy, `{need.amount} {need.species} Giant Candy (you have {have})`)
 			end
 			local odds: { string } = {}
 			local chances = Breeding.rarityOdds(a, b)

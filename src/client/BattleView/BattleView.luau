@@ -432,8 +432,12 @@ function BattleView.start(playerGui: Instance)
 	end)
 
 	Bus.listen(Net.LassoPattern, function(value)
-		message.Text = "Swing..."
-		lasso.begin(value)
+		-- A sweep for another screen's battle (a giant capture) is not ours to play.
+		local current = model
+		if current and current.battleId == value.BattleId then
+			message.Text = "Swing..."
+			lasso.begin(value)
+		end
 	end)
 	Bus.listen(Net.LassoResult, function(value)
 		lasso.finish()

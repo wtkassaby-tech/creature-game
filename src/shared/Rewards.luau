@@ -7,6 +7,7 @@
 -- Every count is kept in the saved profile and reset only by the server's date.
 
 local Economy = require("./Economy")
+local GiantBattle = require("./GiantBattle")
 local EconomyConfig = require("../config/EconomyConfig")
 local Grants = require("./Grants")
 local Profile = require("./Profile")
@@ -176,7 +177,7 @@ function Rewards.trainedWin(profile: Profile.Profile, input: TrainedWinInput): T
 	return { coins = coins, material = nil, members = members, firstClear = firstClear }
 end
 
-export type GiantPaid = TrainedPaid & { prism: number }
+export type GiantPaid = TrainedPaid & { prism: number, giantCandy: number }
 
 local GIANT_REMATCH_CANDY_KEY = "candy:GiantRematch"
 
@@ -185,7 +186,7 @@ local GIANT_REMATCH_CANDY_KEY = "candy:GiantRematch"
 -- then a small daily number for rematches of any giant).
 function Rewards.giantWin(
 	profile: Profile.Profile,
-	giant: { id: string, level: number },
+	giant: GiantBattle.GiantDef,
 	stand: Types.Creature, -- the giant as the battle saw it, for the XP rule
 	input: {
 		biome: number,
@@ -215,12 +216,28 @@ function Rewards.giantWin(
 		end
 	end
 	profile.Candy.prism += prism
+
+	-- Giant Candy of this giant's own kind, for breeding from it once it is captured: a little
+	-- for every win, up to a daily number. Giants with no creature form give none.
+	local giantCandy = 0
+	local form = giant.form
+	if form then
+		local dayKey = `candy:Giant:{giant.id}`
+		local today = profile.Daily.tasksDone[dayKey] or 0
+		if today < EconomyConfig.GIANT_CANDY.capPerDay then
+			giantCandy = EconomyConfig.GIANT_CANDY.perWin
+			profile.Daily.tasksDone[dayKey] = today + 1
+			local key = Economy.giantCandyKey(form.species)
+			profile.Items[key] = (profile.Items[key] or 0) + giantCandy
+		end
+	end
 	return {
 		coins = paid.coins,
 		material = paid.material,
 		members = paid.members,
 		firstClear = paid.firstClear,
 		prism = prism,
+		giantCandy = giantCandy,
 	}
 end
 

@@ -2,14 +2,21 @@
 -- Giant fights on the server. The rules are in src/shared/GiantSession and GiantBattle; this
 -- file checks who is asking and where they stand, runs one fight per player, and pays a win.
 -- A fight is not saved: leaving ends it, and the Giant Horn it used stays used.
--- Capturing a beaten giant is not built yet (what a giant is as a team member is undecided).
+-- A win gives one capture attempt (src/shared/GiantCapture): the lasso is thrown at once, and a
+-- hit is finished when the giant's serial number has been fetched (approval pack 2, section 5).
 -- Not yet run in Studio.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local EconomyConfig = require(ReplicatedStorage.config.EconomyConfig)
+local GiantBattle = require(ReplicatedStorage.shared.GiantBattle)
+local GiantCapture = require(ReplicatedStorage.shared.GiantCapture)
 local GiantSession = require(ReplicatedStorage.shared.GiantSession)
 local Giants = require(ReplicatedStorage.content.Giants)
+local Grants = require(ReplicatedStorage.shared.Grants)
+local Lasso = require(ReplicatedStorage.shared.Lasso)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
@@ -21,6 +28,7 @@ local Xp = require(ReplicatedStorage.shared.Xp)
 local MIN_SECONDS_BETWEEN_STARTS = 1
 local MIN_SECONDS_BETWEEN_ACTIONS = 0.25
 local FIRST_BATTLE_ID = 3000000000 -- kept apart from ordinary battle ids
+local OFFER_SECONDS = 90 -- how long the one capture attempt waits to be thrown
 
 export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
@@ -34,19 +42,122 @@ export type Hooks = {
 	changed: (player: Player) -> (),
 	onWon: (player: Player, battleId: number, giantId: string, paid: Rewards.GiantPaid) -> (),
 	onEnded: (player: Player) -> (), -- after any fight ends (won, lost or given up)
+	-- For the capture attempt after a win:
+	roundTrip: (player: Player) -> number, -- the server's own reading
+	playThrow: (
+		player: Player,
+		pattern: Lasso.Pattern,
+		battleId: number,
+		onDone: (claims: { number }, arrivals: { number }, throwId: number) -> ()
+	) -> boolean,
+	nextSerial: (kind: string) -> number?, -- waits on the data store
+	registerSerial: (kind: string, serial: number, userId: number) -> (),
+	notify: (player: Player, text: string) -> (),
+	save: (player: Player) -> (),
 	log: (event: string, fields: { [string]: any }) -> (),
 }
 
 local GiantService = {}
 
 local sessions: { [Player]: GiantSession.Session } = {}
+-- One capture attempt offered after a win, until it is used, declined or runs out.
+type Offer = { giant: GiantBattle.GiantDef, battleId: number, expiresAt: number }
+local offers: { [Player]: Offer } = {}
+local throwing: { [Player]: boolean } = {} -- a capture throw is in the air
+local fetching: { [Player]: { [string]: boolean } } = {} -- serial numbers being fetched
+local hooks: Hooks
 local lastStart: { [Player]: number } = {}
 local lastAction: { [Player]: number } = {}
 local nextBattleId = FIRST_BATTLE_ID
+local random = Random.new()
 
--- True while the player is in a giant fight.
+local function offerFor(player: Player): Offer?
+	local offer = offers[player]
+	if offer and os.clock() > offer.expiresAt then
+		offers[player] = nil
+		return nil
+	end
+	return offer
+end
+
+-- True while the player is in a giant fight or in the capture attempt that follows a win.
+-- Nothing else (a battle, long grass, a team change) may start in that time.
 function GiantService.active(player: Player): boolean
-	return sessions[player] ~= nil
+	return sessions[player] ~= nil or offerFor(player) ~= nil or throwing[player] == true
+end
+
+local function serialKind(giantId: string): string
+	return `Giant:{giantId}`
+end
+
+-- Finishes every capture of this player's that hit but is still waiting: fetches the giant's
+-- serial number, then adds the giant. Safe to call at any time and more than once; called when
+-- a capture hits, when the player joins, and whenever room may have appeared in the stable.
+function GiantService.finishWaiting(player: Player)
+	local profile = hooks.getData(player)
+	if not profile then
+		return
+	end
+	for _, giantId in GiantCapture.waitingGiants(profile) do
+		local giant = Giants[giantId]
+		local busy = fetching[player] and fetching[player][giantId]
+		if giant and not busy then
+			if Grants.room(profile) < 1 then
+				-- Ask for a number only when the giant can be taken in, so none is wasted.
+				hooks.notify(
+					player,
+					`Make room in your stable: {giant.name} is waiting to join you`
+				)
+			else
+				fetching[player] = fetching[player] or {}
+				fetching[player][giantId] = true
+				task.spawn(function()
+					local serial = hooks.nextSerial(serialKind(giantId)) -- waits
+					local mine = fetching[player]
+					if mine then
+						mine[giantId] = nil
+					end
+					-- The wait is over: look at the player's record afresh.
+					local now = hooks.getData(player)
+					if not serial or not now or player.Parent ~= Players then
+						-- Nothing was added. The capture is still in the saved waiting list
+						-- and is finished the next time; a fetched number is skipped for ever.
+						hooks.log(
+							"GiantSerialUnused",
+							{ player = player.UserId, giant = giantId, serial = serial }
+						)
+						return
+					end
+					local grant, creature = GiantCapture.complete(
+						now,
+						giant,
+						HttpService:GenerateGUID(false),
+						serial,
+						random:NextInteger(1, 2147483646)
+					)
+					if grant.outcome == "Granted" and creature then
+						hooks.changed(player)
+						hooks.save(player)
+						hooks.notify(player, `{giant.name} No. {serial} is yours!`)
+						hooks.log("GiantCaptured", {
+							player = player.UserId,
+							giant = giantId,
+							serial = serial,
+							creature = creature.id,
+						})
+						hooks.registerSerial(serialKind(giantId), serial, player.UserId)
+					else
+						hooks.log("GiantSerialUnused", {
+							player = player.UserId,
+							giant = giantId,
+							serial = serial,
+							outcome = grant.outcome,
+						})
+					end
+				end)
+			end
+		end
+	end
 end
 
 -- True while the creature is in this player's giant fight; a lock for breeding and releasing.
@@ -100,8 +211,8 @@ local function wire(view: GiantSession.View): any
 	}
 end
 
-function GiantService.start(hooks: Hooks): () -> ()
-	local random = Random.new()
+function GiantService.start(given: Hooks): () -> ()
+	hooks = given
 
 	local stopStart = Net.StartGiant.On(function(player, value)
 		local now = os.clock()
@@ -242,6 +353,22 @@ function GiantService.start(hooks: Hooks): () -> ()
 		Net.GiantTurn.Fire(player, wire(view))
 		if paid then
 			hooks.onWon(player, session.battleId, giant.id, paid)
+			-- A win gives one capture attempt, if this giant can still be captured.
+			local form = giant.form
+			if form and GiantCapture.canCapture(profile, giant) then
+				offers[player] = {
+					giant = giant,
+					battleId = session.battleId,
+					expiresAt = os.clock() + OFFER_SECONDS,
+				}
+				Net.GiantCaptureOffer.Fire(player, {
+					BattleId = session.battleId,
+					GiantId = giant.id,
+					Name = giant.name,
+					MinTier = EconomyConfig.LASSO_MIN_TIER[form.rarity],
+					Seconds = OFFER_SECONDS,
+				})
+			end
 		end
 		hooks.onEnded(player)
 	end)
@@ -252,6 +379,11 @@ function GiantService.start(hooks: Hooks): () -> ()
 			return
 		end
 		lastAction[player] = now
+		-- Leaving also declines a capture attempt that has not been thrown yet.
+		local offer = offers[player]
+		if offer and offer.battleId == value.BattleId then
+			offers[player] = nil
+		end
 		local session = sessions[player]
 		if session and session.battleId == value.BattleId then
 			sessions[player] = nil
@@ -265,7 +397,81 @@ function GiantService.start(hooks: Hooks): () -> ()
 		end
 	end)
 
+	local stopThrow = Net.ThrowGiantLasso.On(function(player, value)
+		local now = os.clock()
+		if now - (lastAction[player] or -math.huge) < MIN_SECONDS_BETWEEN_ACTIONS then
+			return
+		end
+		lastAction[player] = now
+		local offer = offerFor(player)
+		local profile = hooks.getData(player)
+		if not offer or not profile or offer.battleId ~= value.BattleId then
+			return hooks.refuse(player, "There is no giant to capture")
+		end
+		local throw, problem = GiantCapture.begin(
+			profile,
+			offer.giant,
+			value.Tier,
+			random:NextInteger(1, 2147483646),
+			hooks.roundTrip(player)
+		)
+		if not throw then
+			-- The attempt is still theirs: they may pick another lasso.
+			return hooks.refuse(player, problem or "You cannot throw that")
+		end
+		-- The lasso is spent and the one attempt is used, whatever happens next.
+		offers[player] = nil
+		throwing[player] = true
+		hooks.changed(player)
+		local giant = offer.giant
+		local started = hooks.playThrow(
+			player,
+			throw.pattern,
+			offer.battleId,
+			function(claims, arrivals, throwId)
+				throwing[player] = nil
+				local current = hooks.getData(player)
+				if not current then
+					return -- the player left mid-throw: the lasso stays spent, nothing is captured
+				end
+				local hit, judgement = GiantCapture.finish(current, throw, claims, arrivals)
+				local zonesHit = 0
+				local landedList: { boolean } = if judgement then judgement.zoneHits else {}
+				for _, landed in landedList do
+					if landed then
+						zonesHit += 1
+					end
+				end
+				hooks.log("GiantCaptureThrow", {
+					player = player.UserId,
+					giant = giant.id,
+					hit = hit,
+					verdict = if judgement then judgement.verdict else nil,
+				})
+				Net.LassoResult.Fire(player, {
+					ThrowId = throwId,
+					Outcome = if hit then "Caught" else "Missed",
+					ZonesHit = zonesHit,
+					Candy = 0,
+					Element = nil,
+				})
+				if hit then
+					hooks.changed(player)
+					hooks.save(player) -- the waiting capture is worth saving at once
+					GiantService.finishWaiting(player)
+				end
+			end
+		)
+		if not started then
+			throwing[player] = nil
+			hooks.log("GiantCaptureThrowLost", { player = player.UserId, giant = giant.id })
+		end
+	end)
+
 	local leaving = Players.PlayerRemoving:Connect(function(player)
+		offers[player] = nil
+		throwing[player] = nil
+		fetching[player] = nil
 		sessions[player] = nil
 		lastStart[player] = nil
 		lastAction[player] = nil
@@ -275,6 +481,7 @@ function GiantService.start(hooks: Hooks): () -> ()
 		stopStart()
 		stopAction()
 		stopLeave()
+		stopThrow()
 		leaving:Disconnect()
 	end
 end

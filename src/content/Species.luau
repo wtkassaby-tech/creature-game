@@ -14,6 +14,8 @@ local Species: { [string]: Types.SpeciesDef } = {
 	Splashjack = require("./species/Splashjack"),
 	Stiltbark = require("./species/Stiltbark"),
 	Stumpwarden = require("./species/Stumpwarden"),
+	-- Greenwood's giant in its creature form: captured, never met in the wild.
+	Hollowbough = require("./species/Hollowbough"),
 	-- Dust Canyon (biome 2). See docs/content/DUST_CANYON_ROSTER.md.
 	Cairnback = require("./species/Cairnback"),
 	Duneskit = require("./species/Duneskit"),

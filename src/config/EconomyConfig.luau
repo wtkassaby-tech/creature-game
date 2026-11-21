@@ -127,6 +127,9 @@ EconomyConfig.TRAINED = {
 
 -- Giant fights: one GiantCall to enter, at most this many field items brought in.
 EconomyConfig.GIANT_FIELD_ITEM_CAP = 5
+-- Giant Candy: needed to breed from a captured giant, and earned only by beating that giant
+-- (first clear and rematches alike). It cannot be bought, traded or replaced by Prism Candy.
+EconomyConfig.GIANT_CANDY = { perWin = 1, capPerDay = 2 } :: { perWin: number, capPerDay: number }
 -- A giant rematch never pays more than this share of its Giant Horn's price in that biome.
 EconomyConfig.GIANT_REMATCH_MAX_HORN_SHARE = 0.85
 

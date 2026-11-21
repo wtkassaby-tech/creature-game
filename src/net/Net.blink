@@ -366,7 +366,7 @@ event PlayerState {
 		Coins: u32,
 		Gems: u32,
 		Candy: CandyView,
-		Items: map { [string(1..24)]: u16 },
+		Items: map { [string(1..40)]: u16 },
 		Creatures: CreatureView[0..400],
 		Team: string(1..40)[0..6],
 		Eggs: EggView[0..4],
@@ -591,5 +591,30 @@ event TreatCreature {
 	Data: struct {
 		Item: FieldItem,
 		CreatureId: string(1..40),
+	},
+}
+
+-- Capturing a giant. After a win the server may offer one lasso attempt; the device picks a
+-- lasso and the sweep is played like any throw (LassoPattern, LassoTap, LassoResult). A hit
+-- is finished by the server once the giant's serial number has been fetched.
+event GiantCaptureOffer {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		GiantId: string(1..40),
+		Name: string(1..40),
+		MinTier: LassoTier,
+		Seconds: u8,
+	},
+}
+event ThrowGiantLasso {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Tier: LassoTier,
 	},
 }

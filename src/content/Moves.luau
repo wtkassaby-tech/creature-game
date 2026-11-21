@@ -21,6 +21,9 @@ local Moves: { [string]: MoveDef } = {
 	["Bramble Rake"] = { element = "Leaf", power = 60 },
 	["Burl Charge"] = { element = "Leaf", power = 60 },
 	["Canopy Drop"] = { element = "Leaf", power = 60 },
+	-- Hollowbough's own (the captured giant's signature moves; see src/content/giants).
+	["Heartwood Slam"] = { element = "Leaf", power = 65 },
+	["Thorn Gale"] = { element = "Storm", power = 60 },
 	-- Sand
 	["Dust Kick"] = { element = "Sand", power = 45 },
 	["Scree Kick"] = { element = "Sand", power = 45 },

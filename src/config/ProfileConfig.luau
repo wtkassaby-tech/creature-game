@@ -9,6 +9,11 @@ ProfileConfig.STORE_NAME = "PlayerData_Test"
 ProfileConfig.LIVE_STORE_NAME = "PlayerData_Live"
 -- When true the live store is used. Switched on for the soft launch only.
 ProfileConfig.USE_LIVE_STORE = false
+-- Serial numbers (giants, and later wild-caught gem creatures) come from global counters kept
+-- outside any player's record, with a registry of which player holds each number.
+ProfileConfig.SERIAL_STORE_NAME = "Serials_Test"
+ProfileConfig.LIVE_SERIAL_STORE_NAME = "Serials_Live"
+
 -- In Studio, saves go to ProfileStore's in-memory mock unless this is true, so a test session
 -- never writes to a real store by accident.
 ProfileConfig.STUDIO_USES_REAL_STORE = false

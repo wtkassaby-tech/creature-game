@@ -32,6 +32,7 @@ local DataService = require(script.Parent.Data.DataService)
 local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
 local QuestService = require(script.Parent.Quests.QuestService)
+local SerialService = require(script.Parent.Serials.SerialService)
 local StateSync = require(script.Parent.State.StateSync)
 local StoryService = require(script.Parent.Story.StoryService)
 local WorldService = require(script.Parent.World.WorldService)
@@ -72,6 +73,7 @@ end
 local function claimWaiting(player: Player, profile: Profile.Profile)
 	local handed = Grants.claimPending(profile, rebuildGift)
 	local eggs = StoryProgress.claimEggs(profile, newId, os.time(), seed())
+	GiantService.finishWaiting(player) -- a captured giant waiting for its number or for room
 	if handed + eggs > 0 then
 		StateSync.changed(player)
 		log("PendingClaimed", { player = player.UserId, creatures = handed, eggs = eggs })
@@ -407,6 +409,14 @@ GiantService.start({
 		)
 		QuestService.record(player, { kind = "BeatGiant", giant = giantId })
 	end,
+	roundTrip = CaptureService.roundTrip,
+	playThrow = CaptureService.play,
+	nextSerial = SerialService.next,
+	registerSerial = SerialService.register,
+	notify = function(player, text)
+		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })
+	end,
+	save = DataService.saveSoon,
 	onEnded = function(player)
 		local profile = DataService.get(player)
 		if profile then
@@ -416,6 +426,8 @@ GiantService.start({
 	log = log,
 })
 
+SerialService.start(log)
+CaptureService.setAlsoPing(GiantService.active) -- a giant capture needs a fresh reading too
 CaptureService.start(DataService.get, log, StateSync.changed)
 StateSync.start(DataService.get)
 

@@ -44,6 +44,16 @@ export type Phase = {
 
 export type Enrage = { startTurn: number, step: number }
 
+-- What the giant is once a player has captured it: an ordinary-sized creature of its own
+-- species (flagged `giantForm`), strong through its rarity, that fights like any other.
+export type GiantForm = {
+	species: string,
+	rarity: Types.Rarity,
+	level: number,
+	colour: string,
+	size: number, -- it looks bigger than other creatures; giants are exempt from the size range
+}
+
 export type GiantDef = {
 	id: string,
 	name: string,
@@ -53,6 +63,7 @@ export type GiantDef = {
 	attacks: { [string]: GiantAttack },
 	phases: { Phase },
 	enrage: Enrage?, -- falls back to GiantConfig when missing
+	form: GiantForm?, -- nil for a giant that cannot be captured
 }
 
 -- An item is a named effect the caller passes in; the item list and prices live elsewhere.

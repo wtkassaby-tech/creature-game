@@ -106,6 +106,10 @@ export type SpeciesDef = {
 	torsoLength: number, -- studs
 	socketRadius: BySlot<number>, -- radius of each torso socket (Torso itself is 0)
 	parts: BySlot<PartDef>,
+	-- True for the creature form of a giant: never met in the wild or given as a gift, only
+	-- captured from its giant. Its parts are costed like any other species', so a child bred
+	-- from it stays inside the stat budget.
+	giantForm: boolean?,
 }
 
 return {}

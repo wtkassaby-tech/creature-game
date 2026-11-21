@@ -120,7 +120,7 @@ function Snapshot.build(profile: Profile.Profile): State
 
 	local items: { [string]: number } = {}
 	for key, count in profile.Items do
-		if #key >= 1 and #key <= 24 and count > 0 then
+		if #key >= 1 and #key <= 40 and count > 0 then
 			items[key] = whole(count, 65535)
 		end
 	end
