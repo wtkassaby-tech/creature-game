@@ -210,6 +210,7 @@ GiantService.start({
 	end,
 	roundTrip = CaptureService.roundTrip,
 	playThrow = CaptureService.play,
+	audit = CaptureService.audit,
 	finishSerials = SerialGrants.finish,
 	notify = function(player, text)
 		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })

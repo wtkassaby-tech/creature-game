@@ -43,6 +43,7 @@ export type Hooks = {
 	onEnded: (player: Player) -> (), -- after any fight ends (won, lost or given up)
 	-- For the capture attempt after a win:
 	roundTrip: (player: Player) -> number, -- the server's own reading
+	audit: (player: Player, errorsMs: { number }) -> (), -- the timing audit shared by all throws
 	playThrow: (
 		player: Player,
 		pattern: Lasso.Pattern,
@@ -359,6 +360,9 @@ function GiantService.start(given: Hooks): () -> ()
 					return -- the player left mid-throw: the lasso stays spent, nothing is captured
 				end
 				local hit, judgement = GiantCapture.finish(current, throw, claims, arrivals)
+				if judgement then
+					hooks.audit(player, judgement.errorsMs)
+				end
 				local zonesHit = 0
 				local landedList: { boolean } = if judgement then judgement.zoneHits else {}
 				for _, landed in landedList do

@@ -67,6 +67,35 @@ function CaptureService.missesFor(player: Player, battleId: number): number
 	return missesSoFar(player, battleId)
 end
 
+-- Timing audit. Every judged throw adds how far each tap was from its loop's centre to the
+-- player's recent taps; when nearly all of them are closer than a person can manage, the account
+-- is flagged in the log for a human to look at (Lasso.looksScripted). Nothing is refused here.
+-- The list lives in server memory for this visit; the log line is what lasts.
+local KEEP_TAP_ERRORS = 60
+local tapErrors: { [Player]: { number } } = {}
+local flagged: { [Player]: boolean } = {}
+local auditLog: Log = function() end
+
+function CaptureService.audit(player: Player, errorsMs: { number })
+	local list = tapErrors[player]
+	if not list then
+		list = {}
+		tapErrors[player] = list
+	end
+	for _, errorMs in errorsMs do
+		if typeof(errorMs) == "number" and errorMs == errorMs then
+			table.insert(list, math.abs(errorMs))
+		end
+	end
+	while #list > KEEP_TAP_ERRORS do
+		table.remove(list, 1)
+	end
+	if not flagged[player] and Lasso.looksScripted(list) then
+		flagged[player] = true -- once a visit is enough
+		auditLog("LassoSuspicious", { player = player.UserId, taps = #list })
+	end
+end
+
 -- A throw played for another service (a giant capture): this service sends the sweep, stamps
 -- each tap on arrival and hands both lists to `onDone` when the last tap lands or time runs out.
 type External = {
@@ -153,6 +182,7 @@ end
 
 function CaptureService.start(getData: GetData, log: Log, changed: (player: Player) -> ()): () -> ()
 	local random = Random.new()
+	auditLog = log
 
 	local function resolve(player: Player, throwId: number)
 		local current = playing[player]
@@ -201,6 +231,7 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 				log("LassoInvalid", { player = player.UserId, reason = result.judgement.reason })
 			end
 		end
+		CaptureService.audit(player, result.judgement.errorsMs)
 		changed(player)
 		Net.LassoResult.Fire(player, {
 			ThrowId = throwId,
@@ -297,6 +328,8 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)
 		playing[player] = nil
+		tapErrors[player] = nil
+		flagged[player] = nil
 		external[player] = nil
 		misses[player] = nil
 		lastThrow[player] = nil
