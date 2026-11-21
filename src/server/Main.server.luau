@@ -9,6 +9,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local AnalyticsMap = require(ReplicatedStorage.shared.AnalyticsMap)
 local Grants = require(ReplicatedStorage.shared.Grants)
 local Health = require(ReplicatedStorage.shared.Health)
 local Net = require(ReplicatedStorage.net.generated.Server)
@@ -18,6 +19,7 @@ local StoryProgress = require(ReplicatedStorage.shared.StoryProgress)
 local Types = require(ReplicatedStorage.shared.Types)
 local World = require(ReplicatedStorage.shared.World)
 
+local AnalyticsFeed = require(script.Parent.Analytics.AnalyticsFeed)
 local BattleFlow = require(script.Parent.Battle.BattleFlow)
 local BattleService = require(script.Parent.Battle.BattleService)
 local BreedingService = require(script.Parent.Breeding.BreedingService)
@@ -39,6 +41,7 @@ local HATCH_CHECK_SECONDS = 5
 local function log(event: string, fields: { [string]: any })
 	local ok, text = pcall(HttpService.JSONEncode, HttpService, fields)
 	print(`[{event}] {if ok then text else "(fields could not be written)"}`)
+	AnalyticsFeed.record(event, fields)
 end
 
 local random = Random.new()
@@ -161,6 +164,11 @@ DailyService.start({
 })
 
 -- Saving (started after the world and the story, which a loading player needs) ---------------
+
+AnalyticsFeed.start(function(player: Player, currency: AnalyticsMap.Currency): number?
+	local profile = DataService.get(player)
+	return if profile then AnalyticsMap.balance(profile, currency) else nil
+end)
 
 DataService.start(log, function(player: Player)
 	local profile = DataService.get(player)

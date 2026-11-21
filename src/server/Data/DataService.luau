@@ -129,7 +129,11 @@ local function load(player: Player)
 	end
 	session.Data.PlayStats.sessions += 1
 	sessions[player] = session
-	log("DataLoaded", { player = player.UserId, problems = #problems })
+	log("DataLoaded", {
+		player = player.UserId,
+		problems = #problems,
+		sessions = session.Data.PlayStats.sessions,
+	})
 end
 
 -- Starts the service. `onLoaded` runs once a player's data is ready. Returns a function that
