@@ -67,6 +67,7 @@ function GiantSession.view(session: Session): View
 	local teamHp: { number } = {}
 	for _, fighter in state.team do
 		table.insert(teamHp, fighter.hp)
+		BattleSession.carryOut(fighter) -- damage lasts after the fight, even if the player leaves
 	end
 	local previews: { number } = {}
 	local me = state.team[state.active]
@@ -116,7 +117,18 @@ function GiantSession.begin(profile: Profile.Profile, input: StartInput): (Sessi
 			Battle.fighter(creature, nil, Xp.battleLevel(creature.level, input.levelCap))
 		)
 	end
+	local standing: number? = nil
+	for index, fighter in team do
+		BattleSession.carryIn(fighter) -- damage lasts between battles
+		if fighter.hp > 0 and not standing then
+			standing = index
+		end
+	end
+	if not standing then
+		return nil, "Your creatures need healing first"
+	end
 	local state = GiantBattle.new(input.giant, team, input.seed)
+	state.active = standing
 	-- The horn goes the moment the fight starts: leaving part way does not bring it back.
 	profile.Items[horn] -= 1
 	return { battleId = input.battleId, state = state, shown = 0 }, nil

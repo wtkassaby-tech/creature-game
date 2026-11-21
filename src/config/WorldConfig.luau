@@ -20,6 +20,15 @@ WorldConfig.POSITION_SLACK = 8 -- added to every radius: the character keeps mov
 
 WorldConfig.RUSTLE_COOLDOWN_SECONDS = 90 -- per spot, per player
 
+-- Long grass: every stretch of a route has a patch. Walking through it can start a battle with
+-- a creature the player did not see coming, drawn from that stretch's own table. The creatures
+-- standing in the open are for picking a fight; the grass is for the surprise.
+WorldConfig.GRASS_RADIUS = 20 -- studs: the size of a patch
+WorldConfig.GRASS_SIDE_OFFSET = 40 -- how far to one side of the path a patch lies
+WorldConfig.GRASS_CHANCE = 0.22 -- each second the player is moving inside a patch
+WorldConfig.GRASS_REST_SECONDS = 8 -- after a grass battle starts, before the next can
+WorldConfig.GRASS_MIN_MOVE = 3 -- studs moved in a second to count as walking
+
 -- The generated test map (until the real map is built): routes are straight runs of this length
 -- that bend left and right by this angle, so distance along the path is exact.
 WorldConfig.SEGMENT_LENGTH = 50

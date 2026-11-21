@@ -208,8 +208,11 @@ function WorldView.start(openShop: () -> ())
 		elseif kind == "Talk" then
 			local place = prompt:GetAttribute("Place")
 			talk(id, if typeof(place) == "string" then place else nil)
-			if prompt:GetAttribute("Role") == "Shop" then
+			local role = prompt:GetAttribute("Role")
+			if role == "Shop" then
 				openShop()
+			elseif role == "Healer" then
+				Net.HealAtHealer.Fire(true) -- free; the server checks the player is standing here
 			end
 		end
 	end)

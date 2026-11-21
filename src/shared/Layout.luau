@@ -75,6 +75,11 @@ local function routeLine(
 	return { id = route.id, points = points, length = route.length, side = side }
 end
 
+-- The place id of the long-grass patch in a stretch of route.
+function Layout.grassId(areaId: string): string
+	return `{areaId}_grass`
+end
+
 -- The place id of the supply stall on the way to a biome's lair.
 function Layout.stallId(biome: WorldTypes.Biome): string
 	return `{biome.lair.id}_stall`
@@ -121,7 +126,11 @@ function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Ta
 		map.places[route.id] =
 			Layout.pointAt(line, math.min(WorldConfig.ROUTE_ENTRY_DEPTH, route.length))
 		for _, area in route.areas do
-			map.places[area.id] = Layout.pointAt(line, (area.from + area.to) / 2)
+			local middle = (area.from + area.to) / 2
+			map.places[area.id] = Layout.pointAt(line, middle)
+			-- The stretch's long grass lies to one side of the path (rustle spots are on the other).
+			map.places[Layout.grassId(area.id)] =
+				Layout.pointAt(line, middle, -WorldConfig.GRASS_SIDE_OFFSET * side)
 		end
 		for _, spot in route.rustleSpots do
 			map.places[spot.id] =

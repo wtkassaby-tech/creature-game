@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Grants = require(ReplicatedStorage.shared.Grants)
+local Health = require(ReplicatedStorage.shared.Health)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
@@ -141,6 +142,62 @@ function InventoryService.start(hooks: Hooks)
 		end
 	end)
 
+	-- The healer in town: free, and mends every creature the player owns.
+	local lastHeal: { [Player]: number } = {}
+	Net.HealAtHealer.On(function(player)
+		local profile = hooks.getData(player)
+		if not profile or tooFast(lastHeal, player) then
+			return
+		end
+		local atHealer = false
+		for _, building in WorldService.biome().hub.buildings do
+			if
+				building.role == "Healer"
+				and WorldService.isNear(player, building.id, WorldConfig.TALK_RADIUS)
+			then
+				atHealer = true
+			end
+		end
+		if not atHealer then
+			return hooks.notify(player, "You are too far from the healer")
+		end
+		for id in profile.Creatures do
+			if hooks.isLocked(player, id) then
+				return hooks.notify(player, "Finish your battle first")
+			end
+		end
+		local mended = Health.healAll(profile)
+		hooks.changed(player)
+		hooks.notify(
+			player,
+			if mended > 0
+				then "Your creatures are rested and well"
+				else "Your creatures are already well"
+		)
+	end)
+
+	-- A tonic or a Rally Root on one creature, anywhere outside a battle.
+	local lastTreat: { [Player]: number } = {}
+	Net.TreatCreature.On(function(player, value)
+		local profile = hooks.getData(player)
+		if not profile or tooFast(lastTreat, player) then
+			return
+		end
+		local after, problem = Health.useItem(
+			profile,
+			value.Item,
+			value.CreatureId,
+			function(creatureId)
+				return hooks.isLocked(player, creatureId)
+			end
+		)
+		if after then
+			hooks.changed(player)
+		else
+			hooks.notify(player, problem or "That did nothing")
+		end
+	end)
+
 	local lastTeam: { [Player]: number } = {}
 	Net.SetTeam.On(function(player, value)
 		local profile = hooks.getData(player)
@@ -159,6 +216,8 @@ function InventoryService.start(hooks: Hooks)
 
 	Players.PlayerRemoving:Connect(function(player)
 		lastTeam[player] = nil
+		lastHeal[player] = nil
+		lastTreat[player] = nil
 		lastItem[player] = nil
 		lastBuy[player] = nil
 		lastRelease[player] = nil

@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 local BattleSession = require(ReplicatedStorage.shared.BattleSession)
 local Encounters = require(ReplicatedStorage.shared.Encounters)
 local Grants = require(ReplicatedStorage.shared.Grants)
+local Health = require(ReplicatedStorage.shared.Health)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rewards = require(ReplicatedStorage.shared.Rewards)
@@ -89,6 +90,15 @@ WorldService.start({
 	onAt = function(player, at)
 		-- Places the story is waiting for the player to reach.
 		StoryService.event(player, { kind = "At", at = at }, nil, true)
+	end,
+	onAmbush = function(player, spawn)
+		-- A creature jumped out of long grass: the battle starts by itself.
+		local ref: WildRef = { kind = "Wild", spawnId = spawn.id }
+		BattleService.begin(
+			player,
+			"Wild",
+			{ creatures = { spawn.creature }, moves = nil, tier = "Wild", ref = ref }
+		)
 	end,
 })
 
@@ -214,6 +224,30 @@ local function sendRewards(player: Player, battleId: number, paid: Rewards.Paid)
 	)
 end
 
+-- A player whose whole team has fainted wakes up at the healer in town with everyone mended.
+-- Losing costs the walk back and whatever was used in the battle.
+local function wakeAtHealerIfBeaten(player: Player, profile: Profile.Profile)
+	local team: { Types.Creature } = {}
+	for _, id in profile.Team do
+		local creature = profile.Creatures[id]
+		if creature then
+			table.insert(team, creature)
+		end
+	end
+	if #team == 0 or Health.anyStanding(team) then
+		return
+	end
+	Health.healAll(profile)
+	StateSync.changed(player)
+	for _, building in WorldService.biome().hub.buildings do
+		if building.role == "Healer" then
+			WorldService.sendTo(player, building.id)
+		end
+	end
+	Net.Notice.Fire(player, { Text = "Your team fainted. You wake at the healer, rested." })
+	log("WokeAtHealer", { player = player.UserId })
+end
+
 local function battleStarted(player: Player, session: BattleSession.Session, ref: any?)
 	if ref and ref.kind == "Wild" then
 		-- A creature battled before keeps the throws it has already dodged.
@@ -246,7 +280,12 @@ local function battleFinished(
 		)
 	end
 	local profile = DataService.get(player)
-	if not profile or outcome ~= 1 then
+	if not profile then
+		return
+	end
+	StateSync.changed(player) -- health changed, whatever the result
+	wakeAtHealerIfBeaten(player, profile)
+	if outcome ~= 1 then
 		return
 	end
 	local team = {}
@@ -342,6 +381,12 @@ GiantService.start({
 			{ player = player.UserId, giant = giantId, first = paid.firstClear, prism = paid.prism }
 		)
 		QuestService.record(player, { kind = "BeatGiant", giant = giantId })
+	end,
+	onEnded = function(player)
+		local profile = DataService.get(player)
+		if profile then
+			wakeAtHealerIfBeaten(player, profile)
+		end
 	end,
 	log = log,
 })

@@ -339,6 +339,8 @@ struct CreatureView {
 	IsGiant: boolean,
 	Bound: boolean,
 	Serial: u32?,
+	-- The share of its health it has lost and not had healed, 0 to 1 (1 = fainted).
+	Hurt: f32,
 }
 struct EggView {
 	HatchAt: f64,
@@ -571,4 +573,23 @@ event LeaveGiant {
 	Type: Reliable,
 	Call: SingleAsync,
 	Data: struct { BattleId: u32 },
+}
+
+-- Healing outside a battle. Damage lasts between battles: the healer in town mends every
+-- creature for free (the server checks the player is standing there), and a tonic or a Rally
+-- Root can be used on one creature anywhere outside a battle.
+event HealAtHealer {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: boolean,
+}
+event TreatCreature {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: FieldItem,
+		CreatureId: string(1..40),
+	},
 }

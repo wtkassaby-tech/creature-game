@@ -228,6 +228,71 @@ do
 	)
 end
 
+print("\n== Long grass ==")
+do
+	local patch = map.places[Layout.grassId("clover_meadow")]
+	check(
+		"every stretch has a grass patch off the path",
+		patch ~= nil and Layout.distance(patch, map.places.clover_meadow) > WorldConfig.GRASS_RADIUS
+	)
+	local function walk(
+		book: Encounters.Book,
+		at: Layout.Point,
+		walking: boolean,
+		from: number,
+		seconds: number
+	): Encounters.Spawn?
+		for second = from, from + seconds - 1 do
+			local found =
+				Encounters.grass(book, greenwood, map, at, walking, second, second * 31 + 7, newId)
+			if found then
+				return found
+			end
+		end
+		return nil
+	end
+	check(
+		"standing still in the grass meets nothing",
+		walk(Encounters.new(), patch, false, 0, 200) == nil
+	)
+	check(
+		"walking on the path meets nothing",
+		walk(Encounters.new(), map.places.clover_meadow, true, 0, 200) == nil
+	)
+	local book = Encounters.new()
+	local found = walk(book, patch, true, 0, 200)
+	check("walking through the grass brings a creature out", found ~= nil)
+	local spawn = assert(found, "a creature jumped out")
+	local species = spawn.creature.parts.Torso.species
+	check(
+		"it is one of the stretch's own, already in a battle",
+		spawn.busy
+			and spawn.area == "clover_meadow"
+			and (species == "Gorsling" or species == "Mossmitt" or species == "Stumpwarden")
+	)
+	check(
+		"the grass rests before the next one",
+		Encounters.grass(book, greenwood, map, patch, true, book.grassAt - 1, 5, newId) == nil
+	)
+	Encounters.finish(book, spawn.id, "Ran", 0, 300)
+	check(
+		"one the player ran from stays as a creature they can see",
+		book.spawns[spawn.id] == spawn and not spawn.busy
+	)
+	local met, tries = 0, 2000
+	for second = 1, tries do
+		local fresh = Encounters.new()
+		if Encounters.grass(fresh, greenwood, map, patch, true, second, second * 17 + 3, newId) then
+			met += 1
+		end
+	end
+	check(
+		"the chance each second is about what the config says",
+		math.abs(met / tries - WorldConfig.GRASS_CHANCE) < 0.04,
+		`{met / tries}`
+	)
+end
+
 print("\n== Rustle spots ==")
 do
 	local book = Encounters.new()

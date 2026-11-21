@@ -115,6 +115,40 @@ local function previews(state: Battle.State): { number }
 	return list
 end
 
+-- Health carried in from the creature's record: a hurt creature starts hurt, a fainted one
+-- starts down. A creature with any health left starts with at least 1.
+local function carryIn(fighter: Battle.Fighter)
+	local hurt = fighter.creature.hurt
+	if hurt == nil or hurt ~= hurt or hurt <= 0 then
+		return
+	end
+	local full = fighter.stats.Hp
+	fighter.hp = if hurt >= 1 then 0 else math.clamp(math.floor(full * (1 - hurt) + 0.5), 1, full)
+end
+BattleSession.carryIn = carryIn
+
+-- Health written back to the creature's record, so damage lasts after the battle.
+local function carryOut(fighter: Battle.Fighter)
+	local full = math.max(1, fighter.stats.Hp)
+	if fighter.hp >= full then
+		fighter.creature.hurt = nil
+	elseif fighter.hp <= 0 then
+		fighter.creature.hurt = 1
+	else
+		fighter.creature.hurt = 1 - fighter.hp / full
+	end
+end
+BattleSession.carryOut = carryOut
+
+local function firstStanding(team: { Battle.Fighter }): number?
+	for index, fighter in team do
+		if fighter.hp > 0 then
+			return index
+		end
+	end
+	return nil
+end
+
 -- Starts a battle. Returns nil and a reason if the teams cannot fight.
 function BattleSession.start(input: StartInput): (Session?, string?)
 	if #input.yours < 1 or #input.yours > 6 then
@@ -142,7 +176,23 @@ function BattleSession.start(input: StartInput): (Session?, string?)
 		end
 		table.insert(theirs, Battle.fighter(creature, moves, creature.level))
 	end
+	-- Damage lasts between battles (never in friendly battles, which start everyone fresh).
 	local state = Battle.new(yours, theirs, input.seed, false)
+	if input.kind ~= "Friendly" then
+		for _, fighter in yours do
+			carryIn(fighter)
+		end
+		for _, fighter in theirs do
+			carryIn(fighter)
+		end
+	end
+	local mine, foe = firstStanding(yours), firstStanding(theirs)
+	if not mine then
+		return nil, "Your creatures need healing first"
+	elseif not foe then
+		return nil, "Bad opponent"
+	end
+	state.sides[PLAYER].active, state.sides[FOE].active = mine, foe
 	return {
 		battleId = input.battleId,
 		kind = input.kind,
@@ -173,6 +223,14 @@ end
 
 local function result(session: Session, fromLog: number): TurnResult
 	local state = session.state
+	-- After every turn: leaving a battle part way never undoes the damage taken in it.
+	if session.kind ~= "Friendly" then
+		for _, side in state.sides do
+			for _, fighter in side.team do
+				carryOut(fighter)
+			end
+		end
+	end
 	local events: { Battle.Event } = {}
 	for index = fromLog, #state.log do
 		table.insert(events, state.log[index])

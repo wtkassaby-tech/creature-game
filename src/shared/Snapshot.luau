@@ -28,6 +28,7 @@ export type CreatureView = {
 	IsGiant: boolean,
 	Bound: boolean,
 	Serial: number?,
+	Hurt: number,
 }
 export type CandyView = {
 	Leaf: number,
@@ -100,6 +101,7 @@ function Snapshot.creature(c: Types.Creature): CreatureView
 		IsGiant = c.isGiant,
 		Bound = c.bound,
 		Serial = if c.serial then whole(c.serial, 4294967295) else nil,
+		Hurt = if c.hurt and c.hurt == c.hurt then math.clamp(c.hurt, 0, 1) else 0,
 	}
 end
 

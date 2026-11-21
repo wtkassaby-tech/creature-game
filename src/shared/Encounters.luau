@@ -32,12 +32,13 @@ export type Book = {
 	spawns: { [number]: Spawn },
 	rustledAt: { [string]: number }, -- spot id -> when it was last stirred
 	freeAt: { [string]: number }, -- area id -> when it may refill
+	grassAt: number, -- when long grass may next start a battle
 }
 
 local Encounters = {}
 
 function Encounters.new(): Book
-	return { nextId = 1, spawns = {}, rustledAt = {}, freeAt = {} }
+	return { nextId = 1, spawns = {}, rustledAt = {}, freeAt = {}, grassAt = 0 }
 end
 
 function Encounters.count(book: Book): number
@@ -171,6 +172,52 @@ function Encounters.rustle(
 		end
 	end
 	return nil, "There is nothing there"
+end
+
+-- Long grass: called about once a second with where the server sees the player and whether they
+-- have been walking. If they are inside a stretch's grass, a creature from that stretch's table
+-- may jump out. Returns it, already marked as in a battle, or nil. Nothing here comes from the
+-- device, so the device cannot ask for a grass battle or avoid one.
+function Encounters.grass(
+	book: Book,
+	biome: WorldTypes.Biome,
+	map: Layout.Map,
+	player: Layout.Point,
+	walking: boolean,
+	now: number,
+	seed: number,
+	newId: () -> string
+): Spawn?
+	if not walking or now < book.grassAt or Encounters.count(book) >= WorldConfig.MAX_SPAWNS then
+		return nil
+	end
+	for _, route in biome.routes do
+		for _, area in route.areas do
+			local patch = map.places[Layout.grassId(area.id)]
+			if patch and Layout.distance(patch, player) <= WorldConfig.GRASS_RADIUS then
+				local rng = Rng.new(seed)
+				if
+					not Rng.chance(rng, WorldConfig.GRASS_CHANCE)
+					or #World.candidates(route, { area = area.id }) == 0
+				then
+					return nil
+				end
+				book.grassAt = now + WorldConfig.GRASS_REST_SECONDS
+				local spawn = add(
+					book,
+					route,
+					area.id,
+					nil,
+					{ x = player.x, z = player.z },
+					Rng.int(rng, 1, 2147483646),
+					newId
+				)
+				spawn.busy = true
+				return spawn
+			end
+		end
+	end
+	return nil
 end
 
 -- Starts a battle with one of the player's wild creatures. `id` comes from the device; the

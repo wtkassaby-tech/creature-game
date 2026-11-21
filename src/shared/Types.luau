@@ -75,6 +75,10 @@ export type Creature = {
 	isGiant: boolean,
 	bound: boolean, -- true if it can never be traded (giants, cosmic creatures)
 	serial: number?, -- its number among its kind; only giants and wild-caught gem creatures have one
+	-- The share of its health it has lost and not yet had healed, 0 to 1 (1 = fainted). Damage
+	-- lasts after a battle until a tonic or the healer mends it. Missing means unhurt, so
+	-- records saved before this field existed need no migration.
+	hurt: number?,
 }
 
 -- A move a part brings, and the creature level at which it unlocks (1 = known from the start).

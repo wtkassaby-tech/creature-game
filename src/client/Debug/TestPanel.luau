@@ -187,6 +187,12 @@ function TestPanel.start(parent: Instance)
 
 	Bus.listen(Net.BattleStarted, function(value)
 		battleId, nextTurn, active = value.BattleId, 1, 1
+		for index, c in value.Yours do
+			if c.Hp > 0 then
+				active = index
+				break
+			end
+		end
 		local foe = value.Theirs[1]
 		log(`Battle {value.BattleId}: a level {foe.Level} {foe.Rarity} {foe.Torso} ({foe.Hp} HP)`)
 	end)

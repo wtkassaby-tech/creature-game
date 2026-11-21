@@ -33,6 +33,7 @@ export type Hooks = {
 	refuse: (player: Player, reason: string) -> (),
 	changed: (player: Player) -> (),
 	onWon: (player: Player, battleId: number, giantId: string, paid: Rewards.GiantPaid) -> (),
+	onEnded: (player: Player) -> (), -- after any fight ends (won, lost or given up)
 	log: (event: string, fields: { [string]: any }) -> (),
 }
 
@@ -240,6 +241,7 @@ function GiantService.start(hooks: Hooks): () -> ()
 		if paid then
 			hooks.onWon(player, session.battleId, giant.id, paid)
 		end
+		hooks.onEnded(player)
 	end)
 
 	local stopLeave = Net.LeaveGiant.On(function(player, value)
@@ -256,6 +258,8 @@ function GiantService.start(hooks: Hooks): () -> ()
 				giant = session.state.giant.id,
 				turns = session.state.turn,
 			})
+			hooks.changed(player)
+			hooks.onEnded(player)
 		end
 	end)
 

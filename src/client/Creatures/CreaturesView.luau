@@ -46,6 +46,7 @@ local function record(view: Snapshot.CreatureView): Types.Creature
 		isGiant = view.IsGiant,
 		bound = view.Bound,
 		serial = view.Serial,
+		hurt = if view.Hurt > 0 then view.Hurt else nil,
 	}
 end
 
@@ -204,9 +205,37 @@ function CreaturesView.start(playerGui: Instance)
 			local onTeam = table.find(state.Team, view.Id)
 			local row =
 				Kit.panel(list, UDim2.new(1, -8, 0, 46), UDim2.new(), Kit.COLOURS.panelLight)
+			local health = if view.Hurt >= 1
+				then "fainted"
+				else `{math.floor((1 - view.Hurt) * 100 + 0.5)}% health`
 			local text =
-				`{if onTeam then `[{onTeam}] ` else ""}{view.Torso.Species}  Lv {view.Level}  {view.Rarity}  {view.Colour}`
-			Kit.label(row, text, UDim2.new(0.5, 0, 1, -8), UDim2.new(0, 10, 0, 4))
+				`{if onTeam then `[{onTeam}] ` else ""}{view.Torso.Species}  Lv {view.Level}  {view.Rarity}  {health}`
+			local name = Kit.label(row, text, UDim2.new(0.4, 0, 1, -8), UDim2.new(0, 10, 0, 4))
+			if view.Hurt > 0 then
+				name.TextColor3 = Kit.healthColour(1 - view.Hurt)
+				-- Treat with what fits: a Rally Root if it has fainted, otherwise a tonic.
+				local item: ("Tonic" | "GreatTonic" | "Revive")? = nil
+				if view.Hurt >= 1 then
+					item = if (state.Items.Revive or 0) > 0 then "Revive" else nil
+				elseif (state.Items.Tonic or 0) > 0 then
+					item = "Tonic"
+				elseif (state.Items.GreatTonic or 0) > 0 then
+					item = "GreatTonic"
+				end
+				if item then
+					local chosenItem: "Tonic" | "GreatTonic" | "Revive" = item
+					local treat = Kit.button(
+						row,
+						if item == "Revive" then "Rally Root" else "Tonic",
+						Kit.COLOURS.good,
+						function()
+							Net.TreatCreature.Fire({ Item = chosenItem, CreatureId = view.Id })
+						end
+					)
+					treat.Size = UDim2.new(0.1, 0, 1, -10)
+					treat.Position = UDim2.new(0.41, 0, 0, 5)
+				end
+			end
 
 			local team = Kit.button(
 				row,

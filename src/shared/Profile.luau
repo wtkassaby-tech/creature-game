@@ -290,6 +290,17 @@ local function checkCreature(id: string, creature: Types.Creature, problems: { s
 	if (creature.isGiant or creature.rarity == "Cosmic") and not creature.bound then
 		table.insert(problems, `creature {id} is a giant or cosmic creature but is not bound`)
 	end
+	if
+		creature.hurt ~= nil
+		and (
+			typeof(creature.hurt) ~= "number"
+			or creature.hurt ~= creature.hurt
+			or creature.hurt < 0
+			or creature.hurt > 1
+		)
+	then
+		table.insert(problems, `creature {id} has bad health`)
+	end
 	if creature.serial ~= nil and (not isWholeNumber(creature.serial) or creature.serial < 1) then
 		table.insert(problems, `creature {id} has a bad serial number`)
 	end

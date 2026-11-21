@@ -17,6 +17,7 @@ local Encounters = require(ReplicatedStorage.shared.Encounters)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Tamers = require(ReplicatedStorage.content.Tamers)
+local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local TestMap = require(script.Parent.TestMap)
@@ -28,6 +29,7 @@ export type Hooks = {
 	isReady: (player: Player) -> boolean, -- data loaded and not in a battle
 	refuse: (player: Player, reason: string) -> (),
 	onAt: (player: Player, at: Layout.Point) -> (), -- the regular look at where a player is
+	onAmbush: (player: Player, spawn: Encounters.Spawn) -> (), -- a creature jumped out of long grass
 }
 
 local WorldService = {}
@@ -40,6 +42,7 @@ type Timers = { rustledAt: { [string]: number }, freeAt: { [string]: number }, l
 local timers: { [number]: Timers } = {}
 local KEEP_TIMERS_SECONDS = 600
 local lastRustle: { [Player]: number } = {}
+local lastAt: { [Player]: Layout.Point } = {}
 local random = Random.new()
 
 local function newId(): string
@@ -118,6 +121,16 @@ local function send(player: Player)
 	Net.WildSpawns.Fire(player, { Spawns = list })
 end
 
+-- Moves the player's character to a named place (waking up at the healer after a lost battle).
+function WorldService.sendTo(player: Player, placeId: string)
+	local character = player.Character
+	local place = map.places[placeId]
+	if character and place then
+		character:PivotTo(CFrame.new(place.x, 6, place.z))
+		lastAt[player] = nil -- do not count the jump as walking
+	end
+end
+
 -- One of the player's wild creatures by id, or nil.
 function WorldService.spawn(player: Player, spawnId: number): Encounters.Spawn?
 	local found = books[player]
@@ -172,6 +185,25 @@ function WorldService.start(hooks: Hooks): () -> ()
 							send(player)
 						end
 						hooks.onAt(player, at)
+						-- Long grass: only the server's own reading of where the player is and
+						-- whether they are walking decides this.
+						local before = lastAt[player]
+						lastAt[player] = at
+						local walking = before ~= nil
+							and Layout.distance(before, at) >= WorldConfig.GRASS_MIN_MOVE
+						local jumped = Encounters.grass(
+							book(player),
+							biome,
+							map,
+							at,
+							walking,
+							os.clock(),
+							seed(),
+							newId
+						)
+						if jumped then
+							hooks.onAmbush(player, jumped)
+						end
 					end
 				end)
 				if not ok then
@@ -209,6 +241,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 		end
 		books[player] = nil
 		lastRustle[player] = nil
+		lastAt[player] = nil
 		for userId, kept in timers do
 			if os.clock() - kept.leftAt > KEEP_TIMERS_SECONDS then
 				timers[userId] = nil

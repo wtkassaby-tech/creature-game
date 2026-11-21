@@ -310,6 +310,16 @@ function BattleView.start(playerGui: Instance)
 		actions.Visible = not current.over
 	end
 
+	-- A fainted creature does not lead: the battle opens with the first one still standing.
+	local function firstStanding(list: { any }): number
+		for index, c in list do
+			if c.Hp > 0 then
+				return index
+			end
+		end
+		return 1
+	end
+
 	local function fighters(list: { any }): { Fighter }
 		local made: { Fighter } = {}
 		for _, c in list do
@@ -326,7 +336,7 @@ function BattleView.start(playerGui: Instance)
 			battleId = value.BattleId,
 			wild = value.Kind == "Wild",
 			sides = { fighters(value.Yours), fighters(value.Theirs) },
-			active = { 1, 1 },
+			active = { firstStanding(value.Yours), firstStanding(value.Theirs) },
 			tempo = { 0, 0 },
 			nextTurn = 1,
 			previews = value.Previews,

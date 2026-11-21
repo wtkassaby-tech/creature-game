@@ -183,6 +183,22 @@ function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
 			)
 			label(post, `{area.name} (Lv {area.minLevel}-{area.maxLevel})`)
 		end
+		for _, area in route.areas do
+			local grass = map.places[Layout.grassId(area.id)]
+			if grass then
+				local size = WorldConfig.GRASS_RADIUS * 2
+				local patch = block(
+					folder,
+					Layout.grassId(area.id),
+					Vector3.new(size, 1.6, size),
+					at(grass, 0.8),
+					REEDS
+				)
+				patch.CanCollide = false
+				patch.Transparency = 0.25
+				label(patch, "Long grass")
+			end
+		end
 		for _, spot in route.rustleSpots do
 			local patch =
 				block(folder, spot.id, Vector3.new(20, 1.2, 20), at(map.places[spot.id], 1), REEDS)
