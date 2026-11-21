@@ -34,6 +34,7 @@ export type WildWinInput = {
 	cap: number, -- the player's level cap now
 	unixTime: number, -- the server's clock
 	seed: number, -- from the server, for the material drop
+	biome: number?, -- where the battle was fought (the world service's route); default: the foe's home
 }
 
 local Rewards = {}
@@ -43,39 +44,48 @@ function Rewards.wildWin(profile: Profile.Profile, input: WildWinInput): Paid
 	Grants.rollDay(profile, input.unixTime)
 	local foe = input.foe
 	local kind = foe.parts.Torso.species
-	local biome = math.max(1, foe.originBiome)
+	local biome = math.max(1, input.biome or foe.originBiome)
 	local prior = profile.Daily.wildWins[kind] or 0
 	local coins = Economy.battleCoins("Wild", biome, foe.level, prior, false)
-	profile.Daily.wildWins[kind] = prior + 1
-	profile.Coins += coins
 
 	local material: EconomyConfig.MaterialId? = nil
 	local rng = Rng.new(input.seed)
 	if Rng.chance(rng, EconomyConfig.MATERIAL_DROP_CHANCE * Economy.diminishFactor(prior)) then
 		local index = math.min(biome, #EconomyConfig.MATERIAL_BY_BIOME)
 		local id: EconomyConfig.MaterialId = EconomyConfig.MATERIAL_BY_BIOME[index]
-		profile.Items[id] = (profile.Items[id] or 0) + 1
 		material = id
 	end
 
+	-- Work out every share first, then pay everything together, so an error part way through
+	-- cannot leave a battle half paid.
 	local defeated: Xp.Defeated = { level = foe.level, rarity = foe.rarity, kind = "Wild" }
 	local members: { MemberResult } = {}
+	local xpAfter: { number } = {}
 	for _, member in input.team do
 		local creature = profile.Creatures[member.id]
 		if creature then
 			local gained =
 				Xp.rewardFor(defeated, { level = creature.level, fainted = member.fainted })
-			local before = creature.level
 			local applied = Xp.applyXp(creature.level, creature.xp, gained, input.cap)
-			creature.level, creature.xp = applied.level, applied.xp
 			table.insert(members, {
 				id = member.id,
 				gained = gained,
 				level = applied.level,
 				levelsGained = applied.levelsGained,
-				newMoves = Xp.newMoves(creature, before, applied.level),
+				newMoves = Xp.newMoves(creature, creature.level, applied.level),
 			})
+			table.insert(xpAfter, applied.xp)
 		end
+	end
+
+	profile.Daily.wildWins[kind] = prior + 1
+	profile.Coins += coins
+	if material then
+		profile.Items[material] = (profile.Items[material] or 0) + 1
+	end
+	for index, result in members do
+		local creature = profile.Creatures[result.id]
+		creature.level, creature.xp = result.level, xpAfter[index]
 	end
 	return { coins = coins, material = material, members = members }
 end

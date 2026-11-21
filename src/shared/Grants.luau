@@ -96,7 +96,19 @@ function Grants.giveOnce(profile: Profile, source: Source, ref: string, make: ()
 	end
 	local creature = make()
 	profile.Creatures[creature.id] = creature
+	Grants.recordOwned(profile, creature)
 	return { outcome = "Granted" }
+end
+
+-- Records a creature that has just joined the stable: in the Index, and on the team if the team
+-- is empty (a starter that had to wait must not leave the player with nobody to battle with).
+function Grants.recordOwned(profile: Profile, creature: Creature)
+	local key = creature.parts.Torso.species
+	profile.Index.owned[key] = true
+	profile.Index.seen[key] = true
+	if #profile.Team == 0 then
+		table.insert(profile.Team, creature.id)
+	end
 end
 
 -- Hands over waiting gifts while there is room. `make` rebuilds a gift from its source and ref
@@ -116,6 +128,7 @@ function Grants.claimPending(
 		if creature then
 			table.remove(profile.Pending, index)
 			profile.Creatures[creature.id] = creature
+			Grants.recordOwned(profile, creature)
 			handed += 1
 		else
 			index += 1
@@ -151,9 +164,7 @@ function Grants.capture(profile: Profile, creature: Creature): Grant
 	profile.Candy.typed[element] += candy
 	-- A copy, so the battle's (or a spawner's) table can never be shared with the saved record.
 	profile.Creatures[creature.id] = deepCopy(creature)
-	local key = creature.parts.Torso.species
-	profile.Index.owned[key] = true
-	profile.Index.seen[key] = true
+	Grants.recordOwned(profile, creature)
 	local granted: Grant = { outcome = "Granted", candy = candy, element = element }
 	return granted
 end

@@ -155,6 +155,77 @@ do
 	check("a damaged waiting entry is kept, not lost", StoryProgress.rebuild("junk", "x", 1) == nil)
 end
 
+print("\n== Review fixes ==")
+do
+	-- A content mistake (egg parents that cannot breed) refuses the beat whole: nothing is paid.
+	local badGrants: { any } = {
+		{ kind = "Coins", amount = 50 },
+		{ kind = "Egg", parentA = "Mossmitt", parentB = "Burlhorn" },
+	}
+	local broken: any = {
+		id = "broken",
+		number = 0,
+		name = "Broken",
+		beats = {
+			{
+				id = "bad_egg",
+				name = "",
+				minuteFrom = 0,
+				minuteTo = 0,
+				trigger = { kind = "Start", requires = {} },
+				unlocks = {},
+				grants = badGrants,
+				lines = {},
+			},
+		},
+	}
+	local profile = Profile.template()
+	local coins = profile.Coins
+	local done, why = StoryProgress.complete(profile, broken, input("bad_egg"))
+	check(
+		"a beat with a gift that cannot be made is refused whole",
+		done == nil and profile.Coins == coins and not profile.Story.flags.bad_egg,
+		why
+	)
+
+	-- The mentor's egg with every pen already full waits, then takes the next free pen.
+	local full = Profile.template()
+	for _, beat in Chapter1.beats do
+		if beat.id == "mentor_egg" then
+			break
+		end
+		StoryProgress.complete(
+			full,
+			Chapter1,
+			input(beat.id, if beat.id == "starter_choice" then "Mossmitt" else nil)
+		)
+	end
+	full.Pens = 4
+	local filler = full.Creatures[full.Team[1]]
+	for _ = 1, 4 do
+		table.insert(full.Eggs, { child = filler, hatchAt = 0, seed = 1 })
+	end
+	StoryProgress.complete(full, Chapter1, input("mentor_egg"))
+	check(
+		"with no free pen the gift egg waits",
+		#full.Eggs == 4 and #full.Pending == 1 and full.Pending[1].source == "MentorEgg"
+	)
+	table.remove(full.Eggs, 1)
+	local placed = StoryProgress.claimEggs(full, newId, 86400 * 300, 5)
+	check("and takes the next free pen", placed == 1 and #full.Eggs == 4 and #full.Pending == 0)
+
+	-- A starter that had to wait joins the empty team when it arrives.
+	local waiting = Profile.template()
+	waiting.StableCapacity = 0
+	StoryProgress.complete(waiting, Chapter1, input("starter_choice", "Mossmitt"))
+	waiting.StableCapacity = 30
+	Grants.claimPending(waiting, function(_source, ref)
+		return StoryProgress.rebuild(ref, newId(), 5)
+	end)
+	check("a starter that waited joins the empty team", #waiting.Team == 1)
+	check("and is in the Index", waiting.Index.owned.Mossmitt == true)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("story checks failed")

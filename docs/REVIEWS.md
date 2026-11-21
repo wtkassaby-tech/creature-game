@@ -2,6 +2,20 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: battle rewards, story gifts, releasing (commit 4e4f438)
+
+Reviewer: a separate read-only agent. Scope: `src/shared/Rewards.luau`, `src/shared/StoryProgress.luau`, the handlers in `src/server/Main.server.luau`, and the new messages. No must-fix findings: no battle pays twice, no client value reaches a payout, no story gift pays twice.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A content mistake in a gift (a bad rarity, or egg parents that cannot breed) would error after the beat's flag was set, leaving the beat half paid for good | Should fix | Every gift is built and checked before anything changes. Test added |
+| 2 | One damaged save could stop the hatch loop for the whole server | Should fix | Each player's hatch runs on its own, and a failure is logged |
+| 3 | A starter that had to wait for room never joined the team; waiting gifts were only handed over on join | Note | A gift that arrives to an empty team joins it; waiting gifts are handed over after releases and hatches too. Test added |
+| 4 | The mentor's egg ignored pen space | Note | Pens are paid first; with no free pen the egg waits in the saved list and takes the next free pen. Test added |
+| 5 | Wild coins used the species' home biome, not where it was fought | Note | Rewards take the battle's biome; the world service must pass the route's biome (Greenwood only until then) |
+| 6 | An error part way through rewards could leave a battle half paid | Note | Every share is worked out first, then everything is paid together |
+| 7 | Hatched children and story gifts were not recorded in the Index | Note | Every creature that joins the stable is recorded |
+
 ## 20 November 2026: data service, creature grants, lasso capture (commit 8d1983c)
 
 Reviewer: a separate read-only agent that did not write the code. Scope: `src/server/Data/DataService.luau`, `src/shared/Grants.luau`, `src/shared/Capture.luau`, the new Pass action and the ProfileStore 1.0.3 calls.

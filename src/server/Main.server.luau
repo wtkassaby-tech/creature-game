@@ -96,6 +96,18 @@ local function completeBeat(player: Player, beatId: string, choice: string?)
 	log("StoryBeat", { player = player.UserId, beat = done.beat.id, gifts = #done.gifts })
 end
 
+-- Hands over any gifts that were waiting for stable room or a free pen.
+local function claimWaiting(player: Player, profile: Profile.Profile)
+	local handed = Grants.claimPending(profile, rebuildGift)
+	local eggs = StoryProgress.claimEggs(profile, function()
+		return HttpService:GenerateGUID(false)
+	end, os.time(), random:NextInteger(1, 2147483646))
+	if handed + eggs > 0 then
+		StateSync.changed(player)
+		log("PendingClaimed", { player = player.UserId, creatures = handed, eggs = eggs })
+	end
+end
+
 local function onLoaded(player: Player)
 	local profile = DataService.get(player)
 	if not profile then
@@ -103,10 +115,7 @@ local function onLoaded(player: Player)
 	end
 	StateSync.changed(player)
 	Grants.rollDay(profile, os.time())
-	local handed = Grants.claimPending(profile, rebuildGift)
-	if handed > 0 then
-		log("PendingClaimed", { player = player.UserId, count = handed })
-	end
+	claimWaiting(player, profile)
 	if IS_STUDIO and profile.Story.starter == nil then
 		-- Studio only, until the starter screen exists: pick Mossmitt through the real story path.
 		completeBeat(player, "starter_choice", "Mossmitt")
@@ -186,6 +195,7 @@ local function payBattle(player: Player, session: BattleSession.Session, outcome
 		cap = Xp.levelCap(profile.Story.badges),
 		unixTime = os.time(),
 		seed = random:NextInteger(1, 2147483646),
+		biome = 1, -- only Greenwood is reachable until the world service passes the route's biome
 	})
 	local members = {}
 	for _, member in paid.members do
@@ -259,6 +269,8 @@ Net.ReleaseCreature.On(function(player, value)
 		Element = grant.element,
 	})
 	if ok then
+		StateSync.changed(player)
+		claimWaiting(player, profile)
 		log(
 			"Release",
 			{ player = player.UserId, creature = value.Id, coins = profile.Coins - before }
@@ -270,17 +282,27 @@ task.spawn(function()
 	while true do
 		task.wait(HATCH_CHECK_SECONDS)
 		for _, player in Players:GetPlayers() do
-			local hatched = breeding:collectHatched(player)
-			if #hatched > 0 then
-				local ids = {}
-				for index, creature in hatched do
-					if index > 8 then
-						break -- the rest are in the stable already and show on the next refresh
-					end
-					table.insert(ids, creature.id)
+			-- One player's damaged save must never stop hatching for everyone else.
+			local ok, problem = pcall(function()
+				local hatched = breeding:collectHatched(player)
+				local profile = DataService.get(player)
+				if profile then
+					claimWaiting(player, profile) -- a freed pen may take a waiting gift egg
 				end
-				StateSync.changed(player)
-				Net.Hatched.Fire(player, { Ids = ids })
+				if #hatched > 0 then
+					local ids = {}
+					for index, creature in hatched do
+						if index > 8 then
+							break -- the rest are in the stable already and show in the state
+						end
+						table.insert(ids, creature.id)
+					end
+					StateSync.changed(player)
+					Net.Hatched.Fire(player, { Ids = ids })
+				end
+			end)
+			if not ok then
+				log("HatchFailed", { player = player.UserId, problem = tostring(problem) })
 			end
 		end
 	end

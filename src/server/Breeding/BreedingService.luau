@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Breeding = require(ReplicatedStorage.shared.Breeding)
 local Economy = require(ReplicatedStorage.shared.Economy)
+local Grants = require(ReplicatedStorage.shared.Grants)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rng = require(ReplicatedStorage.shared.Rng)
 local Types = require(ReplicatedStorage.shared.Types)
@@ -175,6 +176,7 @@ function BreedingService.collectHatched(self: BreedingService, player: Player): 
 		if now >= egg.hatchAt then
 			table.remove(data.Eggs, index)
 			data.Creatures[egg.child.id] = egg.child
+			Grants.recordOwned(data, egg.child)
 			table.insert(hatched, egg.child)
 			room -= 1
 			self.log("Hatch", { player = player.UserId, child = egg.child.id })

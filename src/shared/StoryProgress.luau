@@ -89,31 +89,71 @@ function StoryProgress.rebuild(ref: string, id: string, seed: number): Types.Cre
 end
 
 local function addToTeam(profile: Profile.Profile, id: string)
-	if profile.Creatures[id] and #profile.Team < Profile.teamSize(profile.Story.badges) then
+	if
+		profile.Creatures[id]
+		and not table.find(profile.Team, id)
+		and #profile.Team < Profile.teamSize(profile.Story.badges)
+	then
 		table.insert(profile.Team, id)
 	end
 end
 
-local function giveCreature(
-	profile: Profile.Profile,
-	source: Grants.Source,
-	ref: string,
-	input: CompleteInput,
-	gifts: { Gift },
-	kind: WorldTypes.RewardKind
-)
-	local id = input.newId()
-	local grant = Grants.giveOnce(profile, source, ref, function()
-		return assert(StoryProgress.rebuild(ref, id, input.seed), "gift species exists")
-	end)
-	if grant.outcome == "Granted" then
-		addToTeam(profile, id)
+-- The mentor's egg: two wild parents are made for the roll only and never kept. The child is
+-- decided now, like every egg. Nil if the two cannot breed (a content mistake).
+local function giftEgg(
+	parentA: string,
+	parentB: string,
+	newId: () -> string,
+	unixTime: number,
+	seed: number
+): Profile.Egg?
+	if Species[parentA] == nil or Species[parentB] == nil then
+		return nil
 	end
-	table.insert(gifts, { kind = kind, detail = id, waiting = grant.outcome == "Waiting" })
+	local rng = Rng.new(seed)
+	local a = Breeding.wild(parentA, "gift_a", 5, "Common", StoryProgress.giftColour(parentA), rng)
+	local b = Breeding.wild(parentB, "gift_b", 5, "Common", StoryProgress.giftColour(parentB), rng)
+	if not Breeding.canBreed(a, b, unixTime) then
+		return nil
+	end
+	local rollSeed = Rng.int(rng, 1, 2147483646)
+	local bred = Breeding.breed(a, b, Rng.new(rollSeed), { childId = newId(), now = unixTime })
+	return { child = bred.child, hatchAt = unixTime + BreedConfig.GIFT_EGG_SECONDS, seed = rollSeed }
+end
+
+local function eggRef(beatId: string, parentA: string, parentB: string): string
+	return `{beatId}|{parentA}|{parentB}`
+end
+
+-- Puts waiting gift eggs into free pens. Returns how many were placed.
+function StoryProgress.claimEggs(
+	profile: Profile.Profile,
+	newId: () -> string,
+	unixTime: number,
+	seed: number
+): number
+	local placed = 0
+	local index = 1
+	while index <= #profile.Pending and #profile.Eggs < profile.Pens do
+		local pending = profile.Pending[index]
+		local parts = string.split(pending.ref, "|")
+		local egg = if pending.source == "MentorEgg" and #parts == 3
+			then giftEgg(parts[2], parts[3], newId, unixTime, seed + index)
+			else nil
+		if egg then
+			table.remove(profile.Pending, index)
+			table.insert(profile.Eggs, egg)
+			placed += 1
+		else
+			index += 1
+		end
+	end
+	return placed
 end
 
 -- Finishes the next beat of the chapter and pays its gifts. Returns nil and a reason, changing
--- nothing, if the beat is not the next one, its trigger was not met, or a starter choice is bad.
+-- nothing, if the beat is not next, its trigger was not met, a starter choice is bad, or a gift
+-- cannot be made. Every gift is built before anything changes, so a beat is paid whole or not at all.
 function StoryProgress.complete(
 	profile: Profile.Profile,
 	chapter: WorldTypes.Chapter,
@@ -127,25 +167,55 @@ function StoryProgress.complete(
 		return nil, "Not yet"
 	end
 
-	-- Check every gift before changing anything.
-	for _, reward in beat.grants do
+	-- 1. Build and check everything, changing nothing.
+	local refs: { [number]: string } = {}
+	local eggs: { [number]: Profile.Egg } = {}
+	local rng = Rng.new(input.seed)
+	for index, reward in beat.grants do
 		if reward.kind == "Starter" then
 			if typeof(input.choice) ~= "string" or not table.find(reward.choices, input.choice) then
 				return nil, "Pick one of the three"
 			end
-		elseif reward.kind == "Creature" and Species[reward.species] == nil then
-			return nil, "That gift does not exist"
-		elseif
-			reward.kind == "Egg"
-			and (Species[reward.parentA] == nil or Species[reward.parentB] == nil)
-		then
-			return nil, "That gift does not exist"
+			local choice = input.choice :: string
+			refs[index] = giftRef(
+				beat.id,
+				index,
+				choice,
+				reward.level,
+				"Common",
+				StoryProgress.giftColour(choice)
+			)
+		elseif reward.kind == "Creature" then
+			refs[index] =
+				giftRef(beat.id, index, reward.species, reward.level, reward.rarity, reward.colour)
+		elseif reward.kind == "Egg" then
+			local egg = giftEgg(
+				reward.parentA,
+				reward.parentB,
+				input.newId,
+				input.unixTime,
+				Rng.int(rng, 1, 2147483646)
+			)
+			if not egg then
+				return nil, "That gift cannot be made"
+			end
+			eggs[index] = egg
+		end
+		local ref = refs[index]
+		if ref and StoryProgress.rebuild(ref, "check", 1) == nil then
+			return nil, "That gift cannot be made"
 		end
 	end
 
+	-- 2. Pay it all, with no pause. Pens first, so a gift egg finds its pen.
 	profile.Story.flags[beat.id] = true
 	local gifts: { Gift } = {}
-	local rng = Rng.new(input.seed)
+	for _, reward in beat.grants do
+		if reward.kind == "Pen" then
+			profile.Pens = math.min(profile.Pens + 1, ProfileConfig.MAX_PENS)
+			table.insert(gifts, { kind = "Pen" })
+		end
+	end
 	for index, reward in beat.grants do
 		if reward.kind == "Coins" then
 			profile.Coins += reward.amount
@@ -159,62 +229,41 @@ function StoryProgress.complete(
 		elseif reward.kind == "Material" then
 			profile.Items[reward.material] = (profile.Items[reward.material] or 0) + reward.count
 			table.insert(gifts, { kind = "Material", detail = reward.material :: string })
-		elseif reward.kind == "Pen" then
-			profile.Pens = math.min(profile.Pens + 1, ProfileConfig.MAX_PENS)
-			table.insert(gifts, { kind = "Pen" })
 		elseif reward.kind == "Badge" then
 			profile.Story.flags[reward.id] = true
 			profile.Story.badges += 1
 			table.insert(gifts, { kind = "Badge", detail = reward.name })
-		elseif reward.kind == "Starter" then
-			local choice = input.choice :: string
-			profile.Story.starter = choice
-			local ref = giftRef(
-				beat.id,
-				index,
-				choice,
-				reward.level,
-				"Common",
-				StoryProgress.giftColour(choice)
-			)
-			giveCreature(profile, "Starter", ref, input, gifts, "Starter")
-		elseif reward.kind == "Creature" then
-			local ref =
-				giftRef(beat.id, index, reward.species, reward.level, reward.rarity, reward.colour)
-			giveCreature(profile, "Token", ref, input, gifts, "Creature")
-		elseif reward.kind == "Egg" then
-			-- The mentor's egg: two wild parents are made for the roll only and never kept. The
-			-- child is decided now, like every egg, and waits in a pen.
-			local level = 5
-			local a = Breeding.wild(
-				reward.parentA,
-				"gift_a",
-				level,
-				"Common",
-				StoryProgress.giftColour(reward.parentA),
-				rng
-			)
-			local b = Breeding.wild(
-				reward.parentB,
-				"gift_b",
-				level,
-				"Common",
-				StoryProgress.giftColour(reward.parentB),
-				rng
-			)
-			local seed = Rng.int(rng, 1, 2147483646)
-			local bred = Breeding.breed(
-				a,
-				b,
-				Rng.new(seed),
-				{ childId = input.newId(), now = input.unixTime }
-			)
-			table.insert(profile.Eggs, {
-				child = bred.child,
-				hatchAt = input.unixTime + BreedConfig.GIFT_EGG_SECONDS,
-				seed = seed,
+		elseif reward.kind == "Starter" or reward.kind == "Creature" then
+			if reward.kind == "Starter" then
+				profile.Story.starter = input.choice :: string
+			end
+			local ref = refs[index]
+			local id = input.newId()
+			local source: Grants.Source = if reward.kind == "Starter" then "Starter" else "Token"
+			local grant = Grants.giveOnce(profile, source, ref, function()
+				return assert(StoryProgress.rebuild(ref, id, input.seed), "checked above")
+			end)
+			local granted = grant.outcome == "Granted"
+			if granted then
+				addToTeam(profile, id)
+			end
+			table.insert(gifts, {
+				kind = reward.kind,
+				detail = if granted then id else nil,
+				waiting = grant.outcome == "Waiting",
 			})
-			table.insert(gifts, { kind = "Egg", detail = bred.child.id })
+		elseif reward.kind == "Egg" then
+			if #profile.Eggs < profile.Pens then
+				table.insert(profile.Eggs, eggs[index])
+				table.insert(gifts, { kind = "Egg", detail = eggs[index].child.id })
+			else
+				-- No free pen: the egg waits in the saved list and is placed when a pen frees up.
+				table.insert(
+					profile.Pending,
+					{ source = "MentorEgg", ref = eggRef(beat.id, reward.parentA, reward.parentB) }
+				)
+				table.insert(gifts, { kind = "Egg", waiting = true })
+			end
 		end
 	end
 	return { beat = beat, gifts = gifts, unlocks = beat.unlocks }, nil

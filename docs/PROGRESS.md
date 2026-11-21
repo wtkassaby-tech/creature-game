@@ -2,6 +2,20 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 21 November 2026: rewards, the story, releasing, and a Studio test panel
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Battle rewards: coins with the daily falloff, the biome's material, XP shared across the team | Tested (15), reviewed | `src/shared/Rewards.luau` |
+| Story beats: the starter pick and every chapter 1 gift (lassos, creatures, the mentor's egg, pens, Prism, the badge), paid once and whole | Tested (25), reviewed | `src/shared/StoryProgress.luau` |
+| Releasing a creature | Wired, reviewed | `src/server/Main.server.luau` |
+| The player's state sent to the device (coins, candy, creatures, eggs, story) | Tested (7) | `src/shared/Snapshot.luau`, `src/server/State/` |
+| Device side: answers pings, keeps the state, plays the lasso sweep | Type-checked | `src/client/` |
+| Studio-only test panel: wild battle, moves, run, lasso with a live bar (Space to tap), next story beat, a log | Type-checked. Grey boxes on purpose | `src/client/Debug/TestPanel.luau` |
+| Third independent exploit review | Done: 2 should-fix and 5 notes, all fixed | `docs/REVIEWS.md` |
+
+**What Ayrton can playtest in Studio now:** press Play. You get Mossmitt as your starter through the real story path. The panel on the left shows your coins, lassos and creatures. Press "Wild battle", fight with "Move 1" to "Move 4", or press "Throw Basic" and tap Space when the white marker is inside the green zone. Check that a catch adds a creature and candy, a win pays coins, and "Next beat" walks through chapter 1 (lassos, the mentor's egg, which hatches in 3 minutes).
+
 ## 20 November 2026: saving, catching and breeding on the server
 
 **In one line:** the server side of saving, catching and breeding is written, type-checked, tested where it is pure, and reviewed. It has not run in Studio yet.
