@@ -75,6 +75,11 @@ local function routeLine(
 	return { id = route.id, points = points, length = route.length, side = side }
 end
 
+-- The place id of the supply stall on the way to a biome's lair.
+function Layout.stallId(biome: WorldTypes.Biome): string
+	return `{biome.lair.id}_stall`
+end
+
 -- Builds the map for a biome. `tamers` are the local tamers by id (each names its route and
 -- distance); ones on other biomes' routes are skipped.
 function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Tamer }): Map
@@ -152,6 +157,9 @@ function Layout.build(biome: WorldTypes.Biome, tamers: { [string]: WorldTypes.Ta
 			Layout.pointAt(lairLine, biome.lair.joinsAt, biome.lair.spurLength * lairLine.side)
 		map.lairSpur = { join, arena }
 		map.places[biome.lair.id] = arena
+		-- The supply stall stands a little way up the spur.
+		map.places[Layout.stallId(biome)] =
+			Layout.pointAt(lairLine, biome.lair.joinsAt, WorldConfig.STALL_DISTANCE * lairLine.side)
 	end
 	return map
 end

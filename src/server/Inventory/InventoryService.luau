@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Grants = require(ReplicatedStorage.shared.Grants)
+local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Shop = require(ReplicatedStorage.shared.Shop)
@@ -20,6 +21,7 @@ export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
 	changed: (player: Player) -> (),
 	claimWaiting: (player: Player, profile: Profile.Profile) -> (), -- hand over gifts that waited for room
+	isLocked: (player: Player, creatureId: string) -> boolean, -- in a battle or a giant fight
 	log: (event: string, fields: { [string]: any }) -> (),
 }
 
@@ -72,7 +74,7 @@ function InventoryService.start(hooks: Hooks)
 			)
 		end
 		local biome = WorldService.biome()
-		local atShop = false
+		local atShop = WorldService.isNear(player, Layout.stallId(biome), WorldConfig.TALK_RADIUS)
 		for _, building in biome.hub.buildings do
 			if
 				building.role == "Shop"
@@ -113,7 +115,7 @@ function InventoryService.start(hooks: Hooks)
 		end
 		Grants.rollDay(profile, os.time()) -- the release falloff counts by the server's date
 		local before = profile.Coins
-		local grant = Grants.release(profile, value.Id, BattleService.isInBattle(player, value.Id))
+		local grant = Grants.release(profile, value.Id, hooks.isLocked(player, value.Id))
 		local ok = grant.outcome == "Granted"
 		Net.ReleaseResult.Fire(player, {
 			Id = value.Id,

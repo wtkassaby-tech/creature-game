@@ -127,6 +127,8 @@ EconomyConfig.TRAINED = {
 
 -- Giant fights: one GiantCall to enter, at most this many field items brought in.
 EconomyConfig.GIANT_FIELD_ITEM_CAP = 5
+-- A giant rematch never pays more than this share of its Giant Horn's price in that biome.
+EconomyConfig.GIANT_REMATCH_MAX_HORN_SHARE = 0.85
 
 ------------------------------------------------------------------------------------------------
 -- Quests, daily tasks, weekly challenge, PvP (coins)

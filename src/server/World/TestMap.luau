@@ -11,6 +11,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Giants = require(ReplicatedStorage.content.Giants)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Tamers = require(ReplicatedStorage.content.Tamers)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
@@ -160,6 +161,7 @@ function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
 			WorldConfig.TALK_RADIUS
 		)
 		talk:SetAttribute("Place", building.name)
+		talk:SetAttribute("Role", building.role)
 	end
 
 	-- The routes, their stretches, rustle spots and tamers.
@@ -239,6 +241,26 @@ function TestMap.build(biome: WorldTypes.Biome, map: Layout.Map)
 			STONE
 		)
 		label(arena, biome.lair.name)
+		local giant = Giants[biome.lair.giant]
+		if giant then
+			-- The giant sleeps in the middle of its arena; a Giant Horn wakes it.
+			local sleeper =
+				block(world, giant.id, Vector3.new(20, 40, 20), at(map.lairSpur[2], 20.6), WOOD)
+			label(sleeper, `{giant.name} (Lv {giant.level})`)
+			prompt(sleeper, "Giant", giant.id, "Blow the Giant Horn", giant.name, 40)
+		end
+		local stall = map.places[Layout.stallId(biome)]
+		if stall then
+			local keeper = person(world, "Hollow Stall", stall)
+			prompt(
+				keeper,
+				"Shop",
+				Layout.stallId(biome),
+				"Shop",
+				"Hollow Stall",
+				WorldConfig.TALK_RADIUS
+			)
+		end
 	end
 
 	world.Parent = workspace

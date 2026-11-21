@@ -155,7 +155,7 @@ do
 		return Rewards.trainedWin(profile, {
 			opponentId = id,
 			xpKind = "Tamer",
-			paysCoins = paysCoins,
+			coinKind = if paysCoins then "Tamer" else nil,
 			biome = 1,
 			foes = foes,
 			team = team,
@@ -195,7 +195,7 @@ do
 	local trained = Rewards.trainedWin(fresh, {
 		opponentId = "x",
 		xpKind = "Tamer",
-		paysCoins = true,
+		coinKind = "Tamer",
 		biome = 1,
 		foes = { foe(5, "Mossmitt") },
 		team = freshTeam,

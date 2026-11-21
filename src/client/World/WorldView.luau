@@ -147,7 +147,8 @@ local function talk(who: string, place: string?)
 	end
 end
 
-function WorldView.start()
+-- `openShop` shows the shop screen (the server still checks the player is at a shop).
+function WorldView.start(openShop: () -> ())
 	local made = Instance.new("Folder")
 	made.Name = "WildCreatures"
 	made.Parent = workspace
@@ -200,9 +201,16 @@ function WorldView.start()
 			Net.StartBattle.Fire({ Kind = "Rival", TargetId = 0, TargetName = id })
 		elseif kind == "Rustle" then
 			Net.Rustle.Fire({ SpotId = id })
+		elseif kind == "Giant" then
+			Net.StartGiant.Fire({ GiantId = id })
+		elseif kind == "Shop" then
+			openShop()
 		elseif kind == "Talk" then
 			local place = prompt:GetAttribute("Place")
 			talk(id, if typeof(place) == "string" then place else nil)
+			if prompt:GetAttribute("Role") == "Shop" then
+				openShop()
+			end
 		end
 	end)
 end

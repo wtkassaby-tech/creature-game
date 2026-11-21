@@ -93,7 +93,7 @@ end
 export type TrainedWinInput = {
 	opponentId: string, -- the tamer id or story battle id
 	xpKind: Xp.OpponentKind,
-	paysCoins: boolean, -- false for battles whose coins come from a story beat
+	coinKind: ("Tamer" | "Gate" | "Giant")?, -- nil for battles whose coins come from a story beat
 	biome: number,
 	foes: { Types.Creature }, -- the whole opposing team
 	team: { { id: string, fainted: boolean } },
@@ -127,8 +127,14 @@ function Rewards.trainedWin(profile: Profile.Profile, input: TrainedWinInput): T
 	for _, foe in input.foes do
 		topLevel = math.max(topLevel, foe.level)
 	end
-	local coins = if input.paysCoins
-		then Economy.battleCoins("Tamer", math.max(1, input.biome), topLevel, rematches, firstClear)
+	local coins = if input.coinKind
+		then Economy.battleCoins(
+			input.coinKind,
+			math.max(1, input.biome),
+			topLevel,
+			rematches,
+			firstClear
+		)
 		else 0
 
 	local members: { MemberResult } = {}
@@ -168,6 +174,54 @@ function Rewards.trainedWin(profile: Profile.Profile, input: TrainedWinInput): T
 		creature.level, creature.xp = result.level, xpAfter[index]
 	end
 	return { coins = coins, material = nil, members = members, firstClear = firstClear }
+end
+
+export type GiantPaid = TrainedPaid & { prism: number }
+
+local GIANT_REMATCH_CANDY_KEY = "candy:GiantRematch"
+
+-- Pays a win against a giant: first-clear or rematch coins (rematches pay a set number of
+-- times a day), XP for the whole team, and Prism Candy (once for the first clear of each giant,
+-- then a small daily number for rematches of any giant).
+function Rewards.giantWin(
+	profile: Profile.Profile,
+	giant: { id: string, level: number },
+	stand: Types.Creature, -- the giant as the battle saw it, for the XP rule
+	input: {
+		biome: number,
+		team: { { id: string, fainted: boolean } },
+		cap: number,
+		unixTime: number,
+	}
+): GiantPaid
+	local paid = Rewards.trainedWin(profile, {
+		opponentId = giant.id,
+		xpKind = "Giant",
+		coinKind = "Giant",
+		biome = input.biome,
+		foes = { stand },
+		team = input.team,
+		cap = input.cap,
+		unixTime = input.unixTime,
+	})
+	local prism: number
+	if paid.firstClear then
+		prism = Economy.candyFor("GiantFirstClear", 0)
+	else
+		local claimed = profile.Daily.tasksDone[GIANT_REMATCH_CANDY_KEY] or 0
+		prism = Economy.candyFor("GiantRematch", claimed)
+		if prism > 0 then
+			profile.Daily.tasksDone[GIANT_REMATCH_CANDY_KEY] = claimed + 1
+		end
+	end
+	profile.Candy.prism += prism
+	return {
+		coins = paid.coins,
+		material = paid.material,
+		members = paid.members,
+		firstClear = paid.firstClear,
+		prism = prism,
+	}
 end
 
 return Rewards

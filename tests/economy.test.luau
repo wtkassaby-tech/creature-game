@@ -216,6 +216,18 @@ do
 		"a giant rematch pays less than its Giant Horn costs (rematches are a coin sink)",
 		Economy.battleCoins("Giant", 3, 32, 0, false) < Economy.itemPrice("GiantCall", 3)
 	)
+	local sinkEverywhere = true
+	for biome = 1, 11 do
+		for level = 1, 120 do
+			if
+				Economy.battleCoins("Giant", biome, level, 0, false)
+				>= Economy.itemPrice("GiantCall", biome)
+			then
+				sinkEverywhere = false
+			end
+		end
+	end
+	check("and that holds in every biome at every level", sinkEverywhere)
 
 	-- Releasing always pays less than catching or breeding the creature costs.
 	local below, worst, worstShare = true, "", 0

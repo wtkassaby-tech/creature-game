@@ -27,6 +27,7 @@ local BattleService = require(script.Parent.Battle.BattleService)
 local BreedingService = require(script.Parent.Breeding.BreedingService)
 local CaptureService = require(script.Parent.Capture.CaptureService)
 local DataService = require(script.Parent.Data.DataService)
+local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
 local QuestService = require(script.Parent.Quests.QuestService)
 local StateSync = require(script.Parent.State.StateSync)
@@ -79,7 +80,9 @@ end
 
 WorldService.start({
 	isReady = function(player)
-		return DataService.get(player) ~= nil and BattleService.session(player) == nil
+		return DataService.get(player) ~= nil
+			and BattleService.session(player) == nil
+			and not GiantService.active(player)
 	end,
 	refuse = BattleService.refuse,
 	onAt = function(player, at)
@@ -150,6 +153,9 @@ local function resolveTarget(
 	targetId: number,
 	targetName: string?
 ): (BattleService.Opponent?, string?)
+	if GiantService.active(player) then
+		return nil, "You are already in a battle"
+	end
 	if kind == "Wild" then
 		local spawn, why = WorldService.engage(player, targetId)
 		if not spawn then
@@ -276,7 +282,7 @@ local function battleFinished(
 			Rewards.trainedWin(profile, {
 				opponentId = trained.opponent.id,
 				xpKind = trained.opponent.xpKind,
-				paysCoins = trained.opponent.paysCoins,
+				coinKind = if trained.opponent.paysCoins then "Tamer" else nil,
 				biome = WorldService.biome().number,
 				foes = trained.foes,
 				team = team,
@@ -303,6 +309,34 @@ BattleService.start(resolveTarget, playerTeam, battleFinished, battleStarted, fu
 	end
 end)
 
+-- A creature in any kind of battle cannot be bred or released.
+local function isLocked(player: Player, creatureId: string): boolean
+	return BattleService.isInBattle(player, creatureId)
+		or GiantService.isInBattle(player, creatureId)
+end
+
+GiantService.start({
+	getData = DataService.get,
+	team = playerTeam,
+	inOtherBattle = function(player)
+		return BattleService.session(player) ~= nil
+	end,
+	biome = WorldService.biome,
+	map = WorldService.map,
+	position = WorldService.position,
+	refuse = BattleService.refuse,
+	changed = StateSync.changed,
+	onWon = function(player, battleId, giantId, paid)
+		sendRewards(player, battleId, paid)
+		log(
+			"GiantWon",
+			{ player = player.UserId, giant = giantId, first = paid.firstClear, prism = paid.prism }
+		)
+		QuestService.record(player, { kind = "BeatGiant", giant = giantId })
+	end,
+	log = log,
+})
+
 CaptureService.start(DataService.get, log, StateSync.changed)
 StateSync.start(DataService.get)
 
@@ -310,12 +344,16 @@ InventoryService.start({
 	getData = DataService.get,
 	changed = StateSync.changed,
 	claimWaiting = claimWaiting,
+	isLocked = function(player, creatureId)
+		return BattleService.isInBattle(player, creatureId)
+			or GiantService.isInBattle(player, creatureId)
+	end,
 	log = log,
 })
 
 -- Breeding and hatching ----------------------------------------------------------------------
 
-local breeding = BreedingService.new(DataService.get, BattleService.isInBattle, log)
+local breeding = BreedingService.new(DataService.get, isLocked, log)
 
 Net.RequestBreed.On(function(player, value)
 	local ok, detail = breeding:requestBreed(

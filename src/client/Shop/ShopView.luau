@@ -1,0 +1,107 @@
+--!strict
+-- The shop screen: everything the shop sells to this player, with its price, and a Buy button.
+-- The price shown is worked out the same way the server does it, but the server's price is the
+-- one that counts.
+-- TODO(art): first cut, not yet seen in Studio.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Bus = require(script.Parent.Parent.Net.Bus)
+local ClientState = require(script.Parent.Parent.State.ClientState)
+local Economy = require(ReplicatedStorage.shared.Economy)
+local EconomyConfig = require(ReplicatedStorage.config.EconomyConfig)
+local Kit = require(script.Parent.Parent.UI.Kit)
+local Net = require(ReplicatedStorage.net.generated.Client)
+
+local ShopView = {}
+
+export type View = { open: () -> () }
+
+function ShopView.start(playerGui: Instance): View
+	local gui = Kit.screen(playerGui, "Shop", 12)
+	local root = Kit.panel(gui, UDim2.new(0.8, 0, 0.8, 0), UDim2.new(0.1, 0, 0.1, 0))
+	local title = Kit.label(root, "Shop", UDim2.new(0.6, 0, 0, 34), UDim2.new(0, 14, 0, 8), 28)
+	local note = Kit.label(root, "", UDim2.new(1, -28, 0, 22), UDim2.new(0, 14, 1, -30), 16)
+	note.TextColor3 = Kit.COLOURS.textDim
+	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
+		gui.Enabled = false
+	end)
+	close.Size = UDim2.new(0, 90, 0, 34)
+	close.Position = UDim2.new(1, -104, 0, 8)
+
+	local list = Instance.new("ScrollingFrame")
+	list.Size = UDim2.new(1, -28, 1, -90)
+	list.Position = UDim2.new(0, 14, 0, 52)
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.ScrollBarThickness = 6
+	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	list.CanvasSize = UDim2.new()
+	list.Parent = root
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 6)
+	layout.Parent = list
+
+	local function rebuild()
+		local state = ClientState.get()
+		if not state then
+			return
+		end
+		title.Text = `Shop   {state.Coins} coins`
+		for _, child in list:GetChildren() do
+			if child:IsA("Frame") then
+				child:Destroy()
+			end
+		end
+		local reached = math.max(1, state.BiomeReached)
+		for _, item: EconomyConfig.ItemId in EconomyConfig.ITEM_IDS do
+			if Economy.itemAvailable(item, reached) then
+				local def = EconomyConfig.ITEMS[item]
+				local price = math.floor(Economy.itemPrice(item, reached))
+				local key: string = item
+				local row =
+					Kit.panel(list, UDim2.new(1, -8, 0, 58), UDim2.new(), Kit.COLOURS.panelLight)
+				Kit.label(
+					row,
+					`{def.name}  (you have {state.Items[key] or 0})`,
+					UDim2.new(0.62, 0, 0, 26),
+					UDim2.new(0, 10, 0, 4)
+				)
+				local about =
+					Kit.label(row, def.note, UDim2.new(0.62, 0, 0, 20), UDim2.new(0, 10, 0, 32), 14)
+				about.TextColor3 = Kit.COLOURS.textDim
+				local buy = Kit.button(
+					row,
+					`{price} coins`,
+					if state.Coins >= price then Kit.COLOURS.good else Kit.COLOURS.panel,
+					function()
+						Net.BuyItem.Fire({ Item = key, Count = 1 })
+					end
+				)
+				buy.Size = UDim2.new(0.32, 0, 0, 42)
+				buy.Position = UDim2.new(0.66, 0, 0, 8)
+			end
+		end
+	end
+
+	ClientState.onChanged(function()
+		if gui.Enabled then
+			rebuild()
+		end
+	end)
+	Bus.listen(Net.BuyResult, function(value)
+		note.Text = if value.Ok
+			then `Bought {value.Count} for {value.Coins} coins`
+			else value.Reason
+	end)
+
+	return {
+		open = function()
+			note.Text = ""
+			gui.Enabled = true
+			rebuild()
+		end,
+	}
+end
+
+return ShopView

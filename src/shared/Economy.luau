@@ -88,7 +88,14 @@ function Economy.battleCoins(
 			* Economy.levelFactor(biome, level)
 		return math.floor(rule.firstClear * oneTime)
 	elseif priorWinsToday < rule.rematchesPaidPerDay then
-		return math.floor(rule.rematch * scale)
+		local coins = math.floor(rule.rematch * scale)
+		if kind == "Giant" then
+			-- A rematch must cost more than it pays, in every biome and at every level: it is a
+			-- coin sink that earns candy. (Greenwood's cheaper horn would otherwise turn a profit.)
+			local horn = Economy.itemPrice("GiantCall", biome)
+			coins = math.min(coins, math.floor(horn * EconomyConfig.GIANT_REMATCH_MAX_HORN_SHARE))
+		end
+		return coins
 	end
 	return 0
 end

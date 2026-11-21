@@ -203,8 +203,8 @@ do
 	profile.Story.flags.third_creature, profile.Story.flags.giant_glimpse = true, true
 	profile.Quests.done.gw_fresh_tracks = true
 	check(
-		"the giant quest cannot be taken until giant fights exist",
-		QuestProgress.GIANTS_OPEN or QuestProgress.accept(profile, "gw_hollowbough", true) == nil
+		"the giant quest can be taken only while giant fights exist",
+		QuestProgress.GIANTS_OPEN == (QuestProgress.accept(profile, "gw_hollowbough", true) ~= nil)
 	)
 
 	local damaged = Profile.template()

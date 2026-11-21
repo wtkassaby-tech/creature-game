@@ -28,6 +28,7 @@ WorldConfig.SPAWN_SIDE_OFFSET = 18 -- wild creatures stand up to this far to eit
 WorldConfig.TAMER_SIDE_OFFSET = 9
 WorldConfig.RUSTLE_SIDE_OFFSET = 24
 WorldConfig.DOOR_DISTANCE = 16 -- a building's keeper stands this far in front of its middle
+WorldConfig.STALL_DISTANCE = 40 -- the lair's supply stall stands this far up the spur
 WorldConfig.ROUTE_ENTRY_DEPTH = 30 -- how far along a route its "entered" marker sits
 
 return WorldConfig

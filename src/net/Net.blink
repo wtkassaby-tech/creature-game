@@ -371,6 +371,7 @@ event PlayerState {
 		Pens: u8,
 		StableCapacity: u16,
 		Badges: u8,
+		BiomeReached: u8,
 		Starter: string(0..24),
 		Flags: string(1..40)[0..200],
 		-- Quests taken (id -> progress so far) and quests handed in.
@@ -477,4 +478,74 @@ event BuyResult {
 		Count: u8,
 		Coins: u32,
 	},
+}
+
+-- Giant fights. The player stands in the giant's lair and uses a Giant Horn (used up win or
+-- lose). Each turn the giant shows what it will do next; the device sends one choice.
+enum GiantActionKind = { Move, Switch, Item }
+enum IntentKind = { Attack, WindUp, Release }
+
+struct GiantIntent {
+	Text: string(0..160),
+	Kind: IntentKind,
+	HitsTeam: boolean,
+	Enraged: boolean,
+	-- For a big attack: the types that stop or halve it.
+	WeakTypes: Element[0..10],
+}
+
+-- The state of the fight after a turn (or at the start, with Turn 0).
+struct GiantView {
+	BattleId: u32,
+	Turn: u16,
+	Lines: string(0..160)[0..24],
+	BossHp: u32,
+	BossMaxHp: u32,
+	TeamHp: u16[1..6],
+	Active: u8(1..6),
+	Intent: GiantIntent,
+	Phase: string(0..40),
+	ItemsLeft: u8,
+	Previews: u16[0..4],
+	Finished: boolean,
+	Won: boolean,
+}
+
+event StartGiant {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { GiantId: string(1..40) },
+}
+event GiantStarted {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Name: string(1..40),
+		Level: u8,
+		Element: Element,
+		Yours: BattleCreature[1..6],
+		View: GiantView,
+	},
+}
+-- Index is a move number (1..4), a team position to switch to, or the team position an item is
+-- used on. Turn must match the server's turn or the choice is refused.
+event GiantAction {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Kind: GiantActionKind,
+		Index: u8(1..6),
+		Item: FieldItem?,
+	},
+}
+event GiantTurn {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: GiantView,
 }

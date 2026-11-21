@@ -22,9 +22,9 @@ export type HandedIn = { quest: WorldTypes.Quest, gifts: { Gifts.Gift } }
 
 local QuestProgress = {}
 
--- Giant fights are not on the server yet, so a quest to beat one could be taken but never
--- finished. Set to true when the giant service records BeatGiant.
-QuestProgress.GIANTS_OPEN = false
+-- Quests to beat a giant can be taken only while the server has giant fights and records a
+-- beaten giant (src/server/Giants). Kept as a switch so the quest can never be taken without them.
+QuestProgress.GIANTS_OPEN = true
 
 local function list(): { WorldTypes.Quest }
 	local all: { WorldTypes.Quest } = {}
