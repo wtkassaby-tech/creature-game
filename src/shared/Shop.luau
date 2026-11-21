@@ -54,7 +54,10 @@ function Shop.buy(
 	if held + count > Shop.MAX_HELD then
 		return nil, "You cannot carry any more of those"
 	end
-	local coins = Economy.itemPrice(id, biome) * count
+	-- Items that cost more in later biomes are priced by how far the player has got, wherever
+	-- they shop, so walking back to the first town is never a discount.
+	local priceBiome = math.max(biome, profile.Story.biomeReached)
+	local coins = math.floor(Economy.itemPrice(id, priceBiome)) * count
 	if coins ~= coins or coins < 0 or profile.Coins < coins then
 		return nil, "You do not have enough coins"
 	end

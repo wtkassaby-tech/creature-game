@@ -5,6 +5,7 @@
 local BattleSession = require("../src/shared/BattleSession")
 local Breeding = require("../src/shared/Breeding")
 local Economy = require("../src/shared/Economy")
+local EconomyConfig = require("../src/config/EconomyConfig")
 local Profile = require("../src/shared/Profile")
 local Rng = require("../src/shared/Rng")
 local Shop = require("../src/shared/Shop")
@@ -70,6 +71,29 @@ do
 		#Profile.validate(profile) == 0,
 		table.concat(Profile.validate(profile), "; ")
 	)
+end
+
+print("\n== Prices follow the player, not the shop ==")
+do
+	local far = Profile.template()
+	far.Coins = 100000
+	far.Story.biomeReached = 3
+	local bought = assert(Shop.buy(far, "GiantCall", 1, true, 1), "horn is bought")
+	check(
+		"a player who has reached a later biome pays its price in the first town",
+		bought.coins == Economy.itemPrice("GiantCall", 3)
+			and bought.coins > Economy.itemPrice("GiantCall", 1)
+	)
+	local charm = assert(Shop.buy(far, "BondCharm", 2, true, 1), "charms are bought")
+	check("the same for Bond Charms", charm.coins == 2 * Economy.itemPrice("BondCharm", 3))
+	local whole = true
+	for biome = 1, 11 do
+		for _, item: EconomyConfig.ItemId in EconomyConfig.ITEM_IDS do
+			local price = Economy.itemPrice(item, biome)
+			whole = whole and price == math.floor(price) and price > 0
+		end
+	end
+	check("every price in every biome is a whole number of coins", whole)
 end
 
 print("\n== Items in a battle ==")

@@ -66,6 +66,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 21 Nov 2026 | "The first battle cannot be lost" is built as: losing it costs nothing and it can be tried again at once. The rival's first creature is one level under the starter, so a loss is rare. A stricter rule (the player's last creature cannot faint) can replace it if playtests ask for it | Claude (Default) | 9 |
 | 21 Nov 2026 | Losing any battle has no cost yet, and creatures start every battle at full health. Healing items, the healer's house and a cost for losing come with the economy screens | Claude (Default) | 5, 10 |
 | 21 Nov 2026 | Quests count only what the server judged after the quest was taken (a wild win on a route, a catch, a tamer beaten), and are taken and handed in standing at the giver's building | Claude (Default) | 8 |
+| 21 Nov 2026 | Items in battle: a Field Tonic heals 40% of a hurt creature's health, a Deep Tonic all of it, a Rally Root brings a fallen creature back at half; each spends the turn (`BattleConfig.FIELD_ITEMS`). Shop prices follow how far the player has got, wherever they shop; a player carries at most 999 of one item | Claude (Default) | 5, 10 |
 
 ## Still open
 
@@ -81,5 +82,6 @@ Only Ayrton can decide these:
 - Greenwood has only one Sand species, the Sand starter. Swap a Water species for a second Sand one?
 - Mixed Greenwood and Dust Canyon balance: give Greenwood's Leaf creatures more non-Leaf moves, or judge mixed balance by 3v3 teams rather than one-on-one?
 - How wild creatures are met: built as creatures you can see and walk up to, each player's own (21 November). The other way is hidden encounters in long grass. Say if you want that instead.
+- Should there be a limit on items used in one ordinary battle? Today a player with many tonics can outlast a tamer. Giant fights already have a limit of five.
 - Should losing a battle cost anything (a walk back to the healer, a few coins)? Nothing yet.
 - The live brief doc still shows coin bets, the original breeding formulas and the section 15 list as they were; this log overrides it until the doc is updated.

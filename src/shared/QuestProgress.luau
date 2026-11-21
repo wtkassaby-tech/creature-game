@@ -22,6 +22,10 @@ export type HandedIn = { quest: WorldTypes.Quest, gifts: { Gifts.Gift } }
 
 local QuestProgress = {}
 
+-- Giant fights are not on the server yet, so a quest to beat one could be taken but never
+-- finished. Set to true when the giant service records BeatGiant.
+QuestProgress.GIANTS_OPEN = false
+
 local function list(): { WorldTypes.Quest }
 	local all: { WorldTypes.Quest } = {}
 	for _, quest in Quests do
@@ -77,6 +81,9 @@ function QuestProgress.accept(
 	if not atGiver then
 		return nil, "You are too far away"
 	end
+	if quest.objective.kind == "BeatGiant" and not QuestProgress.GIANTS_OPEN then
+		return nil, "That quest is not open to you yet"
+	end
 	profile.Quests.active[quest.id] = 0
 	return quest, nil
 end
@@ -87,7 +94,7 @@ function QuestProgress.record(profile: Profile.Profile, event: Event): { WorldTy
 	local moved: { WorldTypes.Quest } = {}
 	for id, progress in profile.Quests.active do
 		local quest = Quests[id]
-		if quest and progress < QuestProgress.needed(quest) then
+		if quest and typeof(progress) == "number" and progress < QuestProgress.needed(quest) then
 			local objective = quest.objective
 			local counts = false
 			if objective.kind == "WinWild" and event.kind == "WinWild" then

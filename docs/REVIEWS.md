@@ -2,6 +2,21 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 21 November 2026: quests, the shop, items in battle (commits 3520b21, b6d0d45)
+
+Reviewer: a separate read-only agent. No must-fix findings: a quest cannot pay twice or be handed in without its objective; counts and item ids at the shop are checked; an item is used up only when it was really used; a Rally Root cannot un-lose a battle.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Prices used the shop's biome, so a player far into the game could walk back to the first town and buy Giant Horns and Bond Charms at the first-biome price (a coin loop once giant rematches pay) | Should fix | Prices follow how far the player has got, wherever they shop. Test added |
+| 2 | The optional giant quest could be taken but never finished, because nothing records a beaten giant yet | Note | The quest cannot be taken until giant fights are on the server (`QuestProgress.GIANTS_OPEN`) |
+| 3 | A quest with a starter reward could never be handed in | Note | A test now checks no quest has one |
+| 4 | Saved quest progress was never checked, and a damaged value could stop the story moving on after a battle | Note | `Profile.validate` checks quests; counting skips damaged values and can no longer stop what follows. Tests added |
+| 5 | Items have no per-battle limit and no battle-kind check; a stock of tonics can outlast a tamer on the turn limit | Note | Items are refused in friendly (player against player) battles. A per-battle cap is a design question, listed for Ayrton |
+| 6 | Gifts can take a player over the 999 carry limit | Note | Harmless; left as it is |
+| 7 | Two request kinds shared one rate limit, and a dropped purchase got no reply | Note | Each kind has its own limit; a purchase always gets an answer |
+| 8 | Prices were never rounded down | Note | Rounded down, and a test checks every price in every biome is a whole number |
+
 ## 21 November 2026: the world, tamers, the rival, story triggers (commit e39b0f5)
 
 Reviewer: a separate read-only agent. Scope: `Encounters`, `Layout`, `Trainers`, `StoryTriggers`, `Rewards.trainedWin`, the world and story services, the rewritten `Main.server.luau`, and the battle and capture service changes. No must-fix findings. The open item from 20 November ("misses must follow the wild creature, not the battle") is closed.

@@ -26,18 +26,20 @@ export type Hooks = {
 local InventoryService = {}
 
 function InventoryService.start(hooks: Hooks)
+	-- Each kind of request has its own limit, so using an item never swallows a purchase.
 	local lastItem: { [Player]: number } = {}
-	local function itemTooFast(player: Player): boolean
+	local lastBuy: { [Player]: number } = {}
+	local function tooFast(last: { [Player]: number }, player: Player): boolean
 		local now = os.clock()
-		if now - (lastItem[player] or -math.huge) < 0.25 then
+		if now - (last[player] or -math.huge) < 0.25 then
 			return true
 		end
-		lastItem[player] = now
+		last[player] = now
 		return false
 	end
 
 	Net.UseItem.On(function(player, value)
-		if itemTooFast(player) then
+		if tooFast(lastItem, player) then
 			return
 		end
 		local session = BattleService.session(player)
@@ -59,8 +61,15 @@ function InventoryService.start(hooks: Hooks)
 
 	Net.BuyItem.On(function(player, value)
 		local profile = hooks.getData(player)
-		if itemTooFast(player) or not profile then
+		if not profile then
 			return
+		end
+		if tooFast(lastBuy, player) then
+			-- Always answer a purchase, so the screen never waits for a reply that was dropped.
+			return Net.BuyResult.Fire(
+				player,
+				{ Item = value.Item, Ok = false, Reason = "Too fast", Count = 0, Coins = 0 }
+			)
 		end
 		local biome = WorldService.biome()
 		local atShop = false
@@ -126,6 +135,7 @@ function InventoryService.start(hooks: Hooks)
 
 	Players.PlayerRemoving:Connect(function(player)
 		lastItem[player] = nil
+		lastBuy[player] = nil
 		lastRelease[player] = nil
 	end)
 end

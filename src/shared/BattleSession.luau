@@ -291,6 +291,9 @@ function BattleSession.useItem(
 	if typeof(turn) ~= "number" or turn ~= state.turn + 1 then
 		return nil, "That turn has already been played"
 	end
+	if session.kind == "Friendly" then
+		return nil, "Items cannot be used in this battle"
+	end
 	if typeof(target) ~= "number" or target % 1 ~= 0 then
 		return nil, "Bad choice"
 	end

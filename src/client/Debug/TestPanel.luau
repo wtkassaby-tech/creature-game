@@ -12,6 +12,7 @@ local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoPlayer = require(script.Parent.Parent.Lasso.LassoPlayer)
+local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Quests = require(ReplicatedStorage.content.Quests)
 local World = require(ReplicatedStorage.shared.World)
@@ -184,12 +185,12 @@ function TestPanel.start(parent: Instance)
 		end
 	end)
 
-	Net.BattleStarted.On(function(value)
+	Bus.listen(Net.BattleStarted, function(value)
 		battleId, nextTurn, active = value.BattleId, 1, 1
 		local foe = value.Theirs[1]
 		log(`Battle {value.BattleId}: a level {foe.Level} {foe.Rarity} {foe.Torso} ({foe.Hp} HP)`)
 	end)
-	Net.BattleTurn.On(function(value)
+	Bus.listen(Net.BattleTurn, function(value)
 		nextTurn = value.Turn + 1
 		active = value.YourActive
 		for _, event in value.Events do
@@ -204,17 +205,17 @@ function TestPanel.start(parent: Instance)
 			battleId = nil
 		end
 	end)
-	Net.BattleRefused.On(function(value)
+	Bus.listen(Net.BattleRefused, function(value)
 		log(`Refused: {value.Reason}`)
 	end)
-	Net.BattleRewards.On(function(value)
+	Bus.listen(Net.BattleRewards, function(value)
 		log(
 			`Rewards: {value.Coins} coins{if value.Material ~= ""
 				then ", 1 " .. value.Material
 				else ""}`
 		)
 	end)
-	Net.LassoPattern.On(function(value)
+	Bus.listen(Net.LassoPattern, function(value)
 		playing = LassoPlayer.begin(value)
 		log(
 			`Lasso: {#value.Zones} zone(s){if value.ConnectionAssist
@@ -222,13 +223,13 @@ function TestPanel.start(parent: Instance)
 				else ""}`
 		)
 	end)
-	Net.LassoResult.On(function(value)
+	Bus.listen(Net.LassoResult, function(value)
 		playing = nil
 		log(
 			`Lasso: {value.Outcome}, {value.ZonesHit} zone(s) hit, {value.Candy} {value.Element or ""} candy`
 		)
 	end)
-	Net.BeatCompleted.On(function(value)
+	Bus.listen(Net.BeatCompleted, function(value)
 		log(`Story: {value.BeatId} ({#value.Gifts} gift(s))`)
 		for _, beat in Chapter1.beats do
 			if beat.id == value.BeatId then
@@ -238,14 +239,14 @@ function TestPanel.start(parent: Instance)
 			end
 		end
 	end)
-	Net.BuyResult.On(function(value)
+	Bus.listen(Net.BuyResult, function(value)
 		log(
 			if value.Ok
 				then `Bought {value.Count} {value.Item} for {value.Coins} coins`
 				else `Shop: {value.Reason}`
 		)
 	end)
-	Net.QuestUpdate.On(function(value)
+	Bus.listen(Net.QuestUpdate, function(value)
 		local quest = Quests[value.QuestId]
 		local name = if quest then quest.name else value.QuestId
 		if value.Change == "Taken" and quest then
@@ -260,14 +261,14 @@ function TestPanel.start(parent: Instance)
 			)
 		end
 	end)
-	Net.ReleaseResult.On(function(value)
+	Bus.listen(Net.ReleaseResult, function(value)
 		log(
 			if value.Ok
 				then `Released for {value.Coins} coins`
 				else `Release refused: {value.Reason}`
 		)
 	end)
-	Net.Hatched.On(function(value)
+	Bus.listen(Net.Hatched, function(value)
 		log(`Hatched: {#value.Ids}`)
 	end)
 

@@ -449,6 +449,25 @@ local function validateUnsafe(profile: Profile): { string }
 		end
 	end
 
+	if
+		typeof(profile.Quests) ~= "table"
+		or typeof(profile.Quests.active) ~= "table"
+		or typeof(profile.Quests.done) ~= "table"
+	then
+		table.insert(problems, "unreadable: quests are missing")
+	else
+		for quest, progress in profile.Quests.active do
+			if not isWholeNumber(progress) or progress < 0 then
+				table.insert(problems, `quest {quest} has bad progress`)
+			end
+		end
+		for quest, done in profile.Quests.done do
+			if done ~= true then
+				table.insert(problems, `quest {quest} has a bad done mark`)
+			end
+		end
+	end
+
 	local storable, why = Profile.isStorable(profile)
 	if not storable then
 		table.insert(problems, `cannot be saved: {why or "unknown"}`)

@@ -189,6 +189,34 @@ do
 	)
 end
 
+print("\n== Review fixes ==")
+do
+	local noStarter = true
+	for _, quest in Quests do
+		for _, reward in quest.rewards do
+			noStarter = noStarter and reward.kind ~= "Starter"
+		end
+	end
+	check("no quest gives a starter (a hand-in carries no choice)", noStarter)
+
+	local profile = Profile.template()
+	profile.Story.flags.third_creature, profile.Story.flags.giant_glimpse = true, true
+	profile.Quests.done.gw_fresh_tracks = true
+	check(
+		"the giant quest cannot be taken until giant fights exist",
+		QuestProgress.GIANTS_OPEN or QuestProgress.accept(profile, "gw_hollowbough", true) == nil
+	)
+
+	local damaged = Profile.template()
+	local active: { [string]: any } = damaged.Quests.active
+	active.gw_fresh_tracks = "three"
+	check("damaged quest progress is reported", #Profile.validate(damaged) > 0)
+	check(
+		"and does not stop the counting",
+		#QuestProgress.record(damaged, { kind = "WinWild", route = "greenwood_route_a" }) == 0
+	)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("quest checks failed")

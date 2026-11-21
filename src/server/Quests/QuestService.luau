@@ -29,7 +29,7 @@ export type Hooks = {
 local QuestService = {}
 
 local hooks: Hooks
-local lastRequest: { [Player]: number } = {}
+local lastRequest: { [Player]: { [string]: number } } = {}
 local random = Random.new()
 
 -- True if the player's character is at the place where this quest's giver stands.
@@ -69,23 +69,35 @@ function QuestService.record(player: Player, event: QuestProgress.Event)
 	if not profile then
 		return
 	end
-	for _, quest in QuestProgress.record(profile, event) do
-		local ready = QuestProgress.isReady(profile, quest)
-		update(
-			player,
-			quest,
-			if ready then "Ready" else "Progress",
-			profile.Quests.active[quest.id] or 0
-		)
+	-- Counting a quest must never stop whatever comes after it (rewards, the story).
+	local ok, problem = pcall(function()
+		for _, quest in QuestProgress.record(profile, event) do
+			local ready = QuestProgress.isReady(profile, quest)
+			update(
+				player,
+				quest,
+				if ready then "Ready" else "Progress",
+				profile.Quests.active[quest.id] or 0
+			)
+		end
+	end)
+	if not ok then
+		hooks.log("QuestRecordFailed", { player = player.UserId, problem = tostring(problem) })
 	end
 end
 
-local function tooFast(player: Player): boolean
+-- Each kind of request has its own limit, so taking a quest never swallows a hand-in.
+local function tooFast(player: Player, kind: string): boolean
 	local now = os.clock()
-	if now - (lastRequest[player] or -math.huge) < MIN_SECONDS_BETWEEN_REQUESTS then
+	local mine = lastRequest[player]
+	if not mine then
+		mine = {}
+		lastRequest[player] = mine
+	end
+	if now - (mine[kind] or -math.huge) < MIN_SECONDS_BETWEEN_REQUESTS then
 		return true
 	end
-	lastRequest[player] = now
+	mine[kind] = now
 	return false
 end
 
@@ -94,7 +106,7 @@ function QuestService.start(given: Hooks): () -> ()
 
 	local stopAccept = Net.AcceptQuest.On(function(player, value)
 		local profile = hooks.getData(player)
-		if tooFast(player) or not profile then
+		if tooFast(player, "accept") or not profile then
 			return
 		end
 		local quest, problem =
@@ -108,7 +120,7 @@ function QuestService.start(given: Hooks): () -> ()
 
 	local stopHandIn = Net.HandInQuest.On(function(player, value)
 		local profile = hooks.getData(player)
-		if tooFast(player) or not profile then
+		if tooFast(player, "handIn") or not profile then
 			return
 		end
 		local handed, problem =

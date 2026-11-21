@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Chapter1 = require(ReplicatedStorage.content.story.Chapter1)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
@@ -152,7 +153,7 @@ function WorldView.start()
 	made.Parent = workspace
 	folder = made
 
-	Net.WildSpawns.On(function(value)
+	Bus.listen(Net.WildSpawns, function(value)
 		local keep: { [number]: boolean } = {}
 		latest = {}
 		for _, sent in value.Spawns do

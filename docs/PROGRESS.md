@@ -10,11 +10,13 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | Each player's own wild creatures on the routes, rustle spots, position checks | Tested (32), reviewed | `src/shared/Encounters.luau`, `src/server/World/WorldService.luau` |
 | Tamers and the rival's two story battles, with rewards | Tested (27), reviewed | `src/shared/Trainers.luau`, `src/shared/Rewards.luau` |
 | Story triggers confirmed by the server (place, win, catch, talk) | Tested, reviewed | `src/shared/StoryTriggers.luau`, `src/server/Story/` |
-| Quests: take, count, hand in; Greenwood's five quests | Tested (22). Review pending | `src/shared/QuestProgress.luau`, `src/server/Quests/` |
+| Quests: take, count, hand in; Greenwood's five quests | Tested (26), reviewed | `src/shared/QuestProgress.luau`, `src/server/Quests/` |
 | Gift paying shared by the story and quests | Tested | `src/shared/Gifts.luau` |
-| Fourth independent exploit review (the world) | Done: 4 should-fix and 5 notes, fixed or logged | `docs/REVIEWS.md` |
+| The shop (lassos, tonics and the rest, for coins) and items in battle | Tested (24), reviewed | `src/shared/Shop.luau`, `src/server/Inventory/` |
+| The battle screen and the lasso screen (health bars, moves with their damage, lasso, items, switch, run) | Type-checked. **Not yet seen in Studio**: expect layout fixes | `src/client/BattleView/`, `src/client/Lasso/LassoView.luau`, `src/client/UI/Kit.luau` |
+| Fourth and fifth independent exploit reviews (the world; quests, shop, items) | Done: no must-fix; every should-fix fixed | `docs/REVIEWS.md` |
 
-**What Ayrton can playtest in Studio now:** press Play. A grey-box Greenwood is built: the town square, Route A to the west, Route B to the east. Walk west along the path: wild creatures (coloured balls with name tags) stand by it; walk up to one and press the prompt to battle. The whole of chapter 1 can be played in order: beat the rival in the square, walk onto Route A, beat Pip, reach the clover meadow, talk to the mentor, catch a creature, talk to the shopkeeper (who also gives the first quest), reach the gate, beat the rival there, walk on past the gate. The test panel still drives the battle itself.
+**What Ayrton can playtest in Studio now:** press Play. A grey-box Greenwood is built: the town square, Route A to the west, Route B to the east. Walk west along the path: wild creatures (coloured balls with name tags) stand by it; walk up to one and press the prompt to battle. The whole of chapter 1 can be played in order: beat the rival in the square, walk onto Route A, beat Pip, reach the clover meadow, talk to the mentor, catch a creature, talk to the shopkeeper (who also gives the first quest), reach the gate, beat the rival there, walk on past the gate. Battles now open their own screen (moves, lasso, items, switch, run); the grey test panel on the left stays as a log and a fallback.
 
 ## 21 November 2026: rewards, the story, releasing, and a Studio test panel
 
