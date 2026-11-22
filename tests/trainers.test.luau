@@ -81,8 +81,8 @@ do
 		first ~= nil and first.kind == "Rival" and not first.paysCoins
 	)
 	check(
-		"the rival brings the counter to the player's starter",
-		first ~= nil and first.team.members[1].species == "Spadesnout"
+		"the rival's first creature is the one the player's starter beats (Leaf beats Water)",
+		first ~= nil and first.team.members[1].species == "Sloshcalf"
 	)
 	check("the first battle cannot be lost", first ~= nil and first.cannotLose)
 	local unlosable: { string } = {}

@@ -33,15 +33,15 @@ Thistledown (hub, 300 x 300) sits between the two routes. Distances run from the
 
 All use the Tamer AI tier. Each also has a line after losing (see `src/content/tamer_data/Greenwood.luau`).
 
-**The rival** (Rival AI tier) always picks the starter that counters yours: Sand beats Leaf, Water beats Sand, Leaf beats Water.
+**The rival** (Rival AI tier) picks his first creature for looks, not types, and it is the one that LOSES to yours (Leaf beats Water, Water beats Sand, Sand beats Leaf). By the gate he has learned: he leads with the starter that beats yours, and his first creature is still on the team behind it. (Changed 23 November 2026; see `docs/DECISIONS.md`. The teams in `src/content/tamer_data/Greenwood.luau` are the truth; this table follows them.)
 
-| You pick | First battle (level 4, cannot be lost) | Gate team (levels 14, 13, 13; tint 0.25) |
+| You pick | First battle (level 5, cannot be lost) | Gate team (levels 13, 12, 12; tint 0.25) |
 | --- | --- | --- |
-| Mossmitt (Leaf) | Spadesnout | Spadesnout, Splashjack, Gorsling |
-| Spadesnout (Sand) | Sloshcalf | Sloshcalf, Gorsling, Stumpwarden |
-| Sloshcalf (Water) | Mossmitt | Mossmitt, Spadesnout, Stumpwarden |
+| Mossmitt (Leaf) | Sloshcalf | Spadesnout, Sloshcalf, Gorsling |
+| Spadesnout (Sand) | Mossmitt | Sloshcalf, Mossmitt, Stumpwarden |
+| Sloshcalf (Water) | Spadesnout | Mossmitt, Spadesnout, Stumpwarden |
 
-First battle: "I picked the one that beats yours." / "That was luck. Next time I will not lose to a beginner." Gate: "I do not play around any more. Not after losing to you." / "Again... fine. I will get stronger, whatever it takes."
+First battle: "I picked the coolest one. Types? Who needs them. Watch this!" / "No fair, yours beats mine! Next time I bring the right one." Gate: "I know my types now. This one beats yours. No more playing around." / "Again... fine. I will get stronger, whatever it takes."
 
 ## Quest line: Thistledown Favours
 

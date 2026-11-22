@@ -84,7 +84,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Rival",
-				text = "Hey, new kid! Nice pick. Mine beats yours, though. Just so you know.",
+				text = "Hey, new kid! Nice pick. Mine is way cooler, though. Just so you know.",
 			},
 			{
 				speaker = "Rival",

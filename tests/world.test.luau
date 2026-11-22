@@ -299,15 +299,27 @@ for _, starter in STARTERS do
 	local playerElement: Types.Element = Species[starter].element
 	local firstElement: Types.Element = Species[first.members[1].species].element
 	local gateElement: Types.Element = Species[gate.members[1].species].element
+	-- On the green he has picked badly: the player's type beats his. By the gate he leads
+	-- with the starter that beats theirs, and his first creature is still on the team.
 	check(
-		`rival first vs {starter}: leads with the counter starter`,
-		isStarter(first.members[1].species) and TypeChart.isStrong(firstElement, playerElement)
+		`rival first vs {starter}: brings the starter the player's type beats`,
+		isStarter(first.members[1].species) and TypeChart.isStrong(playerElement, firstElement)
 	)
 	check(
+		`rival first vs {starter}: the same level as the player's first creature`,
+		first.members[1].level == 5
+	)
+	local stillThere = false
+	for index, m in gate.members do
+		stillThere = stillThere or (index > 1 and m.species == first.members[1].species)
+	end
+	check(
 		`rival gate vs {starter}: leads with the counter starter`,
-		isStarter(gate.members[1].species)
-			and TypeChart.isStrong(gateElement, playerElement)
-			and gate.members[1].species == first.members[1].species
+		isStarter(gate.members[1].species) and TypeChart.isStrong(gateElement, playerElement)
+	)
+	check(
+		`rival gate vs {starter}: his first creature is still with him, behind the lead`,
+		stillThere
 	)
 	check(`rival gate vs {starter}: three creatures`, #gate.members == 3)
 	local gateTop = ProgressionConfig.CAP_BASE - ProgressionConfig.GATE_TOP_UNDER_CAP

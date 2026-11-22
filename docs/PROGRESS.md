@@ -44,11 +44,12 @@ What changed, and what Ayrton should do or look at next. Newest first.
 - **A wall of tall trees stands behind the gatehouse,** so the next land cannot be seen until the road opens.
 - **Names in the world are small cream plates** that shrink with distance and are not drawn from far off (they were white letters floating at one size, piling up on screen).
 - **Every species has a painted model now:** the last two Tide Flats creatures, all eight Mire creatures, and the giants Mesalith, Carrackon and Sloughback.
-- **Phone-sized check (874 by 402):** the opening, the starter pick and a battle all fit and read well.
+- **Phone-sized check (874 by 402):** the opening, the starter pick, a battle and the Creatures screen all fit and read well.
+- **The first battle is now a clear win that teaches types.** The rival picked his creature for looks and it loses to yours: your moves show STRONG from the first turn and the fight is won in three turns with health to spare. By the gate he has learned and leads with the one that beats yours (tests only; not yet played in Studio).
+- **The tracker is a small "TO DO" page** that grows with its lines.
 
 **Still wrong:**
-- With the Leaf starter the first battle is still close: picking the weakest move ends it with almost no health left (it cannot be lost).
-- Dust Canyon, Tide Flats and the Mire still use the old generated layout. Their maps are being designed now (`docs/plans/09` and `10`).
+- Dust Canyon, Tide Flats and the Mire still use the old generated layout. The first two are designed (`docs/plans/09_DUST_CANYON_MAP.md`, `10_TIDE_FLATS_MAP.md`) and being built.
 - Only four speakers have faces.
 - Moatkeep's model reads as a sandcastle more than a creature, and Fenwhisk carries a flag for a tail. Both may want another try.
 

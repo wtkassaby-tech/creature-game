@@ -7,8 +7,9 @@
 --
 -- The rival's story is in his teams: ordinary Greenwood creatures in the first battle (tint 0),
 -- and a faint dark tint on the gate team (0.25) that grows each time he appears later.
--- The rival always picks the starter that counters the player's: Sand beats Leaf, Water beats
--- Sand, Leaf beats Water.
+-- On the green he has the starter that LOSES to the player's (he picked for looks, not types);
+-- by the gate he leads with the one that beats theirs: Sand beats Leaf, Water beats Sand, Leaf
+-- beats Water.
 
 local WorldTypes = require("../../shared/WorldTypes")
 
@@ -111,46 +112,48 @@ local rival: WorldTypes.RivalDef = {
 	gateBattle = "rival_gate",
 	gatePlace = "greenwood_gate",
 	firstCannotBeLost = true,
-	-- The first bout is a win the player earns in four or five turns, whichever friend they
-	-- chose. The rival still brings the type that beats theirs, but it is far younger: level 1
-	-- with one small kick against the Leaf starter (a Spadesnout knows only Sand moves, so its
-	-- level is what keeps the fight fair), level 2 with an off-type puff against the Sand one.
-	-- With the first teams (level 4, same-type moves) the Leaf and Sand starters only "won"
-	-- because the fight could not be lost, and the Sand starter's fight ran to the 60-turn stop
-	-- (tests/firstminutes.test.luau).
+	-- The first bout teaches the first lesson: types. The rival is a brash boy who picked the
+	-- creature that LOSES to the player's (Leaf beats Water, Water beats Sand, Sand beats Leaf),
+	-- so the player's own moves show STRONG from the first turn and the win is clear, in three
+	-- or four turns with health to spare (tests/firstminutes.test.luau). He has learned by the
+	-- gate, where he leads with the type that beats theirs. (Until 23 November he brought the
+	-- winning type here too: two starters only "won" because this fight cannot be lost, and
+	-- even a level 1 opponent left the Leaf starter on its last scrap of health.)
 	first = {
 		Mossmitt = {
-			members = { member("Spadesnout", 1, { "Scree Kick" }) },
+			members = { member("Sloshcalf", 5, { "Dew Splash", "Brook Rush" }) },
 			tint = 0,
 		},
 		Spadesnout = {
-			members = { member("Sloshcalf", 2, { "Spore Puff" }) },
+			members = { member("Mossmitt", 5, { "Seed Shot", "Moss Slam" }) },
 			tint = 0,
 		},
 		Sloshcalf = {
-			members = { member("Mossmitt", 4, { "Seed Shot", "Moss Slam" }) },
+			members = { member("Spadesnout", 5, { "Grit Spray", "Dust Kick" }) },
 			tint = 0,
 		},
 	},
 	gate = {
-		-- The player picked Mossmitt (Leaf): Sand leads, and Water is ready behind it.
+		-- At the gate he has learned: a creature that beats the player's leads, and the one he
+		-- lost with on the green is still with him, behind it.
+		-- The player picked Mossmitt (Leaf): Sand leads, and his Sloshcalf is ready behind it.
 		Mossmitt = {
 			members = {
 				member("Spadesnout", 13, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
-				member(
-					"Splashjack",
-					12,
-					{ "Ripple Ram", "Silt Surge", "Brook Rush", "Dew Splash" }
-				),
+				member("Sloshcalf", 12, { "Ripple Ram", "Mud Slap", "Brook Rush", "Spore Puff" }),
 				member("Gorsling", 12, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
 			},
 			tint = 0.25,
 		},
-		-- The player picked Spadesnout (Sand): Water leads, with Storm and Leaf behind it.
+		-- The player picked Spadesnout (Sand): Water leads, with his Mossmitt and a tank behind.
 		Spadesnout = {
 			members = {
 				member("Sloshcalf", 13, { "Ripple Ram", "Mud Slap", "Brook Rush", "Spore Puff" }),
-				member("Gorsling", 12, { "Thorn Volley", "Bramble Rake", "Leaf Gust", "Gale Hop" }),
+				member(
+					"Mossmitt",
+					12,
+					{ "Thorn Volley", "Bramble Rake", "Moss Slam", "Brook Rush" }
+				),
 				member("Stumpwarden", 12, { "Sap Hammer", "Root Lash", "Moss Slam", "Twig Snap" }),
 			},
 			tint = 0.25,
@@ -169,9 +172,9 @@ local rival: WorldTypes.RivalDef = {
 			tint = 0.25,
 		},
 	},
-	firstBefore = "I picked the one that beats yours. Do not take it personally!",
-	firstAfter = "That was luck. Next time I will not lose to a beginner.",
-	gateBefore = "I do not play around any more. Not after losing to you.",
+	firstBefore = "I picked the coolest one. Types? Who needs them. Watch this!",
+	firstAfter = "No fair, yours beats mine! Next time I bring the right one.",
+	gateBefore = "I know my types now. This one beats yours. No more playing around.",
 	gateAfter = "Again... fine. I will get stronger, whatever it takes.",
 }
 
