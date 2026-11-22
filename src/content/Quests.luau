@@ -5,13 +5,19 @@
 local DustCanyon = require("./quests/DustCanyon")
 local Greenwood = require("./quests/Greenwood")
 local TideFlats = require("./quests/TideFlats")
+local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
 
 local Quests: { [string]: WorldTypes.Quest } = {}
 
-for _, list in { Greenwood, DustCanyon, TideFlats } do
-	for _, quest in list do
-		Quests[quest.id] = quest
+-- In biome order: the position in this list is the biome number. Only open biomes' quests are
+-- listed (src/config/ReleaseConfig.luau).
+local ordered: { { WorldTypes.Quest } } = { Greenwood, DustCanyon, TideFlats }
+for number, list in ordered do
+	if number <= ReleaseConfig.OPEN_BIOMES then
+		for _, quest in list do
+			Quests[quest.id] = quest
+		end
 	end
 end
 

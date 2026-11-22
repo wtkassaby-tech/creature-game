@@ -9,6 +9,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local ReleaseConfig = require(ReplicatedStorage.config.ReleaseConfig)
 local AnalyticsMap = require(ReplicatedStorage.shared.AnalyticsMap)
 local Grants = require(ReplicatedStorage.shared.Grants)
 local Health = require(ReplicatedStorage.shared.Health)
@@ -115,7 +116,9 @@ WorldService.start({
 	mayEnter = function(player, biomeNumber)
 		-- A biome is earned with the badge of the one before it.
 		local profile = DataService.get(player)
-		return profile ~= nil and biomeNumber <= profile.Story.badges + 1
+		return profile ~= nil
+			and biomeNumber <= profile.Story.badges + 1
+			and biomeNumber <= ReleaseConfig.OPEN_BIOMES
 	end,
 	canBeAmbushed = function(player)
 		-- Only once the story has opened wild battles, and only if someone on the team can fight.
