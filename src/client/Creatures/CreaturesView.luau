@@ -66,30 +66,34 @@ function CreaturesView.start(playerGui: Instance)
 	-- The bar that is always there.
 	local hud = Kit.screen(playerGui, "Hud", 2)
 	hud.Enabled = true
-	local bar = Kit.panel(hud, UDim2.fromOffset(330, 44), UDim2.new(1, -340, 0, 10))
-	local wallet = Kit.label(bar, "", UDim2.new(1, -130, 1, -8), UDim2.fromOffset(10, 4))
-	local notice = Kit.label(hud, "", UDim2.new(0.6, 0, 0, 28), UDim2.new(0.2, 0, 0, 62), 20)
+	local bar = Kit.panel(hud, UDim2.fromOffset(340, 52), UDim2.new(1, -350, 0, 10))
+	local wallet = Kit.label(bar, "", UDim2.new(1, -136, 1, -8), UDim2.fromOffset(10, 4))
+	-- Notices sit on their own layer above every screen: on the Hud's layer the Creatures panel
+	-- covered them ("Not enough coins" was half hidden in the longer Studio run).
+	local notices = Kit.screen(playerGui, "Notices", 50)
+	notices.Enabled = true
+	local notice = Kit.label(notices, "", UDim2.new(0.6, 0, 0, 28), UDim2.new(0.2, 0, 0, 68), 20)
 	notice.TextXAlignment = Enum.TextXAlignment.Center
 	notice.TextStrokeTransparency = 0.3
 
 	local gui = Kit.screen(playerGui, "Creatures", 6)
 	-- What the button does is set further down, once the list can be rebuilt.
 	local open = Kit.button(bar, "Creatures", Kit.COLOURS.accent, function() end)
-	open.Size = UDim2.new(0, 110, 1, -8)
-	open.Position = UDim2.new(1, -116, 0, 4)
+	open.Size = UDim2.new(0, 116, 1, -8) -- 44 px tall: finger-sized on a phone
+	open.Position = UDim2.new(1, -122, 0, 4)
 
 	local root = Kit.panel(gui, UDim2.fromScale(0.86, 0.84), UDim2.fromScale(0.07, 0.1))
 	local title = Kit.label(root, "", UDim2.new(1, -120, 0, 30), UDim2.fromOffset(14, 8), 24)
 	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
 		gui.Enabled = false
 	end)
-	close.Size = UDim2.fromOffset(90, 32)
-	close.Position = UDim2.new(1, -104, 0, 8)
-	local eggs = Kit.label(root, "", UDim2.new(1, -28, 0, 22), UDim2.fromOffset(14, 42), 18)
+	close.Size = UDim2.fromOffset(96, 44) -- finger-sized on a phone
+	close.Position = UDim2.new(1, -108, 0, 4)
+	local eggs = Kit.label(root, "", UDim2.new(1, -136, 0, 22), UDim2.fromOffset(14, 42), 18)
 	eggs.TextColor3 = Kit.COLOURS.textDim
 
 	local list = Instance.new("ScrollingFrame")
-	list.Size = UDim2.new(1, -28, 1, -176)
+	list.Size = UDim2.new(1, -28, 1, -184)
 	list.Position = UDim2.fromOffset(14, 70)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
@@ -99,11 +103,17 @@ function CreaturesView.start(playerGui: Instance)
 	list.Parent = root
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
+	-- Rows are ordered by number: left to itself the list put the daily tasks under the creatures.
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
 
 	-- The breeding strip at the bottom: the two chosen parents, what it costs, and the odds.
-	local breed =
-		Kit.panel(root, UDim2.new(1, -28, 0, 92), UDim2.new(0, 14, 1, -100), Kit.COLOURS.panelLight)
+	local breed = Kit.panel(
+		root,
+		UDim2.new(1, -28, 0, 100),
+		UDim2.new(0, 14, 1, -108),
+		Kit.COLOURS.panelLight
+	)
 	local breedText = Kit.label(
 		breed,
 		"Pick two creatures to breed",
@@ -126,8 +136,8 @@ function CreaturesView.start(playerGui: Instance)
 	breedButton.Size = UDim2.fromOffset(120, 44)
 	breedButton.Position = UDim2.new(1, -130, 0, 8)
 	local clearButton = Kit.button(breed, "Clear", Kit.COLOURS.panel, function() end)
-	clearButton.Size = UDim2.fromOffset(120, 30)
-	clearButton.Position = UDim2.new(1, -130, 0, 56)
+	clearButton.Size = UDim2.fromOffset(120, 40)
+	clearButton.Position = UDim2.new(1, -130, 0, 54)
 
 	local confirmRelease: string? = nil
 	local rebuild: () -> ()
@@ -185,15 +195,9 @@ function CreaturesView.start(playerGui: Instance)
 		end
 	end
 
-	rebuild = function()
-		local state = ClientState.get()
-		if not state then
-			return
-		end
-		wallet.Text = `{state.Coins} coins   {math.floor(state.Candy.Prism)} Prism`
-		if not gui.Enabled then
-			return
-		end
+	-- The top lines only. The egg timers tick through this, so the list (and the button under
+	-- a finger) is not torn down every second while an egg is in a pen.
+	local function showHeader(state: Snapshot.State)
 		title.Text = `Creatures {#state.Creatures}/{state.StableCapacity}   Team {#state.Team}`
 		local eggLines: { string } = {}
 		for _, egg in state.Eggs do
@@ -205,16 +209,31 @@ function CreaturesView.start(playerGui: Instance)
 			else "empty"}` .. `   Candy: Leaf {math.floor(state.Candy.Leaf)}, Sand {math.floor(
 			state.Candy.Sand
 		)}, Water {math.floor(state.Candy.Water)}`
+	end
+
+	rebuild = function()
+		local state = ClientState.get()
+		if not state then
+			return
+		end
+		wallet.Text = `{state.Coins} coins   {math.floor(state.Candy.Prism)} Prism`
+		if not gui.Enabled then
+			return
+		end
+		showHeader(state)
 
 		for _, child in list:GetChildren() do
 			if child:IsA("Frame") then
 				child:Destroy()
 			end
 		end
+		local order = 0
 		-- Today's tasks come first (they appear with the first badge).
 		for _, task in state.Daily do
 			local goal = taskGoals[task.Id] or task.Id
-			local row = Kit.panel(list, UDim2.new(1, -8, 0, 40), UDim2.new(), Kit.COLOURS.panel)
+			local row = Kit.panel(list, UDim2.new(1, -8, 0, 52), UDim2.new(), Kit.COLOURS.panel)
+			order += 1
+			row.LayoutOrder = order
 			local text =
 				`{if task.Hard then "Hard task" else "Daily task"}: {goal}  {task.Progress}/{task.Count}`
 			Kit.label(row, text, UDim2.new(0.74, 0, 1, -8), UDim2.fromOffset(10, 4))
@@ -233,7 +252,9 @@ function CreaturesView.start(playerGui: Instance)
 		for _, view in state.Creatures do
 			local onTeam = table.find(state.Team, view.Id)
 			local row =
-				Kit.panel(list, UDim2.new(1, -8, 0, 46), UDim2.new(), Kit.COLOURS.panelLight)
+				Kit.panel(list, UDim2.new(1, -8, 0, 54), UDim2.new(), Kit.COLOURS.panelLight)
+			order += 1
+			row.LayoutOrder = order
 			local health = if view.Hurt >= 1
 				then "fainted"
 				else `{math.floor((1 - view.Hurt) * 100 + 0.5)}% health`
@@ -372,7 +393,7 @@ function CreaturesView.start(playerGui: Instance)
 			if gui.Enabled then
 				local state = ClientState.get()
 				if state and #state.Eggs > 0 then
-					rebuild()
+					showHeader(state)
 				end
 			end
 		end

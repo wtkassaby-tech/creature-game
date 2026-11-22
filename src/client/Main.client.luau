@@ -5,6 +5,7 @@
 -- Not yet run in Studio.
 
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -34,6 +35,29 @@ BattleView.start(playerGui)
 GiantView.start(playerGui)
 CreaturesView.start(playerGui)
 StoryView.start(playerGui)
+
+-- The world's prompts hide while a screen is open. A prompt is drawn on the screen and can be
+-- tapped: standing beside the rival, the "Battle" prompt sat right over the battle's Continue
+-- button (seen in the phone-sized Studio run), and E could start something behind a screen.
+local COVERING_SCREENS: { string } =
+	{ "Battle", "Giant", "Shop", "Creatures", "Dialogue", "StarterPick" }
+local function refreshPrompts()
+	local covered = false
+	for _, name in COVERING_SCREENS do
+		local screen = playerGui:FindFirstChild(name)
+		if screen and screen:IsA("ScreenGui") and screen.Enabled then
+			covered = true
+		end
+	end
+	ProximityPromptService.Enabled = not covered
+end
+for _, name in COVERING_SCREENS do
+	local screen = playerGui:FindFirstChild(name)
+	if screen and screen:IsA("ScreenGui") then
+		screen:GetPropertyChangedSignal("Enabled"):Connect(refreshPrompts)
+	end
+end
+refreshPrompts()
 
 if RunService:IsStudio() then
 	local TestPanel = require(script.Parent.Debug.TestPanel)

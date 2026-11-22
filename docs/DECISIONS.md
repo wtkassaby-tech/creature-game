@@ -109,6 +109,8 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 22 Nov 2026 | **Creatures count poison when their four moves are picked** (Claude's call, given to Claude by Ayrton: opponents already do), so breeding for poison is a real choice | Claude (Default) | 5 |
 | 22 Nov 2026 | Claude keeps the live brief doc in step with this log (Ayrton: "you are in charge of the operations") | Ayrton | 1 |
 | 22 Nov 2026 | **The lasso's lag window gets 120 ms of slack on the early side** (`CLAIM_EARLY_MARGIN_MS`). The allowance was the smallest ping reading alone, so in the first Studio run every honest tap was thrown out. Reviewed as giving a cheat nothing new: the device already knows the whole sweep | Claude (Default) | 6 |
+| 22 Nov 2026 | **Four shop descriptions rewritten for players** (Rope Lasso, bait, Bond Charm, Clearwater Drops): they carried notes meant for us, one naming a config value. No price or effect changed | Claude (Default) | 10 |
+| 22 Nov 2026 | **World prompts hide while a screen is open, and the shop closes when a fight starts**, so nothing can be started or tapped behind a screen (found in the longer Studio run) | Claude (Default) | 12 |
 
 ## Still open
 
@@ -121,3 +123,5 @@ Only Ayrton can decide these:
 - Radiant fusion: Ayrton unsure; not adopted.
 - Names: the game, the rival, the mentor, the entity, the player's title, biome 9, the first gem tier ("Amber"), Breeding Candy. Decided later.
 - Style references for biome 9.
+- **From the longer Studio run (22 Nov), to judge:** the Greenwood giant is very tight at the level cap (lost with 75 of 1,150 health left, won with 2 health left); XP builds up at the level cap and pays out when the badge lifts it; the mentor's welcome line shows after the starter is picked; Tuppence's story lines open over the shop; the breed strip does not say Prism covers a candy shortfall; a giant fight does not stop the player walking away.
+- **Still to test after the first publish:** the five off-switches (ConfigService does not load in an unpublished place), saving, and play on a real phone.

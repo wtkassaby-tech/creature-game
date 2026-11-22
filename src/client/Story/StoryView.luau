@@ -59,9 +59,9 @@ function StoryView.start(playerGui: Instance)
 	-- The dialogue box: bottom of the screen, one line at a time.
 	local gui = Kit.screen(playerGui, "Dialogue", 20)
 	local box = Kit.panel(gui, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
-	local speaker = Kit.label(box, "", UDim2.new(1, -140, 0, 26), UDim2.fromOffset(14, 8), 22)
+	local speaker = Kit.label(box, "", UDim2.new(1, -150, 0, 26), UDim2.fromOffset(14, 8), 22)
 	speaker.TextColor3 = Kit.COLOURS.warn
-	local line = Kit.label(box, "", UDim2.new(1, -28, 0, 64), UDim2.fromOffset(14, 38), 22)
+	local line = Kit.label(box, "", UDim2.new(1, -28, 0, 68), UDim2.fromOffset(14, 54), 22)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	local queue: { { speaker: string, text: string } } = {}
@@ -99,8 +99,8 @@ function StoryView.start(playerGui: Instance)
 		battleChanged()
 	end)
 	local nextButton = Kit.button(box, "Next", Kit.COLOURS.accent, showNext)
-	nextButton.Size = UDim2.fromOffset(110, 34)
-	nextButton.Position = UDim2.new(1, -124, 0, 6)
+	nextButton.Size = UDim2.fromOffset(120, 44) -- finger-sized on a phone
+	nextButton.Position = UDim2.new(1, -132, 0, 6)
 
 	-- The starter pick: shown until the player has a first creature.
 	local pick = Kit.screen(playerGui, "StarterPick", 30)

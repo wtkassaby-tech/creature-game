@@ -2,6 +2,49 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 22 November 2026 (the longer Studio run and a phone-sized check)
+
+**In one line:** chapter 1 was played through to the Acorn Badge in Studio, then the shop, crafting, breeding, daily tasks, the giant (fight and capture) and the road into Dust Canyon. All of it works; the server logged no errors in about 60 battles. Eight screen fixes came out of it, half of them for phones. The full check passes.
+
+**How it was played:** by hand through the story's first beats, then with a test script that sends the same messages the screens send (pick the strongest move, heal at the healer), so the server judged everything as it would for a player. Reaching the gate took 39 battles and about 21 minutes of play time; the first try at the gate (team at 12 to 14) was lost narrowly, the second (14 to 15) was won.
+
+| Worked as designed | Notes |
+| --- | --- |
+| Story beats 1 to 13, the Acorn Badge, the sealed road, chapter 2's first two beats | "The tree that walks" fires a few steps past the meadow's signpost, not at it |
+| Shop: buy, refuse when far away, make a tonic from 3 Fernfluff | |
+| Breeding: cost and odds shown, "Not enough coins" refusal, a real breed, the mentor's egg hatching | Prism covered a 1 Leaf candy shortfall, as designed |
+| Daily tasks appear with the badge; "Breed once" moved to 1/1 | |
+| Giant: refused when far away, horn spent, lost once, won once, capture offer, Braided throw, "Hollowbough No. 1", serial logged | |
+| Dust Canyon: creatures appear with the badge; a level 14 wild battle won | |
+
+| Found | Fix | Where |
+| --- | --- | --- |
+| The Creatures list was torn down and rebuilt every second while an egg was in a pen, so a tap could land on a button that had just been replaced | The egg timers now update only the top lines | `CreaturesView.luau` |
+| Daily tasks sat under the creatures, not at the top | Rows are given an explicit order | `CreaturesView.luau` |
+| "Not enough coins" was half hidden behind the Creatures panel | Notices have their own layer above every screen | `CreaturesView.luau` |
+| The shop stayed open over a battle (it sits above the battle screens) | The shop closes when a battle or giant fight starts | `ShopView.luau` |
+| Shop text showed notes meant for us ("BreedConfig.CHARM_CHANCE", "Trivially cheap, so catching is never blocked") and "CanyonGrit" | Four descriptions rewritten for players; materials shown with a space | `EconomyConfig.luau`, `ShopView.luau` |
+| On a phone-sized screen the "You won" box had a 30 px Continue button, and a long reward list ran over it | Taller box, text that shrinks to fit, a 48 px button | `BattleView.luau` |
+| A world prompt ("Battle Rival") was drawn right over the Continue button, and E could start things behind an open screen | Prompts hide while any screen is open | `Main.client.luau` |
+| Buttons under finger size on a phone: dialogue Next (34 px), Creatures (36), Close (32 to 34), the row buttons (36), Clear (30) | All 40 px or more | `StoryView.luau`, `CreaturesView.luau`, `ShopView.luau` |
+
+**Phone-sized check (874 x 401, an iPhone 17 Pro's size):** starter pick, dialogue, tracker, battle, the result box, Creatures and Shop all fit with no cut-off text. Not covered: real finger taps (the Studio tool could not tap reliably in touch mode, so the check was driven by mouse at phone size); play on a real phone.
+
+**Could not be tested here:**
+- The off-switches (`shop_open` and the others): Roblox's ConfigService does not load in an unpublished place, so `SetTestingValue` has nothing to act on. The game stays open, as designed. Test after the first publish.
+- Tide Flats and beyond (needs the Cairn Badge: all of chapter 2).
+- Saving (Studio uses the in-memory mock).
+
+**For Ayrton to judge (nothing changed; listed in `docs/DECISIONS.md` under Still open):**
+- The giant is very tight for a team at the cap: lost with 75 of its 1,150 health left using no items, won with 2 health left on the last creature using all 5 items.
+- XP keeps building at the level cap and is paid out at once when the badge lifts it (15 to 19 in one battle).
+- The mentor's "Welcome! Pick the one that feels right" shows after the pick, because the pick screen covers it.
+- Talking to Tuppence opens her story lines over the open shop.
+- The breed strip says "candy: 2 Leaf" and does not say Prism covers a shortfall.
+- A giant fight does not stop the player walking away (a normal battle does).
+
+**To playtest:** as below, with the newest fixes. On a phone, check that every button is easy to hit.
+
 ## 22 November 2026 (the first run in Roblox Studio)
 
 **In one line:** the game has now run in Studio for the first time. Steps 1 to 12 of `docs/STUDIO_FIRST_RUN.md` all work after seven fixes; the full check passes. It is still the grey-box test build (boxes for buildings, balls for creatures): no art yet.

@@ -172,7 +172,7 @@ EconomyConfig.ITEMS = {
 		price = 15,
 		scalesWithBiome = false,
 		fieldItem = false,
-		note = "Trivially cheap, so catching is never blocked",
+		note = "The everyday rope: cheap enough to always carry",
 	},
 	Braided = {
 		name = "Braided Lasso",
@@ -223,21 +223,21 @@ EconomyConfig.ITEMS = {
 		price = 400,
 		scalesWithBiome = false,
 		fieldItem = false,
-		note = "Summons a rare spawn; sold from Tide Flats (biome 3) on",
+		note = "Draws out a rare creature at a rustle spot",
 	},
 	BondCharm = {
 		name = "Bond Charm",
 		price = 400,
 		scalesWithBiome = true,
 		fieldItem = false,
-		note = "Tilts one breed's part choice toward the first parent (BreedConfig.CHARM_CHANCE); used up",
+		note = "Tilts one breed toward the first parent's parts; used up",
 	},
 	Cure = {
 		name = "Clearwater Drops",
 		price = 60,
 		scalesWithBiome = false,
 		fieldItem = false, -- giants never poison, so it has no place in a giant fight
-		note = "Cures one creature's poison in a battle; sold and made from the Mire (biome 4) on",
+		note = "Cures one creature's poison in a battle",
 	},
 } :: {
 	Basic: ItemDef,

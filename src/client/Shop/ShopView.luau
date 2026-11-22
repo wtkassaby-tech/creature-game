@@ -26,8 +26,8 @@ function ShopView.start(playerGui: Instance): View
 	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
 		gui.Enabled = false
 	end)
-	close.Size = UDim2.fromOffset(90, 34)
-	close.Position = UDim2.new(1, -104, 0, 8)
+	close.Size = UDim2.fromOffset(96, 44) -- finger-sized on a phone
+	close.Position = UDim2.new(1, -108, 0, 4)
 
 	local list = Instance.new("ScrollingFrame")
 	list.Size = UDim2.new(1, -28, 1, -90)
@@ -134,8 +134,10 @@ function ShopView.start(playerGui: Instance): View
 				end
 				if recipe then
 					local have = state.Items[recipe.material :: string] or 0
+					-- Material ids have no spaces ("CanyonGrit"); players read "Canyon Grit".
+					local material = string.gsub(recipe.material :: string, "(%l)(%u)", "%1 %2")
 					about.Text =
-						`{def.note}. Or make one: {recipe.count} {recipe.material} (you have {have})`
+						`{def.note}. Or make one: {recipe.count} {material} (you have {have})`
 					if have >= recipe.count and state.Coins >= recipe.coins then
 						buy.Size = UDim2.new(0.16, -2, 0, 42)
 						local make = Kit.button(row, "Make", Kit.COLOURS.accent, function()
@@ -158,6 +160,15 @@ function ShopView.start(playerGui: Instance): View
 		note.Text = if value.Ok
 			then `Bought {value.Count} for {value.Coins} coins`
 			else value.Reason
+	end)
+
+	-- The shop sits above the battle screens, and a player can walk off with it open: a fight
+	-- that starts (long grass, a giant) must not begin hidden underneath it.
+	Bus.listen(Net.BattleStarted, function()
+		gui.Enabled = false
+	end)
+	Bus.listen(Net.GiantStarted, function()
+		gui.Enabled = false
 	end)
 
 	return {

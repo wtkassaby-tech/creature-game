@@ -265,20 +265,31 @@ function BattleView.start(playerGui: Instance)
 	end)
 
 	-- Shown when the battle ends.
-	local done =
-		Kit.panel(gui, UDim2.fromScale(0.6, 0.3), UDim2.fromScale(0.2, 0.2), Kit.COLOURS.panelLight)
+	local done = Kit.panel(
+		gui,
+		UDim2.fromScale(0.6, 0.46),
+		UDim2.fromScale(0.2, 0.14),
+		Kit.COLOURS.panelLight
+	)
 	done.Visible = false
 	done.ZIndex = 8
-	local doneText = Kit.label(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.fromOffset(12, 8), 26)
+	-- The text shrinks to fit (a win can list coins, a material, XP and several level-ups) and the
+	-- button keeps a finger-sized height: on a phone the old 30%-tall panel gave a 30 px button.
+	local doneText = Kit.label(done, "", UDim2.new(1, -24, 1, -72), UDim2.fromOffset(12, 8), 26)
 	doneText.TextWrapped = true
+	doneText.TextScaled = true
+	local doneLimit = Instance.new("UITextSizeConstraint")
+	doneLimit.MaxTextSize = 26
+	doneLimit.MinTextSize = 12
+	doneLimit.Parent = doneText
 	doneText.ZIndex = 9
 	local closeButton = Kit.button(done, "Continue", Kit.COLOURS.accent, function()
 		gui.Enabled = false
 		done.Visible = false
 		model = nil
 	end)
-	closeButton.Size = UDim2.fromScale(0.5, 0.26)
-	closeButton.Position = UDim2.fromScale(0.25, 0.68)
+	closeButton.Size = UDim2.new(0.5, 0, 0, 48)
+	closeButton.Position = UDim2.new(0.25, 0, 1, -58)
 	closeButton.ZIndex = 9
 
 	-- The end panel appears once the last turn has been shown; rewards join it when they arrive.
