@@ -547,6 +547,9 @@ local function teamHasToxic(team: WorldTypes.TamerTeam): boolean
 end
 
 -- The biome's local tamers, in walking order (route, then distance).
+-- The Mire was raised one level on 22 Nov 2026 (more resistance). No tamer outranks the gate's
+-- strongest creature: the cap with three badges (45) less GATE_TOP_UNDER_CAP.
+local TAMER_CEILING = 43
 local mireTamers: { WorldTypes.Tamer } = {}
 for _, tamer in TamersMire.locals do
 	table.insert(mireTamers, tamer)
@@ -565,7 +568,7 @@ local startsAt, endsAt = 0, 0
 for index, tamer in mireTamers do
 	local id = tamer.id
 	check(`{id}: registered`, Tamers.locals[id] == tamer)
-	checkTeam(id, tamer.team, mire.gate.recommendedMin)
+	checkTeam(id, tamer.team, TAMER_CEILING)
 	check(`{id}: tier is Tamer`, tamer.tier == "Tamer")
 	check(
 		`{id}: has a look and both lines`,
@@ -588,11 +591,8 @@ for index, tamer in mireTamers do
 	end
 	endsAt = top
 end
-check("tamer levels run from 33 to 42", startsAt == 33 and endsAt == 42, `{startsAt} to {endsAt}`)
-check(
-	"the tamers' levels are under the gate's recommended 42 to 45 or at its floor",
-	endsAt <= mire.gate.recommendedMin
-)
+check("tamer levels run from 34 to 43", startsAt == 34 and endsAt == 43, `{startsAt} to {endsAt}`)
+check("no tamer is stronger than the gate's strongest creature", endsAt <= TAMER_CEILING)
 check(
 	"the first tamer's lines name the rule: poison never sticks to a Toxic creature",
 	string.find(mireTamers[1].after, "Toxic", 1, true) ~= nil
@@ -646,11 +646,11 @@ for _, starter in STARTERS do
 	)
 	local levelsOk = true
 	for _, m in team.members do
-		if m.level < 38 or m.level > 39 then
+		if m.level < 39 or m.level > 40 then
 			levelsOk = false
 		end
 	end
-	check(`rival mire vs {starter}: levels 38 to 39, under the gate`, levelsOk)
+	check(`rival mire vs {starter}: levels 39 to 40, under the gate`, levelsOk)
 	check(
 		`rival mire vs {starter}: darker than his Tide Flats team, and not yet fully dark`,
 		team.tint > tideRivalTeams[starter].tint and team.tint < 1

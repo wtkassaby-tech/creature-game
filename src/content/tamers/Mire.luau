@@ -2,7 +2,8 @@
 -- The Mire's tamers: five locals met along the routes, the rival mid-biome and a local champion at
 -- the gate. Names are original placeholders. Every move is one the creature can know at that level
 -- (tests/mire.test checks this). Teams are four from here on (three badges, ProfileConfig). Levels
--- rise with the routes (33 to 42) and stay at or under the gate's 42 to 45, so a player who has
+-- rise with the routes (34 to 43, raised one level on 22 Nov 2026 for more resistance) and
+-- stay at or under the gate's 42 to 43, so a player who has
 -- fought the tamers on the way arrives ready for the gate.
 --
 -- Teaching poison. Every local team carries at least one poisoning move (Venom Nip, Broth Spit,
@@ -37,10 +38,10 @@ local locals: { WorldTypes.Tamer } = {
 		at = 120,
 		team = {
 			members = {
-				member("Fenwhisk", 33, { "Venom Nip", "Slick Dash", "Sludge Slap" }),
-				member("Skipslick", 32, { "Venom Nip", "Slick Dash", "Sludge Slap" }),
-				member("Mistrel", 32, { "Murk Dive", "Mist Snap", "Reed Paddle", "Bog Wade" }),
-				member("Snaggar", 33, { "Murk Lunge", "Gar Rend", "Muck Stamp", "Bog Wade" }),
+				member("Fenwhisk", 34, { "Venom Nip", "Slick Dash", "Sludge Slap" }),
+				member("Skipslick", 33, { "Venom Nip", "Slick Dash", "Sludge Slap" }),
+				member("Mistrel", 33, { "Murk Dive", "Mist Snap", "Reed Paddle", "Bog Wade" }),
+				member("Snaggar", 34, { "Murk Lunge", "Gar Rend", "Muck Stamp", "Bog Wade" }),
 			},
 			tint = 0,
 		},
@@ -56,10 +57,10 @@ local locals: { WorldTypes.Tamer } = {
 		at = 400,
 		team = {
 			members = {
-				member("Lilyshade", 35, { "Still Water", "Hoarmist", "Reed Paddle", "Bog Wade" }),
-				member("Skipslick", 35, { "Fen Lash", "Venom Nip", "Slick Dash", "Sludge Slap" }),
-				member("Keelsnap", 36, { "Shell Bash", "Hook Beak", "Muck Stamp", "Barb Sting" }),
-				member("Bulbroth", 35, { "Simmer Slam", "Broth Spit", "Bog Wade", "Sludge Slap" }),
+				member("Lilyshade", 36, { "Still Water", "Hoarmist", "Reed Paddle", "Bog Wade" }),
+				member("Skipslick", 36, { "Fen Lash", "Venom Nip", "Slick Dash", "Sludge Slap" }),
+				member("Keelsnap", 37, { "Shell Bash", "Hook Beak", "Muck Stamp", "Barb Sting" }),
+				member("Bulbroth", 36, { "Simmer Slam", "Broth Spit", "Bog Wade", "Sludge Slap" }),
 			},
 			tint = 0,
 		},
@@ -75,10 +76,10 @@ local locals: { WorldTypes.Tamer } = {
 		at = 110,
 		team = {
 			members = {
-				member("Bogbellow", 38, { "Mire Crush", "Fume Belch", "Bog Wade", "Peat Butt" }),
-				member("Snaggar", 37, { "Murk Lunge", "Snag Bite", "Gar Rend", "Barb Sting" }),
-				member("Mistrel", 37, { "Murk Dive", "Hoarmist", "Fen Plunge", "Bog Wade" }),
-				member("Keelsnap", 37, { "Shell Bash", "Gar Rend", "Hook Beak", "Bog Wade" }),
+				member("Bogbellow", 39, { "Mire Crush", "Fume Belch", "Bog Wade", "Peat Butt" }),
+				member("Snaggar", 38, { "Murk Lunge", "Snag Bite", "Gar Rend", "Barb Sting" }),
+				member("Mistrel", 38, { "Murk Dive", "Hoarmist", "Fen Plunge", "Bog Wade" }),
+				member("Keelsnap", 38, { "Shell Bash", "Gar Rend", "Hook Beak", "Bog Wade" }),
 			},
 			tint = 0,
 		},
@@ -94,10 +95,10 @@ local locals: { WorldTypes.Tamer } = {
 		at = 400,
 		team = {
 			members = {
-				member("Lilyshade", 39, { "Still Water", "Hoarmist", "Fen Plunge", "Bog Wade" }),
-				member("Fenwhisk", 39, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
-				member("Bulbroth", 40, { "Mire Crush", "Bog Wade", "Sludge Slap", "Broth Spit" }),
-				member("Snaggar", 40, { "Murk Lunge", "Snag Bite", "Bog Wade", "Gar Rend" }),
+				member("Lilyshade", 40, { "Still Water", "Hoarmist", "Fen Plunge", "Bog Wade" }),
+				member("Fenwhisk", 40, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
+				member("Bulbroth", 41, { "Mire Crush", "Bog Wade", "Sludge Slap", "Broth Spit" }),
+				member("Snaggar", 41, { "Murk Lunge", "Snag Bite", "Bog Wade", "Gar Rend" }),
 			},
 			tint = 0,
 		},
@@ -113,10 +114,10 @@ local locals: { WorldTypes.Tamer } = {
 		at = 620,
 		team = {
 			members = {
-				member("Keelsnap", 42, { "Shell Bash", "Bog Wade", "Gar Rend", "Hook Beak" }),
-				member("Bogbellow", 41, { "Mire Crush", "Bog Wade", "Fume Belch", "Peat Butt" }),
-				member("Skipslick", 41, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
-				member("Mistrel", 42, { "Murk Dive", "Hoarmist", "Reed Paddle", "Bog Wade" }),
+				member("Keelsnap", 43, { "Shell Bash", "Bog Wade", "Gar Rend", "Hook Beak" }),
+				member("Bogbellow", 42, { "Mire Crush", "Bog Wade", "Fume Belch", "Peat Butt" }),
+				member("Skipslick", 42, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
+				member("Mistrel", 43, { "Murk Dive", "Hoarmist", "Reed Paddle", "Bog Wade" }),
 			},
 			tint = 0,
 		},
@@ -130,30 +131,30 @@ local rivalTeams: WorldTypes.ByStarter<WorldTypes.TamerTeam> = {
 	-- The player picked Mossmitt (Leaf): Sand leads, with Toxic answers to Water and a Sand tank.
 	Mossmitt = {
 		members = {
-			member("Spadesnout", 39, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
-			member("Snaggar", 38, { "Murk Lunge", "Snag Bite", "Gar Rend", "Bog Wade" }),
-			member("Cocklemole", 38, { "Burrow Burst", "Red Tide", "Shell Grind", "Cockle Crack" }),
-			member("Skipslick", 38, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
+			member("Spadesnout", 40, { "Dig Strike", "Grit Spray", "Dust Kick", "Scree Kick" }),
+			member("Snaggar", 39, { "Murk Lunge", "Snag Bite", "Gar Rend", "Bog Wade" }),
+			member("Cocklemole", 39, { "Burrow Burst", "Red Tide", "Shell Grind", "Cockle Crack" }),
+			member("Skipslick", 39, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
 		},
 		tint = 0.85,
 	},
 	-- The player picked Spadesnout (Sand): Water leads, with a Sand tank, a Frost carrier and a poisoner.
 	Spadesnout = {
 		members = {
-			member("Sloshcalf", 39, { "Ripple Ram", "Mud Slap", "Brook Rush", "Spore Puff" }),
-			member("Moatkeep", 38, { "Rampart Slam", "Red Tide", "Shell Grind", "Cockle Crack" }),
-			member("Lilyshade", 38, { "Still Water", "Hoarmist", "Fen Plunge", "Bog Wade" }),
-			member("Bulbroth", 38, { "Mire Crush", "Bog Wade", "Sludge Slap", "Broth Spit" }),
+			member("Sloshcalf", 40, { "Ripple Ram", "Mud Slap", "Brook Rush", "Spore Puff" }),
+			member("Moatkeep", 39, { "Rampart Slam", "Red Tide", "Shell Grind", "Cockle Crack" }),
+			member("Lilyshade", 39, { "Still Water", "Hoarmist", "Fen Plunge", "Bog Wade" }),
+			member("Bulbroth", 39, { "Mire Crush", "Bog Wade", "Sludge Slap", "Broth Spit" }),
 		},
 		tint = 0.85,
 	},
 	-- The player picked Sloshcalf (Water): Leaf leads, with Water and Storm answers and a poisoner.
 	Sloshcalf = {
 		members = {
-			member("Mossmitt", 39, { "Bramble Rake", "Thorn Volley", "Leaf Gust", "Spore Puff" }),
-			member("Mistrel", 38, { "Murk Dive", "Hoarmist", "Fen Plunge", "Bog Wade" }),
-			member("Thatchling", 38, { "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }),
-			member("Fenwhisk", 38, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
+			member("Mossmitt", 40, { "Bramble Rake", "Thorn Volley", "Leaf Gust", "Spore Puff" }),
+			member("Mistrel", 39, { "Murk Dive", "Hoarmist", "Fen Plunge", "Bog Wade" }),
+			member("Thatchling", 39, { "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }),
+			member("Fenwhisk", 39, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
 		},
 		tint = 0.85,
 	},
@@ -181,9 +182,9 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		xpKind = "Gate",
 		team = {
 			members = {
-				member("Fenwhisk", 41, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
-				member("Lilyshade", 42, { "Still Water", "Hoarmist", "Reed Paddle", "Bog Wade" }),
-				member("Bulbroth", 42, { "Mire Crush", "Bog Wade", "Sludge Slap", "Broth Spit" }),
+				member("Fenwhisk", 42, { "Fen Lash", "Slick Dash", "Sludge Slap", "Venom Nip" }),
+				member("Lilyshade", 43, { "Still Water", "Hoarmist", "Reed Paddle", "Bog Wade" }),
+				member("Bulbroth", 43, { "Mire Crush", "Bog Wade", "Sludge Slap", "Broth Spit" }),
 				member("Bogbellow", 43, { "Mire Crush", "Fume Belch", "Bog Wade", "Peat Butt" }),
 			},
 			tint = 0,
