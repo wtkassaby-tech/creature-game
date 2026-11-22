@@ -6,7 +6,6 @@
 -- hit is finished when the giant's serial number has been fetched (approval pack 2, section 5).
 -- Not yet run in Studio.
 
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 

@@ -2,10 +2,10 @@
 -- Every story chapter, by id. One data file per chapter in the story folder; add each new chapter
 -- to the list below. Data only: no logic lives here.
 
-local Chapter1 = require("./story/Chapter1")
-local Chapter2 = require("./story/Chapter2")
-local Chapter3 = require("./story/Chapter3")
-local Chapter4 = require("./story/Chapter4")
+local Chapter1 = require("./story_data/Chapter1")
+local Chapter2 = require("./story_data/Chapter2")
+local Chapter3 = require("./story_data/Chapter3")
+local Chapter4 = require("./story_data/Chapter4")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
 

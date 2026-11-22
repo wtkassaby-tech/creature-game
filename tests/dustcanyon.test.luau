@@ -17,7 +17,7 @@ local Layout = require("../src/shared/Layout")
 local Moves = require("../src/content/Moves")
 local Profile = require("../src/shared/Profile")
 local Quests = require("../src/content/Quests")
-local QuestsDustCanyon = require("../src/content/quests/DustCanyon")
+local QuestsDustCanyon = require("../src/content/quest_data/DustCanyon")
 local Rng = require("../src/shared/Rng")
 local Species = require("../src/content/Species")
 local Stats = require("../src/shared/Stats")
@@ -25,7 +25,7 @@ local Story = require("../src/content/Story")
 local StoryProgress = require("../src/shared/StoryProgress")
 local Storyline = require("../src/content/Storyline")
 local Tamers = require("../src/content/Tamers")
-local TamersDustCanyon = require("../src/content/tamers/DustCanyon")
+local TamersDustCanyon = require("../src/content/tamer_data/DustCanyon")
 local TypeChart = require("../src/shared/TypeChart")
 local Types = require("../src/shared/Types")
 local World = require("../src/shared/World")
@@ -1251,9 +1251,9 @@ do
 	local questIds: { string } = {}
 	for _, list in
 		{
-			require("../src/content/quests/Greenwood"),
+			require("../src/content/quest_data/Greenwood"),
 			QuestsDustCanyon,
-			require("../src/content/quests/TideFlats"),
+			require("../src/content/quest_data/TideFlats"),
 		}
 	do
 		for _, quest in list do

@@ -114,7 +114,7 @@ local Sloughback: GiantBattle.GiantDef = {
 		},
 	},
 	enrage = { startTurn = 30, step = 0.3 },
-	-- Captured, it is a gem-tier Sloughback (src/content/species/Sloughback.luau) at the giant's own
+	-- Captured, it is a gem-tier Sloughback (src/content/species_data/Sloughback.luau) at the giant's own
 	-- level, a third bigger than other creatures to look at.
 	form = { species = "Sloughback", rarity = "Gem", level = 46, colour = "Moss", size = 1.3 },
 }

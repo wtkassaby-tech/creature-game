@@ -5,10 +5,10 @@
 
 local GiantBattle = require("../shared/GiantBattle")
 local ReleaseConfig = require("../config/ReleaseConfig")
-local DustCanyon = require("./giants/DustCanyon")
-local Greenwood = require("./giants/Greenwood")
-local Mire = require("./giants/Mire")
-local TideFlats = require("./giants/TideFlats")
+local DustCanyon = require("./giant_data/DustCanyon")
+local Greenwood = require("./giant_data/Greenwood")
+local Mire = require("./giant_data/Mire")
+local TideFlats = require("./giant_data/TideFlats")
 
 local Giants: { [string]: GiantBattle.GiantDef } = {}
 

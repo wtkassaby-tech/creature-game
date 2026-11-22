@@ -1,6 +1,6 @@
 # Dust Canyon roster
 
-The second roster: the eight species of Dust Canyon (biome 2, Sand), their parts and moves, and the balance gate they pass alone and mixed with Greenwood. Data lives in `src/content/species/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 11 seconds for both biomes). It follows the method of `GREENWOOD_ROSTER.md`. No config number and no Greenwood species was changed. Everything here is a [Default] the owner can change.
+The second roster: the eight species of Dust Canyon (biome 2, Sand), their parts and moves, and the balance gate they pass alone and mixed with Greenwood. Data lives in `src/content/species_data/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 11 seconds for both biomes). It follows the method of `GREENWOOD_ROSTER.md`. No config number and no Greenwood species was changed. Everything here is a [Default] the owner can change.
 
 ## At a glance
 

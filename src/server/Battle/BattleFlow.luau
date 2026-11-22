@@ -36,7 +36,11 @@ type TrainedRef = { kind: "Trained", opponent: Trainers.Opponent, foes: { Types.
 local BattleFlow = {}
 
 local random = Random.new()
-local log: (event: string, fields: { [string]: any }) -> () = function() end
+local log: (event: string, fields: { [string]: any }) -> () = function(
+	_event: string,
+	_fields: { [string]: any }
+)
+end
 
 local function seed(): number
 	return random:NextInteger(1, 2147483646)

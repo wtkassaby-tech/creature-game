@@ -3,7 +3,7 @@
 -- Run from the project folder:  lune run tests/trainers.test
 
 local Biomes = require("../src/content/Biomes")
-local Chapter1 = require("../src/content/story/Chapter1")
+local Chapter1 = require("../src/content/story_data/Chapter1")
 local Layout = require("../src/shared/Layout")
 local Profile = require("../src/shared/Profile")
 local StoryProgress = require("../src/shared/StoryProgress")

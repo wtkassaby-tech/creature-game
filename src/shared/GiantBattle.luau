@@ -6,7 +6,7 @@
 -- its patterns are fixed lists, so a second attempt is a better plan and not a re-roll.
 -- Damage uses the game's formula and type chart (Battle.previewDamage, TypeChart) with the small
 -- PvE variance from the seed, so a fight replays from its seed and the player's action list.
--- Everything about a giant is data (see src/content/giants); this file has no giant-specific code.
+-- Everything about a giant is data (see src/content/giant_data); this file has no giant-specific code.
 
 local Battle = require("./Battle")
 local BattleConfig = require("../config/BattleConfig")

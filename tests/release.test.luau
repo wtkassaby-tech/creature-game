@@ -4,9 +4,9 @@
 -- Run from the project folder:  lune run tests/release.test
 
 local Biomes = require("../src/content/Biomes")
-local Chapter1 = require("../src/content/story/Chapter1")
-local Chapter2 = require("../src/content/story/Chapter2")
-local Chapter3 = require("../src/content/story/Chapter3")
+local Chapter1 = require("../src/content/story_data/Chapter1")
+local Chapter2 = require("../src/content/story_data/Chapter2")
+local Chapter3 = require("../src/content/story_data/Chapter3")
 local Giants = require("../src/content/Giants")
 local Quests = require("../src/content/Quests")
 local ReleaseConfig = require("../src/config/ReleaseConfig")

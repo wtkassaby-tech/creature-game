@@ -5,10 +5,10 @@
 -- who hold the gates of biomes where the rival does not. One data file per biome in the tamers
 -- folder; add each new biome to the lists below. Data only.
 
-local DustCanyon = require("./tamers/DustCanyon")
-local Greenwood = require("./tamers/Greenwood")
-local Mire = require("./tamers/Mire")
-local TideFlats = require("./tamers/TideFlats")
+local DustCanyon = require("./tamer_data/DustCanyon")
+local Greenwood = require("./tamer_data/Greenwood")
+local Mire = require("./tamer_data/Mire")
+local TideFlats = require("./tamer_data/TideFlats")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
 

@@ -23,7 +23,7 @@ local Moves: { [string]: MoveDef } = {
 	["Bramble Rake"] = { element = "Leaf", power = 60 },
 	["Burl Charge"] = { element = "Leaf", power = 60 },
 	["Canopy Drop"] = { element = "Leaf", power = 60 },
-	-- Hollowbough's own (the captured giant's signature moves; see src/content/giants).
+	-- Hollowbough's own (the captured giant's signature moves; see src/content/giant_data).
 	["Heartwood Slam"] = { element = "Leaf", power = 65 },
 	["Thorn Gale"] = { element = "Storm", power = 60 },
 	-- Sand
@@ -69,7 +69,7 @@ local Moves: { [string]: MoveDef } = {
 	["Tumbleweed Toss"] = { element = "Leaf", power = 55 },
 	-- Storm: a teaser for Stormreach, on Leaf torsos only (see the roster document)
 	["Dust Squall"] = { element = "Storm", power = 65 },
-	-- Mesalith's own (the captured giant's signature moves; see src/content/giants).
+	-- Mesalith's own (the captured giant's signature moves; see src/content/giant_data).
 	["Strata Crush"] = { element = "Sand", power = 65 },
 	["Tumble Barrage"] = { element = "Leaf", power = 60 },
 
@@ -98,7 +98,7 @@ local Moves: { [string]: MoveDef } = {
 	["Cockle Crack"] = { element = "Sand", power = 55 },
 	-- Toxic: a teaser for the Mire, on the two Sand torsos only (see the roster document)
 	["Red Tide"] = { element = "Toxic", power = 65 },
-	-- Carrackon's own (the captured giant's signature moves; see src/content/giants).
+	-- Carrackon's own (the captured giant's signature moves; see src/content/giant_data).
 	["Rolling Breaker"] = { element = "Water", power = 65 },
 	["Silt Cloud"] = { element = "Sand", power = 60 },
 
@@ -131,7 +131,7 @@ local Moves: { [string]: MoveDef } = {
 	["Still Water"] = { element = "Water", power = 65 },
 	-- Frost: a teaser for Frostline, on the two Water torsos only (see the roster document)
 	["Hoarmist"] = { element = "Frost", power = 70 },
-	-- Sloughback's own (the captured giant's signature moves; see src/content/giants).
+	-- Sloughback's own (the captured giant's signature moves; see src/content/giant_data).
 	["Marsh Gas"] = { element = "Toxic", power = 65 },
 	["Sinking Pull"] = { element = "Water", power = 60 },
 }

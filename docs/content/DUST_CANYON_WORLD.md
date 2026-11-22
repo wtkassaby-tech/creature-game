@@ -1,6 +1,6 @@
 # Dust Canyon world
 
-Dust Canyon's world as data: the hub (Kilnrest), two routes, the lair, the gate, five tamers, the rival's mid-biome team, the gate champion, a quest line, chapter 2 of the story and the giant Mesalith. Data lives in `src/content/biomes/`, `tamers/`, `quests/`, `story/` and `giants/` (plus `species/Mesalith.luau` and two moves in `Moves.luau`); the checks are `tests/dustcanyon.test.luau` (about 2 seconds). It mirrors `GREENWOOD_WORLD.md`. Everything here is a [Default] the owner can change. The rival and the mentor are still called "Rival" and "Mentor".
+Dust Canyon's world as data: the hub (Kilnrest), two routes, the lair, the gate, five tamers, the rival's mid-biome team, the gate champion, a quest line, chapter 2 of the story and the giant Mesalith. Data lives in `src/content/biome_data/`, `tamer_data/`, `quest_data/`, `story_data/` and `giant_data/` (plus `species_data/Mesalith.luau` and two moves in `Moves.luau`); the checks are `tests/dustcanyon.test.luau` (about 2 seconds). It mirrors `GREENWOOD_WORLD.md`. Everything here is a [Default] the owner can change. The rival and the mentor are still called "Rival" and "Mentor".
 
 ## The map
 
@@ -112,7 +112,7 @@ On-level (24) sensible play wins about half the time, bringing Water or Storm ad
 - **The rival's battle is mid-biome on the Sunbaked Rim, and a loss costs nothing** (he is offered again at once), because it is a story moment and not a gate. The gate champion's loss is not free, like Greenwood's gate.
 - **The seventh building is a lookout**, not a mentor's cottage, because the mentor stays in Greenwood; his arc runs through a letter at the Waystation.
 - **The giant is optional**, sits in an optional quest, and its sighting beat is the Spire Garden (where the spur leaves Route B).
-- **Giant health is lower than the 2.5 times guide** and its attack higher, so fights end near turn 20 and the enrage turn is rare; the numbers are in `src/content/giants/DustCanyon.luau`.
+- **Giant health is lower than the 2.5 times guide** and its attack higher, so fights end near turn 20 and the enrage turn is rare; the numbers are in `src/content/giant_data/DustCanyon.luau`.
 - **The quest line's guaranteed creature is a Flintknap** (a common bruiser); the clear token is a Duneskit (a common sprinter), level 22, three under the cap of 25. Both are catchable in the wild.
 - **Beat count is 10**, the low end of "about 10 to 12": more would be filler.
 

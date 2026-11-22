@@ -50,23 +50,23 @@ function BattleView.start(playerGui: Instance)
 	-- The two creature cards.
 	local function card(position: UDim2): (TextLabel, Kit.Bar, Kit.Bar)
 		local panel = Kit.panel(gui, UDim2.new(0.44, 0, 0, 74), position)
-		local name = Kit.label(panel, "", UDim2.new(1, -20, 0, 26), UDim2.new(0, 10, 0, 6))
+		local name = Kit.label(panel, "", UDim2.new(1, -20, 0, 26), UDim2.fromOffset(10, 6))
 		local health =
-			Kit.bar(panel, UDim2.new(1, -20, 0, 16), UDim2.new(0, 10, 0, 36), Kit.COLOURS.good)
+			Kit.bar(panel, UDim2.new(1, -20, 0, 16), UDim2.fromOffset(10, 36), Kit.COLOURS.good)
 		local tempo =
-			Kit.bar(panel, UDim2.new(1, -20, 0, 6), UDim2.new(0, 10, 0, 58), Kit.COLOURS.tempo)
+			Kit.bar(panel, UDim2.new(1, -20, 0, 6), UDim2.fromOffset(10, 58), Kit.COLOURS.tempo)
 		return name, health, tempo
 	end
-	local foeName, foeHealth, foeTempo = card(UDim2.new(0.03, 0, 0.08, 0))
-	local myName, myHealth, myTempo = card(UDim2.new(0.53, 0, 0.42, 0))
-	local message = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 30), UDim2.new(0.03, 0, 0.56, 0), 24)
+	local foeName, foeHealth, foeTempo = card(UDim2.fromScale(0.03, 0.08))
+	local myName, myHealth, myTempo = card(UDim2.fromScale(0.53, 0.42))
+	local message = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 30), UDim2.fromScale(0.03, 0.56), 24)
 	message.TextStrokeTransparency = 0.4
 
 	-- The bottom panel: moves on the left, everything else on the right.
-	local actions = Kit.panel(gui, UDim2.new(0.94, 0, 0.3, 0), UDim2.new(0.03, 0, 0.66, 0))
+	local actions = Kit.panel(gui, UDim2.fromScale(0.94, 0.3), UDim2.fromScale(0.03, 0.66))
 	local moves = Instance.new("Frame")
 	moves.Size = UDim2.new(0.64, -12, 1, -16)
-	moves.Position = UDim2.new(0, 8, 0, 8)
+	moves.Position = UDim2.fromOffset(8, 8)
 	moves.BackgroundTransparency = 1
 	moves.Parent = actions
 	local moveGrid = Instance.new("UIGridLayout")
@@ -86,8 +86,8 @@ function BattleView.start(playerGui: Instance)
 	-- A list of choices over the bottom panel (which lasso, which item, who to switch to).
 	local picker = Kit.panel(
 		gui,
-		UDim2.new(0.6, 0, 0.5, 0),
-		UDim2.new(0.2, 0, 0.14, 0),
+		UDim2.fromScale(0.6, 0.5),
+		UDim2.fromScale(0.2, 0.14),
 		Kit.COLOURS.panelLight
 	)
 	picker.Visible = false
@@ -248,10 +248,10 @@ function BattleView.start(playerGui: Instance)
 
 	-- Shown when the battle ends.
 	local done =
-		Kit.panel(gui, UDim2.new(0.6, 0, 0.3, 0), UDim2.new(0.2, 0, 0.2, 0), Kit.COLOURS.panelLight)
+		Kit.panel(gui, UDim2.fromScale(0.6, 0.3), UDim2.fromScale(0.2, 0.2), Kit.COLOURS.panelLight)
 	done.Visible = false
 	done.ZIndex = 8
-	local doneText = Kit.label(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.new(0, 12, 0, 8), 26)
+	local doneText = Kit.label(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.fromOffset(12, 8), 26)
 	doneText.TextWrapped = true
 	doneText.ZIndex = 9
 	local closeButton = Kit.button(done, "Continue", Kit.COLOURS.accent, function()
@@ -259,8 +259,8 @@ function BattleView.start(playerGui: Instance)
 		done.Visible = false
 		model = nil
 	end)
-	closeButton.Size = UDim2.new(0.5, 0, 0.26, 0)
-	closeButton.Position = UDim2.new(0.25, 0, 0.68, 0)
+	closeButton.Size = UDim2.fromScale(0.5, 0.26)
+	closeButton.Position = UDim2.fromScale(0.25, 0.68)
 	closeButton.ZIndex = 9
 
 	-- The end panel appears once the last turn has been shown; rewards join it when they arrive.

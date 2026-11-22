@@ -42,7 +42,6 @@ local RARITY_COLOURS: { [string]: Color3 } = {
 	Cosmic = Color3.fromRGB(190, 120, 255),
 }
 
-local folder: Folder? = nil
 local shown: { [number]: BasePart } = {}
 local latest: { [number]: Wild } = {}
 
@@ -152,7 +151,6 @@ function WorldView.start(openShop: () -> ())
 	local made = Instance.new("Folder")
 	made.Name = "WildCreatures"
 	made.Parent = workspace
-	folder = made
 
 	Bus.listen(Net.WildSpawns, function(value)
 		local keep: { [number]: boolean } = {}

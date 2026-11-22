@@ -30,7 +30,7 @@ function TestPanel.start(parent: Instance)
 
 	local root = Instance.new("Frame")
 	root.Size = UDim2.new(0, 360, 1, -20)
-	root.Position = UDim2.new(0, 10, 0, 10)
+	root.Position = UDim2.fromOffset(10, 10)
 	root.BackgroundTransparency = 0.3
 	root.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	root.Parent = gui
@@ -69,7 +69,7 @@ function TestPanel.start(parent: Instance)
 	buttons.BackgroundTransparency = 1
 	buttons.Parent = root
 	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.new(0, 84, 0, 26)
+	grid.CellSize = UDim2.fromOffset(84, 26)
 	grid.Parent = buttons
 	local function button(text: string, onClick: () -> ())
 		local b = Instance.new("TextButton")
@@ -87,7 +87,7 @@ function TestPanel.start(parent: Instance)
 	local zoneBox = Instance.new("Frame")
 	zoneBox.BackgroundColor3 = Color3.fromRGB(80, 180, 90)
 	zoneBox.BorderSizePixel = 0
-	zoneBox.Size = UDim2.new(0, 0, 1, 0)
+	zoneBox.Size = UDim2.fromScale(0, 1)
 	zoneBox.Parent = bar
 	local marker = Instance.new("Frame")
 	marker.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -103,14 +103,14 @@ function TestPanel.start(parent: Instance)
 	-- Battles start from the prompts in the world (walk up to a creature or a person).
 	button("Nearest wild", function()
 		local character = Players.LocalPlayer.Character
-		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
-		if not (root and root:IsA("BasePart")) then
+		local rootPart = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if not (rootPart and rootPart:IsA("BasePart")) then
 			return
 		end
 		local best: number? = nil
 		local bestDistance = math.huge
 		for id, wild in WorldView.spawns() do
-			local distance = (Vector3.new(wild.X, root.Position.Y, wild.Z) - root.Position).Magnitude
+			local distance = (Vector3.new(wild.X, rootPart.Position.Y, wild.Z) - rootPart.Position).Magnitude
 			if distance < bestDistance then
 				best, bestDistance = id, distance
 			end
@@ -298,8 +298,8 @@ function TestPanel.start(parent: Instance)
 		end
 		local inSweep = LassoPlayer.elapsedMs(current) >= zone.startMs
 		zoneBox.Visible, marker.Visible = true, inSweep
-		zoneBox.Position = UDim2.new(zone.centre - zone.width / 2, 0, 0, 0)
-		zoneBox.Size = UDim2.new(zone.width, 0, 1, 0)
+		zoneBox.Position = UDim2.fromScale(zone.centre - zone.width / 2, 0)
+		zoneBox.Size = UDim2.fromScale(zone.width, 1)
 		marker.Position = UDim2.new(position, -2, 0, 0)
 		marker.BackgroundColor3 = if Lasso.isInZone(zone, position)
 			then Color3.fromRGB(255, 240, 120)

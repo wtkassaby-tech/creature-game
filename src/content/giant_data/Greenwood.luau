@@ -98,7 +98,7 @@ local Hollowbough: GiantBattle.GiantDef = {
 		},
 	},
 	enrage = { startTurn = 30, step = 0.3 },
-	-- Captured, it is a gem-tier Hollowbough (src/content/species/Hollowbough.luau) at the
+	-- Captured, it is a gem-tier Hollowbough (src/content/species_data/Hollowbough.luau) at the
 	-- giant's own level, a third bigger than other creatures to look at.
 	form = { species = "Hollowbough", rarity = "Gem", level = 16, colour = "Bark", size = 1.3 },
 }

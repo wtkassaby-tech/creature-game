@@ -2,10 +2,10 @@
 -- Every biome in the game, by id. One data file per biome in the biomes folder; add each new biome
 -- to the list below. Data only: no logic lives here.
 
-local DustCanyon = require("./biomes/DustCanyon")
-local Greenwood = require("./biomes/Greenwood")
-local Mire = require("./biomes/Mire")
-local TideFlats = require("./biomes/TideFlats")
+local DustCanyon = require("./biome_data/DustCanyon")
+local Greenwood = require("./biome_data/Greenwood")
+local Mire = require("./biome_data/Mire")
+local TideFlats = require("./biome_data/TideFlats")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
 

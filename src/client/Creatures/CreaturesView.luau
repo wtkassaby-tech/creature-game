@@ -66,8 +66,8 @@ function CreaturesView.start(playerGui: Instance)
 	-- The bar that is always there.
 	local hud = Kit.screen(playerGui, "Hud", 2)
 	hud.Enabled = true
-	local bar = Kit.panel(hud, UDim2.new(0, 330, 0, 44), UDim2.new(1, -340, 0, 10))
-	local wallet = Kit.label(bar, "", UDim2.new(1, -130, 1, -8), UDim2.new(0, 10, 0, 4))
+	local bar = Kit.panel(hud, UDim2.fromOffset(330, 44), UDim2.new(1, -340, 0, 10))
+	local wallet = Kit.label(bar, "", UDim2.new(1, -130, 1, -8), UDim2.fromOffset(10, 4))
 	local notice = Kit.label(hud, "", UDim2.new(0.6, 0, 0, 28), UDim2.new(0.2, 0, 0, 62), 20)
 	notice.TextXAlignment = Enum.TextXAlignment.Center
 	notice.TextStrokeTransparency = 0.3
@@ -79,19 +79,19 @@ function CreaturesView.start(playerGui: Instance)
 	open.Size = UDim2.new(0, 110, 1, -8)
 	open.Position = UDim2.new(1, -116, 0, 4)
 
-	local root = Kit.panel(gui, UDim2.new(0.86, 0, 0.84, 0), UDim2.new(0.07, 0, 0.1, 0))
-	local title = Kit.label(root, "", UDim2.new(1, -120, 0, 30), UDim2.new(0, 14, 0, 8), 24)
+	local root = Kit.panel(gui, UDim2.fromScale(0.86, 0.84), UDim2.fromScale(0.07, 0.1))
+	local title = Kit.label(root, "", UDim2.new(1, -120, 0, 30), UDim2.fromOffset(14, 8), 24)
 	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
 		gui.Enabled = false
 	end)
-	close.Size = UDim2.new(0, 90, 0, 32)
+	close.Size = UDim2.fromOffset(90, 32)
 	close.Position = UDim2.new(1, -104, 0, 8)
-	local eggs = Kit.label(root, "", UDim2.new(1, -28, 0, 22), UDim2.new(0, 14, 0, 42), 18)
+	local eggs = Kit.label(root, "", UDim2.new(1, -28, 0, 22), UDim2.fromOffset(14, 42), 18)
 	eggs.TextColor3 = Kit.COLOURS.textDim
 
 	local list = Instance.new("ScrollingFrame")
 	list.Size = UDim2.new(1, -28, 1, -176)
-	list.Position = UDim2.new(0, 14, 0, 70)
+	list.Position = UDim2.fromOffset(14, 70)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = 6
@@ -109,7 +109,7 @@ function CreaturesView.start(playerGui: Instance)
 		breed,
 		"Pick two creatures to breed",
 		UDim2.new(1, -150, 1, -8),
-		UDim2.new(0, 10, 0, 4),
+		UDim2.fromOffset(10, 4),
 		18
 	)
 	breedText.TextWrapped = true
@@ -124,10 +124,10 @@ function CreaturesView.start(playerGui: Instance)
 			})
 		end
 	end)
-	breedButton.Size = UDim2.new(0, 120, 0, 44)
+	breedButton.Size = UDim2.fromOffset(120, 44)
 	breedButton.Position = UDim2.new(1, -130, 0, 8)
 	local clearButton = Kit.button(breed, "Clear", Kit.COLOURS.panel, function() end)
-	clearButton.Size = UDim2.new(0, 120, 0, 30)
+	clearButton.Size = UDim2.fromOffset(120, 30)
 	clearButton.Position = UDim2.new(1, -130, 0, 56)
 
 	local confirmRelease: string? = nil
@@ -218,7 +218,7 @@ function CreaturesView.start(playerGui: Instance)
 			local row = Kit.panel(list, UDim2.new(1, -8, 0, 40), UDim2.new(), Kit.COLOURS.panel)
 			local text =
 				`{if task.Hard then "Hard task" else "Daily task"}: {goal}  {task.Progress}/{task.Count}`
-			Kit.label(row, text, UDim2.new(0.74, 0, 1, -8), UDim2.new(0, 10, 0, 4))
+			Kit.label(row, text, UDim2.new(0.74, 0, 1, -8), UDim2.fromOffset(10, 4))
 			if task.Claimed then
 				local done =
 					Kit.label(row, "Claimed", UDim2.new(0.2, 0, 1, -8), UDim2.new(0.78, 0, 0, 4))
@@ -240,7 +240,7 @@ function CreaturesView.start(playerGui: Instance)
 				else `{math.floor((1 - view.Hurt) * 100 + 0.5)}% health`
 			local text =
 				`{if onTeam then `[{onTeam}] ` else ""}{view.Torso.Species}  Lv {view.Level}  {view.Rarity}  {health}`
-			local name = Kit.label(row, text, UDim2.new(0.4, 0, 1, -8), UDim2.new(0, 10, 0, 4))
+			local name = Kit.label(row, text, UDim2.new(0.4, 0, 1, -8), UDim2.fromOffset(10, 4))
 			if view.Hurt > 0 then
 				name.TextColor3 = Kit.healthColour(1 - view.Hurt)
 				-- Treat with what fits: a Rally Root if it has fainted, otherwise a tonic.

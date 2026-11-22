@@ -51,7 +51,10 @@ local timers: { [number]: Timers } = {}
 local KEEP_TIMERS_SECONDS = 600
 local lastRustle: { [Player]: number } = {}
 local lastTravel: { [Player]: number } = {}
-local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function()
+local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function(
+	_player: Player,
+	_biomeNumber: number
+)
 	return true
 end
 local lastAt: { [Player]: Layout.Point } = {}

@@ -17,12 +17,12 @@ local LassoView = {}
 export type View = { begin: (wire: LassoPlayer.Wire) -> (), finish: () -> () }
 
 function LassoView.new(parent: Instance): View
-	local root = Kit.panel(parent, UDim2.new(0.8, 0, 0, 150), UDim2.new(0.1, 0, 0.32, 0))
+	local root = Kit.panel(parent, UDim2.new(0.8, 0, 0, 150), UDim2.fromScale(0.1, 0.32))
 	root.Visible = false
-	local title = Kit.label(root, "", UDim2.new(1, -24, 0, 30), UDim2.new(0, 12, 0, 8))
+	local title = Kit.label(root, "", UDim2.new(1, -24, 0, 30), UDim2.fromOffset(12, 8))
 	local bar = Instance.new("Frame")
 	bar.Size = UDim2.new(1, -24, 0, 30)
-	bar.Position = UDim2.new(0, 12, 0, 44)
+	bar.Position = UDim2.fromOffset(12, 44)
 	bar.BackgroundColor3 = Color3.fromRGB(20, 26, 30)
 	bar.BorderSizePixel = 0
 	bar.Parent = root
@@ -49,7 +49,7 @@ function LassoView.new(parent: Instance): View
 	end
 	local button = Kit.button(root, "THROW!", Kit.COLOURS.lasso, tap)
 	button.Size = UDim2.new(1, -24, 0, 54)
-	button.Position = UDim2.new(0, 12, 0, 86)
+	button.Position = UDim2.fromOffset(12, 86)
 
 	RunService.RenderStepped:Connect(function()
 		local current = playing

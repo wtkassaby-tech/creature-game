@@ -1,6 +1,6 @@
 # Greenwood world
 
-Greenwood's world as data: the hub, two routes, the lair, the gate, five tamers, the rival's teams, a quest line and chapter 1 of the story. Data lives in `src/content/biomes/`, `tamers/`, `quests/` and `story/`; helpers are in `src/shared/World.luau`; the checks are `tests/world.test.luau` (about 2 seconds). Everything here is a [Default] the owner can change. The rival and the mentor are called "Rival" and "Mentor" until Ayrton names them.
+Greenwood's world as data: the hub, two routes, the lair, the gate, five tamers, the rival's teams, a quest line and chapter 1 of the story. Data lives in `src/content/biome_data/`, `tamer_data/`, `quest_data/` and `story_data/`; helpers are in `src/shared/World.luau`; the checks are `tests/world.test.luau` (about 2 seconds). Everything here is a [Default] the owner can change. The rival and the mentor are called "Rival" and "Mentor" until Ayrton names them.
 
 ## The map
 
@@ -31,7 +31,7 @@ Thistledown (hub, 300 x 300) sits between the two routes. Distances run from the
 | Basil Hedgeworth | B, 220 | Stout gardener, apron, shears | Mossmitt 8, Stumpwarden 9 | "Every hedge in Greenwood is mine to keep. Let us see your team." |
 | Corwin Ashby | B, 440 | Broad woodcutter, red scarf, rope | Mossmitt 10, Burlhorn 11, Stumpwarden 11 | "I have felled bigger trees than you. Three of mine against your team." |
 
-All use the Tamer AI tier. Each also has a line after losing (see `src/content/tamers/Greenwood.luau`).
+All use the Tamer AI tier. Each also has a line after losing (see `src/content/tamer_data/Greenwood.luau`).
 
 **The rival** (Rival AI tier) always picks the starter that counters yours: Sand beats Leaf, Water beats Sand, Leaf beats Water.
 

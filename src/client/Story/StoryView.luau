@@ -50,18 +50,18 @@ function StoryView.start(playerGui: Instance)
 	-- The tracker: always on, top-left.
 	local hud = Kit.screen(playerGui, "Tracker", 3)
 	hud.Enabled = true
-	local tracker = Kit.panel(hud, UDim2.new(0, 300, 0, 86), UDim2.new(0, 10, 0, 10))
+	local tracker = Kit.panel(hud, UDim2.fromOffset(300, 86), UDim2.fromOffset(10, 10))
 	tracker.BackgroundTransparency = 0.2
-	local trackerText = Kit.label(tracker, "", UDim2.new(1, -16, 1, -8), UDim2.new(0, 8, 0, 4), 16)
+	local trackerText = Kit.label(tracker, "", UDim2.new(1, -16, 1, -8), UDim2.fromOffset(8, 4), 16)
 	trackerText.TextWrapped = true
 	trackerText.TextYAlignment = Enum.TextYAlignment.Top
 
 	-- The dialogue box: bottom of the screen, one line at a time.
 	local gui = Kit.screen(playerGui, "Dialogue", 20)
 	local box = Kit.panel(gui, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
-	local speaker = Kit.label(box, "", UDim2.new(1, -140, 0, 26), UDim2.new(0, 14, 0, 8), 22)
+	local speaker = Kit.label(box, "", UDim2.new(1, -140, 0, 26), UDim2.fromOffset(14, 8), 22)
 	speaker.TextColor3 = Kit.COLOURS.warn
-	local line = Kit.label(box, "", UDim2.new(1, -28, 0, 64), UDim2.new(0, 14, 0, 38), 22)
+	local line = Kit.label(box, "", UDim2.new(1, -28, 0, 64), UDim2.fromOffset(14, 38), 22)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	local queue: { { speaker: string, text: string } } = {}
@@ -76,18 +76,18 @@ function StoryView.start(playerGui: Instance)
 		gui.Enabled = true
 	end
 	local nextButton = Kit.button(box, "Next", Kit.COLOURS.accent, showNext)
-	nextButton.Size = UDim2.new(0, 110, 0, 34)
+	nextButton.Size = UDim2.fromOffset(110, 34)
 	nextButton.Position = UDim2.new(1, -124, 0, 6)
 
 	-- The starter pick: shown until the player has a first creature.
 	local pick = Kit.screen(playerGui, "StarterPick", 30)
-	local pickBox = Kit.panel(pick, UDim2.new(0.8, 0, 0.5, 0), UDim2.new(0.1, 0, 0.25, 0))
+	local pickBox = Kit.panel(pick, UDim2.fromScale(0.8, 0.5), UDim2.fromScale(0.1, 0.25))
 	local pickTitle =
-		Kit.label(pickBox, "Pick a friend", UDim2.new(1, -28, 0, 36), UDim2.new(0, 14, 0, 10), 28)
+		Kit.label(pickBox, "Pick a friend", UDim2.new(1, -28, 0, 36), UDim2.fromOffset(14, 10), 28)
 	pickTitle.TextXAlignment = Enum.TextXAlignment.Center
 	local choices = Instance.new("Frame")
 	choices.Size = UDim2.new(1, -28, 1, -70)
-	choices.Position = UDim2.new(0, 14, 0, 56)
+	choices.Position = UDim2.fromOffset(14, 56)
 	choices.BackgroundTransparency = 1
 	choices.Parent = pickBox
 	local grid = Instance.new("UIGridLayout")

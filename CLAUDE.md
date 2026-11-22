@@ -58,8 +58,10 @@ For saving, purchases, captures, breeding, serials, trading and PvP rewards: bef
 src/
   shared/      pure rules, no Roblox services: Types, Rng, Stats, Breeding, AssemblyMath, Battle, TypeChart, ...
   config/      every balance number: BreedConfig, BattleConfig, ...
-  content/     data only: Species.luau and Moves.luau (registries), species/ (one file per species),
-               then biomes, giants, tamers, quests, story, items
+  content/     data only: Species.luau, Biomes.luau and the other registries, each beside its data folder:
+               species_data/ (one file per species), biome_data/, giant_data/, tamer_data/, quest_data/,
+               story_data/. A data folder never shares its registry's name: Windows ignores case, so
+               species/ beside Species.luau breaks requires there
   net/         Blink definitions and generated modules
   server/      one folder per service: Breeding/, then Data/, Creatures/, Battle/, Capture/, World/, Quests/,
                Economy/, Purchases/, LiveConfig/, Analytics/ (Circuit/ and Trading/ after launch)

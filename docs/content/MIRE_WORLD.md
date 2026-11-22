@@ -1,6 +1,6 @@
 # Mire world
 
-The Mire's world as data: the hub (Sedgeholm), two routes, the lair, the gate, five tamers, the rival mid-biome, a local champion at the gate, a quest line, chapter 4 of the story and the giant Sloughback. Data lives in `src/content/biomes/`, `tamers/`, `quests/`, `story/` and `giants/` (plus `species/Sloughback.luau` and two moves in `Moves.luau`); the checks are `tests/mire.test.luau` (about 2 seconds, robots included). It mirrors `TIDE_FLATS_WORLD.md`. The species are in `MIRE_ROSTER.md`.
+The Mire's world as data: the hub (Sedgeholm), two routes, the lair, the gate, five tamers, the rival mid-biome, a local champion at the gate, a quest line, chapter 4 of the story and the giant Sloughback. Data lives in `src/content/biome_data/`, `tamer_data/`, `quest_data/`, `story_data/` and `giant_data/` (plus `species_data/Sloughback.luau` and two moves in `Moves.luau`); the checks are `tests/mire.test.luau` (about 2 seconds, robots included). It mirrors `TIDE_FLATS_WORLD.md`. The species are in `MIRE_ROSTER.md`.
 
 **Written ahead of launch.** `src/config/ReleaseConfig.luau` still opens three biomes, so every registry leaves the Mire out and the launch game is unchanged (checked: the outputs of `playthrough`, `economy`, `tideflats`, `dustcanyon`, `world` and `release` are byte-for-byte the same as before). `tests/mire.test.luau` sets `OPEN_BIOMES = 4` on its first line, before any registry loads. Opening the Mire for players is that one number, once its map and art are in the place.
 

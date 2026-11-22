@@ -110,7 +110,7 @@ local Mesalith: GiantBattle.GiantDef = {
 		},
 	},
 	enrage = { startTurn = 30, step = 0.3 },
-	-- Captured, it is a gem-tier Mesalith (src/content/species/Mesalith.luau) at the giant's own
+	-- Captured, it is a gem-tier Mesalith (src/content/species_data/Mesalith.luau) at the giant's own
 	-- level, a third bigger than other creatures to look at.
 	form = { species = "Mesalith", rarity = "Gem", level = 26, colour = "Sand", size = 1.3 },
 }

@@ -84,14 +84,14 @@ BattleService.refuse = refuse
 
 -- Set by the capture service: true while a lasso throw is being played, so no battle action can
 -- slip in between the throw and its result.
-local busy: (player: Player) -> boolean = function()
+local busy: (player: Player) -> boolean = function(_player: Player)
 	return false
 end
 function BattleService.setBusyCheck(check: (player: Player) -> boolean)
 	busy = check
 end
 -- Set by the bootstrap: true while the player is in some other kind of battle (a giant fight).
-local elsewhere: (player: Player) -> boolean = function()
+local elsewhere: (player: Player) -> boolean = function(_player: Player)
 	return false
 end
 function BattleService.setElsewhereCheck(check: (player: Player) -> boolean)
@@ -101,7 +101,13 @@ function BattleService.isBusy(player: Player): boolean
 	return busy(player)
 end
 
-local finished: OnFinished = function() end
+local finished: OnFinished = function(
+	_player: Player,
+	_session: BattleSession.Session,
+	_outcome: number,
+	_ref: any?
+)
+end
 
 -- Sends a turn to the device, and ends the battle if the turn finished it. Used by battle
 -- actions and by lasso throws, so both end a battle the same way.
@@ -151,7 +157,11 @@ function BattleService.session(player: Player): BattleSession.Session?
 	return sessions[player]
 end
 
-local begin: (player: Player, kind: BattleSession.Kind, opponent: Opponent) -> boolean = function()
+local begin: (player: Player, kind: BattleSession.Kind, opponent: Opponent) -> boolean = function(
+	_player: Player,
+	_kind: BattleSession.Kind,
+	_opponent: Opponent
+)
 	return false
 end
 

@@ -74,7 +74,7 @@ end
 local KEEP_TAP_ERRORS = 60
 local tapErrors: { [Player]: { number } } = {}
 local flagged: { [Player]: boolean } = {}
-local auditLog: Log = function() end
+local auditLog: Log = function(_event: string, _fields: { [string]: any }) end
 
 function CaptureService.audit(player: Player, errorsMs: { number })
 	local list = tapErrors[player]
@@ -173,7 +173,7 @@ function CaptureService.roundTrip(player: Player): number
 end
 
 -- Other times the round trip should be measured (a giant fight, a capture offer).
-local alsoPing: (player: Player) -> boolean = function()
+local alsoPing: (player: Player) -> boolean = function(_player: Player)
 	return false
 end
 function CaptureService.setAlsoPing(check: (player: Player) -> boolean)

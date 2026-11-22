@@ -34,32 +34,32 @@ function GiantView.start(playerGui: Instance)
 	local model: Model? = nil
 	local offered = false -- a capture attempt is on offer and not yet thrown
 
-	local boss = Kit.panel(gui, UDim2.new(0.94, 0, 0, 80), UDim2.new(0.03, 0, 0.06, 0))
-	local bossName = Kit.label(boss, "", UDim2.new(1, -20, 0, 28), UDim2.new(0, 10, 0, 6), 24)
+	local boss = Kit.panel(gui, UDim2.new(0.94, 0, 0, 80), UDim2.fromScale(0.03, 0.06))
+	local bossName = Kit.label(boss, "", UDim2.new(1, -20, 0, 28), UDim2.fromOffset(10, 6), 24)
 	local bossHealth =
-		Kit.bar(boss, UDim2.new(1, -20, 0, 20), UDim2.new(0, 10, 0, 40), Kit.COLOURS.bad)
+		Kit.bar(boss, UDim2.new(1, -20, 0, 20), UDim2.fromOffset(10, 40), Kit.COLOURS.bad)
 	local intent = Kit.panel(
 		gui,
 		UDim2.new(0.94, 0, 0, 64),
 		UDim2.new(0.03, 0, 0.06, 90),
 		Kit.COLOURS.panelLight
 	)
-	local intentText = Kit.label(intent, "", UDim2.new(1, -20, 1, -8), UDim2.new(0, 10, 0, 4))
+	local intentText = Kit.label(intent, "", UDim2.new(1, -20, 1, -8), UDim2.fromOffset(10, 4))
 	intentText.TextWrapped = true
-	local logText = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 66), UDim2.new(0.03, 0, 0.36, 0), 18)
+	local logText = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 66), UDim2.fromScale(0.03, 0.36), 18)
 	logText.TextWrapped = true
 	logText.TextYAlignment = Enum.TextYAlignment.Top
 	logText.TextStrokeTransparency = 0.4
 
-	local mine = Kit.panel(gui, UDim2.new(0.5, 0, 0, 62), UDim2.new(0.47, 0, 0.5, 0))
-	local myName = Kit.label(mine, "", UDim2.new(1, -20, 0, 26), UDim2.new(0, 10, 0, 4))
+	local mine = Kit.panel(gui, UDim2.new(0.5, 0, 0, 62), UDim2.fromScale(0.47, 0.5))
+	local myName = Kit.label(mine, "", UDim2.new(1, -20, 0, 26), UDim2.fromOffset(10, 4))
 	local myHealth =
-		Kit.bar(mine, UDim2.new(1, -20, 0, 16), UDim2.new(0, 10, 0, 36), Kit.COLOURS.good)
+		Kit.bar(mine, UDim2.new(1, -20, 0, 16), UDim2.fromOffset(10, 36), Kit.COLOURS.good)
 
-	local actions = Kit.panel(gui, UDim2.new(0.94, 0, 0.3, 0), UDim2.new(0.03, 0, 0.66, 0))
+	local actions = Kit.panel(gui, UDim2.fromScale(0.94, 0.3), UDim2.fromScale(0.03, 0.66))
 	local moves = Instance.new("Frame")
 	moves.Size = UDim2.new(0.7, -12, 1, -16)
-	moves.Position = UDim2.new(0, 8, 0, 8)
+	moves.Position = UDim2.fromOffset(8, 8)
 	moves.BackgroundTransparency = 1
 	moves.Parent = actions
 	local moveGrid = Instance.new("UIGridLayout")
@@ -78,8 +78,8 @@ function GiantView.start(playerGui: Instance)
 
 	local picker = Kit.panel(
 		gui,
-		UDim2.new(0.6, 0, 0.5, 0),
-		UDim2.new(0.2, 0, 0.14, 0),
+		UDim2.fromScale(0.6, 0.5),
+		UDim2.fromScale(0.2, 0.14),
 		Kit.COLOURS.panelLight
 	)
 	picker.Visible = false
@@ -89,10 +89,10 @@ function GiantView.start(playerGui: Instance)
 	pickerList.Parent = picker
 
 	local done =
-		Kit.panel(gui, UDim2.new(0.6, 0, 0.3, 0), UDim2.new(0.2, 0, 0.2, 0), Kit.COLOURS.panelLight)
+		Kit.panel(gui, UDim2.fromScale(0.6, 0.3), UDim2.fromScale(0.2, 0.2), Kit.COLOURS.panelLight)
 	done.Visible = false
 	done.ZIndex = 8
-	local doneText = Kit.label(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.new(0, 12, 0, 8), 26)
+	local doneText = Kit.label(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.fromOffset(12, 8), 26)
 	doneText.TextWrapped = true
 	doneText.ZIndex = 9
 	local close = Kit.button(done, "Continue", Kit.COLOURS.accent, function()
@@ -106,8 +106,8 @@ function GiantView.start(playerGui: Instance)
 		done.Visible = false
 		model = nil
 	end)
-	close.Size = UDim2.new(0.5, 0, 0.26, 0)
-	close.Position = UDim2.new(0.25, 0, 0.68, 0)
+	close.Size = UDim2.fromScale(0.5, 0.26)
+	close.Position = UDim2.fromScale(0.25, 0.68)
 	close.ZIndex = 9
 
 	-- The capture attempt after a win: a row of lassos to pick from, then the sweep.
@@ -115,17 +115,18 @@ function GiantView.start(playerGui: Instance)
 	local capture = Kit.panel(
 		gui,
 		UDim2.new(0.6, 0, 0, 150),
-		UDim2.new(0.2, 0, 0.52, 0),
+		UDim2.fromScale(0.2, 0.52),
 		Kit.COLOURS.panelLight
 	)
 	capture.Visible = false
 	capture.ZIndex = 8
-	local captureText = Kit.label(capture, "", UDim2.new(1, -24, 0, 50), UDim2.new(0, 12, 0, 6), 20)
+	local captureText =
+		Kit.label(capture, "", UDim2.new(1, -24, 0, 50), UDim2.fromOffset(12, 6), 20)
 	captureText.TextWrapped = true
 	captureText.ZIndex = 9
 	local captureButtons = Instance.new("Frame")
 	captureButtons.Size = UDim2.new(1, -24, 0, 80)
-	captureButtons.Position = UDim2.new(0, 12, 0, 62)
+	captureButtons.Position = UDim2.fromOffset(12, 62)
 	captureButtons.BackgroundTransparency = 1
 	captureButtons.ZIndex = 9
 	captureButtons.Parent = capture

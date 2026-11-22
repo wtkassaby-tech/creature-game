@@ -22,7 +22,7 @@ local Moves = require("../src/content/Moves")
 local Profile = require("../src/shared/Profile")
 local ProgressionConfig = require("../src/config/ProgressionConfig")
 local Quests = require("../src/content/Quests")
-local QuestsMire = require("../src/content/quests/Mire")
+local QuestsMire = require("../src/content/quest_data/Mire")
 local Rng = require("../src/shared/Rng")
 local Species = require("../src/content/Species")
 local Stats = require("../src/shared/Stats")
@@ -30,7 +30,7 @@ local Story = require("../src/content/Story")
 local StoryProgress = require("../src/shared/StoryProgress")
 local Storyline = require("../src/content/Storyline")
 local Tamers = require("../src/content/Tamers")
-local TamersMire = require("../src/content/tamers/Mire")
+local TamersMire = require("../src/content/tamer_data/Mire")
 local TypeChart = require("../src/shared/TypeChart")
 local Types = require("../src/shared/Types")
 local World = require("../src/shared/World")
@@ -1500,9 +1500,9 @@ do
 	local questIds: { string } = {}
 	for _, list in
 		{
-			require("../src/content/quests/Greenwood"),
-			require("../src/content/quests/DustCanyon"),
-			require("../src/content/quests/TideFlats"),
+			require("../src/content/quest_data/Greenwood"),
+			require("../src/content/quest_data/DustCanyon"),
+			require("../src/content/quest_data/TideFlats"),
 			QuestsMire,
 		}
 	do

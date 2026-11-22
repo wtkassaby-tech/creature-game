@@ -2,10 +2,10 @@
 -- Every quest in the game, by id. One data file per biome in the quests folder, each an ordered
 -- list; add each new biome to the list below. Data only: no logic lives here.
 
-local DustCanyon = require("./quests/DustCanyon")
-local Greenwood = require("./quests/Greenwood")
-local Mire = require("./quests/Mire")
-local TideFlats = require("./quests/TideFlats")
+local DustCanyon = require("./quest_data/DustCanyon")
+local Greenwood = require("./quest_data/Greenwood")
+local Mire = require("./quest_data/Mire")
+local TideFlats = require("./quest_data/TideFlats")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
 

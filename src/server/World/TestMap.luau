@@ -273,9 +273,9 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		local sealed = map.places[biome.gate.sealedPath]
 		if sealed then
 			slab(world, "SealedRoad", gatePoint, sealed, 30, STONE)
-			local sign =
+			local roadSign =
 				block(world, biome.gate.sealedPath, Vector3.new(1, 8, 1), at(sealed, 4.4), WOOD)
-			label(sign, "The road on")
+			label(roadSign, "The road on")
 		end
 	end
 

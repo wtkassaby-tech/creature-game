@@ -109,7 +109,7 @@ local Carrackon: GiantBattle.GiantDef = {
 		},
 	},
 	enrage = { startTurn = 30, step = 0.3 },
-	-- Captured, it is a gem-tier Carrackon (src/content/species/Carrackon.luau) at the giant's own
+	-- Captured, it is a gem-tier Carrackon (src/content/species_data/Carrackon.luau) at the giant's own
 	-- level, a third bigger than other creatures to look at.
 	form = { species = "Carrackon", rarity = "Gem", level = 36, colour = "Moss", size = 1.3 },
 }

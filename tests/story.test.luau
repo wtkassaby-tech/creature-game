@@ -2,7 +2,7 @@
 -- Checks for finishing story beats and paying their gifts (approval pack 2: one-time gifts).
 -- Run from the project folder:  lune run tests/story.test
 
-local Chapter1 = require("../src/content/story/Chapter1")
+local Chapter1 = require("../src/content/story_data/Chapter1")
 local Grants = require("../src/shared/Grants")
 local Profile = require("../src/shared/Profile")
 local StoryProgress = require("../src/shared/StoryProgress")

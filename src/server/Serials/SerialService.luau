@@ -28,7 +28,7 @@ local useMemory = RunService:IsStudio() and not ProfileConfig.STUDIO_USES_REAL_S
 local memory: { [string]: number } = {}
 local broken: { [string]: boolean } = {}
 local store: DataStore? = nil
-local log: Log = function() end
+local log: Log = function(_event: string, _fields: { [string]: any }) end
 
 local function getStore(): DataStore
 	local found = store

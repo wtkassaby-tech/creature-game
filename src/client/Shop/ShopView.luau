@@ -19,19 +19,19 @@ export type View = { open: () -> () }
 
 function ShopView.start(playerGui: Instance): View
 	local gui = Kit.screen(playerGui, "Shop", 12)
-	local root = Kit.panel(gui, UDim2.new(0.8, 0, 0.8, 0), UDim2.new(0.1, 0, 0.1, 0))
-	local title = Kit.label(root, "Shop", UDim2.new(0.6, 0, 0, 34), UDim2.new(0, 14, 0, 8), 28)
+	local root = Kit.panel(gui, UDim2.fromScale(0.8, 0.8), UDim2.fromScale(0.1, 0.1))
+	local title = Kit.label(root, "Shop", UDim2.new(0.6, 0, 0, 34), UDim2.fromOffset(14, 8), 28)
 	local note = Kit.label(root, "", UDim2.new(1, -28, 0, 22), UDim2.new(0, 14, 1, -30), 16)
 	note.TextColor3 = Kit.COLOURS.textDim
 	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
 		gui.Enabled = false
 	end)
-	close.Size = UDim2.new(0, 90, 0, 34)
+	close.Size = UDim2.fromOffset(90, 34)
 	close.Position = UDim2.new(1, -104, 0, 8)
 
 	local list = Instance.new("ScrollingFrame")
 	list.Size = UDim2.new(1, -28, 1, -90)
-	list.Position = UDim2.new(0, 14, 0, 52)
+	list.Position = UDim2.fromOffset(14, 52)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = 6
@@ -67,13 +67,13 @@ function ShopView.start(playerGui: Instance): View
 				row,
 				`Stable room +{EconomyConfig.STABLE_EXPANSION_SLOTS}  (now {state.StableCapacity})`,
 				UDim2.new(0.62, 0, 0, 26),
-				UDim2.new(0, 10, 0, 4)
+				UDim2.fromOffset(10, 4)
 			)
 			local about = Kit.label(
 				row,
 				"Room for more creatures, for good",
 				UDim2.new(0.62, 0, 0, 20),
-				UDim2.new(0, 10, 0, 32),
+				UDim2.fromOffset(10, 32),
 				14
 			)
 			about.TextColor3 = Kit.COLOURS.textDim
@@ -101,10 +101,15 @@ function ShopView.start(playerGui: Instance): View
 					row,
 					`{def.name}  (you have {state.Items[key] or 0})`,
 					UDim2.new(0.62, 0, 0, 26),
-					UDim2.new(0, 10, 0, 4)
+					UDim2.fromOffset(10, 4)
 				)
-				local about =
-					Kit.label(row, def.note, UDim2.new(0.62, 0, 0, 20), UDim2.new(0, 10, 0, 32), 14)
+				local about = Kit.label(
+					row,
+					def.note,
+					UDim2.new(0.62, 0, 0, 20),
+					UDim2.fromOffset(10, 32),
+					14
+				)
 				about.TextColor3 = Kit.COLOURS.textDim
 				local buy = Kit.button(
 					row,

@@ -1,6 +1,6 @@
 # Tide Flats world
 
-Tide Flats' world as data: the hub (Saltwick), two routes, the lair, the gate, five tamers, a mid-biome champion, the rival at the gate, a quest line, chapter 3 of the story and the giant Carrackon. Data lives in `src/content/biomes/`, `tamers/`, `quests/`, `story/` and `giants/` (plus `species/Carrackon.luau` and two moves in `Moves.luau`); the checks are `tests/tideflats.test.luau` (about 2 seconds). It mirrors `DUST_CANYON_WORLD.md`. Everything here is a [Default] the owner can change. The rival and the mentor are still called "Rival" and "Mentor".
+Tide Flats' world as data: the hub (Saltwick), two routes, the lair, the gate, five tamers, a mid-biome champion, the rival at the gate, a quest line, chapter 3 of the story and the giant Carrackon. Data lives in `src/content/biome_data/`, `tamer_data/`, `quest_data/`, `story_data/` and `giant_data/` (plus `species_data/Carrackon.luau` and two moves in `Moves.luau`); the checks are `tests/tideflats.test.luau` (about 2 seconds). It mirrors `DUST_CANYON_WORLD.md`. Everything here is a [Default] the owner can change. The rival and the mentor are still called "Rival" and "Mentor".
 
 ## The map
 

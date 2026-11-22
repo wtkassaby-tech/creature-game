@@ -1,6 +1,6 @@
 # Tide Flats roster
 
-The third roster: the eight species of Tide Flats (biome 3, Water), their parts and moves, and the balance gate they pass alone and mixed with Greenwood and Dust Canyon. Data lives in `src/content/species/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 22 seconds for all three biomes). It follows the method of `GREENWOOD_ROSTER.md` and `DUST_CANYON_ROSTER.md`. No config number, no shared code and no earlier species was changed. Everything here is a [Default] the owner can change.
+The third roster: the eight species of Tide Flats (biome 3, Water), their parts and moves, and the balance gate they pass alone and mixed with Greenwood and Dust Canyon. Data lives in `src/content/species_data/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 22 seconds for all three biomes). It follows the method of `GREENWOOD_ROSTER.md` and `DUST_CANYON_ROSTER.md`. No config number, no shared code and no earlier species was changed. Everything here is a [Default] the owner can change.
 
 ## At a glance
 

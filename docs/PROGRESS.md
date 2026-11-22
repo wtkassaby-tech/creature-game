@@ -8,7 +8,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 
 | Piece | State | Where |
 | --- | --- | --- |
-| Mire roster: eight species (six Toxic, two Water), 23 moves, four of them poisoning | Balanced and tested (190 roster checks, 22 known gaps noted). Data only: no biome spawns them yet | `src/content/species/`, `docs/content/MIRE_ROSTER.md` |
+| Mire roster: eight species (six Toxic, two Water), 23 moves, four of them poisoning | Balanced and tested (190 roster checks, 22 known gaps noted). Data only: no biome spawns them yet | `src/content/species_data/`, `docs/content/MIRE_ROSTER.md` |
 | Poison in the battle rules: a twelfth of health a turn for four turns; Toxic creatures are immune | Tested (23), reviewed | `src/shared/Battle.luau` |
 | Thirteenth independent review (poison, switches, analytics) | Done: no must-fix; six smaller fixes made | `docs/REVIEWS.md` |
 | A new live off-switch for releasing creatures | Tested | `src/config/LiveConfig.luau` |
@@ -68,7 +68,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 
 | Piece | State | Where |
 | --- | --- | --- |
-| Hollowbough as a creature of its own, with two signature moves | Tested | `src/content/species/Hollowbough.luau` |
+| Hollowbough as a creature of its own, with two signature moves | Tested | `src/content/species_data/Hollowbough.luau` |
 | One capture throw after a giant win; the serial number steps; once per player | Tested (51), reviewed | `src/shared/GiantCapture.luau`, `src/server/Giants/`, `src/server/Serials/` |
 | Giant Candy and breeding from a captured giant | Tested, reviewed | `src/shared/Breeding.luau`, `src/shared/Rewards.luau` |
 | Daily tasks: three easy, three harder, from the first badge | Tested (22), reviewed | `src/shared/DailyProgress.luau`, `src/server/Daily/` |
@@ -164,12 +164,12 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | Breeding rules | Tested (31 checks) | `src/shared/Breeding.luau`, `Stats.luau` |
 | Battle rules and the type chart | Tested (10) | `src/shared/Battle.luau`, `TypeChart.luau` |
 | Opponent behaviour: wild, tamer, rival | Tested (10) | `src/shared/BattleAi.luau` |
-| Giant fights and the first giant, Hollowbough | Tested; tuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giants/` |
+| Giant fights and the first giant, Hollowbough | Tested; tuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giant_data/` |
 | Lasso catching | Tested (51) | `src/shared/Lasso.luau` |
 | XP, levels and level caps | Tested (43) | `src/shared/Xp.luau` |
 | Saved data: shape, safe upgrades, checks | Tested (54). Nothing saves yet | `src/shared/Profile.luau` |
 | Economy: every price and reward, with a 30-day simulation | Tested (38) | `src/shared/Economy.luau`, `docs/ECONOMY_MODEL.md` |
-| Greenwood roster: eight species, 24 moves, balanced | Tested (28) | `src/content/species/`, `docs/content/GREENWOOD_ROSTER.md` |
+| Greenwood roster: eight species, 24 moves, balanced | Tested (28) | `src/content/species_data/`, `docs/content/GREENWOOD_ROSTER.md` |
 | Part specification, art test procedure, Studio part validator | Written. **Not yet run in Studio** | `docs/PART_SPEC.md`, `docs/ART_TEST.md`, `tools/studio/ValidateParts.luau` |
 | Server breed flow, creature assembler | Written and type-checked. **Not yet run in Studio** | `src/server/Breeding/`, `src/client/Assembler/` |
 | Approval packs 1 and 2 | Waiting for Ayrton | `docs/plans/` |

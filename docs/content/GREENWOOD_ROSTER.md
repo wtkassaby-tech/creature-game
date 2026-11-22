@@ -1,6 +1,6 @@
 # Greenwood roster
 
-The first real roster: the eight species of Greenwood (biome 1), their parts and moves, and the balance gate they pass. Data lives in `src/content/species/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 2 seconds). Everything here is a [Default] the owner can change.
+The first real roster: the eight species of Greenwood (biome 1), their parts and moves, and the balance gate they pass. Data lives in `src/content/species_data/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 2 seconds). Everything here is a [Default] the owner can change.
 
 ## At a glance
 

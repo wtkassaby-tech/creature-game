@@ -17,7 +17,7 @@ export type Log = (event: string, fields: { [string]: any }) -> ()
 local LiveConfigService = {}
 
 local values: LiveConfig.Values = Switches.defaults()
-local log: Log = function() end
+local log: Log = function(_event: string, _fields: { [string]: any }) end
 
 local function apply(snapshot: ConfigSnapshot)
 	local after = Switches.read(function(key: LiveConfig.Key): unknown
