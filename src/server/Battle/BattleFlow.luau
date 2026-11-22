@@ -211,8 +211,8 @@ local function battleFinished(
 		return
 	end
 	StateSync.changed(player) -- health changed, whatever the result
-	BattleFlow.wakeAtHealerIfBeaten(player, profile)
 	if outcome ~= 1 then
+		BattleFlow.wakeAtHealerIfBeaten(player, profile)
 		return
 	end
 	local team = {}
@@ -285,6 +285,10 @@ local function battleFinished(
 			log("StoryWinNotFinished", { player = player.UserId, battle = trained.opponent.id })
 		end
 	end
+	-- A win can still leave the whole team down (both sides fell on the last turn). Checked
+	-- last, after the mend above: a battle that cannot be lost never ends in a walk from the
+	-- healer (found in the first Studio run, where winning the first rival battle did).
+	BattleFlow.wakeAtHealerIfBeaten(player, profile)
 end
 
 function BattleFlow.start(logger: (event: string, fields: { [string]: any }) -> ())

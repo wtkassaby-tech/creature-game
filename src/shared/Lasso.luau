@@ -236,6 +236,7 @@ function Lasso.judge(
 		return invalid("bad round trip")
 	end
 	local allowance = math.min(roundTripMs, LassoConfig.ROUND_TRIP_CAP_MS)
+		+ LassoConfig.CLAIM_EARLY_MARGIN_MS
 	for index = 1, count do
 		local claimed, serverNow = claimedMs[index], serverElapsedMs[index]
 		if not isFiniteNumber(claimed) or not isFiniteNumber(serverNow) then

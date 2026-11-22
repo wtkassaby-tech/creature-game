@@ -50,9 +50,15 @@ LassoConfig.ZONE_GAP_MS = 3000 -- zone n starts this long after zone n-1
 LassoConfig.MAX_ATTEMPT_MS = 14000 -- a claim later than this is invalid (no waiting for a lucky pass)
 LassoConfig.CENTRE_MARGIN = 0.08 -- a zone's edge stays at least this far from either end of the arc
 
--- Lag window: serverElapsed - min(roundTrip, cap) <= claimed <= serverElapsed + margin.
+-- Lag window:
+-- serverElapsed - min(roundTrip, cap) - early margin <= claimed <= serverElapsed + margin.
 LassoConfig.ROUND_TRIP_CAP_MS = 400
 LassoConfig.CLAIM_MARGIN_MS = 60
+-- The trusted round trip is the smallest reading, so an honest tap nearly always travels a
+-- little slower than it (a frame or two, or a jittery connection). Without this slack every
+-- tap in the first Studio run was thrown out as "too early": claims sat 63 to 66 ms behind the
+-- server's clock against a 48 ms reading.
+LassoConfig.CLAIM_EARLY_MARGIN_MS = 120
 -- Above the cap the sweep slows by cap / roundTrip (never below this floor) and the screen shows
 -- a "connection assist" note.
 LassoConfig.ASSIST_MIN_SPEED = 0.4

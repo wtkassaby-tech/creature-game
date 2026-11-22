@@ -108,11 +108,13 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 22 Nov 2026 | **The Mire is made one level harder** (its tamers and rival); "some resistance creates enjoyment" | Ayrton | 8 |
 | 22 Nov 2026 | **Creatures count poison when their four moves are picked** (Claude's call, given to Claude by Ayrton: opponents already do), so breeding for poison is a real choice | Claude (Default) | 5 |
 | 22 Nov 2026 | Claude keeps the live brief doc in step with this log (Ayrton: "you are in charge of the operations") | Ayrton | 1 |
+| 22 Nov 2026 | **The lasso's lag window gets 120 ms of slack on the early side** (`CLAIM_EARLY_MARGIN_MS`). The allowance was the smallest ping reading alone, so in the first Studio run every honest tap was thrown out. Reviewed as giving a cheat nothing new: the device already knows the whole sweep | Claude (Default) | 6 |
 
 ## Still open
 
 Only Ayrton can decide these:
 
+- **The lasso on slow connections** (from the 22 November review): above a 400 ms round trip an honest tap can still be thrown out, and a phone that moves from Wi-Fi to mobile data keeps its old fast reading for a few throws. The reviewer suggests dropping the 400 ms cap from the judge (keeping it only for slowing the sweep) and widening the slack with the spread of readings. Not changed: it touches catching, so it needs your yes.
 - **Purchases** (approval pack 5, `docs/plans/05_PURCHASES.md`): Ayrton likes the passes; the list, Gems and prices are being gone over together. Cosmetic passes later. Nothing is built until he says yes.
 - **The challenge place and move imprint** (`docs/plans/06_CHALLENGES_AND_IMPRINT.md`): approve the plan's numbers.
 - **To judge in a playthrough:** pacing; switching in battle (precedent from similar games in the plan notes); mixed-biome balance.

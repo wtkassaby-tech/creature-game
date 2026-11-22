@@ -5,6 +5,7 @@
 -- TODO(art): creatures are named, not drawn, until the part meshes exist. Not yet seen in Studio.
 -- A little over 400 lines: it is one screen, kept whole so its layout reads top to bottom.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ClientState = require(script.Parent.Parent.State.ClientState)
@@ -45,6 +46,23 @@ local OUTCOME_TEXT: { [number]: string } =
 
 function BattleView.start(playerGui: Instance)
 	local gui = Kit.screen(playerGui, "Battle", 10)
+	-- No walking during a battle: in the first Studio run a long-grass battle followed the
+	-- player all the way back to town. PlayerModule is Roblox's own movement controller.
+	task.spawn(function()
+		local player = Players.LocalPlayer
+		local module = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 10)
+		if not module or not module:IsA("ModuleScript") then
+			return
+		end
+		local controls = (require :: any)(module):GetControls()
+		gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+			if gui.Enabled then
+				controls:Disable()
+			else
+				controls:Enable()
+			end
+		end)
+	end)
 	local model: Model? = nil
 
 	-- The two creature cards.
@@ -456,10 +474,24 @@ function BattleView.start(playerGui: Instance)
 		if not current or current.battleId ~= value.BattleId then
 			return
 		end
-		table.insert(
-			current.rewards,
-			`+{value.Coins} coins{if value.Material ~= "" then ", 1 " .. value.Material else ""}`
-		)
+		-- A battle that pays no coins (the story's rival battles) says nothing about coins.
+		local paid: { string } = {}
+		if value.Coins > 0 then
+			table.insert(paid, `+{value.Coins} coins`)
+		end
+		if value.Material ~= "" then
+			table.insert(paid, `1 {value.Material}`)
+		end
+		local xp = 0
+		for _, member in value.Members do
+			xp = math.max(xp, member.Gained)
+		end
+		if xp > 0 then
+			table.insert(paid, `+{xp} XP`)
+		end
+		if #paid > 0 then
+			table.insert(current.rewards, table.concat(paid, ", "))
+		end
 		for _, member in value.Members do
 			if member.LevelsGained > 0 then
 				table.insert(current.rewards, `Level {member.Level}!`)

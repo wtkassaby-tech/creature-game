@@ -228,7 +228,14 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 		else
 			misses[player] = { battleId = session.battleId, count = missesAfter }
 			if result.judgement.verdict == "Invalid" then
-				log("LassoInvalid", { player = player.UserId, reason = result.judgement.reason })
+				-- The numbers behind the verdict, so a window that is too tight shows in the log.
+				log("LassoInvalid", {
+					player = player.UserId,
+					reason = result.judgement.reason,
+					claimMs = math.round(current.claims[1] or -1),
+					arrivalMs = math.round(current.arrivals[1] or -1),
+					roundTripMs = math.round(current.throw.pattern.roundTripMs),
+				})
 			end
 		end
 		CaptureService.audit(player, result.judgement.errorsMs)

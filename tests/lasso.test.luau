@@ -187,14 +187,23 @@ do
 		"a claim a little ahead (inside the margin) is accepted",
 		judgeAt(now + LassoConfig.CLAIM_MARGIN_MS - 1, 80) ~= "Invalid"
 	)
-	check("a claim too early is invalid, not a miss", judgeAt(now - 81, 80) == "Invalid")
+	local early = LassoConfig.CLAIM_EARLY_MARGIN_MS
+	check(
+		"a claim a frame or two slower than the smallest reading is accepted",
+		judgeAt(now - 66, 48) ~= "Invalid" -- the first Studio run's numbers
+	)
+	check(
+		"a claim too early is invalid, not a miss",
+		judgeAt(now - 80 - early - 1, 80) == "Invalid"
+			and judgeAt(now - 80 - early, 80) ~= "Invalid"
+	)
 	check(
 		"a claim too late is invalid, not a miss",
 		judgeAt(now + LassoConfig.CLAIM_MARGIN_MS + 1, 80) == "Invalid"
 	)
 	check(
-		"the round trip is capped: a claim 500 ms behind is invalid even at 900 ms ping",
-		judgeAt(now - 500, 900) == "Invalid"
+		"the round trip is capped: a claim past the cap and the slack is invalid even at 900 ms ping",
+		judgeAt(now - LassoConfig.ROUND_TRIP_CAP_MS - early - 1, 900) == "Invalid"
 			and judgeAt(now - LassoConfig.ROUND_TRIP_CAP_MS, 900) ~= "Invalid"
 	)
 	check(

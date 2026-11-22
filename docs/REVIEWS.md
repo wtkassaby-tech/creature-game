@@ -2,6 +2,17 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 22 November 2026: the lasso's early-claim slack (first Studio run, branch fix/studio-first-run)
+
+Reviewer: a separate read-only exploit reviewer that did not write the change. Reviewed: `CLAIM_EARLY_MARGIN_MS` (120) added to the early allowance in `Lasso.judge`, the fuller `LassoInvalid` log line, and the lag-window tests. Verdict: safe to merge, no must-fix.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The slack gives a cheat nothing new: the device is sent the whole sweep, so it can already claim the perfect time. No free retry: taps are taken in order, once, and Invalid still counts as a miss | Sound | Nothing needed |
+| 2 | Above the 400 ms cap an honest tap on a slow connection is still Invalid (a 600 ms round trip arrives outside a 520 ms allowance), costing a lasso or a giant attempt | Medium, was already there | Not changed: listed for Ayrton in `docs/DECISIONS.md` (Still open) |
+| 3 | The trusted reading is the smallest of the last eight and is kept across battles, so a phone moving from Wi-Fi to mobile data is judged against its old reading for a while | Low | Not changed: same entry |
+| 4 | The `LassoInvalid` line logs only the first zone's times; the giant path logs none | Low, log only | Not changed yet |
+
 ## 21 November 2026: poison, the off-switches, analytics, the "biome reached" rule (commits 0c892db to a47513d)
 
 Reviewer: a separate read-only agent. It did not run the tests. No must-fix findings.

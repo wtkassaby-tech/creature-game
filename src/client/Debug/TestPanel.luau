@@ -34,6 +34,18 @@ function TestPanel.start(parent: Instance)
 	root.BackgroundTransparency = 0.3
 	root.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	root.Parent = gui
+	-- Closed until asked for: open, it covers the tracker and the foe's card (first Studio run).
+	root.Visible = false
+	local toggle = Instance.new("TextButton")
+	toggle.Text = "Test"
+	toggle.TextSize = 13
+	toggle.Size = UDim2.fromOffset(48, 24)
+	toggle.Position = UDim2.new(0, 10, 1, -34)
+	toggle.ZIndex = 2
+	toggle.Parent = gui
+	toggle.Activated:Connect(function()
+		root.Visible = not root.Visible
+	end)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 4)
 	layout.Parent = root
@@ -166,6 +178,13 @@ function TestPanel.start(parent: Instance)
 		end
 	end
 	button("Tap (Space)", tap)
+	-- Taps for you when the marker is in the zone, so a catch can be tested without the timing
+	-- (the Studio MCP cannot tap to the millisecond). Off until pressed.
+	local autoTap = false
+	button("Auto tap", function()
+		autoTap = not autoTap
+		log(`Auto tap: {if autoTap then "on" else "off"}`)
+	end)
 	button("Next beat", function()
 		local state = ClientState.get()
 		local flags: { [string]: boolean } = {}
@@ -304,6 +323,9 @@ function TestPanel.start(parent: Instance)
 		marker.BackgroundColor3 = if Lasso.isInZone(zone, position)
 			then Color3.fromRGB(255, 240, 120)
 			else Color3.new(1, 1, 1)
+		if autoTap and inSweep and math.abs(position - zone.centre) < zone.width * 0.3 then
+			tap()
+		end
 	end)
 end
 

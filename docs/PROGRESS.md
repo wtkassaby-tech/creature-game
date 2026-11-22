@@ -2,6 +2,30 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 22 November 2026 (the first run in Roblox Studio)
+
+**In one line:** the game has now run in Studio for the first time. Steps 1 to 12 of `docs/STUDIO_FIRST_RUN.md` all work after seven fixes; the full check passes. It is still the grey-box test build (boxes for buildings, balls for creatures): no art yet.
+
+**How it was run:** the Rojo plugin is not installed in Studio, so the project was built to `build/creature-game.rbxlx` (`rojo build default.project.json -o build/creature-game.rbxlx`) and opened as its own Studio window. Fixes were pushed into that window script by script. To get live sync instead, install the plugin (`rojo plugin install`, restart Studio, press Connect).
+
+| Found in the run | Fix | Where |
+| --- | --- | --- |
+| **No creature could be caught.** Every lasso tap was thrown out as "too early for the server clock": taps arrived 63 to 66 ms behind a 48 ms lag reading | 120 ms of slack on the early side of the lag window. Independently reviewed: safe (see `docs/REVIEWS.md`) | `src/shared/Lasso.luau`, `src/config/LassoConfig.luau` |
+| Winning the first rival battle sent the player to the healer as if they had lost (both creatures fell on the last turn) | The healer check runs after a win is paid and mended, not before | `src/server/Battle/BattleFlow.luau` |
+| The Creatures screen opened empty | Opening and filling it are one step | `src/client/Creatures/CreaturesView.luau` |
+| The player could walk away mid-battle; a long-grass battle followed them into town | Movement is off while the battle screen is open | `src/client/BattleView/BattleView.luau` |
+| Story dialogue sat on top of the moves and the "You won!" panel; the tracker sat under the foe's card | Both wait until the battle screen closes | `src/client/Story/StoryView.luau` |
+| Waking at the healer put the player on the healer's head | Lands six studs to the town side | `src/server/World/WorldService.luau` |
+| The win panel said "+0 coins" for the rival and never showed XP | Shows coins only when paid, and the XP gained | `src/client/BattleView/BattleView.luau` |
+
+Also: the grey test panel now starts closed behind a small "Test" button (it covered a third of the screen), and has an "Auto tap" button that taps the lasso for you, for testing catches.
+
+**Checked and fine:** the tree Rojo builds; the Blink messages on both sides; the starter pick; story beats and gifts; wild, long-grass and tamer battles; switching in after a faint; the healer; losing and waking in town; the two prompts at a rustle spot do not overlap; the mock save starts fresh each Play.
+
+**Not checked yet:** a phone-sized screen; the shop, breeding, the giant, daily tasks and the later biomes (section 4 of the guide, about 50 minutes of play); the off-switches (they log "SwitchesUnreachable" in an unpublished place, as expected, and the game stays open).
+
+**For Ayrton:** play it in the Studio window named `creature-game.rbxlx`. One thing to decide is in `docs/DECISIONS.md` under Still open (the lasso window for slow connections).
+
 ## 21 November 2026 (the Mire roster, poison, live switches)
 
 **In one line:** the fourth biome's eight creatures now exist as data, with the first poisoning moves; nothing in the three launch biomes changes. The full check passes. **None of it has run in Roblox Studio yet.**

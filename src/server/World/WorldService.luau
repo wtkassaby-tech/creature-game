@@ -183,7 +183,15 @@ function WorldService.sendTo(player: Player, placeId: string)
 	local character = player.Character
 	local place = map.places[placeId]
 	if character and place then
-		character:PivotTo(CFrame.new(place.x, 6, place.z))
+		-- A place's point is where its keeper stands: land a few studs to the town side of it,
+		-- not on the keeper's head (first Studio run).
+		local at = Vector3.new(place.x, 6, place.z)
+		local hub = map.places[WorldService.biomeOfPlace(placeId).hub.id]
+		local toTown = if hub
+			then Vector3.new(hub.x - place.x, 0, hub.z - place.z)
+			else Vector3.zero
+		at += if toTown.Magnitude > 1 then toTown.Unit * 6 else Vector3.new(0, 0, 6)
+		character:PivotTo(CFrame.new(at))
 		lastAt[player] = nil -- do not count the jump as walking
 	end
 end

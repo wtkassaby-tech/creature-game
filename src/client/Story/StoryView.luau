@@ -65,16 +65,39 @@ function StoryView.start(playerGui: Instance)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	local queue: { { speaker: string, text: string } } = {}
+	-- The box waits while the battle screen is open: it sat on top of the moves and the
+	-- "You won!" panel (first Studio run). The line on show comes back when the battle closes.
+	local showing = false
+	local battleOpen = false
 	local function showNext()
 		local nextLine = table.remove(queue, 1)
 		if not nextLine then
+			showing = false
 			gui.Enabled = false
 			return
 		end
 		speaker.Text = nextLine.speaker
 		line.Text = nextLine.text
-		gui.Enabled = true
+		showing = true
+		gui.Enabled = not battleOpen
 	end
+	task.spawn(function()
+		local battle = playerGui:WaitForChild("Battle")
+		if not battle:IsA("ScreenGui") then
+			return
+		end
+		local function battleChanged()
+			battleOpen = battle.Enabled
+			hud.Enabled = not battleOpen -- the tracker sits under the foe's card
+			if not showing and not battleOpen and #queue > 0 then
+				showNext()
+			else
+				gui.Enabled = showing and not battleOpen
+			end
+		end
+		battle:GetPropertyChangedSignal("Enabled"):Connect(battleChanged)
+		battleChanged()
+	end)
 	local nextButton = Kit.button(box, "Next", Kit.COLOURS.accent, showNext)
 	nextButton.Size = UDim2.fromOffset(110, 34)
 	nextButton.Position = UDim2.new(1, -124, 0, 6)
@@ -161,7 +184,7 @@ function StoryView.start(playerGui: Instance)
 		if #got > 0 then
 			table.insert(queue, { speaker = "You received", text = table.concat(got, ", ") })
 		end
-		if not gui.Enabled then
+		if not showing then
 			showNext()
 		end
 	end)
@@ -178,7 +201,7 @@ function StoryView.start(playerGui: Instance)
 		else
 			return
 		end
-		if not gui.Enabled then
+		if not showing then
 			showNext()
 		end
 	end)

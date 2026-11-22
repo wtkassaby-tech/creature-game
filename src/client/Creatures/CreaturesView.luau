@@ -73,9 +73,8 @@ function CreaturesView.start(playerGui: Instance)
 	notice.TextStrokeTransparency = 0.3
 
 	local gui = Kit.screen(playerGui, "Creatures", 6)
-	local open = Kit.button(bar, "Creatures", Kit.COLOURS.accent, function()
-		gui.Enabled = not gui.Enabled
-	end)
+	-- What the button does is set further down, once the list can be rebuilt.
+	local open = Kit.button(bar, "Creatures", Kit.COLOURS.accent, function() end)
 	open.Size = UDim2.new(0, 110, 1, -8)
 	open.Position = UDim2.new(1, -116, 0, 4)
 
@@ -329,7 +328,10 @@ function CreaturesView.start(playerGui: Instance)
 		parents = {}
 		rebuild()
 	end)
+	-- Open and fill in one step: as two separate handlers the list was filled before the screen
+	-- opened, so it came up empty (first Studio run).
 	open.Activated:Connect(function()
+		gui.Enabled = not gui.Enabled
 		confirmRelease = nil
 		rebuild()
 	end)
