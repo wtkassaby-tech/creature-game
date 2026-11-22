@@ -6,9 +6,11 @@
 -- Everything is built from plain rounded parts in flat colours: nothing bought, nothing uploaded.
 -- TODO(art): replaced, with the test map, by the real Greenwood.
 
+local AssetService = game:GetService("AssetService")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
+local PropModels = require(game:GetService("ReplicatedStorage").content.PropModels)
 local Layout = require(game:GetService("ReplicatedStorage").shared.Layout)
 local WorldTypes = require(game:GetService("ReplicatedStorage").shared.WorldTypes)
 
@@ -64,6 +66,62 @@ local function lump(parent: Instance, size: Vector3, at: Vector3, colour: Color3
 	mesh.MeshType = Enum.MeshType.Sphere
 	mesh.Parent = made
 	return made
+end
+
+-- A painted model for a piece of the town (a cottage, a tree, a villager), loaded once by its
+-- asset id and copied wherever it is needed. Nil if there is none or it would not load: the
+-- plain shapes below are then used instead, so the map is never left bare.
+local loaded: { [string]: MeshPart } = {}
+local missing: { [string]: boolean } = {}
+local function prop(name: string): MeshPart?
+	if loaded[name] or missing[name] then
+		return loaded[name]
+	end
+	local def = PropModels[name]
+	if not def then
+		missing[name] = true
+		return nil
+	end
+	local ok, made = pcall(function(): MeshPart
+		return AssetService:CreateMeshPartAsync(Content.fromUri(def.mesh), {
+			CollisionFidelity = Enum.CollisionFidelity.Box,
+			RenderFidelity = Enum.RenderFidelity.Automatic,
+		})
+	end)
+	if ok then
+		made.Name = name -- `stand` looks the model up again by this name
+		made.TextureID = def.texture
+		made.Size = Vector3.new(def.size[1], def.size[2], def.size[3])
+		made.Anchored = true
+		made.CanCollide = false
+		made.CanQuery = false
+		made.CanTouch = false
+		made.Material = Enum.Material.SmoothPlastic
+		loaded[name] = made
+	else
+		warn(`[Dressing] {name}: model did not load ({made})`)
+		missing[name] = true
+	end
+	return loaded[name]
+end
+
+-- Stands a copy of a model on the ground at `foot`, `tall` studs high, facing along `facing`.
+local function stand(
+	parent: Instance,
+	model: MeshPart,
+	foot: Vector3,
+	tall: number,
+	facing: Vector3
+): MeshPart
+	local copy = model:Clone()
+	copy.Size = model.Size * (tall / model.Size.Y)
+	local turn = PropModels[model.Name]
+	local base = CFrame.lookAt(foot, foot + facing)
+	copy.CFrame = base
+		* CFrame.new(0, copy.Size.Y / 2, 0)
+		* CFrame.Angles(0, math.rad(if turn and turn.turn then turn.turn else 0), 0)
+	copy.Parent = parent
+	return copy
 end
 
 -- Warm afternoon light, a soft haze toward the horizon and drifting clouds.
@@ -123,6 +181,20 @@ function Dressing.house(house: Part, role: string, square: Vector3)
 	if toSquare.Magnitude > 1 then
 		house.CFrame = CFrame.lookAt(centre, centre + toSquare.Unit) -- front (-Z) faces the square
 	end
+	local kind = if role == "Shop" then "Shop" elseif role == "Healer" then "Healer" else "Cottage"
+	local painted = prop(kind)
+	if painted then
+		-- The plain block stays as the thing you bump into; the painted cottage is what you see.
+		house.Transparency = 1
+		local sign = house:FindFirstChildOfClass("BillboardGui")
+		if sign then
+			sign.StudsOffsetWorldSpace = Vector3.new(0, 20, 0)
+		end
+		local foot = house.Position - Vector3.yAxis * house.Size.Y / 2
+		local copy = stand(house, painted, foot, 26, house.CFrame.LookVector)
+		copy.Name = kind
+		return
+	end
 	house.Color = WALL
 	-- The name over the door rides above the new roof.
 	local sign = house:FindFirstChildOfClass("BillboardGui")
@@ -170,9 +242,37 @@ function Dressing.house(house: Part, role: string, square: Vector3)
 	end
 end
 
--- Gives a plain block of a person a head, hair and a coloured shirt. `pick` chooses the colours,
--- so the same person looks the same every time.
-function Dressing.person(body: Part, pick: Random)
+-- Which villager model a person wears, from their name.
+local function villager(name: string): string
+	local lower = string.lower(name)
+	if string.find(lower, "mentor", 1, true) then
+		return "Mentor"
+	elseif string.find(lower, "rival", 1, true) then
+		return "Rival"
+	elseif string.find(lower, "tuppence", 1, true) or string.find(lower, "_keeper", 1, true) then
+		return "Shopkeeper"
+	end
+	return "Tamer"
+end
+
+-- Gives a plain block of a person a body: a painted villager if there is one for them, turned
+-- to face `toward`; otherwise a head, hair and a coloured shirt. `pick` chooses the colours, so
+-- the same person looks the same every time.
+function Dressing.person(body: Part, pick: Random, name: string, toward: Vector3?)
+	local painted = prop(villager(name))
+	if painted then
+		body.Transparency = 1
+		local foot = body.Position - Vector3.yAxis * body.Size.Y / 2
+		local facing = Vector3.zAxis
+		if toward then
+			local flat = Vector3.new(toward.X - foot.X, 0, toward.Z - foot.Z)
+			if flat.Magnitude > 1 then
+				facing = flat.Unit
+			end
+		end
+		stand(body, painted, foot, 6.6, facing)
+		return
+	end
 	body.Color = SHIRTS[pick:NextInteger(1, #SHIRTS)]
 	body.Size = Vector3.new(3, 4.4, 2)
 	local feet = body.Position.Y - 3
@@ -202,9 +302,38 @@ end
 -- A town square is more than paving: lamp posts at its corners and flower beds along its edges.
 function Dressing.square(parent: Instance, centre: Vector3, size: number)
 	local half = size / 2 - 5
+	-- The square is a village green with a round cobbled plaza in the middle, not a slab of
+	-- paving from edge to edge.
+	local slab = parent:FindFirstChild("Square")
+	if slab and slab:IsA("BasePart") then
+		slab.Color = rgb(138, 196, 104)
+	end
+	local plaza = Instance.new("Part")
+	plaza.Name = "Plaza"
+	plaza.Shape = Enum.PartType.Cylinder
+	plaza.Anchored = true
+	plaza.Size = Vector3.new(0.3, size * 0.62, size * 0.62)
+	plaza.CFrame = CFrame.new(centre + Vector3.yAxis * 0.45) * CFrame.Angles(0, 0, math.rad(90))
+	plaza.Color = rgb(222, 204, 168)
+	plaza.Material = Enum.Material.SmoothPlastic
+	plaza.Parent = parent
+	local rim = plaza:Clone()
+	rim.Name = "PlazaRim"
+	rim.Size = Vector3.new(0.24, size * 0.66, size * 0.66)
+	rim.Color = rgb(170, 150, 120)
+	rim.Parent = parent
+	local well = prop("Well")
+	if well then
+		stand(parent, well, centre + Vector3.new(18, 0.4, -12), 10, Vector3.zAxis)
+	end
+	local lampModel = prop("Lamp")
 	for _, x in { -1, 1 } do
 		for _, z in { -1, 1 } do
 			local foot = centre + Vector3.new(x * half, 0, z * half)
+			if lampModel then
+				stand(parent, lampModel, foot, 13, Vector3.new(-x, 0, -z).Unit)
+				continue
+			end
 			local post = Instance.new("Part")
 			post.Shape = Enum.PartType.Cylinder
 			post.Anchored = true
@@ -237,6 +366,13 @@ function Dressing.square(parent: Instance, centre: Vector3, size: number)
 end
 
 local function tree(parent: Instance, at: Vector3, pick: Random, leaf: Color3)
+	local painted = prop(if pick:NextNumber() < 0.7 then "Tree" else "Pine")
+	if painted then
+		local turn = pick:NextNumber(0, math.pi * 2)
+		local facing = Vector3.new(math.cos(turn), 0, math.sin(turn))
+		stand(parent, painted, at, pick:NextNumber(15, 24), facing)
+		return
+	end
 	local height = pick:NextNumber(7, 12)
 	local trunk = Instance.new("Part")
 	trunk.Shape = Enum.PartType.Cylinder
@@ -264,6 +400,13 @@ local function tree(parent: Instance, at: Vector3, pick: Random, leaf: Color3)
 end
 
 local function bush(parent: Instance, at: Vector3, pick: Random, leaf: Color3)
+	local painted = prop("Bush")
+	if painted then
+		local turn = pick:NextNumber(0, math.pi * 2)
+		local facing = Vector3.new(math.cos(turn), 0, math.sin(turn))
+		stand(parent, painted, at, pick:NextNumber(3, 5.5), facing)
+		return
+	end
 	local width = pick:NextNumber(3, 6)
 	lump(parent, Vector3.new(width, width * 0.7, width), at + Vector3.yAxis * width * 0.3, leaf)
 	if pick:NextNumber() < 0.5 then
@@ -343,14 +486,14 @@ function Dressing.scatter(
 					local point = Layout.pointAt(line, along, side * out)
 					grow(Vector3.new(point.x, 0, point.z))
 				end
-				along += pick:NextNumber(9, 20)
+				along += pick:NextNumber(16, 30)
 			end
 		end
 	end
 	-- A ring of growth round the town, outside its buildings.
 	local reach = map.hub.size / 2 + 60
-	for index = 1, 48 do
-		local angle = index / 48 * math.pi * 2 + pick:NextNumber(-0.05, 0.05)
+	for index = 1, 28 do
+		local angle = index / 28 * math.pi * 2 + pick:NextNumber(-0.05, 0.05)
 		local out = reach + pick:NextNumber(0, 60)
 		grow(Vector3.new(map.hub.x + math.cos(angle) * out, 0, map.hub.z + math.sin(angle) * out))
 	end

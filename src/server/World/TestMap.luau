@@ -113,16 +113,17 @@ local function slab(
 	)
 end
 
-local function person(parent: Instance, name: string, point: Layout.Point): Part
+local function person(parent: Instance, name: string, point: Layout.Point, toward: Vector3?): Part
 	local body = block(parent, name, Vector3.new(3, 6, 2), at(point, 3.4), PERSON)
 	-- People with a real name wear it; a keeper known only by an id ("healer_keeper") does not,
 	-- since the building already says what it is. The rival's battle id is left off.
 	local shown = string.gsub(name, "%s*%b()", "")
-	if not string.find(shown, "_", 1, true) then
+	if string.find(shown, "%u") and not string.find(shown, "_", 1, true) then
 		label(body, shown)
 	end
 	-- The same name always dresses the same way.
-	Dressing.person(body, Random.new(#name * 131 + string.byte(name, 1) + string.byte(name, #name)))
+	local pick = Random.new(#name * 131 + string.byte(name, 1) + string.byte(name, #name))
+	Dressing.person(body, pick, name, toward)
 	return body
 end
 
@@ -182,6 +183,8 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		spawn.Size = Vector3.new(12, 1, 12)
 		spawn.CFrame = CFrame.new(map.hub.x, 0.9, map.hub.z)
 		spawn.Color = STONE
+		spawn.Transparency = 1 -- where players arrive, not something to look at
+		spawn.CanCollide = false
 		spawn.Parent = hub
 	end
 	for _, building in biome.hub.buildings do
@@ -196,7 +199,9 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		Dressing.house(house, building.role, Vector3.new(map.hub.x, 0, map.hub.z))
 		-- Every building's keeper stands at its door. Talking to one moves the story on if the
 		-- story is waiting for them, and offers or takes in that place's quests.
-		local body = person(hub, building.npc or `{building.id}_keeper`, map.places[building.id])
+		local square = Vector3.new(map.hub.x, 0, map.hub.z)
+		local body =
+			person(hub, building.npc or `{building.id}_keeper`, map.places[building.id], square)
 		local talk = prompt(
 			body,
 			"Talk",
