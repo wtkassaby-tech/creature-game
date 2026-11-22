@@ -128,6 +128,74 @@ local CreatureModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://124113147819843",
 		size = { 4.29, 5, 4.2 },
 	},
+	-- Tide Flats: the last two, and its giant
+	Gulpmaw = {
+		mesh = "rbxassetid://133125823460412",
+		texture = "rbxassetid://120615190804188",
+		size = { 4.5, 4.19, 3.46 },
+	},
+	Moatkeep = {
+		mesh = "rbxassetid://108284213071133",
+		texture = "rbxassetid://90051137718974",
+		size = { 5, 4.05, 3.03 },
+	},
+	Carrackon = {
+		mesh = "rbxassetid://92543915503643",
+		texture = "rbxassetid://121888063897348",
+		size = { 9.46, 8.03, 12 },
+	},
+	-- Dust Canyon's giant
+	Mesalith = {
+		mesh = "rbxassetid://103954756558850",
+		texture = "rbxassetid://129360628977500",
+		size = { 7.48, 12, 6.82 },
+	},
+	-- The Mire, and its giant
+	Bogbellow = {
+		mesh = "rbxassetid://132556268634999",
+		texture = "rbxassetid://96022600637161",
+		size = { 4.31, 4.95, 7 },
+	},
+	Fenwhisk = {
+		mesh = "rbxassetid://128116311293978",
+		texture = "rbxassetid://72407552202501",
+		size = { 2.7, 5.5, 3.22 },
+	},
+	Keelsnap = {
+		mesh = "rbxassetid://136549620543220",
+		texture = "rbxassetid://103108120391008",
+		size = { 3.82, 4.43, 4.5 },
+	},
+	Lilyshade = {
+		mesh = "rbxassetid://77054853861528",
+		texture = "rbxassetid://93152035154442",
+		size = { 4.49, 6.24, 4.5 },
+	},
+	Mistrel = {
+		mesh = "rbxassetid://75690339947754",
+		texture = "rbxassetid://88859080025253",
+		size = { 4, 4.56, 6.32 },
+	},
+	Skipslick = {
+		mesh = "rbxassetid://97780803103581",
+		texture = "rbxassetid://115907363812644",
+		size = { 3.92, 6.5, 3.79 },
+	},
+	Sloughback = {
+		mesh = "rbxassetid://96775885247781",
+		texture = "rbxassetid://109042001255363",
+		size = { 7.79, 8, 13.8 },
+	},
+	Bulbroth = {
+		mesh = "rbxassetid://88037621374668",
+		texture = "rbxassetid://135303179888714",
+		size = { 4.34, 5.09, 4 },
+	},
+	Snaggar = {
+		mesh = "rbxassetid://120434234434736",
+		texture = "rbxassetid://70819400297950",
+		size = { 3.3, 3.5, 6.35 },
+	},
 }
 
 return CreatureModels

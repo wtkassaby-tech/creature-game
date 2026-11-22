@@ -16,6 +16,7 @@ local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
+local SpeakerFace = require(script.Parent.SpeakerFace)
 local StarterPick = require(script.Parent.StarterPick)
 local TitleCard = require(script.Parent.TitleCard)
 local Storyline = require(ReplicatedStorage.content.Storyline)
@@ -102,10 +103,10 @@ function StoryView.start(playerGui: Instance)
 	-- The dialogue box: bottom of the screen, one line at a time.
 	local gui = Kit.screen(playerGui, "Dialogue", 20)
 	local box = Kit.panel(gui, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
-	local speaker = Kit.label(box, "", UDim2.new(1, -150, 0, 26), UDim2.fromOffset(14, 8), 22)
-	speaker.TextColor3 = Kit.COLOURS.bad
-	Kit.pixel(speaker, 16)
-	local line = Kit.label(box, "", UDim2.new(1, -28, 0, 68), UDim2.fromOffset(14, 54), 22)
+	-- Who is speaking: a name tab on the box's top edge and, for some, a face at its left.
+	local face = SpeakerFace.new(gui, box)
+	-- The words keep clear of the NEXT button at the top right.
+	local line = Kit.label(box, "", UDim2.new(1, -170, 1, -28), UDim2.fromOffset(16, 14), 22)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	Kit.pixel(line, 20)
@@ -152,7 +153,9 @@ function StoryView.start(playerGui: Instance)
 			end
 			return
 		end
-		speaker.Text = nextLine.speaker
+		local taken = face.show(nextLine.speaker)
+		line.Position = UDim2.fromOffset(16 + taken, 14)
+		line.Size = UDim2.new(1, -(170 + taken), 1, -28)
 		typeOut(nextLine.text)
 		showing = true
 		gui.Enabled = not battleOpen

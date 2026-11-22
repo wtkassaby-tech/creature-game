@@ -18,7 +18,7 @@ local STONE = Props.rgb(170, 165, 150)
 local LEAF = Props.rgb(84, 150, 70)
 
 local MAX_PIECE = 36 -- studs: the longest straight piece, so overlaps stay under 40
-local BUSH_SPACING = 4 -- studs between bushes along a hedge top (plan section 5)
+local BUSH_SPACING = 5 -- studs between bushes along a hedge: each is wider than this, so they join
 local WATER_CLEARANCE = 2 -- a hedge stops this far short of the water's edge
 
 -- Splits a line sampled every stud into straight pieces no longer than MAX_PIECE.
@@ -121,14 +121,16 @@ function Fences.rail(parent: Instance, a: Vector3, b: Vector3)
 	end
 end
 
--- A hedge along a line: green blocks 6 tall and 4 thick with bushes along the top, stopped
--- short wherever water passes under it, with a low rail across the water instead.
+-- A hedge along a line: a row of tall bushes standing shoulder to shoulder, with a thin dark
+-- core inside them that does the blocking and fills the gaps near the ground. (The first cut
+-- was a 6-tall green box with small bushes on top, and read as a box.) Stopped short wherever
+-- water passes under it, with a low rail across the water instead.
 function Fences.hedge(parent: Instance, points: { Vector3 }, waters: { Water })
 	local runs, gaps = clearOfWater(points, waters)
 	local bush = Props.model("Bush")
 	for _, run in runs do
 		for _, piece in pieces(run) do
-			local made = block(parent, piece[1], piece[2], 4, 6)
+			local made = block(parent, piece[1], piece[2], 2.6, 4.8)
 			if made then
 				made.Name = "Hedge"
 			end
@@ -136,7 +138,10 @@ function Fences.hedge(parent: Instance, points: { Vector3 }, waters: { Water })
 		for _, at in Props.resample(run, BUSH_SPACING) do
 			local top = Vector3.new(at.X, 5.4, at.Z)
 			if bush then
-				Props.stand(parent, bush, top, 3.2, Vector3.new(at.Z % 7 - 3, 0, at.X % 5 - 2))
+				-- 7 to 8 studs tall, each turned its own way, so the top is an uneven line.
+				local tall = 7 + ((at.X * 7 + at.Z * 3) % 3) * 0.5
+				local foot = Vector3.new(at.X, 0, at.Z)
+				Props.stand(parent, bush, foot, tall, Vector3.new(at.Z % 7 - 3, 0, at.X % 5 - 2))
 			else
 				Props.lump(parent, Vector3.new(4.6, 3, 4.6), top + Vector3.yAxis * 1, LEAF)
 			end

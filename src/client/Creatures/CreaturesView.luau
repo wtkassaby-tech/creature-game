@@ -1,69 +1,35 @@
 --!strict
--- The creatures screen: everything the player owns, who is on the team, eggs in their pens,
--- and three things to do with a creature: put it on or take it off the team, breed it with
--- another, or release it. Also a small bar that is always on screen (coins, Prism Candy, and
--- the button that opens this screen). The server checks and decides every request.
--- TODO(art): a first cut, not yet seen in Studio; creatures are named, not drawn.
+-- The creatures screen, laid out like the party and box of an old handheld creature game: the
+-- team as large cards along the top (empty slots dashed), the stable below as a scrolling grid
+-- of small cards, and a detail panel beside them for the creature tapped (to team / off team,
+-- tonic, breed, release). Header chips show the egg pens and candy. Also a small bar that is
+-- always on screen (coins, Prism Candy, and the button that opens this screen). The server
+-- checks and decides every request; this file only shows and asks.
+-- TODO(art): not yet seen in Studio; sized for a phone held sideways (874 by 402 points).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Breeding = require(ReplicatedStorage.shared.Breeding)
+local BreedStrip = require(script.Parent.BreedStrip)
 local Bus = require(script.Parent.Parent.Net.Bus)
+local CardSet = require(script.Parent.CardSet)
 local ClientState = require(script.Parent.Parent.State.ClientState)
-local DailyTasks = require(ReplicatedStorage.content.DailyTasks)
-local Economy = require(ReplicatedStorage.shared.Economy)
-local Portrait = require(script.Parent.Portrait)
-local Species = require(ReplicatedStorage.content.Species)
+local CreatureCard = require(script.Parent.CreatureCard)
+local DailyRows = require(script.Parent.DailyRows)
+local DetailPanel = require(script.Parent.DetailPanel)
+local FriendsStrip = require(script.Parent.FriendsStrip)
+local HeaderChips = require(script.Parent.HeaderChips)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
 local Tracker = require(ReplicatedStorage.shared.Tracker)
 local TweenService = game:GetService("TweenService")
-local Types = require(ReplicatedStorage.shared.Types)
 
 local CreaturesView = {}
 
--- One small picture in the "Greenwood friends" strip: dark with a "?" until the player owns that
--- species, then in full colour. Each is built once and swapped once, never rebuilt.
-type FriendSlot = { cell: Frame, window: ViewportFrame?, mark: TextLabel, shown: boolean }
-
-local taskGoals: { [string]: string } = {}
-for _, task in DailyTasks do
-	taskGoals[task.id] = task.goal
-end
-
--- The creature record the shared rules expect, rebuilt from what the server sent for display.
--- (Parents are not sent: the server alone checks that two creatures are not close relatives.)
-local function record(view: Snapshot.CreatureView): Types.Creature
-	local function part(p: Snapshot.PartView): Types.Part
-		return { species = p.Species, quality = p.Quality }
-	end
-	return {
-		id = view.Id,
-		bodyPlan = view.BodyPlan,
-		parts = {
-			Head = part(view.Head),
-			Torso = part(view.Torso),
-			FrontLimbs = part(view.FrontLimbs),
-			Legs = part(view.Legs),
-			Tail = part(view.Tail),
-		},
-		size = view.Size,
-		colour = { shown = view.Colour, carried = view.CarriedColour },
-		rarity = view.Rarity,
-		level = view.Level,
-		xp = view.Xp,
-		generation = view.Generation,
-		parents = nil,
-		breedCount = view.BreedCount,
-		breedReadyAt = view.BreedReadyAt,
-		originBiome = view.OriginBiome,
-		isGiant = view.IsGiant,
-		bound = view.Bound,
-		serial = view.Serial,
-		hurt = if view.Hurt > 0 then view.Hurt else nil,
-	}
-end
+local MAX_TEAM = CardSet.MAX_TEAM
+local TOP = 52 -- the header takes this much of the panel
+local GAP = CardSet.GAP
 
 local function clock(seconds: number): string
 	local left = math.max(0, math.floor(seconds))
@@ -86,36 +52,172 @@ function CreaturesView.start(playerGui: Instance)
 	notice.TextStrokeTransparency = 0.3
 
 	local gui = Kit.screen(playerGui, "Creatures", 6)
-	-- What the button does is set further down, once the list can be rebuilt.
+	-- What the button does is set further down, once the screen can be rebuilt.
 	local open = Kit.button(bar, "Creatures", Kit.COLOURS.accent, function() end)
 	open.Size = UDim2.new(0, 116, 1, -8) -- 44 px tall: finger-sized on a phone
 	open.Position = UDim2.new(1, -122, 0, 4)
 
-	local root = Kit.panel(gui, UDim2.fromScale(0.86, 0.84), UDim2.fromScale(0.07, 0.1))
-	local title = Kit.label(root, "", UDim2.new(1, -120, 0, 30), UDim2.fromOffset(14, 8), 24)
+	-- Nearly the whole screen: at 874 by 402 this is 839 by 378 points.
+	local root = Kit.panel(gui, UDim2.fromScale(0.96, 0.94), UDim2.fromScale(0.02, 0.03))
+	local header = HeaderChips.new(root)
 	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
 		gui.Enabled = false
 	end)
 	close.Size = UDim2.fromOffset(96, 44) -- finger-sized on a phone
 	close.Position = UDim2.new(1, -108, 0, 4)
-	local eggs = Kit.label(root, "", UDim2.new(1, -136, 0, 22), UDim2.fromOffset(14, 42), 18)
-	eggs.TextColor3 = Kit.COLOURS.textDim
+
+	-- Left: the team row, the stable, and (while parents are picked) the breeding strip.
+	local left = Instance.new("Frame")
+	left.Size = UDim2.new(0.66, -24, 1, -(TOP + 12))
+	left.Position = UDim2.fromOffset(14, TOP)
+	left.BackgroundTransparency = 1
+	left.Parent = root
+	local teamRow = Instance.new("Frame")
+	teamRow.Size = UDim2.new(1, 0, 0, 104)
+	teamRow.BackgroundTransparency = 1
+	teamRow.Parent = left
+	local across = Instance.new("UIListLayout")
+	across.FillDirection = Enum.FillDirection.Horizontal
+	across.Padding = UDim.new(0, GAP)
+	across.SortOrder = Enum.SortOrder.LayoutOrder
+	across.Parent = teamRow
 
 	local list = Instance.new("ScrollingFrame")
-	list.Size = UDim2.new(1, -28, 1, -184)
-	list.Position = UDim2.fromOffset(14, 70)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = 6
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.CanvasSize = UDim2.new()
-	list.Parent = root
-	Kit.roomForOutlines(list)
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 6)
-	-- Rows are ordered by number: left to itself the list put the daily tasks under the creatures.
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = list
+	list.Parent = left
+	local listPad = Instance.new("UIPadding")
+	listPad.PaddingTop, listPad.PaddingBottom = UDim.new(0, 6), UDim.new(0, 6)
+	listPad.PaddingLeft, listPad.PaddingRight = UDim.new(0, 6), UDim.new(0, 6)
+	listPad.Parent = list
+	local stack = Instance.new("UIListLayout")
+	stack.Padding = UDim.new(0, 6)
+	stack.SortOrder = Enum.SortOrder.LayoutOrder
+	stack.Parent = list
+	local friends = FriendsStrip.new(list, 0)
+	local daily = DailyRows.new(list, 1)
+	local gridHolder = Instance.new("Frame")
+	gridHolder.Size = UDim2.fromScale(1, 0)
+	gridHolder.AutomaticSize = Enum.AutomaticSize.Y
+	gridHolder.BackgroundTransparency = 1
+	gridHolder.LayoutOrder = 2
+	gridHolder.Parent = list
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.fromOffset(CreatureCard.BOX_SIZE.X, CreatureCard.BOX_SIZE.Y)
+	grid.CellPadding = UDim2.fromOffset(6, 6)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.Parent = gridHolder
+
+	-- Screen state.
+	local selected: string? = nil
+	local confirmRelease: string? = nil
+	local breedShown = false
+	local rebuild: () -> ()
+	local selectCreature: (id: string) -> ()
+	local cardSet = CardSet.new(teamRow, gridHolder, function(id: string)
+		selectCreature(id)
+	end)
+
+	local function say(text: string)
+		notice.Text = text
+		task.delay(4, function()
+			if notice.Text == text then
+				notice.Text = ""
+			end
+		end)
+	end
+
+	local breed = BreedStrip.new(left, function()
+		rebuild()
+	end)
+
+	-- Splits the left column between the team row, the stable and the breeding strip, from the
+	-- screen's real size (called when the screen opens and when the screen changes size).
+	local detail: DetailPanel.Detail
+	local function layout()
+		local screenHeight = if gui.AbsoluteSize.Y > 0 then gui.AbsoluteSize.Y else 402
+		local columnHeight = screenHeight * 0.94 - (TOP + 12)
+		local teamHeight = math.clamp(math.floor(columnHeight * 0.34), 104, 230)
+		teamRow.Size = UDim2.new(1, 0, 0, teamHeight)
+		list.Position = UDim2.fromOffset(0, teamHeight + GAP)
+		local below = teamHeight + GAP + (if breedShown then BreedStrip.HEIGHT + GAP else 0)
+		list.Size = UDim2.new(1, 0, 1, -below)
+		detail.setPortraitHeight(math.clamp(math.floor(columnHeight * 0.3), 90, 220))
+	end
+
+	selectCreature = function(id: string)
+		if selected == id then
+			return
+		end
+		selected = id
+		confirmRelease = nil
+		Sfx.play("confirm")
+		cardSet.select(id)
+		local frame = cardSet.frameOf(id)
+		if frame then
+			Kit.pop(frame)
+		end
+		rebuild()
+	end
+
+	-- Everything the panel's buttons ask for. They read the live state when tapped, since the
+	-- buttons are not rebuilt on every update.
+	local handlers: DetailPanel.Handlers = {
+		toggleTeam = function()
+			local state = ClientState.get()
+			local id = selected
+			if not state or not id then
+				return
+			end
+			local ids = table.clone(state.Team)
+			local at = table.find(ids, id)
+			if at then
+				table.remove(ids, at)
+			else
+				table.insert(ids, id)
+			end
+			if #ids >= 1 and #ids <= MAX_TEAM then
+				Net.SetTeam.Fire({ Ids = ids })
+			elseif #ids == 0 then
+				say("Keep at least one creature on your team")
+			end
+		end,
+		treat = function(item: DetailPanel.Treat)
+			local id = selected
+			if id then
+				Net.TreatCreature.Fire({ Item = item, CreatureId = id })
+			end
+		end,
+		toggleParent = function()
+			local id = selected
+			if id then
+				breed.toggle(id)
+			end
+		end,
+		-- Releasing asks twice: the first tap arms the button, the second releases.
+		release = function()
+			local id = selected
+			if not id then
+				return
+			end
+			if confirmRelease == id then
+				confirmRelease = nil
+				Net.ReleaseCreature.Fire({ Id = id })
+			else
+				confirmRelease = id
+				rebuild()
+			end
+		end,
+	}
+	detail = DetailPanel.new(
+		root,
+		UDim2.new(0.34, -14, 1, -(TOP + 12)),
+		UDim2.new(0.66, 0, 0, TOP),
+		handlers
+	)
 
 	-- The Creatures button breathes while something is waiting (an egg that has hatched, or a
 	-- creature that could join a team with room). Opening the screen counts as seeing it: it
@@ -153,190 +255,19 @@ function CreaturesView.start(playerGui: Instance)
 		end
 	end
 
-	-- The "Greenwood friends N of 8" strip, the first row of the list. The list is rebuilt on
-	-- every state change but this row is not: only a species newly owned changes its picture.
-	local strip: Frame? = nil
-	local stripText: TextLabel? = nil
-	local slots: { [string]: FriendSlot } = {}
-	local function buildStrip()
-		local made = Kit.panel(list, UDim2.new(1, -8, 0, 60), UDim2.new(), Kit.COLOURS.panelLight)
-		made.LayoutOrder = 0
-		made.Name = "FriendsStrip"
-		local text = Kit.label(made, "", UDim2.new(0, 190, 1, -8), UDim2.fromOffset(10, 4), 18)
-		text.TextWrapped = true
-		Kit.pixel(text, 16)
-		local cells = Instance.new("Frame")
-		cells.Size = UDim2.new(1, -210, 1, -8)
-		cells.Position = UDim2.fromOffset(200, 4)
-		cells.BackgroundTransparency = 1
-		cells.Parent = made
-		local across = Instance.new("UIListLayout")
-		across.FillDirection = Enum.FillDirection.Horizontal
-		across.Padding = UDim.new(0, 6)
-		across.SortOrder = Enum.SortOrder.LayoutOrder
-		across.Parent = cells
-		for index, species in Tracker.GREENWOOD do
-			local def = Species[species]
-			if not def then
-				continue
-			end
-			local cell = Instance.new("Frame")
-			cell.Size = UDim2.fromOffset(48, 48)
-			cell.BackgroundTransparency = 1
-			cell.LayoutOrder = index
-			cell.Parent = cells
-			local window =
-				Portrait.new(cell, species, def.element, UDim2.fromScale(1, 1), UDim2.new(), true)
-			local mark = Kit.label(cell, "?", UDim2.fromScale(1, 1), UDim2.new(), 24)
-			mark.TextXAlignment = Enum.TextXAlignment.Center
-			Kit.overWorld(mark)
-			mark.ZIndex = 2
-			slots[species] = { cell = cell, window = window, mark = mark, shown = false }
+	-- The treatment that fits a hurt creature: a Rally Root if it has fainted, otherwise a tonic.
+	local function treatFor(view: Snapshot.CreatureView, state: Snapshot.State): DetailPanel.Treat?
+		if view.Hurt <= 0 then
+			return nil
 		end
-		strip, stripText = made, text
-	end
-	local function showStrip(state: Snapshot.State)
-		if not strip then
-			buildStrip()
+		if view.Hurt >= 1 then
+			return if (state.Items.Revive or 0) > 0 then "Revive" else nil
+		elseif (state.Items.Tonic or 0) > 0 then
+			return "Tonic"
+		elseif (state.Items.GreatTonic or 0) > 0 then
+			return "GreatTonic"
 		end
-		local owned: { string } = {}
-		for _, view in state.Creatures do
-			table.insert(owned, view.Torso.Species)
-		end
-		if stripText then
-			stripText.Text =
-				`Greenwood friends {Tracker.countFriends(owned)} of {#Tracker.GREENWOOD}`
-		end
-		for _, species in owned do
-			local slot = slots[species]
-			local def = Species[species]
-			if slot and def and not slot.shown then
-				slot.shown = true
-				if slot.window then
-					slot.window:Destroy()
-				end
-				slot.window = Portrait.new(
-					slot.cell,
-					species,
-					def.element,
-					UDim2.fromScale(1, 1),
-					UDim2.new()
-				)
-				slot.mark.Visible = false
-			end
-		end
-	end
-
-	-- The breeding strip at the bottom: the two chosen parents, what it costs, and the odds.
-	local breed = Kit.panel(
-		root,
-		UDim2.new(1, -28, 0, 100),
-		UDim2.new(0, 14, 1, -108),
-		Kit.COLOURS.panelLight
-	)
-	local breedText = Kit.label(
-		breed,
-		"Pick two creatures to breed",
-		UDim2.new(1, -150, 1, -8),
-		UDim2.fromOffset(10, 4),
-		18
-	)
-	breedText.TextWrapped = true
-	local parents: { string } = {}
-	local breedButton = Kit.button(breed, "Breed", Kit.COLOURS.good, function()
-		if #parents == 2 then
-			Net.RequestBreed.Fire({
-				ParentA = parents[1],
-				ParentB = parents[2],
-				CharmSlot = nil,
-				CharmFavour = nil,
-			})
-		end
-	end)
-	breedButton.Size = UDim2.fromOffset(120, 44)
-	breedButton.Position = UDim2.new(1, -130, 0, 8)
-	local clearButton = Kit.button(breed, "Clear", Kit.COLOURS.panel, function() end)
-	clearButton.Size = UDim2.fromOffset(120, 40)
-	clearButton.Position = UDim2.new(1, -130, 0, 54)
-
-	local confirmRelease: string? = nil
-	local rebuild: () -> ()
-
-	local function say(text: string)
-		notice.Text = text
-		task.delay(4, function()
-			if notice.Text == text then
-				notice.Text = ""
-			end
-		end)
-	end
-
-	local function showBreeding(state: Snapshot.State)
-		local chosen: { Types.Creature } = {}
-		for _, id in parents do
-			for _, view in state.Creatures do
-				if view.Id == id then
-					table.insert(chosen, record(view))
-				end
-			end
-		end
-		breedButton.Visible = #chosen == 2
-		if #chosen == 0 then
-			breedText.Text = "Pick two creatures to breed"
-		elseif #chosen == 1 then
-			breedText.Text = `{chosen[1].parts.Torso.species} and... pick a second creature`
-		else
-			local a, b = chosen[1], chosen[2]
-			local ok, why = Breeding.canBreed(a, b, os.time())
-			if not ok then
-				breedButton.Visible = false
-				breedText.Text = why or "Those two cannot breed"
-				return
-			end
-			local candy: { string } = {}
-			-- Prism Candy covers whatever typed candy is missing (Economy.candyPayment); say so,
-			-- or the cost reads as out of reach when it is not.
-			local fromPrism = 0
-			for _, need in Breeding.candyCost(a, b) do
-				table.insert(candy, `{need.amount} {need.element}`)
-				local have = math.floor((state.Candy :: any)[need.element] or 0)
-				fromPrism += math.max(0, need.amount - have)
-			end
-			if fromPrism > 0 then
-				table.insert(candy, `({fromPrism} paid in Prism)`)
-			end
-			for _, need in Breeding.giantCandyCost(a, b) do
-				local have = state.Items[Economy.giantCandyKey(need.species)] or 0
-				table.insert(candy, `{need.amount} {need.species} Giant Candy (you have {have})`)
-			end
-			local odds: { string } = {}
-			local chances = Breeding.rarityOdds(a, b)
-			for _, rarity in { "Common", "Uncommon", "Gem", "Ruby", "Diamond" } do
-				local chance = (chances :: { [string]: number? })[rarity]
-				if chance and chance > 0 then
-					table.insert(odds, `{rarity} {math.floor(chance * 100 + 0.5)}%`)
-				end
-			end
-			breedText.Text = `{a.parts.Torso.species} + {b.parts.Torso.species}\n`
-				.. `Cost: {Breeding.cost(a, b)} coins, candy: {table.concat(candy, " + ")}\n`
-				.. `Child: {table.concat(odds, ", ")}`
-		end
-	end
-
-	-- The top lines only. The egg timers tick through this, so the list (and the button under
-	-- a finger) is not torn down every second while an egg is in a pen.
-	local function showHeader(state: Snapshot.State)
-		title.Text = `Creatures {#state.Creatures}/{state.StableCapacity}   Team {#state.Team}`
-		local eggLines: { string } = {}
-		for _, egg in state.Eggs do
-			local left = egg.HatchAt - os.time()
-			table.insert(eggLines, if left > 0 then `egg {clock(left)}` else "egg ready")
-		end
-		eggs.Text = `Pens {#state.Eggs}/{state.Pens}: {if #eggLines > 0
-			then table.concat(eggLines, ", ")
-			else "empty"}` .. `   Candy: Leaf {math.floor(state.Candy.Leaf)}, Sand {math.floor(
-			state.Candy.Sand
-		)}, Water {math.floor(state.Candy.Water)}`
+		return nil
 	end
 
 	rebuild = function()
@@ -349,146 +280,41 @@ function CreaturesView.start(playerGui: Instance)
 		if not gui.Enabled then
 			return
 		end
-		showHeader(state)
-		showStrip(state)
+		header.update(state)
+		friends.update(state)
+		daily.update(state.Daily)
+		cardSet.sync(state, breed.has)
 
-		for _, child in list:GetChildren() do
-			if child:IsA("Frame") and child ~= strip then
-				child:Destroy()
-			end
-		end
-		local order = 0
-		-- Today's tasks come first (they appear with the first badge).
-		for _, task in state.Daily do
-			local goal = taskGoals[task.Id] or task.Id
-			local row = Kit.panel(list, UDim2.new(1, -8, 0, 52), UDim2.new(), Kit.COLOURS.panel)
-			order += 1
-			row.LayoutOrder = order
-			local text =
-				`{if task.Hard then "Hard task" else "Daily task"}: {goal}  {task.Progress}/{task.Count}`
-			Kit.label(row, text, UDim2.new(0.74, 0, 1, -8), UDim2.fromOffset(10, 4))
-			if task.Claimed then
-				local done =
-					Kit.label(row, "Claimed", UDim2.new(0.2, 0, 1, -8), UDim2.new(0.78, 0, 0, 4))
-				done.TextColor3 = Kit.COLOURS.textDim
-			elseif task.Progress >= task.Count then
-				local claim = Kit.button(row, "Claim", Kit.COLOURS.good, function()
-					Net.ClaimDailyTask.Fire({ TaskId = task.Id })
-				end)
-				claim.Size = UDim2.new(0.2, 0, 1, -8)
-				claim.Position = UDim2.new(0.78, 0, 0, 4)
-			end
-		end
+		local chosenView: Snapshot.CreatureView? = nil
 		for _, view in state.Creatures do
-			local onTeam = table.find(state.Team, view.Id)
-			local row =
-				Kit.panel(list, UDim2.new(1, -8, 0, 54), UDim2.new(), Kit.COLOURS.panelLight)
-			order += 1
-			row.LayoutOrder = order
-			local health = if view.Hurt >= 1
-				then "fainted"
-				else `{math.floor((1 - view.Hurt) * 100 + 0.5)}% health`
-			local text =
-				`{if onTeam then `[{onTeam}] ` else ""}{view.Torso.Species}  Lv {view.Level}  {view.Rarity}  {health}`
-			local kind = Species[view.Torso.Species]
-			if kind then
-				Portrait.new(
-					row,
-					view.Torso.Species,
-					kind.element,
-					UDim2.fromOffset(52, 52),
-					UDim2.fromOffset(4, 1)
-				)
+			if view.Id == selected then
+				chosenView = view
 			end
-			local name = Kit.label(row, text, UDim2.new(0.4, -52, 1, -8), UDim2.fromOffset(60, 4))
-			if view.Hurt > 0 then
-				name.TextColor3 = Kit.healthColour(1 - view.Hurt)
-				-- Treat with what fits: a Rally Root if it has fainted, otherwise a tonic.
-				local item: ("Tonic" | "GreatTonic" | "Revive")? = nil
-				if view.Hurt >= 1 then
-					item = if (state.Items.Revive or 0) > 0 then "Revive" else nil
-				elseif (state.Items.Tonic or 0) > 0 then
-					item = "Tonic"
-				elseif (state.Items.GreatTonic or 0) > 0 then
-					item = "GreatTonic"
-				end
-				if item then
-					local chosenItem: "Tonic" | "GreatTonic" | "Revive" = item
-					local treat = Kit.button(
-						row,
-						if item == "Revive" then "Rally Root" else "Tonic",
-						Kit.COLOURS.good,
-						function()
-							Net.TreatCreature.Fire({ Item = chosenItem, CreatureId = view.Id })
-						end
-					)
-					treat.Size = UDim2.new(0.1, 0, 1, -10)
-					treat.Position = UDim2.new(0.41, 0, 0, 5)
-				end
-			end
-
-			local team = Kit.button(
-				row,
-				if onTeam then "Off team" else "To team",
-				Kit.COLOURS.accent,
-				function()
-					local ids = table.clone(state.Team)
-					if onTeam then
-						table.remove(ids, onTeam)
-					else
-						table.insert(ids, view.Id)
-					end
-					if #ids >= 1 and #ids <= 6 then
-						Net.SetTeam.Fire({ Ids = ids })
-					end
-				end
-			)
-			team.Size = UDim2.new(0.15, 0, 1, -10)
-			team.Position = UDim2.new(0.52, 0, 0, 5)
-
-			local chosen = table.find(parents, view.Id)
-			local pick = Kit.button(
-				row,
-				if chosen then "Chosen" else "Breed",
-				if chosen then Kit.COLOURS.good else Kit.COLOURS.panel,
-				function()
-					if chosen then
-						table.remove(parents, chosen)
-					elseif #parents < 2 then
-						table.insert(parents, view.Id)
-					end
-					rebuild()
-				end
-			)
-			pick.Size = UDim2.new(0.14, 0, 1, -10)
-			pick.Position = UDim2.new(0.68, 0, 0, 5)
-
-			-- Releasing asks twice: the first tap arms the button, the second releases.
-			local armed = confirmRelease == view.Id
-			local release = Kit.button(
-				row,
-				if armed then "Sure?" else "Release",
-				Kit.COLOURS.bad,
-				function()
-					if armed then
-						confirmRelease = nil
-						Net.ReleaseCreature.Fire({ Id = view.Id })
-					else
-						confirmRelease = view.Id
-						rebuild()
-					end
-				end
-			)
-			release.Size = UDim2.new(0.15, 0, 1, -10)
-			release.Position = UDim2.new(0.83, 0, 0, 5)
 		end
-		showBreeding(state)
+		if not chosenView then
+			selected = nil
+			confirmRelease = nil
+		end
+		cardSet.select(selected)
+		if chosenView then
+			detail.show({
+				view = chosenView,
+				teamPosition = table.find(state.Team, chosenView.Id),
+				treat = treatFor(chosenView, state),
+				chosen = breed.has(chosenView.Id),
+				armed = confirmRelease == chosenView.Id,
+			})
+		else
+			detail.show(nil)
+		end
+
+		local shown = breed.update(state)
+		if shown ~= breedShown then
+			breedShown = shown
+			layout()
+		end
 	end
 
-	clearButton.Activated:Connect(function()
-		parents = {}
-		rebuild()
-	end)
 	-- Open and fill in one step: as two separate handlers the list was filled before the screen
 	-- opened, so it came up empty (first Studio run).
 	open.Activated:Connect(function()
@@ -496,15 +322,21 @@ function CreaturesView.start(playerGui: Instance)
 		confirmRelease = nil
 		seenKey = lastKey -- looked at: the button settles until something new is waiting
 		updatePulse()
+		if gui.Enabled then
+			layout()
+			Kit.pop(root)
+		end
 		rebuild()
 	end)
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
+	layout()
 
 	ClientState.onChanged(function()
 		rebuild()
 	end)
 	Bus.listen(Net.BreedResult, function(value)
 		if value.Ok then
-			parents = {}
+			breed.clear()
 			say(`An egg! It hatches in {clock(value.HatchAt - os.time())}`)
 		else
 			say(value.Reason)
@@ -536,7 +368,7 @@ function CreaturesView.start(playerGui: Instance)
 			if gui.Enabled then
 				local state = ClientState.get()
 				if state and #state.Eggs > 0 then
-					showHeader(state)
+					header.update(state)
 				end
 			end
 		end

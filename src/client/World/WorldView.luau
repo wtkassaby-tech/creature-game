@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Storyline = require(ReplicatedStorage.content.Storyline)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local Kit = require(script.Parent.Parent.UI.Kit)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
@@ -95,20 +96,38 @@ local function draw(parent: Instance, wild: Wild): BasePart
 	local ground = Vector3.new(wild.X, groundHeight(wild.X, wild.Z), wild.Z)
 	toy.place(CFrame.new(ground) * CFrame.Angles(0, math.rad((wild.Id * 73) % 360), 0))
 
+	-- A small cream name plate, sized in studs so it shrinks with distance, and not drawn at
+	-- all from far off. Its edge is the rarity's colour (ink for a Common).
+	local words = `Lv {wild.Level} {wild.Torso}`
 	local board = Instance.new("BillboardGui")
-	board.Size = UDim2.fromOffset(180, 34)
-	board.StudsOffsetWorldSpace = Vector3.new(0, size / 2 + 2, 0)
-	board.MaxDistance = 120
+	board.Size = UDim2.fromScale(math.clamp(#words * 0.5 + 1.4, 5, 12), 1.5)
+	board.StudsOffsetWorldSpace = Vector3.new(0, size / 2 + 2.2, 0)
+	board.MaxDistance = 60
+	board.LightInfluence = 0
 	board.Parent = ball
+	local plate = Instance.new("Frame")
+	plate.Size = UDim2.fromScale(1, 1)
+	plate.BackgroundColor3 = Kit.COLOURS.panel
+	plate.BorderSizePixel = 0
+	plate.Parent = board
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.3, 0)
+	corner.Parent = plate
+	local rim = Instance.new("UIStroke")
+	rim.Thickness = 2
+	rim.Color = if wild.Rarity == "Common" or not RARITY_COLOURS[wild.Rarity]
+		then Kit.COLOURS.outline
+		else RARITY_COLOURS[wild.Rarity]
+	rim.Parent = plate
 	local text = Instance.new("TextLabel")
-	text.Size = UDim2.fromScale(1, 1)
+	text.Size = UDim2.fromScale(0.9, 0.72)
+	text.Position = UDim2.fromScale(0.05, 0.14)
 	text.BackgroundTransparency = 1
-	text.Text = `Lv {wild.Level} {wild.Torso}`
-	text.TextColor3 = RARITY_COLOURS[wild.Rarity] or RARITY_COLOURS.Common -- rarity, by colour
-	text.TextStrokeTransparency = 0.3
-	text.Font = Enum.Font.GothamBold
+	text.Text = words
+	text.TextColor3 = Kit.COLOURS.text
+	text.Font = Kit.FONT
 	text.TextScaled = true
-	text.Parent = board
+	text.Parent = plate
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Battle"

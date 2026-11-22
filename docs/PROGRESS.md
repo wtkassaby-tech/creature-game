@@ -36,14 +36,23 @@ What changed, and what Ayrton should do or look at next. Newest first.
 - **The starter pick can no longer appear a second time** once a friend has been chosen.
 - **Where a catch goes:** the card now says "Waiting in Creatures. Open it to add your new friend to the team." The server puts a catch on the team only when the team is empty; see the question below.
 
-**Still wrong:**
-- Beyond the gatehouse you can see Dust Canyon's town across open grass. It needs a wall of trees or a rise behind the gate.
-- The town and route hedges are box-shaped under their row of bushes.
-- With the Leaf starter the first battle is still close: picking the weakest move ends it with almost no health left (it cannot be lost).
-- The lasso bar is a plain black strip, and the Creatures screen is still a list of rows. Both are next.
-- Dust Canyon, Tide Flats and the Mire still use the old generated layout.
+**Third pass, the same day (seen in Studio):**
+- **The Creatures screen is cards, not rows.** A team row of large cards (picture on its type's colour, name, level, type tag, health bar) with dashed empty slots; the stable as a grid of smaller cards below; tap a card and a panel on the right shows it large with its line of character and its actions (To team or Off team, Tonic, Breed, Release). Pens and candy are small chips in the header. Everything the old screen did is still there (`src/client/Creatures/`, eight small modules).
+- **Dialogue shows who is speaking:** a name tab on the top edge of the box and, for the mentor, the rival, the shopkeeper and signs, their face in a frame (`src/client/Story/SpeakerFace.luau`). Other speakers have the tab only, until each has a face of their own.
+- **The lasso throw is a rope:** a tan rope with a green stretch and a ring that slides along it and swells over the green. Each tap leaves a mark where it fell. It sits along the bottom of the screen so both creatures stay in view.
+- **Hedges are rows of tall flowering bushes** standing shoulder to shoulder (they were green boxes with bushes on top), using a fifth fewer models.
+- **A wall of tall trees stands behind the gatehouse,** so the next land cannot be seen until the road opens.
+- **Names in the world are small cream plates** that shrink with distance and are not drawn from far off (they were white letters floating at one size, piling up on screen).
+- **Every species has a painted model now:** the last two Tide Flats creatures, all eight Mire creatures, and the giants Mesalith, Carrackon and Sloughback.
+- **Phone-sized check (874 by 402):** the opening, the starter pick and a battle all fit and read well.
 
-**Not checked:** the "Day one" card; the phone-sized view of any of this; walking times; frame rate with about 1,000 hedge bushes and 300 trees.
+**Still wrong:**
+- With the Leaf starter the first battle is still close: picking the weakest move ends it with almost no health left (it cannot be lost).
+- Dust Canyon, Tide Flats and the Mire still use the old generated layout. Their maps are being designed now (`docs/plans/09` and `10`).
+- Only four speakers have faces.
+- Moatkeep's model reads as a sandcastle more than a creature, and Fenwhisk carries a flag for a tail. Both may want another try.
+
+**Not checked:** the "Day one" card; the catch card, the lasso and the Creatures screen at phone size (the Creatures screen has not been seen with a full team or a full stable); walking times; frame rate with about 800 hedge bushes and 300 trees.
 
 **Waiting for Ayrton (nothing is built until a yes):**
 1. **Move the first catch earlier** (plan 07, package 6): tame a creature before the first tamer, not after. It changes the story order.

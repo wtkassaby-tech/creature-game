@@ -203,6 +203,22 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	},
 
 	trees = {
+		-- A wall of tall trees behind the gatehouse, either side of the sealed road, so the next
+		-- land cannot be seen until the road is opened.
+		tree(718, -172, "Pine", 2.2),
+		tree(722, -150, "Tree", 2),
+		tree(716, -128, "Pine", 2.4),
+		tree(724, -108, "Tree", 2.1),
+		tree(718, -52, "Tree", 2.1),
+		tree(724, -32, "Pine", 2.4),
+		tree(716, -10, "Tree", 2),
+		tree(722, 12, "Pine", 2.2),
+		tree(738, -162, "Tree", 2.3),
+		tree(742, -138, "Pine", 2.5),
+		tree(738, -112, "Tree", 2.2),
+		tree(742, -48, "Pine", 2.5),
+		tree(738, -22, "Tree", 2.3),
+		tree(742, 4, "Pine", 2.2),
 		-- The orchard behind the mentor's cottage.
 		tree(-24, -112),
 		tree(0, -118),

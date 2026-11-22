@@ -40,22 +40,41 @@ local function block(
 	return part
 end
 
+-- A name plate over a thing in the world: a small cream board with ink letters, like the
+-- screens. It is sized in studs, so it shrinks with distance like a real sign and far-off
+-- names do not pile up on screen; past its distance it is not drawn at all.
 local function label(part: BasePart, text: string)
+	-- A building gets a larger plate, read from further off; a person or a post a small one.
+	local big = part.Size.Y > 12 and math.max(part.Size.X, part.Size.Z) > 8
+	local tall = if big then 3 else 1.7
 	local board = Instance.new("BillboardGui")
-	board.Size = UDim2.fromOffset(220, 40)
-	board.StudsOffsetWorldSpace = Vector3.new(0, part.Size.Y / 2 + 3, 0)
+	board.Size = UDim2.fromScale(math.clamp(#text * tall * 0.36 + tall, tall * 3, tall * 9), tall)
+	board.StudsOffsetWorldSpace = Vector3.new(0, part.Size.Y / 2 + tall / 2 + 1.2, 0)
 	board.AlwaysOnTop = false
-	board.MaxDistance = 220
+	board.MaxDistance = if big then 150 else 75
+	board.LightInfluence = 0
 	board.Parent = part
+	local plate = Instance.new("Frame")
+	plate.Size = UDim2.fromScale(1, 1)
+	plate.BackgroundColor3 = Color3.fromRGB(250, 243, 222)
+	plate.BorderSizePixel = 0
+	plate.Parent = board
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.3, 0)
+	corner.Parent = plate
+	local edge = Instance.new("UIStroke")
+	edge.Color = Color3.fromRGB(46, 42, 56)
+	edge.Thickness = 2
+	edge.Parent = plate
 	local text_ = Instance.new("TextLabel")
-	text_.Size = UDim2.fromScale(1, 1)
+	text_.Size = UDim2.fromScale(0.9, 0.72)
+	text_.Position = UDim2.fromScale(0.05, 0.14)
 	text_.BackgroundTransparency = 1
 	text_.Text = text
-	text_.TextColor3 = Color3.new(1, 1, 1)
-	text_.TextStrokeTransparency = 0.3
-	text_.Font = Enum.Font.GothamBold
+	text_.TextColor3 = Color3.fromRGB(46, 42, 56)
+	text_.Font = Enum.Font.SourceSansBold
 	text_.TextScaled = true
-	text_.Parent = board
+	text_.Parent = plate
 end
 
 local function prompt(
