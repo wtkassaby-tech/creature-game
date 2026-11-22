@@ -93,6 +93,21 @@ function Battle.bestMoves(creature: Types.Creature, level: number?): { string }
 	for index = 1, math.min(BattleConfig.MAX_MOVES, #pool) do
 		chosen[index] = pool[index]
 	end
+	-- A poisoning move hits softer than the plain moves beside it, so power alone would drop it.
+	-- The default four keep the best poisoning move the creature knows, in place of its weakest
+	-- plain move, so breeding for poison is a real choice. Players can still pick their own four.
+	local hasPoison = false
+	for _, name in chosen do
+		hasPoison = hasPoison or Moves[name].effect == "Poison"
+	end
+	if not hasPoison and #chosen == BattleConfig.MAX_MOVES then
+		for index = #chosen + 1, #pool do
+			if Moves[pool[index]].effect == "Poison" then
+				chosen[#chosen] = pool[index]
+				break
+			end
+		end
+	end
 	return chosen
 end
 

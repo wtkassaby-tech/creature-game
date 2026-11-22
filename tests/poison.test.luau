@@ -83,6 +83,25 @@ do
 	)
 end
 
+print("\n== The default four keep a poisoning move ==")
+do
+	-- Keelsnap's tail brings a weak poisoning sting; at level 45 it knows stronger plain moves.
+	local creature = Breeding.wild("Keelsnap", "keelsnap", 45, "Common", "Moss", Rng.new(3))
+	local four = Battle.bestMoves(creature, 45)
+	local poisoning = 0
+	for _, name in four do
+		if Moves[name].effect == "Poison" then
+			poisoning += 1
+		end
+	end
+	check(
+		"a creature that knows a poisoning move keeps exactly one",
+		poisoning == 1,
+		table.concat(four, ", ")
+	)
+	check("it still has four moves", #four == BattleConfig.MAX_MOVES, `{#four}`)
+end
+
 print("\n== A poisoned creature ==")
 do
 	local a = fighter("Mossmitt", "a", 20, { "Test Venom", "Test Tap" })
