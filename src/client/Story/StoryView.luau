@@ -109,8 +109,8 @@ function StoryView.start(playerGui: Instance)
 		Kit.label(pickBox, "Pick a friend", UDim2.new(1, -28, 0, 36), UDim2.fromOffset(14, 10), 28)
 	pickTitle.TextXAlignment = Enum.TextXAlignment.Center
 	local choices = Instance.new("Frame")
-	choices.Size = UDim2.new(1, -28, 1, -70)
-	choices.Position = UDim2.fromOffset(14, 56)
+	choices.Size = UDim2.new(1, -28, 1, -96)
+	choices.Position = UDim2.fromOffset(14, 82)
 	choices.BackgroundTransparency = 1
 	choices.Parent = pickBox
 	local grid = Instance.new("UIGridLayout")
@@ -119,6 +119,23 @@ function StoryView.start(playerGui: Instance)
 	grid.Parent = choices
 	local startBeat = Storyline.beats[1]
 	local startGifts: { WorldTypes.Reward } = if startBeat then startBeat.grants else {}
+	-- The first beat's line is said on the pick screen itself. As a dialogue line it only arrived
+	-- once the beat was done, so "Pick the one that feels right" showed after the pick.
+	local startLine = if startBeat then startBeat.lines[1] else nil
+	local pickSaid = Kit.label(
+		pickBox,
+		if startLine then `{startLine.speaker}: {startLine.text}` else "",
+		UDim2.new(1, -28, 0, 30),
+		UDim2.fromOffset(14, 46),
+		18
+	)
+	pickSaid.TextXAlignment = Enum.TextXAlignment.Center
+	pickSaid.TextColor3 = Kit.COLOURS.textDim
+	pickSaid.TextScaled = true
+	local pickSaidLimit = Instance.new("UITextSizeConstraint")
+	pickSaidLimit.MaxTextSize = 18
+	pickSaidLimit.MinTextSize = 10
+	pickSaidLimit.Parent = pickSaid
 	for _, reward in startGifts do
 		if reward.kind == "Starter" then
 			for _, species in reward.choices do
@@ -162,7 +179,8 @@ function StoryView.start(playerGui: Instance)
 
 	Bus.listen(Net.BeatCompleted, function(value)
 		for _, beat in Storyline.beats do
-			if beat.id == value.BeatId then
+			-- The first beat's line was already said on the pick screen.
+			if beat.id == value.BeatId and beat ~= startBeat then
 				for _, said in beat.lines do
 					table.insert(queue, { speaker = said.speaker, text = said.text })
 				end

@@ -162,6 +162,19 @@ function ShopView.start(playerGui: Instance): View
 			else value.Reason
 	end)
 
+	-- Talking to the shopkeeper can also start her story lines. The shop waits behind them
+	-- (the two panels overlapped in the longer Studio run) and shows when the last line is read.
+	task.spawn(function()
+		local dialogue = playerGui:WaitForChild("Dialogue")
+		if not dialogue:IsA("ScreenGui") then
+			return
+		end
+		local function fit()
+			root.Visible = not dialogue.Enabled
+		end
+		dialogue:GetPropertyChangedSignal("Enabled"):Connect(fit)
+		fit()
+	end)
 	-- The shop sits above the battle screens, and a player can walk off with it open: a fight
 	-- that starts (long grass, a giant) must not begin hidden underneath it.
 	Bus.listen(Net.BattleStarted, function()

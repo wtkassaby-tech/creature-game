@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local MovementLock = require(script.Parent.Parent.UI.MovementLock)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local LassoView = require(script.Parent.Parent.Lasso.LassoView)
 local Net = require(ReplicatedStorage.net.generated.Client)
@@ -31,6 +32,7 @@ local MAX_LOG_LINES = 3
 
 function GiantView.start(playerGui: Instance)
 	local gui = Kit.screen(playerGui, "Giant", 11)
+	MovementLock.whileOpen(gui) -- no walking off in the middle of a giant fight
 	local model: Model? = nil
 	local offered = false -- a capture attempt is on offer and not yet thrown
 

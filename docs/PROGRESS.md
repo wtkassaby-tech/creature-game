@@ -43,6 +43,16 @@ What changed, and what Ayrton should do or look at next. Newest first.
 - The breed strip says "candy: 2 Leaf" and does not say Prism covers a shortfall.
 - A giant fight does not stop the player walking away (a normal battle does).
 
+**Later the same day, four of those six were fixed** (Ayrton: "Keep going"), checked in Studio, and the full check passes:
+- The mentor's welcome line is now on the pick screen itself, not said after the pick (`StoryView.luau`).
+- The shop waits behind Tuppence's story lines and shows when the last one is read (`ShopView.luau`).
+- The breed strip says how much of the candy will be paid in Prism (`CreaturesView.luau`).
+- A giant fight stops the player walking away, through one shared lock (`src/client/UI/MovementLock.luau`, used by the battle screen too).
+
+Left alone on purpose: the giant's difficulty (Ayrton decided on 22 November that giants stay strict) and XP building up at the level cap (it is the written rule in `src/shared/Xp.luau`, with tests: nothing is lost at the cap).
+
+**Research:** three agents studied successful games of this kind. Their reports are in `docs/research/games/` (structure, art style, menus), with a one-page summary in `00_REPORT.md`. Nothing in them is decided.
+
 **To playtest:** as below, with the newest fixes. On a phone, check that every button is easy to hit.
 
 ## 22 November 2026 (the first run in Roblox Studio)

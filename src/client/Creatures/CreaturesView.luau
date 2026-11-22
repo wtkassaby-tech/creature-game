@@ -174,8 +174,16 @@ function CreaturesView.start(playerGui: Instance)
 				return
 			end
 			local candy: { string } = {}
+			-- Prism Candy covers whatever typed candy is missing (Economy.candyPayment); say so,
+			-- or the cost reads as out of reach when it is not.
+			local fromPrism = 0
 			for _, need in Breeding.candyCost(a, b) do
 				table.insert(candy, `{need.amount} {need.element}`)
+				local have = math.floor((state.Candy :: any)[need.element] or 0)
+				fromPrism += math.max(0, need.amount - have)
+			end
+			if fromPrism > 0 then
+				table.insert(candy, `({fromPrism} paid in Prism)`)
 			end
 			for _, need in Breeding.giantCandyCost(a, b) do
 				local have = state.Items[Economy.giantCandyKey(need.species)] or 0

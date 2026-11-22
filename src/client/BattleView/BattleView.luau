@@ -5,10 +5,10 @@
 -- TODO(art): creatures are named, not drawn, until the part meshes exist. Not yet seen in Studio.
 -- A little over 400 lines: it is one screen, kept whole so its layout reads top to bottom.
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local MovementLock = require(script.Parent.Parent.UI.MovementLock)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local LassoView = require(script.Parent.Parent.Lasso.LassoView)
 local Bus = require(script.Parent.Parent.Net.Bus)
@@ -47,22 +47,8 @@ local OUTCOME_TEXT: { [number]: string } =
 function BattleView.start(playerGui: Instance)
 	local gui = Kit.screen(playerGui, "Battle", 10)
 	-- No walking during a battle: in the first Studio run a long-grass battle followed the
-	-- player all the way back to town. PlayerModule is Roblox's own movement controller.
-	task.spawn(function()
-		local player = Players.LocalPlayer
-		local module = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 10)
-		if not module or not module:IsA("ModuleScript") then
-			return
-		end
-		local controls = (require :: any)(module):GetControls()
-		gui:GetPropertyChangedSignal("Enabled"):Connect(function()
-			if gui.Enabled then
-				controls:Disable()
-			else
-				controls:Enable()
-			end
-		end)
-	end)
+	-- player all the way back to town.
+	MovementLock.whileOpen(gui)
 	local model: Model? = nil
 
 	-- The two creature cards.

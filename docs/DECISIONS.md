@@ -123,5 +123,5 @@ Only Ayrton can decide these:
 - Radiant fusion: Ayrton unsure; not adopted.
 - Names: the game, the rival, the mentor, the entity, the player's title, biome 9, the first gem tier ("Amber"), Breeding Candy. Decided later.
 - Style references for biome 9.
-- **From the longer Studio run (22 Nov), to judge:** the Greenwood giant is very tight at the level cap (lost with 75 of 1,150 health left, won with 2 health left); XP builds up at the level cap and pays out when the badge lifts it; the mentor's welcome line shows after the starter is picked; Tuppence's story lines open over the shop; the breed strip does not say Prism covers a candy shortfall; a giant fight does not stop the player walking away.
+- **From the longer Studio run (22 Nov), to judge:** the Greenwood giant is very tight at the level cap (lost with 75 of 1,150 health left, won with 2 health left); giants were kept strict on 22 November, so nothing was changed. XP builds up at the level cap and pays out when the badge lifts it (the written rule in `Xp.luau`). The other four items from that run are fixed.
 - **Still to test after the first publish:** the five off-switches (ConfigService does not load in an unpublished place), saving, and play on a real phone.
