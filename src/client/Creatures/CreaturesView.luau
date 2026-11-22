@@ -17,9 +17,15 @@ local Species = require(ReplicatedStorage.content.Species)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
+local Tracker = require(ReplicatedStorage.shared.Tracker)
+local TweenService = game:GetService("TweenService")
 local Types = require(ReplicatedStorage.shared.Types)
 
 local CreaturesView = {}
+
+-- One small picture in the "Greenwood friends" strip: dark with a "?" until the player owns that
+-- species, then in full colour. Each is built once and swapped once, never rebuilt.
+type FriendSlot = { cell: Frame, window: ViewportFrame?, mark: TextLabel, shown: boolean }
 
 local taskGoals: { [string]: string } = {}
 for _, task in DailyTasks do
@@ -110,6 +116,116 @@ function CreaturesView.start(playerGui: Instance)
 	-- Rows are ordered by number: left to itself the list put the daily tasks under the creatures.
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
+
+	-- The Creatures button breathes while something is waiting (an egg that has hatched, or a
+	-- creature that could join a team with room). Opening the screen counts as seeing it: it
+	-- pulses again only when something new is waiting.
+	local pulse: Tween? = nil
+	local seenKey: string? = nil
+	local lastKey = ""
+	local openColour = open.BackgroundColor3
+	local function updatePulse()
+		local state = ClientState.get()
+		if not state then
+			return
+		end
+		local hatchTimes: { number } = {}
+		for _, egg in state.Eggs do
+			table.insert(hatchTimes, egg.HatchAt)
+		end
+		local waiting, key = Tracker.waiting(hatchTimes, os.time(), #state.Creatures, #state.Team)
+		lastKey = key
+		local wanted = waiting and not gui.Enabled and key ~= seenKey
+		if wanted and not pulse then
+			local slow =
+				TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+			local made = TweenService:Create(
+				open,
+				slow,
+				{ BackgroundColor3 = Color3.fromRGB(150, 188, 250) }
+			)
+			made:Play()
+			pulse = made
+		elseif not wanted and pulse then
+			pulse:Cancel()
+			pulse = nil
+			open.BackgroundColor3 = openColour
+		end
+	end
+
+	-- The "Greenwood friends N of 8" strip, the first row of the list. The list is rebuilt on
+	-- every state change but this row is not: only a species newly owned changes its picture.
+	local strip: Frame? = nil
+	local stripText: TextLabel? = nil
+	local slots: { [string]: FriendSlot } = {}
+	local function buildStrip()
+		local made = Kit.panel(list, UDim2.new(1, -8, 0, 60), UDim2.new(), Kit.COLOURS.panelLight)
+		made.LayoutOrder = 0
+		made.Name = "FriendsStrip"
+		local text = Kit.label(made, "", UDim2.new(0, 190, 1, -8), UDim2.fromOffset(10, 4), 18)
+		text.TextWrapped = true
+		Kit.pixel(text, 16)
+		local cells = Instance.new("Frame")
+		cells.Size = UDim2.new(1, -210, 1, -8)
+		cells.Position = UDim2.fromOffset(200, 4)
+		cells.BackgroundTransparency = 1
+		cells.Parent = made
+		local across = Instance.new("UIListLayout")
+		across.FillDirection = Enum.FillDirection.Horizontal
+		across.Padding = UDim.new(0, 6)
+		across.SortOrder = Enum.SortOrder.LayoutOrder
+		across.Parent = cells
+		for index, species in Tracker.GREENWOOD do
+			local def = Species[species]
+			if not def then
+				continue
+			end
+			local cell = Instance.new("Frame")
+			cell.Size = UDim2.fromOffset(48, 48)
+			cell.BackgroundTransparency = 1
+			cell.LayoutOrder = index
+			cell.Parent = cells
+			local window =
+				Portrait.new(cell, species, def.element, UDim2.fromScale(1, 1), UDim2.new(), true)
+			local mark = Kit.label(cell, "?", UDim2.fromScale(1, 1), UDim2.new(), 24)
+			mark.TextXAlignment = Enum.TextXAlignment.Center
+			Kit.overWorld(mark)
+			mark.ZIndex = 2
+			slots[species] = { cell = cell, window = window, mark = mark, shown = false }
+		end
+		strip, stripText = made, text
+	end
+	local function showStrip(state: Snapshot.State)
+		if not strip then
+			buildStrip()
+		end
+		local owned: { string } = {}
+		for _, view in state.Creatures do
+			table.insert(owned, view.Torso.Species)
+		end
+		if stripText then
+			stripText.Text =
+				`Greenwood friends {Tracker.countFriends(owned)} of {#Tracker.GREENWOOD}`
+		end
+		for _, species in owned do
+			local slot = slots[species]
+			local def = Species[species]
+			if slot and def and not slot.shown then
+				slot.shown = true
+				if slot.window then
+					slot.window:Destroy()
+				end
+				slot.window = Portrait.new(
+					slot.cell,
+					species,
+					def.element,
+					UDim2.fromScale(1, 1),
+					UDim2.new()
+				)
+				slot.mark.Visible = false
+			end
+		end
+	end
 
 	-- The breeding strip at the bottom: the two chosen parents, what it costs, and the odds.
 	local breed = Kit.panel(
@@ -229,13 +345,15 @@ function CreaturesView.start(playerGui: Instance)
 			return
 		end
 		wallet.Text = `{state.Coins} coins   {math.floor(state.Candy.Prism)} Prism`
+		updatePulse()
 		if not gui.Enabled then
 			return
 		end
 		showHeader(state)
+		showStrip(state)
 
 		for _, child in list:GetChildren() do
-			if child:IsA("Frame") then
+			if child:IsA("Frame") and child ~= strip then
 				child:Destroy()
 			end
 		end
@@ -376,6 +494,8 @@ function CreaturesView.start(playerGui: Instance)
 	open.Activated:Connect(function()
 		gui.Enabled = not gui.Enabled
 		confirmRelease = nil
+		seenKey = lastKey -- looked at: the button settles until something new is waiting
+		updatePulse()
 		rebuild()
 	end)
 
@@ -412,6 +532,7 @@ function CreaturesView.start(playerGui: Instance)
 	task.spawn(function()
 		while true do
 			task.wait(1)
+			updatePulse() -- an egg can pass its hatch time with no new state from the server
 			if gui.Enabled then
 				local state = ClientState.get()
 				if state and #state.Eggs > 0 then

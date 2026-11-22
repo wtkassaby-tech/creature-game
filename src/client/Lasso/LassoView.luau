@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Coach = require(ReplicatedStorage.shared.Coach)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoPlayer = require(script.Parent.LassoPlayer)
@@ -19,10 +20,19 @@ export type View = { begin: (wire: LassoPlayer.Wire) -> (), finish: () -> () }
 function LassoView.new(parent: Instance): View
 	local root = Kit.panel(parent, UDim2.new(0.8, 0, 0, 150), UDim2.fromScale(0.1, 0.32))
 	root.Visible = false
-	local title = Kit.label(root, "", UDim2.new(1, -24, 0, 30), UDim2.fromOffset(12, 8))
+	local title = Kit.label(root, "", UDim2.new(1, -24, 0, 28), UDim2.fromOffset(12, 5))
+	-- A hint that is true of every throw, set small under the title: weaker creatures leave more green.
+	local note = Kit.label(
+		root,
+		Coach.LINES.wideGreen,
+		UDim2.new(1, -24, 0, 16),
+		UDim2.fromOffset(12, 33),
+		14
+	)
+	note.TextColor3 = Kit.COLOURS.textDim
 	local bar = Instance.new("Frame")
-	bar.Size = UDim2.new(1, -24, 0, 30)
-	bar.Position = UDim2.fromOffset(12, 44)
+	bar.Size = UDim2.new(1, -24, 0, 26)
+	bar.Position = UDim2.fromOffset(12, 56)
 	bar.BackgroundColor3 = Color3.fromRGB(20, 26, 30)
 	bar.BorderSizePixel = 0
 	bar.Parent = root
@@ -48,8 +58,8 @@ function LassoView.new(parent: Instance): View
 		end
 	end
 	local button = Kit.button(root, "THROW!", Kit.COLOURS.lasso, tap)
-	button.Size = UDim2.new(1, -24, 0, 54)
-	button.Position = UDim2.fromOffset(12, 86)
+	button.Size = UDim2.new(1, -24, 0, 50)
+	button.Position = UDim2.fromOffset(12, 92)
 
 	RunService.RenderStepped:Connect(function()
 		local current = playing

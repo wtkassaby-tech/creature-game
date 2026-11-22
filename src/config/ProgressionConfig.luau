@@ -17,12 +17,14 @@ local ProgressionConfig = {}
 
 -- Level curve: XP to go from level L to L + 1 is floor(CURVE_BASE x L ^ CURVE_EXPONENT).
 -- A wild win at the same level pays REWARD_FLAT + REWARD_PER_LEVEL x L, so with an exponent just
--- above 1 the number of wild battles a level takes stays almost flat: about 2 at level 10, 3 at
--- level 30 and 4 at level 100. Levels are held back by the badge cap, not by the grind: the
--- robot players in tests/playthrough.test need about 30 wild battles a badge on top of the
--- story's own battles. (The first curve, 14 and 1.6, needed 90, 140 and 290.)
+-- above 1 the number of wild battles a level takes stays almost flat: about 2 at level 10, under
+-- 3 at level 30 and just over 3 at level 100. Levels are held back by the badge cap, not by the
+-- grind: the robot players in tests/playthrough.test need about 30 to 50 wild battles a badge on
+-- top of the story's own battles. (The first curve, 14 and 1.6, needed 90, 140 and 290. The
+-- second, 10 and 1.2, sat at 58 to 67 for the third badge, right on the limit of 60, and grind is
+-- the complaint players of this kind of game make most: docs/research/games/08.)
 ProgressionConfig.CURVE_BASE = 10
-ProgressionConfig.CURVE_EXPONENT = 1.2
+ProgressionConfig.CURVE_EXPONENT = 1.15
 ProgressionConfig.MAX_LEVEL = 100
 
 -- Level cap: CAP_BASE with no badge, then CAP_STEP more for each badge held.

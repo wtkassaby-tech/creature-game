@@ -1,27 +1,31 @@
 --!strict
--- The story on screen: the starter pick at the very start, a dialogue box that plays each
--- finished beat's lines and names its gifts, and a small tracker that says what to do next
--- (the next story step and any quests in hand). The server decides everything; this screen
--- only shows it, and sends the starter the player picked.
--- TODO(art): first cut, not yet seen in Studio. Portraits and creature pictures come later.
+-- The story on screen: the opening (a title card, the mentor's words, then the starter pick), a
+-- dialogue box that plays each finished beat's lines and names its gifts, a "Day one" card after
+-- the first quest opens, and a small tracker that says what is waiting (the next story step, an
+-- egg, quests in hand, Greenwood friends). The server decides everything; this screen only
+-- shows it, and the pick itself is sent by StarterPick.
+-- TODO(art): first cut, not yet seen in Studio.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
-local Portrait = require(script.Parent.Parent.Creatures.Portrait)
-local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
-local Species = require(ReplicatedStorage.content.Species)
+local StarterPick = require(script.Parent.StarterPick)
+local TitleCard = require(script.Parent.TitleCard)
 local Storyline = require(ReplicatedStorage.content.Storyline)
+local Tracker = require(ReplicatedStorage.shared.Tracker)
 local World = require(ReplicatedStorage.shared.World)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local StoryView = {}
+
+local DAY_ONE_BEAT = "first_quest"
 
 -- A short hint for what the story is waiting for, from the next beat's trigger.
 local function hint(beat: WorldTypes.Beat): string
@@ -48,15 +52,52 @@ local GIFT_TEXT: { [string]: string } = {
 	Creature = "A new creature",
 }
 
+-- Everything the tracker and the Day one card read from the player's state.
+local function summarise(state: Snapshot.State, now: number): Tracker.Input
+	local flags: { [string]: boolean } = {}
+	for _, flag in state.Flags do
+		flags[flag] = true
+	end
+	local beat = World.nextBeat(Storyline, flags)
+	local quests: { Tracker.QuestLine } = {}
+	for id, progress in state.QuestsActive do
+		local quest = Quests[id]
+		if quest then
+			table.insert(quests, {
+				goal = quest.goal,
+				progress = progress,
+				needed = QuestProgress.needed(quest),
+				giver = quest.giver.name,
+			})
+		end
+	end
+	local eggs: { number } = {}
+	for _, egg in state.Eggs do
+		table.insert(eggs, egg.HatchAt)
+	end
+	local owned: { string } = {}
+	for _, view in state.Creatures do
+		table.insert(owned, view.Torso.Species)
+	end
+	return {
+		hint = if beat then hint(beat) else nil,
+		quests = quests,
+		eggs = eggs,
+		now = now,
+		friends = Tracker.countFriends(owned),
+	}
+end
+
 function StoryView.start(playerGui: Instance)
-	-- The tracker: always on, top-left.
+	-- The tracker: always on, top-left, clear of the bar at the top right.
 	local hud = Kit.screen(playerGui, "Tracker", 3)
 	hud.Enabled = true
-	local tracker = Kit.panel(hud, UDim2.fromOffset(300, 86), UDim2.fromOffset(10, 10))
+	local tracker = Kit.panel(hud, UDim2.fromOffset(330, 106), UDim2.fromOffset(10, 10))
 	tracker.BackgroundTransparency = 0.2
 	local trackerText = Kit.label(tracker, "", UDim2.new(1, -16, 1, -8), UDim2.fromOffset(8, 4), 16)
 	trackerText.TextWrapped = true
 	trackerText.TextYAlignment = Enum.TextYAlignment.Top
+	local opening = false -- the title and the mentor's words keep the tracker hidden
 
 	-- The dialogue box: bottom of the screen, one line at a time.
 	local gui = Kit.screen(playerGui, "Dialogue", 20)
@@ -69,6 +110,8 @@ function StoryView.start(playerGui: Instance)
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	Kit.pixel(line, 20)
 	local queue: { { speaker: string, text: string } } = {}
+	-- Things to do once the queue has been read to its end (the pick screen, the Day one card).
+	local afterQueue: { () -> () } = {}
 	-- Lines are typed out a letter at a time with a soft tick, as in the old handheld games.
 	-- Pressing Next while a line is still being typed shows the rest of it at once.
 	local typing = 0
@@ -102,6 +145,11 @@ function StoryView.start(playerGui: Instance)
 		if not nextLine then
 			showing = false
 			gui.Enabled = false
+			local todo = afterQueue
+			afterQueue = {}
+			for _, action in todo do
+				action()
+			end
 			return
 		end
 		speaker.Text = nextLine.speaker
@@ -137,90 +185,101 @@ function StoryView.start(playerGui: Instance)
 	nextButton.Size = UDim2.fromOffset(120, 44) -- finger-sized on a phone
 	nextButton.Position = UDim2.new(1, -132, 0, 6)
 
-	-- The starter pick: shown until the player has a first creature.
-	local pick = Kit.screen(playerGui, "StarterPick", 30)
-	local pickBox = Kit.panel(pick, UDim2.fromScale(0.8, 0.5), UDim2.fromScale(0.1, 0.25))
-	local pickTitle =
-		Kit.label(pickBox, "Pick a friend", UDim2.new(1, -28, 0, 36), UDim2.fromOffset(14, 10), 28)
-	pickTitle.TextXAlignment = Enum.TextXAlignment.Center
-	local choices = Instance.new("Frame")
-	choices.Size = UDim2.new(1, -28, 1, -96)
-	choices.Position = UDim2.fromOffset(14, 82)
-	choices.BackgroundTransparency = 1
-	choices.Parent = pickBox
-	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.new(0.333, -8, 1, 0)
-	grid.CellPadding = UDim2.fromOffset(12, 0)
-	grid.Parent = choices
-	local startBeat = Storyline.beats[1]
-	local startGifts: { WorldTypes.Reward } = if startBeat then startBeat.grants else {}
-	-- The first beat's line is said on the pick screen itself. As a dialogue line it only arrived
-	-- once the beat was done, so "Pick the one that feels right" showed after the pick.
-	local startLine = if startBeat then startBeat.lines[1] else nil
-	local pickSaid = Kit.label(
-		pickBox,
-		if startLine then `{startLine.speaker}: {startLine.text}` else "",
-		UDim2.new(1, -28, 0, 30),
-		UDim2.fromOffset(14, 46),
-		18
-	)
-	pickSaid.TextXAlignment = Enum.TextXAlignment.Center
-	pickSaid.TextColor3 = Kit.COLOURS.textDim
-	pickSaid.TextScaled = true
-	local pickSaidLimit = Instance.new("UITextSizeConstraint")
-	pickSaidLimit.MaxTextSize = 18
-	pickSaidLimit.MinTextSize = 10
-	pickSaidLimit.Parent = pickSaid
-	for _, reward in startGifts do
-		if reward.kind == "Starter" then
-			for _, species in reward.choices do
-				local def = Species[species]
-				local label = if def then `{species}\n{def.element} type` else species
-				local colour = if def then Kit.ELEMENT_COLOURS[def.element] else Kit.COLOURS.accent
-				local button = Kit.button(choices, label, colour, function()
-					Net.CompleteBeat.Fire({ BeatId = startBeat.id, Choice = species })
-				end)
-				button.TextWrapped = true
-				-- The creature itself stands on its card; its name sits underneath.
-				button.TextYAlignment = Enum.TextYAlignment.Bottom
-				if def then
-					Portrait.new(button, species, def.element, UDim2.fromScale(1, 0.8), UDim2.new())
-				end
-			end
+	-- The tracker text. The egg line counts down, so this also runs once a second; it sets this
+	-- one label and nothing else.
+	local function renderTracker()
+		local state = ClientState.get()
+		if not state then
+			return
 		end
+		local lines = Tracker.lines(summarise(state, os.time()))
+		trackerText.Text = table.concat(lines, "\n")
+		tracker.Visible = #lines > 0 and not opening
+	end
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			renderTracker()
+		end
+	end)
+
+	-- The "Day one" card, shown once when the first quest opens.
+	local dayGui = Kit.screen(playerGui, "DayOne", 25)
+	local dayPanel = Kit.panel(dayGui, UDim2.fromOffset(440, 250), UDim2.fromScale(0.5, 0.5))
+	dayPanel.AnchorPoint = Vector2.new(0.5, 0.5)
+	local dayTitle =
+		Kit.label(dayPanel, "Day one", UDim2.new(1, -28, 0, 40), UDim2.fromOffset(14, 10), 32)
+	dayTitle.TextXAlignment = Enum.TextXAlignment.Center
+	local dayText =
+		Kit.label(dayPanel, "", UDim2.new(1, -40, 1, -132), UDim2.fromOffset(20, 56), 20)
+	dayText.TextWrapped = true
+	dayText.TextYAlignment = Enum.TextYAlignment.Top
+	local dayButton = Kit.button(dayPanel, "Keep going", Kit.COLOURS.good, function()
+		dayGui.Enabled = false
+	end)
+	dayButton.Size = UDim2.fromOffset(200, 48)
+	dayButton.Position = UDim2.new(0.5, -100, 1, -58)
+	local dayShown = false
+	local function showDayOne()
+		local state = ClientState.get()
+		if dayShown or not state then
+			return
+		end
+		dayShown = true
+		local summary = summarise(state, os.time())
+		local goal: string? = nil
+		for _, quest in summary.quests do
+			goal = goal or quest.goal
+		end
+		local lines = Tracker.dayOneLines(summary.friends, summary.eggs, summary.now, goal)
+		dayText.Text = table.concat(lines, "\n")
+		dayGui.Enabled = true
+		Kit.pop(dayPanel)
+		Sfx.play("win")
 	end
 
-	local function refresh(state: Snapshot.State)
-		pick.Enabled = state.Starter == ""
-		local flags: { [string]: boolean } = {}
-		for _, flag in state.Flags do
-			flags[flag] = true
-		end
-		local lines: { string } = {}
-		local beat = World.nextBeat(Storyline, flags)
-		if beat then
-			table.insert(lines, hint(beat))
-		end
-		for id, progress in state.QuestsActive do
-			local quest = Quests[id]
-			if quest then
-				local needed = QuestProgress.needed(quest)
-				table.insert(
-					lines,
-					if progress >= needed
-						then `Quest done: go back to {quest.giver.name}`
-						else `Quest: {quest.goal} ({progress}/{needed})`
-				)
+	-- The opening, for a player with no first creature: title, the mentor's words, then the pick.
+	local startBeat = Storyline.beats[1]
+	local pick = StarterPick.new(playerGui, startBeat)
+	local openingStarted = false
+	local function playOpening()
+		opening = true
+		tracker.Visible = false
+		TitleCard.play(playerGui, function()
+			local state = ClientState.get()
+			if state and state.Starter ~= "" then
+				opening = false
+				return -- the first creature arrived while the title ran
 			end
-		end
-		trackerText.Text = table.concat(lines, "\n")
-		tracker.Visible = #lines > 0
+			table.insert(afterQueue, function()
+				pick.show() -- the tracker stays hidden until a friend is chosen
+			end)
+			-- Every line of the first beat, read from the story data.
+			if startBeat then
+				for _, said in startBeat.lines do
+					table.insert(queue, { speaker = said.speaker, text = said.text })
+				end
+			end
+			if not showing then
+				showNext()
+			end
+		end)
 	end
-	ClientState.onChanged(refresh)
+
+	ClientState.onChanged(function(state: Snapshot.State)
+		if state.Starter ~= "" then
+			opening = false
+			pick.hide()
+		elseif not openingStarted then
+			openingStarted = true
+			playOpening()
+		end
+		renderTracker()
+	end)
 
 	Bus.listen(Net.BeatCompleted, function(value)
 		for _, beat in Storyline.beats do
-			-- The first beat's line was already said on the pick screen.
+			-- The first beat's lines were already said before the pick.
 			if beat.id == value.BeatId and beat ~= startBeat then
 				for _, said in beat.lines do
 					table.insert(queue, { speaker = said.speaker, text = said.text })
@@ -229,6 +288,17 @@ function StoryView.start(playerGui: Instance)
 		end
 		local got: { string } = {}
 		for _, gift in value.Gifts do
+			if gift.Kind == "Starter" then
+				-- The first friend is a moment of its own, not an item on a list.
+				local known = ClientState.get()
+				local friend = pick.chosen()
+					or (if known and known.Starter ~= "" then known.Starter else "Your new friend")
+				table.insert(queue, {
+					speaker = "A new friend",
+					text = `{friend} bounces over and leans against your leg. You are a team now!`,
+				})
+				continue
+			end
 			local name = GIFT_TEXT[gift.Kind] or gift.Detail
 			local text = if gift.Kind == "Coins" or gift.Kind == "PrismCandy"
 				then `{gift.Detail} {name}`
@@ -242,6 +312,9 @@ function StoryView.start(playerGui: Instance)
 		end
 		if #got > 0 then
 			table.insert(queue, { speaker = "You received", text = table.concat(got, ", ") })
+		end
+		if value.BeatId == DAY_ONE_BEAT then
+			table.insert(afterQueue, showDayOne)
 		end
 		if not showing then
 			showNext()

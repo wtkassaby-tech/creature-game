@@ -173,6 +173,8 @@ local function pickTeam(bot: Bot)
 		local total = creature.level
 		if against and beats(elementOf(creature), against) then
 			total += 100
+		elseif against and beats(against, elementOf(creature)) then
+			total -= 40 -- nobody who has just lost leads with the type the opponent beats
 		end
 		for _, element: Types.Element in bot.alsoAgainst do
 			if beats(elementOf(creature), element) then
@@ -479,12 +481,28 @@ local function storyBattle(bot: Bot, id: string): boolean
 			for _, element: Types.Element in bot.alsoAgainst do
 				table.insert(wanted, element)
 			end
-			for _, element: Types.Element in wanted do
-				local covered = false
-				for _, creature in bot.profile.Creatures do
-					covered = covered or beats(elementOf(creature), element)
+			-- The robot has now seen the whole team, as a player has. It brings one answer for
+			-- each creature of the lead's type (two Sand creatures want two Water ones), and one
+			-- more after every further loss, instead of walking back in unchanged.
+			local sameAsLead = 0
+			for _, member in opponent.team.members do
+				if Species[member.species].element == lead then
+					sameAsLead += 1
 				end
-				if not covered then
+			end
+			local answersToLead = math.min(
+				sameAsLead + math.max(attempt - 3, 0),
+				Profile.teamSize(bot.profile.Story.badges)
+			)
+			for _, element: Types.Element in wanted do
+				local covering = 0
+				for _, creature in bot.profile.Creatures do
+					if beats(elementOf(creature), element) then
+						covering += 1
+					end
+				end
+				local needed = if element == lead then answersToLead else 1
+				if covering < needed then
 					hunt(bot, element)
 				end
 			end

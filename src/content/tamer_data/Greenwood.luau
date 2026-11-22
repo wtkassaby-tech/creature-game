@@ -28,7 +28,7 @@ local locals: { WorldTypes.Tamer } = {
 		at = 100,
 		team = { members = { member("Gorsling", 3, { "Seed Shot", "Leaf Gust" }) }, tint = 0 },
 		before = "My hat is lucky! One battle, then you can walk on.",
-		after = "Whoa, you are good. Weaken them first, then throw the rope.",
+		after = "Whoa! The hat has never lost before. Weaken them, then throw the rope.",
 	},
 	{
 		id = "gw_wren",
@@ -111,13 +111,20 @@ local rival: WorldTypes.RivalDef = {
 	gateBattle = "rival_gate",
 	gatePlace = "greenwood_gate",
 	firstCannotBeLost = true,
+	-- The first bout is a win the player earns in four or five turns, whichever friend they
+	-- chose. The rival still brings the type that beats theirs, but it is far younger: level 1
+	-- with one small kick against the Leaf starter (a Spadesnout knows only Sand moves, so its
+	-- level is what keeps the fight fair), level 2 with an off-type puff against the Sand one.
+	-- With the first teams (level 4, same-type moves) the Leaf and Sand starters only "won"
+	-- because the fight could not be lost, and the Sand starter's fight ran to the 60-turn stop
+	-- (tests/firstminutes.test.luau).
 	first = {
 		Mossmitt = {
-			members = { member("Spadesnout", 4, { "Grit Spray", "Dust Kick" }) },
+			members = { member("Spadesnout", 1, { "Scree Kick" }) },
 			tint = 0,
 		},
 		Spadesnout = {
-			members = { member("Sloshcalf", 4, { "Dew Splash", "Brook Rush" }) },
+			members = { member("Sloshcalf", 2, { "Spore Puff" }) },
 			tint = 0,
 		},
 		Sloshcalf = {

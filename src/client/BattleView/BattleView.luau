@@ -8,7 +8,9 @@
 -- buttons, the hit effects and the result panel live in their own modules beside this one.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
+local Coach = require(ReplicatedStorage.shared.Coach)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local MovementLock = require(script.Parent.Parent.UI.MovementLock)
 local BattleFx = require(script.Parent.BattleFx)
@@ -45,6 +47,11 @@ type Fighter = {
 type Model = {
 	battleId: number,
 	wild: boolean,
+	kind: string, -- Wild, Tamer, Rival or Friendly: the coach only speaks in the first rival bout
+	foeRarity: string, -- the first foe's rarity, for the lasso coach
+	teamBefore: number?, -- how many were on the team before this battle, for the catch card
+	strongTold: boolean, -- the coach has already praised a strong hit this battle
+	caughtFoe: Fighter?, -- the creature that was caught, for the "New friend" card
 	sides: { { Fighter } }, -- 1 = yours, 2 = theirs
 	active: { number },
 	tempo: { number },
@@ -250,7 +257,28 @@ function BattleView.start(playerGui: Instance)
 	backButton.Size = UDim2.new(0.16, -4, 1, -16)
 	backButton.Position = UDim2.new(0.84, 0, 0, 8)
 
-	local lassoButton = Kit.button(side, "LASSO", Kit.COLOURS.lasso, function()
+	local lassoButton: TextButton
+	-- The coach's gentle nudge: LASSO swells and settles slowly while the foe is tired.
+	local lassoScale = Instance.new("UIScale")
+	local pulse = TweenService:Create(
+		lassoScale,
+		TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+		{ Scale = 1.06 }
+	)
+	local pulsing = false
+	local function setPulse(on: boolean)
+		if on == pulsing then
+			return
+		end
+		pulsing = on
+		if on then
+			pulse:Play()
+		else
+			pulse:Cancel()
+			lassoScale.Scale = 1
+		end
+	end
+	lassoButton = Kit.button(side, "LASSO", Kit.COLOURS.lasso, function()
 		local options = {}
 		for _, tier in { "Basic", "Braided", "Gilded" } do
 			if held(tier) > 0 then
@@ -271,6 +299,7 @@ function BattleView.start(playerGui: Instance)
 		choose(options)
 	end)
 	lassoButton.LayoutOrder = 2
+	lassoScale.Parent = lassoButton
 	local itemsButton = Kit.button(side, "ITEMS", Kit.COLOURS.good, function()
 		local current = model
 		if not current then
@@ -373,7 +402,17 @@ function BattleView.start(playerGui: Instance)
 		local kind: ResultPanel.Kind = if current.caught
 			then "Caught"
 			else OUTCOME_KIND[current.outcome] or "Draw"
-		result.show(kind, current.rewards)
+		local caught: ResultPanel.Caught? = nil
+		local foe = current.caughtFoe
+		if kind == "Caught" and foe then
+			caught = {
+				name = foe.name,
+				element = foe.element,
+				level = foe.level,
+				placement = Coach.placementLine(current.teamBefore),
+			}
+		end
+		result.show(kind, current.rewards, caught)
 	end
 
 	-- A flat, faded picture of a creature, set behind the text of a box that is about it.
@@ -411,6 +450,12 @@ function BattleView.start(playerGui: Instance)
 		local share = fighter.hp / math.max(1, fighter.maxHp)
 		shown.health.set(share, Kit.healthColour(share))
 		shown.tempo.set(tempoShare)
+	end
+
+	-- The story beats the player has seen (display only; the server owns them).
+	local function coachFlags(): { string }
+		local state = ClientState.get()
+		return if state then state.Flags else {}
 	end
 
 	refresh = function()
@@ -460,9 +505,23 @@ function BattleView.start(playerGui: Instance)
 		box.Visible = not current.over and not choosingMove
 		menu.Visible = open and not choosingMove
 		actions.Visible = open and choosingMove
-		if open and not choosingMove and mine then
-			message.Text = `What will {mine.name} do?`
+		-- The coach, when it has something to say, takes the place of "What will X do?". It only
+		-- shows words; no button is ever hidden or blocked by it.
+		local flags = coachFlags()
+		local line: string? = nil
+		if open and not choosingMove and mine and foe then
+			line = Coach.firstBattleLine(flags, current.kind, mine.moves, foe.element)
+				or Coach.lassoLine(flags, current.wild, foe.hp, foe.maxHp)
 		end
+		if open and not choosingMove and mine then
+			message.Text = line or `What will {mine.name} do?`
+		end
+		setPulse(
+			open
+				and not choosingMove
+				and foe ~= nil
+				and Coach.lassoNudge(flags, current.wild, foe.hp, foe.maxHp)
+		)
 	end
 
 	refreshMenu = refresh
@@ -494,9 +553,15 @@ function BattleView.start(playerGui: Instance)
 	end
 
 	Bus.listen(Net.BattleStarted, function(value)
+		local state = ClientState.get()
 		model = {
 			battleId = value.BattleId,
 			wild = value.Kind == "Wild",
+			kind = value.Kind :: string,
+			foeRarity = value.Theirs[1].Rarity :: string,
+			teamBefore = if state then #state.Team else nil,
+			strongTold = false,
+			caughtFoe = nil,
 			sides = { fighters(value.Yours), fighters(value.Theirs) },
 			active = { firstStanding(value.Yours), firstStanding(value.Theirs) },
 			tempo = { 0, 0 },
@@ -561,6 +626,14 @@ function BattleView.start(playerGui: Instance)
 						fx.rise(stage.point(other), hurt, Kit.COLOURS.gold, true)
 						fx.callout("STRONG HIT!", Kit.COLOURS.gold)
 						Sfx.play("strongHit")
+						-- Praise the player's first strong hit in the first battle, once.
+						local praise = if actor == 1 and not current.strongTold
+							then Coach.strongHitLine(coachFlags(), current.kind)
+							else nil
+						if praise then
+							current.strongTold = true
+							message.Text = `{message.Text}\n{praise}`
+						end
 					elseif factor < 1 then
 						stage.hit(other, false)
 						fx.rise(stage.point(other), hurt, Kit.COLOURS.textDim, false)
@@ -682,13 +755,19 @@ function BattleView.start(playerGui: Instance)
 		if value.Outcome == "Caught" then
 			fx.callout("GOT IT!", Kit.COLOURS.gold)
 		end
+		local current = model
+		-- Only a Common creature is promised not to run off after a miss; others get the old line.
+		local missed = "It slipped the rope!"
+		if current and value.Outcome == "Missed" then
+			missed = Coach.missLine(current.foeRarity) or missed
+		end
 		message.Text = if value.Outcome == "Caught"
 			then "Caught!"
 			elseif value.Outcome == "Fled" then "It broke free and fled!"
-			else "It slipped the rope!"
-		local current = model
+			else missed
 		if current and value.Outcome == "Caught" then
 			current.caught = true
+			current.caughtFoe = current.sides[2][current.active[2]]
 		end
 	end)
 end

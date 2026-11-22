@@ -3,17 +3,27 @@
 -- numbers counting up, and one button to carry on. The rewards may arrive from the server before
 -- or after the last turn has been shown, so `show` can be called twice; each part plays once.
 
+-- After a catch the panel also carries a "New friend" card above the rewards: the creature's
+-- picture, name, level, type, a line about it, and where it went. Looks only.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Portrait = require(script.Parent.Parent.Creatures.Portrait)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local SpeciesBlurbs = require(ReplicatedStorage.content.SpeciesBlurbs)
+local Types = require(ReplicatedStorage.shared.Types)
 
 local ResultPanel = {}
 
 export type Rewards = { coins: number, xp: number, material: string, levels: { number } }
 export type Kind = "Won" | "Caught" | "Lost" | "Draw"
+-- The creature just caught, for the "New friend" card. `placement` is the line saying where it
+-- went ("Joined your team!"), worked out by the caller.
+export type Caught = { name: string, element: Types.Element, level: number, placement: string }
 export type View = {
-	show: (kind: Kind, rewards: Rewards?) -> (),
+	show: (kind: Kind, rewards: Rewards?, caught: Caught?) -> (),
 	hide: () -> (),
 }
 
@@ -22,22 +32,39 @@ local TITLES: { [Kind]: string } =
 
 local COUNT_SECONDS = 0.6
 local ROW_GAP_SECONDS = 0.25
+local CARD_HEIGHT = 118 -- the "New friend" card; its picture is 110 square
+local PICTURE = 110
+local RIBBON = 52 -- the title band
+local BUTTON_ROOM = 64 -- the Continue button (50 tall) and its margins, kept clear below the rows
 
 function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	local panel = Kit.panel(
 		gui,
-		UDim2.fromScale(0.4, 0.5),
+		UDim2.fromScale(0.4, 0.46),
 		UDim2.fromScale(0.3, 0.14),
 		Kit.COLOURS.panelLight
 	)
 	panel.Visible = false
 	panel.ZIndex = 8
-	local title = Kit.label(panel, "", UDim2.new(1, -24, 0, 46), UDim2.fromOffset(12, 8), 40)
+	-- The title sits on a striped ribbon across the top: gold for a win, grey for a loss.
+	local ribbon = Instance.new("Frame")
+	ribbon.Size = UDim2.new(1, -8, 0, RIBBON)
+	ribbon.Position = UDim2.fromOffset(4, 4)
+	ribbon.BackgroundColor3 = Kit.COLOURS.gold
+	ribbon.BorderSizePixel = 0
+	ribbon.ZIndex = 8
+	ribbon.Parent = panel
+	local ribbonCorner = Instance.new("UICorner")
+	ribbonCorner.CornerRadius = UDim.new(0, 6)
+	ribbonCorner.Parent = ribbon
+	Kit.stripes(ribbon)
+	local title = Kit.label(ribbon, "", UDim2.new(1, -24, 1, -8), UDim2.fromOffset(12, 4), 40)
 	title.TextXAlignment = Enum.TextXAlignment.Center
 	title.ZIndex = 9
+	Kit.overWorld(title)
 	local rows = Instance.new("Frame")
-	rows.Size = UDim2.new(1, -24, 1, -126)
-	rows.Position = UDim2.fromOffset(12, 58)
+	rows.Size = UDim2.new(1, -24, 1, -(RIBBON + 12 + BUTTON_ROOM))
+	rows.Position = UDim2.fromOffset(12, RIBBON + 10)
 	rows.BackgroundTransparency = 1
 	rows.ZIndex = 9
 	rows.Parent = panel
@@ -51,6 +78,78 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	button.Size = UDim2.new(0.5, 0, 0, 50)
 	button.Position = UDim2.new(0.25, 0, 1, -60)
 	button.ZIndex = 9
+
+	-- The "New friend" card. Made once, filled and shown only after a catch.
+	local friend = Instance.new("Frame")
+	friend.Size = UDim2.new(1, -24, 0, CARD_HEIGHT)
+	friend.Position = UDim2.fromOffset(12, RIBBON + 10)
+	friend.BackgroundTransparency = 1
+	friend.Visible = false
+	friend.ZIndex = 9
+	friend.Parent = panel
+	local textLeft = PICTURE + 10
+	local friendName =
+		Kit.label(friend, "", UDim2.new(1, -textLeft, 0, 28), UDim2.fromOffset(textLeft, 0), 24)
+	friendName.ZIndex = 9
+	local friendChip =
+		Kit.label(friend, "", UDim2.fromOffset(78, 20), UDim2.fromOffset(textLeft, 32), 14)
+	friendChip.TextXAlignment = Enum.TextXAlignment.Center
+	friendChip.TextColor3 = Kit.COLOURS.white
+	friendChip.BackgroundTransparency = 0
+	friendChip.ZIndex = 9
+	local chipCorner = Instance.new("UICorner")
+	chipCorner.CornerRadius = UDim.new(0.5, 0)
+	chipCorner.Parent = friendChip
+	local friendBlurb =
+		Kit.label(friend, "", UDim2.new(1, -textLeft, 0, 38), UDim2.fromOffset(textLeft, 56), 17)
+	friendBlurb.TextWrapped = true
+	friendBlurb.TextYAlignment = Enum.TextYAlignment.Top
+	friendBlurb.TextColor3 = Kit.COLOURS.textDim
+	friendBlurb.ZIndex = 9
+	local friendPlace =
+		Kit.label(friend, "", UDim2.new(1, -textLeft, 0, 22), UDim2.fromOffset(textLeft, 94), 18)
+	friendPlace.TextColor3 = Kit.COLOURS.good
+	friendPlace.ZIndex = 9
+	local picture: ViewportFrame? = nil
+
+	-- A catch needs room for the card; every other result keeps the small panel.
+	local function layout(withCard: boolean)
+		if withCard then
+			panel.Size = UDim2.fromScale(0.52, 0.92)
+			panel.Position = UDim2.fromScale(0.24, 0.04)
+			local top = RIBBON + 10 + CARD_HEIGHT + 4
+			rows.Position = UDim2.fromOffset(12, top)
+			rows.Size = UDim2.new(1, -24, 1, -(top + BUTTON_ROOM))
+		else
+			panel.Size = UDim2.fromScale(0.4, 0.46)
+			panel.Position = UDim2.fromScale(0.3, 0.14)
+			rows.Position = UDim2.fromOffset(12, RIBBON + 10)
+			rows.Size = UDim2.new(1, -24, 1, -(RIBBON + 12 + BUTTON_ROOM))
+		end
+		friend.Visible = withCard
+	end
+
+	local function fillCard(caught: Caught)
+		if picture then
+			picture:Destroy()
+		end
+		local made = Portrait.new(
+			friend,
+			caught.name,
+			caught.element,
+			UDim2.fromOffset(PICTURE, PICTURE),
+			UDim2.fromOffset(0, 4)
+		)
+		made.ZIndex = 9
+		picture = made
+		friendName.Text = `{caught.name}  Lv {caught.level}`
+		friendChip.Text = caught.element
+		friendChip.BackgroundColor3 = Kit.ELEMENT_COLOURS[caught.element]
+		-- A species with no blurb simply has no line.
+		friendBlurb.Text = SpeciesBlurbs[caught.name] or ""
+		friendPlace.Text = caught.placement
+		Kit.pop(friend)
+	end
 
 	local shownKind: Kind? = nil
 	local paid = false
@@ -124,11 +223,15 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	end
 
 	return {
-		show = function(kind: Kind, rewards: Rewards?)
+		show = function(kind: Kind, rewards: Rewards?, caught: Caught?)
 			if shownKind ~= kind then
 				shownKind = kind
+				layout(kind == "Caught" and caught ~= nil)
+				if kind == "Caught" and caught then
+					fillCard(caught)
+				end
 				title.Text = TITLES[kind]
-				title.TextColor3 = if kind == "Won" or kind == "Caught"
+				ribbon.BackgroundColor3 = if kind == "Won" or kind == "Caught"
 					then Kit.COLOURS.gold
 					else Kit.COLOURS.textDim
 				panel.Visible = true
@@ -144,6 +247,11 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 			run += 1
 			shownKind, paid = nil, false
 			panel.Visible = false
+			layout(false)
+			if picture then
+				picture:Destroy()
+				picture = nil
+			end
 			for _, child in rows:GetChildren() do
 				if child:IsA("TextLabel") then
 					child:Destroy()

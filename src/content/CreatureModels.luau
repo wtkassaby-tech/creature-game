@@ -91,6 +91,43 @@ local CreatureModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://119657784227242",
 		size = { 5.78, 7, 4.55 },
 	},
+	-- Greenwood's giant
+	Hollowbough = {
+		mesh = "rbxassetid://122657283771846",
+		texture = "rbxassetid://117761252952703",
+		size = { 8.31, 12, 8.48 },
+	},
+	-- Tide Flats
+	Runnelfin = {
+		mesh = "rbxassetid://71730391961022",
+		texture = "rbxassetid://128111653342334",
+		size = { 4, 5.99, 4.94 },
+	},
+	Hullock = {
+		mesh = "rbxassetid://81622553424635",
+		texture = "rbxassetid://117057963405964",
+		size = { 4.5, 5.74, 9.6 },
+	},
+	Lanternell = {
+		mesh = "rbxassetid://115453843318026",
+		texture = "rbxassetid://125804188854344",
+		size = { 3.72, 8, 2.74 },
+	},
+	Cocklemole = {
+		mesh = "rbxassetid://132241773203326",
+		texture = "rbxassetid://105326939190153",
+		size = { 4.06, 5, 4.05 },
+	},
+	Clapshell = {
+		mesh = "rbxassetid://123047837392569",
+		texture = "rbxassetid://114558048918523",
+		size = { 5.62, 6, 4.84 },
+	},
+	Glissot = {
+		mesh = "rbxassetid://101123377513492",
+		texture = "rbxassetid://124113147819843",
+		size = { 4.29, 5, 4.2 },
+	},
 }
 
 return CreatureModels

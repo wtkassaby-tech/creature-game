@@ -2,6 +2,49 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (a designed Greenwood, and a gentler first fifteen minutes)
+
+**In one line:** Ayrton: "I feel like you havent planned and structured the map correctly", and "prioritize the aesthetic appeal... maximise player enjoyment". Greenwood is now drawn on purpose from a written map plan, the first fifteen minutes were rebuilt from a written plan, and five research reports sit behind both. Run in Studio: no errors; the opening, the starter pick, the first battle and the new town were all seen there. `lune run check` passes.
+
+**Research first** (`docs/research/games/07` to `09`): what makes this kind of game look appealing, what players praise and complain about (they love charming creatures and playing with friends; they complain most about grind and slow battles), and names.
+
+| Changed | How | Where |
+| --- | --- | --- |
+| **Greenwood is a designed map** | A map sheet gives every building, lane, tamer, grass patch and sign a place on purpose. Thistledown is a hedged town round a small plaza: the mentor's cottage faces you as you arrive, the shop and healer share the south-west corner by the pond, the Nesting House has its paddock, the Ring is in the south-east. One street runs west to east through two arches. Route A (Clover Lane) leaves over a footbridge; River Road runs to a gatehouse hamlet. The ancient tree stands over the woods and can be seen from far off. The other biomes still use the old generated layout | `docs/plans/08_GREENWOOD_MAP.md`, `src/content/map_data/`, `src/shared/Layout.luau`, `src/server/World/` |
+| **Routes are corridors** | Hedges on both sides, long grass as dark patches you can see, tamers standing beside the lane, signposts at every fork, lamps, a brook with stepping stones, a picnic hollow and a mossy knoll | `src/server/World/Corridors.luau`, `Lanes.luau`, `Grass.luau`, `Signs.luau`, `Water.luau`, `Landmarks.luau` |
+| **An opening** | A new player sees a cream band, "Welcome to THISTLEDOWN", over the town, then the mentor speaks, and only then the pick | `src/client/Story/TitleCard.luau`, `StoryView.luau` |
+| **The starter pick** | Three cards on the type's colour: the creature, its name, a type tag and one line of character ("Carries a tiny pond on its back. Please do not tip it."). Tapping selects; "Pick this one?" confirms; "Not yet" goes back. The world dims behind it | `src/client/Story/StarterPick.luau`, `src/content/SpeciesBlurbs.luau` |
+| **The first battle is a fair win** | The rival's first creature is far younger (level 1 or 2) and the fight ends in four or five turns whichever friend you chose. Before, the Sand starter's fight ran sixty turns and two starters only won because the fight cannot be lost | `src/content/tamer_data/Greenwood.luau`, `tests/firstminutes.test.luau` |
+| **A coach in the first battles** | The text box says what to do next ("Pick FIGHT, then a move.", "Win it over first. When its health is low, choose LASSO."), and LASSO pulses when a catch is likely | `src/shared/Coach.luau`, `BattleView.luau`, `LassoView.luau` |
+| **A catch is a moment** | After a catch the result panel shows a "New friend" card: picture, name, level, type, its line, and where it went | `ResultPanel.luau` |
+| **Result panel** | The title sits on a striped ribbon, gold for a win | `ResultPanel.luau` |
+| **The tracker** | Up to four lines: the next story step, the egg's countdown, quests, and "Greenwood friends N of 8" | `src/shared/Tracker.luau` |
+| **Greenwood friends** | The Creatures screen opens with a strip of eight: a dark silhouette with "?" until you own that species. The Creatures button pulses when an egg has hatched or a creature is waiting | `CreaturesView.luau`, `Portrait.luau` |
+| **A "Day one" card** | After the first quest opens: what you have, what is next, and "Something stirs in the old tree." | `StoryView.luau` |
+| **Story lines** | Chapter 1 rewritten to be shorter and warmer | `src/content/story_data/Chapter1.luau` |
+| **Less grind** | The level curve is gentler (see `docs/DECISIONS.md`). Robot players now need about 30 wild battles for badge 1, 20 for badge 2 and 40 to 50 for badge 3; it was 32, 40 and 58 to 67 | `src/config/ProgressionConfig.luau` |
+| **A fairer second champion** | Isolde Karrow's Cairnback no longer carries a move that beats the very creatures you bring to answer it | `src/content/tamer_data/DustCanyon.luau` |
+| **More models** | The Greenwood giant, the eight Dust Canyon creatures, six Tide Flats creatures, six more people and twelve map pieces (waystation, gatehouse, ancient tree, birch, grass tuft, reeds, fence, signpost, footbridge, notice board, bench, stall) | `src/content/CreatureModels.luau`, `PropModels.luau`, `docs/ASSETS.md` |
+| **Creatures stand on the ground** | A wild creature could appear on a roof or a treetop. It now looks through anything that is not ground | `src/client/World/WorldView.luau` |
+
+**Seen in Studio and still wrong (being fixed):**
+- The two town arches and the ancient tree's trunk are plain boxes. Painted replacements are being generated.
+- The south half of Thistledown is an empty lawn. More homes and homely things (washing lines, a cart, an orchard) are being made for it.
+- Beyond the gatehouse you can see Dust Canyon's town across open grass. It needs a wall of trees or a rise behind the gate.
+- In a battle beside the rival, the rival and the well can fill the left of the screen.
+- With the Leaf starter the first battle is still close: picking the weakest move ends it with almost no health left (it cannot be lost).
+
+**Not checked:** a catch on the new map, with the "New friend" card; the Creatures strip and its silhouettes; the "Day one" card; the phone-sized view of any of this; walking times; frame rate with about 1,000 hedge bushes and 300 trees.
+
+**Waiting for Ayrton (nothing is built until a yes):**
+1. **Move the first catch earlier** (plan 07, package 6): tame a creature before the first tamer, not after. It changes the story order.
+2. **Nicknames** for creatures: needs a save change and Roblox's text filter.
+3. **A "pick one of two" gift** from the mentor, and the Hollow Log's spawn table.
+4. **Painted models against the brief's art rule.** The brief locks "low-poly, flat colours". You said you like the painted clay models, so I am treating that rule as replaced. Say if that is wrong.
+5. **A name.** My pick is **Patchlings** for the creatures and **"Patchlings: Thistledown"** for the game; runner-up **Quiltlings**. Neither has been cleared legally (`docs/research/games/09_NAMES.md`).
+
+**To playtest:** start a new game on the new map. Does the town feel like a place? Is it clear where to go? Does the first battle feel won?
+
 ## 23 November 2026 (overnight: a nostalgic, homely look with real models)
 
 **In one line:** Ayrton, before going to sleep: the town "looks like it was made using 2002 software, the gui is bland and the creatures dont have any sort of recognisable feel... it needs to have some great nostalgic feel, a homely feel". Overnight the screens became those of an old handheld creature game, the creatures became real painted models, and the town became a storybook village. Checked in Studio; the full check passes.

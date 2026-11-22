@@ -48,10 +48,20 @@ do
 	local a, b = map.routes.greenwood_route_a, map.routes.greenwood_route_b
 	check(
 		"Route A runs west of the hub and Route B east",
-		Layout.pointAt(a, 400).x < -300 and Layout.pointAt(b, 600).x > 400
+		Layout.pointAt(a, 400).x < -200 and Layout.pointAt(b, 600).x > 400
 	)
-	local step = Layout.distance(Layout.pointAt(a, 100), Layout.pointAt(a, 150))
-	check("distance along the path is real distance", math.abs(step - 50) < 0.001, `{step}`)
+	-- Along 120 to 145 lies inside one straight leg of Route A, so it is a straight-line distance.
+	local step = Layout.distance(Layout.pointAt(a, 120), Layout.pointAt(a, 145))
+	check("distance along the path is real distance", math.abs(step - 25) < 0.001, `{step}`)
+	local legs = 0
+	for index = 1, #a.points - 1 do
+		legs += Layout.distance(a.points[index], a.points[index + 1])
+	end
+	check(
+		"Route A's leg lengths sum to its length in the data",
+		math.abs(legs - greenwood.routes[1].length) < 0.001,
+		`{legs}`
+	)
 	local missing = {}
 	for _, id in
 		{
@@ -79,10 +89,15 @@ do
 		"the gate is at the end of Route B",
 		Layout.distance(map.places.greenwood_gate, Layout.pointAt(b, 600)) < 0.001
 	)
+	local spur = 0
+	for index = 1, #map.lairSpur - 1 do
+		spur += Layout.distance(map.lairSpur[index], map.lairSpur[index + 1])
+	end
 	check(
 		"the lair is its spur's length off the route",
-		math.abs(Layout.distance(map.lairSpur[1], map.lairSpur[2]) - greenwood.lair.spurLength)
-			< 0.001
+		math.abs(spur - greenwood.lair.spurLength) < 0.001
+			and Layout.distance(map.lairSpur[#map.lairSpur], map.places.greenwood_lair) < 0.001,
+		`{spur}`
 	)
 	check(
 		"near and far are told apart",
@@ -104,6 +119,7 @@ do
 	end
 	local second: any = table.clone(greenwood)
 	second.id, second.number = "b2", 2
+	second.map = nil -- Greenwood's map sheet names Greenwood's own ids; the copy is generated
 	second.hub = table.clone(greenwood.hub)
 	second.hub.id = renamed(greenwood.hub.id)
 	second.hub.buildings = {}

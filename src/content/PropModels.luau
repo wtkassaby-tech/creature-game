@@ -84,6 +84,67 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://89782871390988",
 		size = { 3.11, 6.19, 3 },
 	},
+	-- The designed Greenwood map (docs/plans/08_GREENWOOD_MAP.md)
+	Waystation = {
+		mesh = "rbxassetid://79958116604409",
+		texture = "rbxassetid://75876234590042",
+		size = { 19.99, 37.59, 20 },
+	},
+	Gatehouse = {
+		mesh = "rbxassetid://87056659357964",
+		texture = "rbxassetid://94264757221587",
+		size = { 26.78, 19.64, 14 },
+	},
+	AncientTree = {
+		mesh = "rbxassetid://86401537618792",
+		texture = "rbxassetid://130150468810323",
+		size = { 30, 29.59, 29.75 },
+	},
+	Birch = {
+		mesh = "rbxassetid://91570444640112",
+		texture = "rbxassetid://135994710117643",
+		size = { 10, 11.48, 8.88 },
+	},
+	GrassTuft = {
+		mesh = "rbxassetid://105548972928950",
+		texture = "rbxassetid://85032178948082",
+		size = { 3.88, 2.46, 4 },
+	},
+	Reeds = {
+		mesh = "rbxassetid://96689505875971",
+		texture = "rbxassetid://82923739034964",
+		size = { 4, 6.97, 3.41 },
+	},
+	FenceSection = {
+		mesh = "rbxassetid://103110993203016",
+		texture = "rbxassetid://74200621045872",
+		size = { 7.12, 2.94, 1 },
+	},
+	Signpost = {
+		mesh = "rbxassetid://96883465317972",
+		texture = "rbxassetid://105933815528333",
+		size = { 2.58, 3.28, 1.5 },
+	},
+	Footbridge = {
+		mesh = "rbxassetid://75910119902251",
+		texture = "rbxassetid://101658257024988",
+		size = { 9.07, 6, 10.43 },
+	},
+	NoticeBoard = {
+		mesh = "rbxassetid://84774353474635",
+		texture = "rbxassetid://80236184522266",
+		size = { 5.44, 5.36, 2 },
+	},
+	Bench = {
+		mesh = "rbxassetid://79383549176918",
+		texture = "rbxassetid://105141889591859",
+		size = { 5.6, 3.84, 3 },
+	},
+	Stall = {
+		mesh = "rbxassetid://126971401304048",
+		texture = "rbxassetid://120047194234084",
+		size = { 9.48, 10, 7.46 },
+	},
 }
 
 return PropModels

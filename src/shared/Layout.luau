@@ -1,17 +1,32 @@
 --!strict
 -- Where everything in a biome is, as flat map positions (x, z in studs; the hub's centre is 0, 0),
--- generated from the biome's data. The server uses it to check that a player is really standing
--- where they say they are, and the test map is built from it. When the real map is built, its
--- markers replace these positions and nothing else changes.
+-- from the biome's data and, where the biome has one, its map sheet. The server uses it to check
+-- that a player is really standing where they say they are, and the test map is built from it.
 --
+-- A biome with a map sheet (WorldTypes.MapSheet) uses the designer's waypoints, buildings and
+-- set spots; each route's waypoints are fitted to the route's length in the data, so a distance
+-- along the path still has an exact position. A biome without one keeps the generated layout:
 -- Route A runs west from the hub and Route B east, each a chain of equal straight runs that bend
--- left and right, so a distance along the path (as the data gives it) has an exact position.
+-- left and right, and buildings stand in a ring.
+--
+-- Longer than ~400 lines on purpose: it is the one source of truth for every position the server
+-- checks, and the sheet and generated layouts share their helpers (fit, pointAt, the gate and
+-- the sealed road), so splitting it would give the server two places to read positions from.
 
 local WorldConfig = require("../config/WorldConfig")
 local WorldTypes = require("./WorldTypes")
 
 export type Point = { x: number, z: number }
-export type RouteLine = { id: string, points: { Point }, length: number, side: number }
+export type RouteLine = {
+	id: string,
+	points: { Point },
+	length: number,
+	side: number,
+	-- How far the route's edges stand from the middle of the lane, by area id. Only a biome with
+	-- a map sheet has them.
+	halfWidth: { [string]: number }?,
+}
+export type Spawn = { at: Point, faces: number }
 export type Map = {
 	hub: { x: number, z: number, size: number },
 	routes: { [string]: RouteLine },
@@ -19,13 +34,49 @@ export type Map = {
 	-- rustle spots, tamers, the lair, the gate and the sealed path.
 	places: { [string]: Point },
 	buildings: { [string]: Point }, -- each building's middle, for the map builder
-	lairSpur: { Point },
+	lairSpur: { Point }, -- the whole spur, from where it leaves its route to the arena
+	lairHalfWidth: number?, -- how wide the spur's corridor is, from the map sheet
+	faces: { [string]: number }, -- degrees clockwise from north, by building, tamer or battle id
+	stands: { [string]: Point }, -- where a story battle's opponent stands, by battle id
+	models: { [string]: string }, -- the painted model a building wears, by building id
+	spawn: Spawn?, -- where players arrive and which way they face
 }
 
 local Layout = {}
 
 function Layout.distance(a: Point, b: Point): number
 	return math.sqrt((a.x - b.x) ^ 2 + (a.z - b.z) ^ 2)
+end
+
+-- The flat direction a facing points in: degrees clockwise from north, where north is -z.
+function Layout.facing(degrees: number): Point
+	local angle = math.rad(degrees)
+	return { x = math.sin(angle), z = -math.cos(angle) }
+end
+
+-- A copy of a line of points made exactly `length` long: cut inside the leg where the length runs
+-- out, or with the last leg stretched if the points fall short.
+function Layout.fit(points: { Point }, length: number): { Point }
+	if #points < 2 then
+		return table.clone(points)
+	end
+	local fitted: { Point } = { points[1] }
+	local covered = 0
+	for index = 1, #points - 1 do
+		local a, b = points[index], points[index + 1]
+		local leg = Layout.distance(a, b)
+		local last = index == #points - 1
+		if leg > 1e-9 and (covered + leg >= length or last) then
+			local t = (length - covered) / leg
+			table.insert(fitted, { x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t })
+			return fitted
+		end
+		if leg > 1e-9 then
+			table.insert(fitted, b)
+			covered += leg
+		end
+	end
+	return fitted
 end
 
 -- The point `along` studs down a route's path, pushed `side` studs to its left (negative: right).
@@ -75,6 +126,45 @@ local function routeLine(
 	return { id = route.id, points = points, length = route.length, side = side }
 end
 
+-- A sheet point moved from the hub's frame into the world.
+local function shifted(origin: Point, point: WorldTypes.SheetPoint): Point
+	return { x = origin.x + point.x, z = origin.z + point.z }
+end
+
+-- A route drawn on the map sheet: its waypoints in the world, fitted to the route's data length.
+local function sheetLine(
+	route: WorldTypes.Route,
+	sheet: WorldTypes.MapSheet,
+	origin: Point,
+	side: number
+): RouteLine?
+	local drawn = sheet.routes[route.id]
+	if drawn == nil or #drawn.points < 2 then
+		return nil
+	end
+	local points: { Point } = {}
+	for _, point in drawn.points do
+		table.insert(points, shifted(origin, point))
+	end
+	local halfWidth: { [string]: number } = {}
+	local corridor = sheet.corridor
+	if corridor then
+		for _, area in route.areas do
+			local width = corridor[area.id]
+			if width then
+				halfWidth[area.id] = width
+			end
+		end
+	end
+	return {
+		id = route.id,
+		points = Layout.fit(points, route.length),
+		length = route.length,
+		side = side,
+		halfWidth = halfWidth,
+	}
+end
+
 -- The place id of the long-grass patch in a stretch of route.
 function Layout.grassId(areaId: string): string
 	return `{areaId}_grass`
@@ -106,26 +196,53 @@ function Layout.build(
 	local half = biome.hub.size / 2
 	local sited = siting or FIRST_SITING
 	local origin = sited.origin
+	local sheet = biome.map
 	local map: Map = {
 		hub = { x = origin.x, z = origin.z, size = biome.hub.size },
 		routes = {},
 		places = {},
 		buildings = {},
 		lairSpur = {},
+		faces = {},
+		stands = {},
+		models = {},
 	}
 
-	-- Buildings stand in a ring inside the square. A building's place is its door, on the side
-	-- facing the square, where its keeper stands; a named character's place is the same spot.
+	-- A building's place is its door, where its keeper stands; a named character's place is the
+	-- same spot. Without a sheet, buildings stand in a ring inside the square, doors to the middle.
 	local count = #biome.hub.buildings
 	for index, building in biome.hub.buildings do
-		local angle = (index - 1) / math.max(count, 1) * math.pi * 2 + math.pi / 2
-		local ring = half * 0.6
-		map.buildings[building.id] =
-			{ x = origin.x + math.cos(angle) * ring, z = origin.z + math.sin(angle) * ring }
-		local door: Point = {
-			x = origin.x + math.cos(angle) * (ring - WorldConfig.DOOR_DISTANCE),
-			z = origin.z + math.sin(angle) * (ring - WorldConfig.DOOR_DISTANCE),
-		}
+		local drawn = if sheet then sheet.buildings[building.id] else nil
+		local door: Point
+		if drawn then
+			local middle = shifted(origin, drawn.at)
+			map.buildings[building.id] = middle
+			if drawn.door then
+				door = shifted(origin, drawn.door)
+			else
+				local ahead = Layout.facing(drawn.faces)
+				door = {
+					x = middle.x + ahead.x * WorldConfig.DOOR_DISTANCE,
+					z = middle.z + ahead.z * WorldConfig.DOOR_DISTANCE,
+				}
+			end
+			map.faces[building.id] = drawn.faces
+			if building.npc then
+				map.faces[building.npc] = drawn.faces
+			end
+			if drawn.model then
+				map.models[building.id] = drawn.model
+			end
+		else
+			local angle = (index - 1) / math.max(count, 1) * math.pi * 2 + math.pi / 2
+			local ring = half * 0.6
+			map.buildings[building.id] =
+				{ x = origin.x + math.cos(angle) * ring, z = origin.z + math.sin(angle) * ring }
+			door = {
+				x = origin.x + math.cos(angle) * (ring - WorldConfig.DOOR_DISTANCE),
+				z = origin.z + math.sin(angle) * (ring - WorldConfig.DOOR_DISTANCE),
+			}
+		end
 		map.places[building.id] = door
 		if building.npc then
 			map.places[building.npc] = door
@@ -139,7 +256,8 @@ function Layout.build(
 		local start: Point =
 			{ x = origin.x + math.cos(heading) * half, z = origin.z + math.sin(heading) * half }
 		local side = if index % 2 == 0 then 1 else -1
-		local line = routeLine(route, start, heading, side)
+		local line = (if sheet then sheetLine(route, sheet, origin, side) else nil)
+			or routeLine(route, start, heading, side)
 		map.routes[route.id] = line
 		map.places[route.id] =
 			Layout.pointAt(line, math.min(WorldConfig.ROUTE_ENTRY_DEPTH, route.length))
@@ -176,9 +294,28 @@ function Layout.build(
 		}
 	end
 
-	-- The lair's spur leaves its route square to the path and ends at the arena.
+	-- The lair's spur leaves its route and ends at the arena: square to the path, or along the
+	-- sheet's waypoints fitted to the spur's length in the data.
 	local lairLine = map.routes[biome.lair.joinsRoute]
-	if lairLine then
+	local drawnSpur = if sheet and sheet.spurs then sheet.spurs[biome.lair.id] else nil
+	if lairLine and drawnSpur and #drawnSpur > 0 then
+		local join = Layout.pointAt(lairLine, biome.lair.joinsAt)
+		local points: { Point } = { join }
+		for _, point in drawnSpur do
+			local placed = shifted(origin, point)
+			-- The sheet usually starts at the join itself; a leg of no length helps nobody.
+			if Layout.distance(placed, points[#points]) > 1 then
+				table.insert(points, placed)
+			end
+		end
+		local spur = Layout.fit(points, biome.lair.spurLength)
+		map.lairSpur = spur
+		map.places[biome.lair.id] = spur[#spur]
+		local spurLine: RouteLine =
+			{ id = biome.lair.id, points = spur, length = biome.lair.spurLength, side = 0 }
+		map.places[Layout.stallId(biome)] = Layout.pointAt(spurLine, WorldConfig.STALL_DISTANCE)
+		map.lairHalfWidth = if sheet and sheet.corridor then sheet.corridor[biome.lair.id] else nil
+	elseif lairLine then
 		local join = Layout.pointAt(lairLine, biome.lair.joinsAt)
 		local arena =
 			Layout.pointAt(lairLine, biome.lair.joinsAt, biome.lair.spurLength * lairLine.side)
@@ -187,6 +324,28 @@ function Layout.build(
 		-- The supply stall stands a little way up the spur.
 		map.places[Layout.stallId(biome)] =
 			Layout.pointAt(lairLine, biome.lair.joinsAt, WorldConfig.STALL_DISTANCE * lairLine.side)
+	end
+
+	-- Last of all, the sheet's set spots. Only ids the layout already knows are moved; an unknown
+	-- id is left out here and caught by tests/layout.test.
+	if sheet then
+		for id, point in sheet.places do
+			if map.places[id] then
+				map.places[id] = shifted(origin, point)
+			end
+		end
+		local stands: { [string]: WorldTypes.SheetPoint } = sheet.stands or {}
+		for id, point in stands do
+			map.stands[id] = shifted(origin, point)
+		end
+		local faces: { [string]: number } = sheet.faces or {}
+		for id, degrees in faces do
+			map.faces[id] = degrees
+		end
+		local spawn = sheet.spawn
+		if spawn then
+			map.spawn = { at = shifted(origin, spawn.at), faces = spawn.faces }
+		end
 	end
 	return map
 end
@@ -210,6 +369,9 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 		places = {},
 		buildings = {},
 		lairSpur = {},
+		faces = {},
+		stands = {},
+		models = {},
 	}
 	local maps: { [number]: Map } = {}
 	local biomeOfPlace: { [string]: number } = {}
@@ -219,6 +381,16 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 		maps[biome.number] = map
 		if index == 1 then
 			merged.hub, merged.lairSpur = map.hub, map.lairSpur
+			merged.lairHalfWidth, merged.spawn = map.lairHalfWidth, map.spawn
+		end
+		for id, degrees in map.faces do
+			merged.faces[id] = degrees
+		end
+		for id, point in map.stands do
+			merged.stands[id] = point
+		end
+		for id, model in map.models do
+			merged.models[id] = model
 		end
 		for id, line in map.routes do
 			merged.routes[id] = line

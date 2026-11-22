@@ -64,8 +64,13 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Mentor",
-				text = "Welcome! Three friends are waiting. Pick the one that feels right.",
+				text = "Ah, you came! Welcome to Thistledown. The kettle is on.",
 			},
+			{
+				speaker = "Mentor",
+				text = "Three friends have been waiting on my porch for someone like you.",
+			},
+			{ speaker = "Mentor", text = "Tap one to meet it. Each has a type, and types matter." },
 		},
 	},
 	{
@@ -77,8 +82,18 @@ local beats: { WorldTypes.Beat } = {
 		unlocks = { "battle" },
 		grants = {},
 		lines = {
-			{ speaker = "Rival", text = "Hey, new kid! I took the one that beats yours. Ready?" },
-			{ speaker = "Mentor", text = "Go on. It is only a friendly bout." },
+			{
+				speaker = "Rival",
+				text = "Hey, new kid! Nice pick. Mine beats yours, though. Just so you know.",
+			},
+			{
+				speaker = "Rival",
+				text = "Come on, then. The green is plenty big for my grin and your nerves.",
+			},
+			{
+				speaker = "Mentor",
+				text = "Go on. It is only a friendly bout. I will cheer. Quietly.",
+			},
 		},
 	},
 	{
@@ -92,9 +107,10 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Rival",
-				text = "I lost to a beginner. I need more than luck... What is that glint?",
+				text = "I lost?! To a beginner?! Rematch later. Much later. After snacks.",
 			},
-			{ speaker = "Mentor", text = "Only a pebble. Come away. Let me show you the lasso." },
+			{ speaker = "Rival", text = "Wait. What is that glint by your boot?" },
+			{ speaker = "Mentor", text = "Only a pebble. Come along. The lasso lesson is next." },
 		},
 	},
 	{
@@ -108,11 +124,15 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Mentor",
-				text = "Weaken it first, then throw when the ring sits on the target.",
+				text = "Weaken it first. A tired creature is easy to catch. A fresh one is not.",
 			},
 			{
 				speaker = "Mentor",
-				text = "That one will not slip away. Take these ropes and tonics, on me.",
+				text = "Tap THROW when the marker crosses the green. Do not rush it.",
+			},
+			{
+				speaker = "Mentor",
+				text = "Ropes and tonics, on me. And a Gorsling to keep you company.",
 			},
 		},
 	},
@@ -127,13 +147,15 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Mentor",
-				text = "Battle what you find. Spend your coins at Tuppence's shop.",
+				text = "Clover Lane! Walk the long grass and something will find you.",
 			},
 			{
-				-- Lasting damage, taught at the moment it starts to matter (the robot players
-				-- walked to the healer after nearly every battle until they did this).
 				speaker = "Mentor",
-				text = "Hurts last out here. Lead with whoever is freshest. The healer in town is free.",
+				text = "Hurts last out here. Lead with whoever is freshest. Healing in town is free.",
+			},
+			{
+				speaker = "Mentor",
+				text = "Ropes run out. Tuppence sells more, if your pockets allow.",
 			},
 		},
 	},
@@ -146,7 +168,10 @@ local beats: { WorldTypes.Beat } = {
 		unlocks = { "tamer_rematch_hint" },
 		grants = {},
 		lines = {
-			{ speaker = "Pip", text = "You beat me! Tip: weaken them first, then throw the rope." },
+			{
+				speaker = "Pip",
+				text = "Whoa! The hat has never lost before. Weaken them, then throw the rope.",
+			},
 		},
 	},
 	{
@@ -163,6 +188,10 @@ local beats: { WorldTypes.Beat } = {
 				text = "See that huge tree in the haze? Stay clear of it for now.",
 			},
 			{ speaker = "Mentor", text = "Promise me. Some things are best left asleep." },
+			{
+				speaker = "Mentor",
+				text = "I have something for you at the cottage. Come when you are ready.",
+			},
 		},
 	},
 	{
@@ -176,11 +205,11 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Mentor",
-				text = "Watch how two of mine mix their parts. This egg is for you.",
+				text = "Watch how two of mine mix their parts. This egg is yours.",
 			},
 			{
 				speaker = "Mentor",
-				text = "Breeding is how you grow strong. Come back when it hatches.",
+				text = "Keep it in a pen. Open Creatures to see how it is doing.",
 			},
 			{ speaker = "Mentor", text = "Do not ask what you must be strong for. Just be ready." },
 		},
@@ -194,7 +223,10 @@ local beats: { WorldTypes.Beat } = {
 		unlocks = { "team_of_three" },
 		grants = {},
 		lines = {
-			{ speaker = "Mentor", text = "Three on your team. Now that is a proper tamer." },
+			{
+				speaker = "Mentor",
+				text = "Look at that! Three on your team, and one you earned yourself.",
+			},
 		},
 	},
 	{
@@ -208,9 +240,12 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Marlow",
-				text = "Got a minute? Win a few scraps on Clover Lane and I will pay you.",
+				text = "Heard you have an egg! Win a few scraps on Clover Lane and I will stock you up.",
 			},
-			{ speaker = "Marlow", text = "River Road is open now, if you feel brave." },
+			{
+				speaker = "Marlow",
+				text = "River Road is open now, if you feel brave. Mind the herons.",
+			},
 		},
 	},
 	{

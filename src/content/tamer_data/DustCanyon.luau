@@ -184,13 +184,16 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		tier = "Rival",
 		place = "dust_canyon_gate",
 		xpKind = "Gate",
+		-- Her Cairnback has Sand moves only. It used to carry Tumbleweed Toss, a Leaf move, which
+		-- beat the Water creatures a player brings to answer it: with three types that left no
+		-- good answer at all, and one robot in twelve needed six tries (tests/playthrough.test).
 		team = {
 			members = {
 				member("Whirlgrit", 21, { "Grit Whirl", "Dune Dash", "Pebble Pelt", "Sand Flick" }),
 				member(
 					"Cairnback",
 					22,
-					{ "Mesa Slam", "Capstone Crash", "Talus Tumble", "Tumbleweed Toss" }
+					{ "Mesa Slam", "Capstone Crash", "Talus Tumble", "Pebble Pelt" }
 				),
 				member(
 					"Thatchling",

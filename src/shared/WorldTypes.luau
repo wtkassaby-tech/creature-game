@@ -133,6 +133,112 @@ export type Gate = {
 	recommendedMax: number,
 }
 
+-- A biome's map sheet: where a designer put things, instead of where the generated layout would.
+-- Every point is in studs relative to the hub's centre; north is -z. A facing is in degrees
+-- clockwise from north (0 north, 90 east), so it points along (sin, -cos). Layout reads the sheet;
+-- a biome without one keeps the generated layout (docs/plans/08_GREENWOOD_MAP.md section 4).
+export type SheetPoint = { x: number, z: number }
+export type SheetBuilding = {
+	at: SheetPoint, -- the building's middle
+	faces: number,
+	door: SheetPoint?, -- where its keeper stands; left out, a set distance in front of the middle
+	model: string?, -- the painted model it wears (a PropModels name)
+}
+export type MapSheet = {
+	-- A route's waypoints from the hub outwards. Layout fits them to the route's data length by
+	-- trimming or stretching the last leg, so distances along the route keep their meaning.
+	routes: { [string]: { points: { SheetPoint } } },
+	corridor: { [string]: number }?, -- half-width by area id (and by lair id for the spur)
+	spurs: { [string]: { SheetPoint } }?, -- by lair id: from the join to the arena
+	buildings: { [string]: SheetBuilding },
+	places: { [string]: SheetPoint }, -- set spots that replace generated ones, by place id
+	stands: { [string]: SheetPoint }?, -- story battle id -> where the battler stands
+	faces: { [string]: number }?, -- tamer or story battle id -> facing
+	spawn: { at: SheetPoint, faces: number }?,
+}
+
+-- A biome's dressing sheet: how the designed map looks (water, lanes, fences, signs, trees). The
+-- server's checks never read it; only the test map builder and tests/layout.test do. Points are
+-- relative to the hub's centre like the map sheet; colours are { r, g, b }.
+export type Colour = { number }
+export type FenceStyle = "Picket" | "Rustic" | "Stone" | "Gate" | "Bramble"
+export type DressLane = { points: { SheetPoint }, width: number, colour: Colour }
+export type DressWater = { points: { SheetPoint }, width: number, colour: Colour }
+export type DressFence = {
+	points: { SheetPoint },
+	style: FenceStyle,
+	across: boolean?, -- true when it closes a lane or path on purpose (an old fence, a shut gate)
+}
+export type DressTree = { at: SheetPoint, model: string, scale: number? }
+export type DressRow = { from: SheetPoint, to: SheetPoint, step: number, model: string }
+export type DressSign = { at: SheetPoint, faces: number, lines: { string } }
+export type DressArch = { at: SheetPoint, faces: number, outside: string, inside: string }
+export type DressHouse = {
+	at: SheetPoint,
+	faces: number,
+	model: string,
+	width: number,
+	depth: number,
+	tall: number,
+}
+export type DressPerson = { name: string, at: SheetPoint, faces: number, model: string }
+-- A patch of coloured ground: a whole stretch's corridor (`area`), or a band beside a route
+-- from `from` to `to` along it, `near` to `far` studs to its left (negative: right).
+export type DressGround = {
+	colour: Colour,
+	area: string?,
+	route: string?,
+	from: number?,
+	to: number?,
+	near: number?,
+	far: number?,
+}
+-- A clearing the route edges go round (`ring` false: the hedge bulges out round it) or that has
+-- a hedge ring of its own with a gap where a lane comes in (`ring` true).
+export type DressClearing = { at: SheetPoint, radius: number, ring: boolean }
+export type DressingSheet = {
+	ground: { DressGround },
+	townGround: Colour, -- the town's green
+	laneColour: Colour, -- route lanes
+	laneSurfaces: { { route: string, from: number, to: number, colour: Colour } },
+	laneWidth: number,
+	lanes: { DressLane }, -- streets, side paths, the jetty and the shortcut
+	footpaths: { DressLane }, -- mown paths with rustic rails both sides
+	stones: { { from: SheetPoint, to: SheetPoint } }, -- stepping stones
+	plaza: { at: SheetPoint, size: number, rim: number },
+	well: SheetPoint,
+	water: { DressWater },
+	pools: { { at: SheetPoint, radius: number, colour: Colour } },
+	pond: { at: SheetPoint, radius: number, colour: Colour, jetty: { SheetPoint } },
+	waterfall: SheetPoint,
+	footbridge: { at: SheetPoint, faces: number, length: number, width: number },
+	arches: { DressArch },
+	signs: { DressSign },
+	lamps: { SheetPoint },
+	beds: { SheetPoint },
+	trees: { DressTree },
+	rows: { DressRow },
+	fences: { DressFence },
+	hedges: { { SheetPoint } }, -- the town's edge, already broken at its gaps
+	buildings: { [string]: { width: number, depth: number, tall: number } }, -- hub buildings
+	houses: { DressHouse }, -- cottages with no keeper (the gatehouse hamlet)
+	people: { DressPerson }, -- villagers with nothing to say yet
+	knoll: { at: SheetPoint, size: { number } },
+	picnic: { at: SheetPoint, radius: number },
+	pocket: { at: SheetPoint, radius: number },
+	clearings: { DressClearing },
+	caps: { [string]: number }, -- by route: half the gap left in the hedge across its far end
+	corridorTrees: { [string]: { model: string, scale: number } }, -- by area; default Tree/Pine
+	gatehouse: { at: SheetPoint, faces: number },
+	bar: { at: SheetPoint, width: number },
+	ancientTree: { at: SheetPoint, tall: number },
+	stall: { side: number }, -- which side of the spur the stall's counter stands
+	ring: { width: number, depth: number, gap: number },
+	brambles: { SheetPoint },
+	coop: SheetPoint,
+	patch: { from: SheetPoint, to: SheetPoint }, -- the mentor's vegetable rows
+}
+
 export type Biome = {
 	id: string,
 	number: number,
@@ -144,6 +250,7 @@ export type Biome = {
 	gate: Gate,
 	levelMin: number, -- lowest wild level in the biome
 	levelMax: number, -- highest wild level on the main routes
+	map: MapSheet?, -- the designed map; nil keeps the generated layout
 }
 
 -- Tamers ------------------------------------------------------------------------------------

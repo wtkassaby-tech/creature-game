@@ -52,9 +52,30 @@ function WorldView.spawns(): { [number]: Wild }
 	return latest
 end
 
+-- The height of the ground itself at a spot. Treetops, roofs, hedges and people are looked
+-- through, so a creature never stands on a gatehouse or in a tree: ground is whatever is very
+-- wide or very thin (the land, a lane, a plaza).
 local function groundHeight(x: number, z: number): number
-	local hit = workspace:Raycast(Vector3.new(x, 500, z), Vector3.new(0, -1000, 0))
-	return if hit then hit.Position.Y else 0
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local skipped: { Instance } = {}
+	for _ = 1, 8 do
+		params.FilterDescendantsInstances = skipped
+		local hit = workspace:Raycast(Vector3.new(x, 500, z), Vector3.new(0, -1000, 0), params)
+		if not hit then
+			return 0
+		end
+		local size = hit.Instance.Size
+		local thinnest = math.min(size.X, size.Y, size.Z)
+		local widest = math.max(size.X, size.Y, size.Z)
+		local middle = size.X + size.Y + size.Z - thinnest - widest
+		-- Thin and broad both ways: a sign board or a fence rail is thin but narrow.
+		if widest >= 100 or (thinnest <= 1.5 and middle >= 8) then
+			return hit.Position.Y
+		end
+		table.insert(skipped, hit.Instance)
+	end
+	return 0
 end
 
 local function draw(parent: Instance, wild: Wild): BasePart

@@ -239,6 +239,8 @@ local Greenwood: WorldTypes.Biome = {
 	gate = gate,
 	levelMin = 2,
 	levelMax = 12,
+	-- Where everything stands, drawn on purpose (docs/plans/08_GREENWOOD_MAP.md section 3).
+	map = require("../map_data/Greenwood"),
 }
 
 return Greenwood

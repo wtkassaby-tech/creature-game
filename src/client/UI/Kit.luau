@@ -133,38 +133,6 @@ function Kit.pixel(label: TextLabel, size: number)
 	end
 end
 
-local function isDark(colour: Color3): boolean
-	return colour.R * 0.299 + colour.G * 0.587 + colour.B * 0.114 < 0.72
-end
-
-function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () -> ()): TextButton
-	local button = Instance.new("TextButton")
-	button.Text = text
-	-- White letters on a coloured button, ink on a pale one.
-	button.TextColor3 = if isDark(colour) then Kit.COLOURS.white else Kit.COLOURS.text
-	button.Font = Kit.FONT_PIXEL
-	button.TextScaled = true
-	button.AutoButtonColor = true -- Roblox's own darkening on hover and press
-	button.BackgroundColor3 = colour
-	button.BorderSizePixel = 0
-	button.Parent = parent
-	round(button, 6)
-	border(button, 3)
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 8), UDim.new(0, 8)
-	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 6), UDim.new(0, 6)
-	pad.Parent = button
-	local limit = Instance.new("UITextSizeConstraint")
-	limit.MaxTextSize = 20
-	limit.MinTextSize = 7
-	limit.Parent = button
-	button.Activated:Connect(function()
-		Sfx.play("press")
-		onClick()
-	end)
-	return button
-end
-
 -- Diagonal candy stripes across a coloured surface, a shade lighter and darker than its own
 -- colour, so it is not one flat block. One gradient with hard steps: it follows the rounded
 -- corners and costs nothing to draw.
@@ -187,6 +155,41 @@ function Kit.stripes(target: GuiObject)
 	gradient.Color = ColorSequence.new(points)
 	gradient.Rotation = 35
 	gradient.Parent = target
+end
+
+local function isDark(colour: Color3): boolean
+	return colour.R * 0.299 + colour.G * 0.587 + colour.B * 0.114 < 0.72
+end
+
+function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () -> ()): TextButton
+	local button = Instance.new("TextButton")
+	button.Text = text
+	-- White letters on a coloured button, ink on a pale one.
+	button.TextColor3 = if isDark(colour) then Kit.COLOURS.white else Kit.COLOURS.text
+	button.Font = Kit.FONT_PIXEL
+	button.TextScaled = true
+	button.AutoButtonColor = true -- Roblox's own darkening on hover and press
+	button.BackgroundColor3 = colour
+	button.BorderSizePixel = 0
+	button.Parent = parent
+	round(button, 6)
+	border(button, 3)
+	if isDark(colour) then
+		Kit.stripes(button) -- a coloured button is never one flat slab
+	end
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 8), UDim.new(0, 8)
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 6), UDim.new(0, 6)
+	pad.Parent = button
+	local limit = Instance.new("UITextSizeConstraint")
+	limit.MaxTextSize = 20
+	limit.MinTextSize = 7
+	limit.Parent = button
+	button.Activated:Connect(function()
+		Sfx.play("press")
+		onClick()
+	end)
+	return button
 end
 
 -- A darker strip set into a coloured button, for the small print along its bottom edge.

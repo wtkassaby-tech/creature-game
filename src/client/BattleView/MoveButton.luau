@@ -19,7 +19,6 @@ export type View = {
 
 function MoveButton.new(parent: Instance, onPick: () -> ()): View
 	local button = Kit.button(parent, "", Kit.COLOURS.accent, onPick)
-	Kit.stripes(button)
 	local name = Kit.label(button, "", UDim2.fromScale(1, 0.54), UDim2.new(), 22)
 	name.TextXAlignment = Enum.TextXAlignment.Center
 	name.TextStrokeColor3 = Kit.COLOURS.outline
