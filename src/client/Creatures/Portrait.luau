@@ -30,7 +30,7 @@ function Portrait.new(
 	toy.place(CFrame.Angles(0, math.rad(-30), 0))
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30
-	camera.CFrame = CFrame.lookAt(Vector3.new(0, 4.6, -17), Vector3.new(0, 3.1, 0))
+	camera.CFrame = CFrame.lookAt(Vector3.new(0, 4.4, -14.5), Vector3.new(0, 3, 0))
 	camera.Parent = window
 	window.CurrentCamera = camera
 	return window

@@ -6,11 +6,14 @@
 -- them, and the breathing and blinking move to the real rig.
 -- Everything here is on the player's own device and is looks only.
 
+local AssetService = game:GetService("AssetService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local CreatureModels = require(ReplicatedStorage.content.CreatureModels)
 local ToySketches = require(script.Parent.ToySketches)
-local Types = require(game:GetService("ReplicatedStorage").shared.Types)
+local Types = require(ReplicatedStorage.shared.Types)
 
 local ToyBody = {}
 
@@ -37,6 +40,40 @@ type Live = {
 
 local live: { [Model]: Live } = {}
 local timing = Random.new() -- when each one blinks; looks only
+
+-- One loaded model per species, copied for every creature shown. A species whose model could
+-- not be loaded is remembered too, so its sketch stays and nothing asks again.
+local templates: { [string]: MeshPart } = {}
+local failed: { [string]: boolean } = {}
+local loading: { [string]: boolean } = {}
+
+local function loadTemplate(species: string, def: CreatureModels.ModelDef): MeshPart?
+	while loading[species] do
+		task.wait(0.05)
+	end
+	if templates[species] or failed[species] then
+		return templates[species]
+	end
+	loading[species] = true
+	local ok, made = pcall(function(): MeshPart
+		return AssetService:CreateMeshPartAsync(Content.fromUri(def.mesh))
+	end)
+	if ok then
+		made.TextureID = def.texture
+		made.Size = Vector3.new(def.size[1], def.size[2], def.size[3])
+		made.Anchored = true
+		made.CanCollide = false
+		made.CanQuery = false
+		made.CanTouch = false
+		made.Material = Enum.Material.SmoothPlastic
+		templates[species] = made
+	else
+		warn(`[ToyBody] {species}: model did not load ({made})`)
+		failed[species] = true
+	end
+	loading[species] = nil
+	return templates[species]
+end
 
 local ANIMATE_WITHIN = 220 -- studs from the camera; further off they stand still
 
@@ -153,6 +190,33 @@ function ToyBody.new(parent: Instance, species: string, element: Types.Element, 
 	end)
 	ensureRunning()
 
+	-- A species with a real model swaps its sketch for it as soon as the model has loaded.
+	local body: MeshPart? = nil
+	local wanted = CreatureModels[species]
+	if wanted then
+		task.spawn(function()
+			local template = loadTemplate(species, wanted)
+			if not template or model.Parent == nil then
+				return
+			end
+			for part in colours do
+				part:Destroy()
+			end
+			table.clear(colours)
+			table.clear(materials)
+			table.clear(eyes)
+			table.clear(lids)
+			local made = template:Clone()
+			made.Size = template.Size * scale
+			made.CFrame = model:GetPivot()
+				* CFrame.new(0, made.Size.Y / 2, 0)
+				* CFrame.Angles(0, math.rad(wanted.turn or 0), 0)
+			made.Parent = model
+			colours[made], materials[made] = made.Color, made.Material
+			body = made
+		end)
+	end
+
 	return {
 		model = model,
 		place = function(home: CFrame)
@@ -163,6 +227,19 @@ function ToyBody.new(parent: Instance, species: string, element: Types.Element, 
 			toy.offset = offset
 		end,
 		flash = function()
+			local whole = body
+			if whole then
+				-- A textured model keeps its paint; a white glow over it does the flash.
+				local glow = Instance.new("Highlight")
+				glow.FillColor = Color3.new(1, 1, 1)
+				glow.FillTransparency = 0.1
+				glow.OutlineTransparency = 1
+				glow.Parent = whole
+				task.delay(0.1, function()
+					glow:Destroy()
+				end)
+				return
+			end
 			for part in colours do
 				if part.Transparency < 1 then
 					part.Color = Color3.new(1, 1, 1)
