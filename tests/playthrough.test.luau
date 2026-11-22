@@ -676,6 +676,7 @@ end
 -- the healer (no walking, talking or shopping), so its clock has to come in well under that.
 local FIRST_BADGE_BATTLE_MINUTES = 45
 local LAUNCH_BATTLE_MINUTES = 210
+local LAUNCH_BIOMES = 3
 local TYPICAL_WILD_BATTLES_A_BADGE = 60 -- training and hunting for the right type, together
 local MOST_WILD_BATTLES_A_BADGE = 100 -- the unluckiest robot; more than this is a wall, not a game
 
@@ -740,7 +741,10 @@ do
 			table.insert(wild[number], leg.wild)
 			table.insert(minutes[number], leg.minutes)
 			mostWild = math.max(mostWild, leg.wild)
-			sum += leg.minutes
+			-- The launch target covers the three launch biomes only, even when a test opens more.
+			if number <= LAUNCH_BIOMES then
+				sum += leg.minutes
+			end
 		end
 		table.insert(total, sum)
 		worstLosses = math.max(worstLosses, run.bot.losses)
