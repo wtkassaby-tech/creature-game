@@ -12,6 +12,7 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
 local Props = require(script.Parent.Props)
+local Shapes = require(script.Parent.Shapes)
 
 local Dressing = {}
 
@@ -131,6 +132,17 @@ function Dressing.house(
 		local foot = house.Position - Vector3.yAxis * house.Size.Y / 2
 		local copy = stand(house, painted, foot, height, house.CFrame.LookVector)
 		copy.Name = kind
+		return
+	end
+	-- A canyon or seaside building's own plain stand-in (an adobe trading post, a bottle kiln).
+	local foot = house.Position - Vector3.yAxis * house.Size.Y / 2
+	local ground = CFrame.lookAt(foot, foot + house.CFrame.LookVector)
+	if model and Shapes.building(house, model, ground, house.Size.X, house.Size.Z, tall or 26) then
+		house.Transparency = 1
+		local sign = house:FindFirstChildOfClass("BillboardGui")
+		if sign then
+			sign.StudsOffsetWorldSpace = Vector3.new(0, (tall or 26) - house.Size.Y / 2 + 2, 0)
+		end
 		return
 	end
 	house.Color = WALL
@@ -282,7 +294,14 @@ function Dressing.square(
 	parent: Instance,
 	centre: Vector3,
 	size: number,
-	designed: { plaza: number, rim: number, well: Vector3, green: Color3 }?
+	designed: {
+		plaza: number,
+		rim: number,
+		well: Vector3?,
+		green: Color3,
+		colour: Color3?,
+		rimColour: Color3?,
+	}?
 )
 	local half = size / 2 - 5
 	local slab = parent:FindFirstChild("Square")
@@ -297,17 +316,17 @@ function Dressing.square(
 	plaza.Anchored = true
 	plaza.Size = Vector3.new(0.3, across, across)
 	plaza.CFrame = CFrame.new(centre + Vector3.yAxis * 0.45) * CFrame.Angles(0, 0, math.rad(90))
-	plaza.Color = rgb(222, 204, 168)
+	plaza.Color = (if designed then designed.colour else nil) or rgb(222, 204, 168)
 	plaza.Material = Enum.Material.SmoothPlastic
 	plaza.Parent = parent
 	local rim = plaza:Clone()
 	rim.Name = "PlazaRim"
 	rim.Size = Vector3.new(0.24, rimAcross, rimAcross)
-	rim.Color = rgb(170, 150, 120)
+	rim.Color = (if designed then designed.rimColour else nil) or rgb(170, 150, 120)
 	rim.Parent = parent
 	local well = prop("Well")
 	local wellAt = if designed then designed.well else centre + Vector3.new(18, 0, -12)
-	if well then
+	if well and wellAt then
 		stand(parent, well, wellAt + Vector3.yAxis * 0.4, 10, Vector3.zAxis)
 	end
 	if designed then

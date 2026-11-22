@@ -176,8 +176,8 @@ local function buildings(
 		local facing = if faces then Props.facing(faces) else nil
 		local footprint = if dressing then dressing.buildings[building.id] else nil
 		local house: Part
-		if building.id == "ring" and footprint and facing then
-			-- The Ring is an open sand floor inside a rail, not a house.
+		if building.role == "Circuit" and footprint and facing then
+			-- The Circuit (the Ring, the Dust Ring) is an open sand floor inside a rail, not a house.
 			house = block(
 				hub,
 				building.id,

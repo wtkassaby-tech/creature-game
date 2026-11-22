@@ -3,6 +3,9 @@
 -- dialogue. Data only, no logic. The data lives in src/content/ and the helpers in World.luau.
 --
 -- Typing note (see Types.luau): fixed sets of keys are records (ByStarter), not maps.
+--
+-- Over ~400 lines on purpose: it is one list of record types with no logic, and the map and
+-- dressing sheets' types are read together with the biome types they refer to.
 
 local BattleAi = require("./BattleAi")
 local EconomyConfig = require("../config/EconomyConfig")
@@ -161,8 +164,11 @@ export type MapSheet = {
 -- server's checks never read it; only the test map builder and tests/layout.test do. Points are
 -- relative to the hub's centre like the map sheet; colours are { r, g, b }.
 export type Colour = { number }
-export type FenceStyle = "Picket" | "Rustic" | "Stone" | "Gate" | "Bramble"
-export type DressLane = { points: { SheetPoint }, width: number, colour: Colour }
+-- "Rope" is a rope rail on driftwood posts (across a lane: a broken rope bridge); "Rockfall" is
+-- a heap of boulders (docs/plans/09_DUST_CANYON_MAP.md section 4c).
+export type FenceStyle = "Picket" | "Rustic" | "Stone" | "Gate" | "Bramble" | "Rope" | "Rockfall"
+-- `deck` raises a lane on planks and posts: a quay, a boardwalk, a jetty.
+export type DressLane = { points: { SheetPoint }, width: number, colour: Colour, deck: boolean? }
 export type DressWater = { points: { SheetPoint }, width: number, colour: Colour }
 export type DressFence = {
 	points: { SheetPoint },
@@ -172,7 +178,14 @@ export type DressFence = {
 export type DressTree = { at: SheetPoint, model: string, scale: number? }
 export type DressRow = { from: SheetPoint, to: SheetPoint, step: number, model: string }
 export type DressSign = { at: SheetPoint, faces: number, lines: { string } }
-export type DressArch = { at: SheetPoint, faces: number, outside: string, inside: string }
+-- `model` names the painted arch (left out: VillageArch).
+export type DressArch = {
+	at: SheetPoint,
+	faces: number,
+	outside: string,
+	inside: string,
+	model: string?,
+}
 export type DressHouse = {
 	at: SheetPoint,
 	faces: number,
@@ -205,22 +218,55 @@ export type DressGround = {
 -- A clearing the route edges go round (`ring` false: the hedge bulges out round it) or that has
 -- a hedge ring of its own with a gap where a lane comes in (`ring` true).
 export type DressClearing = { at: SheetPoint, radius: number, ring: boolean }
+-- How a corridor edge or a wall is built (docs/plans/09_DUST_CANYON_MAP.md section 4c).
+-- SeaCliff is Cliff in grey sea rock (Tide Flats): the same build, its own painted piece.
+export type EdgeStyle =
+	"Hedge"
+	| "Cliff"
+	| "SeaCliff"
+	| "Boulders"
+	| "Rocks"
+	| "Dunes"
+	| "Rope"
+	| "SeaWall"
+-- The two edges of a stretch, as seen walking away from town.
+export type DressEdge = { left: EdgeStyle, right: EdgeStyle }
+-- A wall, cliff, dune ridge or sea wall that is not a corridor edge: the town's edge, a gorge wall.
+export type DressWall = { points: { SheetPoint }, style: EdgeStyle, tall: number? }
+-- A flat axis-aligned rectangle of colour laid on the ground: the sea, a mudflat, a gorge floor.
+export type DressFlat = { from: SheetPoint, to: SheetPoint, colour: Colour, water: boolean }
+-- The far landmark the player walks toward.
+export type DressLandmark = { at: SheetPoint, model: string, tall: number, faces: number }
+-- What a stretch's long grass is made of: the tuft model and the disc under it.
+export type GrassLook = { model: string, under: Colour }
+export type LaneSurface = {
+	route: string,
+	from: number,
+	to: number,
+	colour: Colour,
+	deck: boolean?,
+}
+-- Every field marked "left out" is optional: a biome without that feature leaves it out and the
+-- builder skips it (Greenwood fills them all in).
 export type DressingSheet = {
 	ground: { DressGround },
-	townGround: Colour, -- the town's green
+	townGround: Colour, -- the town's ground
+	fieldGround: Colour?, -- the open ground outside town and corridors; left out, Greenwood's green
 	laneColour: Colour, -- route lanes
-	laneSurfaces: { { route: string, from: number, to: number, colour: Colour } },
+	laneSurfaces: { LaneSurface },
 	laneWidth: number,
 	lanes: { DressLane }, -- streets, side paths, the jetty and the shortcut
 	footpaths: { DressLane }, -- mown paths with rustic rails both sides
 	stones: { { from: SheetPoint, to: SheetPoint } }, -- stepping stones
-	plaza: { at: SheetPoint, size: number, rim: number },
-	well: SheetPoint,
+	-- `colour` and `rimColour` are left out for the usual cobbles.
+	plaza: { at: SheetPoint, size: number, rim: number, colour: Colour?, rimColour: Colour? },
+	well: SheetPoint?,
 	water: { DressWater },
 	pools: { { at: SheetPoint, radius: number, colour: Colour } },
-	pond: { at: SheetPoint, radius: number, colour: Colour, jetty: { SheetPoint } },
-	waterfall: SheetPoint,
-	footbridge: { at: SheetPoint, faces: number, length: number, width: number },
+	pond: { at: SheetPoint, radius: number, colour: Colour, jetty: { SheetPoint } }?,
+	waterfall: SheetPoint?, -- above the first pool
+	footbridge: { at: SheetPoint, faces: number, length: number, width: number }?,
+	flats: { DressFlat }?, -- drawn in order, each a hair above the last
 	arches: { DressArch },
 	signs: { DressSign },
 	lamps: { SheetPoint },
@@ -228,25 +274,33 @@ export type DressingSheet = {
 	trees: { DressTree },
 	rows: { DressRow },
 	fences: { DressFence },
-	hedges: { { SheetPoint } }, -- the town's edge, already broken at its gaps
+	hedges: { { SheetPoint } }, -- the town's edge, already broken at its gaps (may be empty)
+	walls: { DressWall }?, -- cliffs, dunes and sea walls that are not corridor edges
+	-- The style of each corridor's two edges, by area id and lair id; a stretch left out keeps
+	-- hedges.
+	edges: { [string]: DressEdge }?,
 	buildings: { [string]: { width: number, depth: number, tall: number } }, -- hub buildings
 	houses: { DressHouse }, -- cottages with no keeper (the gatehouse hamlet)
 	people: { DressPerson }, -- villagers with nothing to say yet
 	props: { DressProp }, -- homely things: carts, washing lines, barrels, apple trees
-	knoll: { at: SheetPoint, size: { number } },
-	picnic: { at: SheetPoint, radius: number },
-	pocket: { at: SheetPoint, radius: number },
+	knoll: { at: SheetPoint, size: { number } }?,
+	picnic: { at: SheetPoint, radius: number }?,
+	pocket: { at: SheetPoint, radius: number }?,
 	clearings: { DressClearing },
 	caps: { [string]: number }, -- by route: half the gap left in the hedge across its far end
-	corridorTrees: { [string]: { model: string, scale: number } }, -- by area; default Tree/Pine
-	gatehouse: { at: SheetPoint, faces: number },
+	-- By area id and lair id; left out, Tree and Pine.
+	corridorTrees: { [string]: { model: string, scale: number } },
+	-- `model` left out: Gatehouse; `banner` left out: "Acorn Badge".
+	gatehouse: { at: SheetPoint, faces: number, model: string?, banner: string? },
 	bar: { at: SheetPoint, width: number },
-	ancientTree: { at: SheetPoint, tall: number },
+	ancientTree: { at: SheetPoint, tall: number }?,
+	landmark: DressLandmark?,
+	grassLooks: { [string]: GrassLook }?, -- by area id; left out, GrassTuft on (78, 128, 58)
 	stall: { side: number }, -- which side of the spur the stall's counter stands
-	ring: { width: number, depth: number, gap: number },
-	brambles: { SheetPoint },
-	coop: SheetPoint,
-	patch: { from: SheetPoint, to: SheetPoint }, -- the mentor's vegetable rows
+	ring: { width: number, depth: number, gap: number, style: FenceStyle? }, -- rail: Rustic
+	brambles: { SheetPoint }, -- may be empty
+	coop: SheetPoint?,
+	patch: { from: SheetPoint, to: SheetPoint }?, -- the mentor's vegetable rows
 }
 
 export type Biome = {

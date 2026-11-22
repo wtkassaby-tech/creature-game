@@ -45,6 +45,7 @@ local function pieces(samples: { Vector3 }): { { Vector3 } }
 	end
 	return out
 end
+Fences.pieces = pieces
 
 -- Splits a line into the stretches that stay clear of water, and the gaps where water crosses.
 local function clearOfWater(
@@ -83,6 +84,7 @@ local function clearOfWater(
 	end
 	return runs, gaps
 end
+Fences.clearOfWater = clearOfWater
 
 local function block(parent: Instance, a: Vector3, b: Vector3, thick: number, tall: number): Part?
 	local flatA, flatB = Vector3.new(a.X, tall / 2, a.Z), Vector3.new(b.X, tall / 2, b.Z)
@@ -99,6 +101,9 @@ local function block(parent: Instance, a: Vector3, b: Vector3, thick: number, ta
 	made.CanCollide = true
 	return made
 end
+-- A collidable block on the ground from `a` to `b`, `thick` across and `tall` high, longer than
+-- the run by half its thickness so pieces meet at corners.
+Fences.block = block
 
 -- A low rail across water where a hedge or fence stops: posts and a bar, easy to see over and
 -- just low enough to hop.

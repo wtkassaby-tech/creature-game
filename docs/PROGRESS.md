@@ -2,6 +2,21 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (Dust Canyon and Tide Flats designed)
+
+**In one line:** the two other launch biomes are now drawn on purpose like Greenwood, from written plans, with twenty-six new painted town models. Run in Studio with no errors; `lune run check` passes.
+
+| Biome | What it is now |
+| --- | --- |
+| **Dust Canyon (Kilnrest)** | A potters' town in a red canyon bowl, walled by sandstone cliffs. You come in from Greenwood through a slot in the rock (the Westcut) under an adobe arch reading "Kilnrest". A terracotta square and well, Rook's Trading Post under a striped awning, the Cradle Kiln as a glowing bottle kiln, adobe and kiln-dome houses, a wind tower lookout. Route A (Dry Wash Trail) winds north through a pebble wash and tumbleweed flats into a cliff-walled arroyo ending at a broken rope bridge. Route B (Mesa Road) climbs east along the rim, through a garden of rock spires, to the Stair Gate. The Redstack, a great two-tier mesa, stands behind Mesalith's arena and shows over the canyon rim. |
+| **Tide Flats (Saltwick)** | A salt-and-rope fishing town round a harbour, entered over the dunes under a driftwood arch hung with net and floats. A plank quay with rowing boats, the chandlery with a teal awning, stilt houses, tarred net lofts, the Lamp Tower on the harbour wall, sea walls. Route A runs south along the beach, rock pools and a sunken plank path through kelp; Route B crosses a roped sandbar and a boardwalk over mud, past a shipwreck and a sea cave, to the Breakwater Gate. The Old Light, a red-and-white lighthouse, stands over Carrackon's cove of grey sea cliffs. |
+
+**Fixed while looking:** the town name on each painted arch now sits on the arch's own board; where two town streets of different colours met, the ground flickered in a pinwheel (each street now sits a hair above the one before); search spots look like their stretch (dry grass in the canyon) instead of Greenwood's reeds on mud.
+
+**Not checked:** walking either new town at a player's height end to end; the phone-sized view and frame rate there (about 650 grass pieces and 1,400 studs of rope rail in Tide Flats); the plank decks underfoot; whether each story trigger fires at its spot; Tide Flats' open sea runs past the edge of its ground and may show from the air.
+
+**For Ayrton:** the healer and waystation reuse Greenwood's buildings in every town so they are easy to recognise (say if each town should have its own); all new place names are placeholders.
+
 ## 23 November 2026 (a designed Greenwood, and a gentler first fifteen minutes)
 
 **In one line:** Ayrton: "I feel like you havent planned and structured the map correctly", and "prioritize the aesthetic appeal... maximise player enjoyment". Greenwood is now drawn on purpose from a written map plan, the first fifteen minutes were rebuilt from a written plan, and five research reports sit behind both. Run in Studio: no errors; the opening, the starter pick, the first battle and the new town were all seen there. `lune run check` passes.

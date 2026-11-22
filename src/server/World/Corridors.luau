@@ -1,18 +1,21 @@
 --!strict
 -- The designed routes as places with edges (docs/plans/08_GREENWOOD_MAP.md sections 3 and 5):
--- the coloured ground of each stretch, and a hedge down each side of every route and the lair
--- spur at the map sheet's half-widths, with trees just outside. Where two corridors meet, or a
--- corridor meets the town, the hedges give way, so the union of all of them is one walkable
--- space. This replaces the random scatter for a biome that has a map sheet. The lanes
--- themselves are in Lanes.luau.
+-- the coloured ground of each stretch, and an edge down each side of every route and the lair
+-- spur at the map sheet's half-widths, with trees just outside. Each side of each stretch is
+-- built in the dressing sheet's edge style (a hedge, a cliff, a boulder bank: Edges.luau and
+-- docs/plans/09_DUST_CANYON_MAP.md section 4c). Where two corridors meet, or a corridor meets the
+-- town, the edges give way, so the union of all of them is one walkable space. This replaces the
+-- random scatter for a biome that has a map sheet. The lanes themselves are in Lanes.luau.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Layout = require(ReplicatedStorage.shared.Layout)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
+local Edges = require(script.Parent.Edges)
 local Fences = require(script.Parent.Fences)
 local Props = require(script.Parent.Props)
+local Shapes = require(script.Parent.Shapes)
 
 local Corridors = {}
 
@@ -23,6 +26,14 @@ type Corridor = {
 	points: { Vector3 },
 	widthAt: (along: number) -> number,
 	areaAt: (along: number) -> string?,
+}
+
+-- A run of edge in one style, with the outward normal and the distance along at each point.
+type Run = {
+	points: { Vector3 },
+	normals: { Vector3 },
+	alongs: { number },
+	style: WorldTypes.EdgeStyle,
 }
 
 local EDGE_STEP = 3 -- studs between the points an edge is traced through
@@ -123,70 +134,10 @@ local function heading(line: Layout.RouteLine, along: number): Vector3
 	return if run.Magnitude > 1e-3 then run.Unit else Vector3.xAxis
 end
 
--- The coloured ground of each stretch (its whole corridor) and of bands beside a route (the
--- sand strip), as slabs with a disc at each step, each layer a hair above the last.
-function Corridors.ground(
-	parent: Instance,
-	biome: WorldTypes.Biome,
-	map: Layout.Map,
-	dressing: WorldTypes.DressingSheet
-)
-	local folder = Instance.new("Folder")
-	folder.Name = "GroundPatches"
-	folder.Parent = parent
-	for layer, patch in dressing.ground do
-		local line: Layout.RouteLine? = nil
-		local from, to, near, far = patch.from or 0, patch.to or 0, patch.near or 0, patch.far or 0
-		for _, route in biome.routes do
-			for _, area in route.areas do
-				if area.id == patch.area then
-					local routeLine = map.routes[route.id]
-					local width = if routeLine and routeLine.halfWidth
-						then routeLine.halfWidth[area.id]
-						else nil
-					line = routeLine
-					from, to = area.from, area.to
-					near, far = -(width or 40), width or 40
-				end
-			end
-			if patch.route == route.id then
-				line = map.routes[route.id]
-			end
-		end
-		if line == nil then
-			continue
-		end
-		local band = far - near
-		local middle = (near + far) / 2
-		local top = 0.03 + layer * 0.012
-		local colour = Props.colour(patch.colour)
-		local previous: Vector3? = nil
-		local along = from
-		while along <= to do
-			local at = flat(Layout.pointAt(line, along, middle))
-			-- Stay out of the town: its own green is its ground.
-			local half = map.hub.size / 2
-			local dx = math.max(math.abs(at.X - map.hub.x) - half, 0)
-			local dz = math.max(math.abs(at.Z - map.hub.z) - half, 0)
-			if math.sqrt(dx * dx + dz * dz) >= band / 2 then
-				Props.disc(folder, at, band, 0.1, top, colour)
-				if previous then
-					Props.strip(folder, previous, at, band, 0.1, top, colour)
-				end
-				previous = at
-			else
-				previous = nil
-			end
-			if along >= to then
-				break
-			end
-			along = math.min(along + 10, to)
-		end
-	end
-end
-
--- The hedges down both sides of every corridor, the hedge across a route's far end, the hedge
--- round a ring clearing (the lair), and trees just outside them all.
+-- The edges down both sides of every corridor, the edge across a route's far end, the edge round
+-- a ring clearing (the lair), and trees just outside them all (none outside a cliff: the cliff is
+-- the edge). Each side of each stretch takes its style from the sheet's `edges`; left out, a
+-- hedge, as in Greenwood.
 function Corridors.edges(
 	parent: Instance,
 	biome: WorldTypes.Biome,
@@ -215,30 +166,68 @@ function Corridors.edges(
 		end
 		return false
 	end
+	-- Water flats (the sea, a harbour) take no trees.
+	local seas: { { min: Vector3, max: Vector3 } } = {}
+	local flats: { WorldTypes.DressFlat } = dressing.flats or {}
+	for _, patch in flats do
+		if patch.water then
+			local a = origin + Vector3.new(patch.from.x, 0, patch.from.z)
+			local b = origin + Vector3.new(patch.to.x, 0, patch.to.z)
+			table.insert(seas, { min = a:Min(b), max = a:Max(b) })
+		end
+	end
+	local function atSea(at: Vector3): boolean
+		for _, sea in seas do
+			if
+				at.X >= sea.min.X
+				and at.X <= sea.max.X
+				and at.Z >= sea.min.Z
+				and at.Z <= sea.max.Z
+			then
+				return true
+			end
+		end
+		return false
+	end
 
 	-- A tree outside an edge, if the spot is clear of lanes, water, town and clearings.
 	local function plant(at: Vector3, model: string, scale: number)
-		if insideAny(list, at, -2) or inTown(map, at, 4) or wet(waters, at, 3) or inRing(at, 2) then
+		if
+			insideAny(list, at, -2)
+			or inTown(map, at, 4)
+			or wet(waters, at, 3)
+			or inRing(at, 2)
+			or atSea(at)
+		then
 			return
 		end
-		Props.tree(folder, at, model, scale, pick)
+		Shapes.plant(folder, at, model, scale, pick)
+	end
+	-- The stretch (or, on the spur, the lair) a distance along a corridor belongs to.
+	local function keyAt(corridor: Corridor, along: number): string
+		return corridor.areaAt(along) or corridor.id
 	end
 	local function treeFor(corridor: Corridor, along: number): (string, number)
-		local area = corridor.areaAt(along)
-		local special = if area then dressing.corridorTrees[area] else nil
+		local special = dressing.corridorTrees[keyAt(corridor, along)]
 		if special then
 			return special.model, special.scale
 		end
 		return if pick:NextNumber() < 0.6 then "Tree" else "Pine", 1
 	end
+	local styles = dressing.edges
+	local function styleOf(key: string, side: number): WorldTypes.EdgeStyle
+		local edge = if styles then styles[key] else nil
+		if edge == nil then
+			return "Hedge"
+		end
+		local chosen: WorldTypes.EdgeStyle = if side < 0 then edge.left else edge.right
+		return chosen
+	end
 
 	for _, corridor in list do
 		for _, side in { -1, 1 } do
-			local runs: { { Vector3 } } = {}
-			local normals: { { Vector3 } } = {}
-			local alongs: { { number } } = {}
-			local current: { Vector3 }, currentNormals: { Vector3 }, currentAlongs: { number } =
-				{}, {}, {}
+			local runs: { Run } = {}
+			local current: Run? = nil
 			local along = 0
 			while true do
 				local centre = flat(Layout.pointAt(corridor.line, along))
@@ -254,28 +243,44 @@ function Corridors.edges(
 				local keep = not inTown(map, point, 2)
 					and not insideAny(list, point, INSIDE_MARGIN)
 					and not inRing(point, 1)
+				local style: WorldTypes.EdgeStyle = styleOf(keyAt(corridor, along), side)
 				if keep then
-					table.insert(current, point)
-					table.insert(currentNormals, normal)
-					table.insert(currentAlongs, along)
-				elseif #current > 0 then
+					local into: Run
+					local open = current
+					if open and open.style == style then
+						into = open
+					elseif open then
+						-- The style changes here: the next run starts where this one ends.
+						table.insert(runs, open)
+						local last = #open.points
+						into = {
+							points = { open.points[last] },
+							normals = { open.normals[last] },
+							alongs = { open.alongs[last] },
+							style = style,
+						}
+					else
+						into = { points = {}, normals = {}, alongs = {}, style = style }
+					end
+					current = into
+					table.insert(into.points, point)
+					table.insert(into.normals, normal)
+					table.insert(into.alongs, along)
+				elseif current then
 					table.insert(runs, current)
-					table.insert(normals, currentNormals)
-					table.insert(alongs, currentAlongs)
-					current, currentNormals, currentAlongs = {}, {}, {}
+					current = nil
 				end
 				if along >= corridor.line.length then
 					break
 				end
 				along = math.min(along + EDGE_STEP, corridor.line.length)
 			end
-			if #current > 0 then
+			if current then
 				table.insert(runs, current)
-				table.insert(normals, currentNormals)
-				table.insert(alongs, currentAlongs)
 			end
-			for index, run in runs do
-				-- An edge that starts at the town is joined to the town's own hedge.
+			for _, piece in runs do
+				-- An edge that starts at the town is joined to the town's own edge.
+				local run = piece.points
 				local first = run[1]
 				local half = map.hub.size / 2
 				local dx, dz = first.X - origin.X, first.Z - origin.Z
@@ -284,24 +289,27 @@ function Corridors.edges(
 				elseif math.abs(dx) < half and math.abs(dz) > half and math.abs(dz) - half < 25 then
 					table.insert(run, 1, Vector3.new(first.X, 0, origin.Z + math.sign(dz) * half))
 				end
-				Fences.hedge(folder, run, waters)
-				local nextTree = pick:NextNumber(0, 8)
-				local walked = 0
-				for k = 2, #normals[index] do
-					local point = run[k + (#run - #normals[index])]
-					local before = run[k - 1 + (#run - #normals[index])]
-					walked += (point - before).Magnitude
-					if walked >= nextTree then
-						nextTree = walked + pick:NextNumber(12, 16)
-						local model, scale = treeFor(corridor, alongs[index][k])
-						plant(point + normals[index][k] * pick:NextNumber(4, 10), model, scale)
+				Edges.run(folder, run, piece.style, waters, pick, { outward = side })
+				if piece.style ~= "Cliff" and piece.style ~= "SeaCliff" then
+					local normals = piece.normals
+					local nextTree = pick:NextNumber(0, 8)
+					local walked = 0
+					for k = 2, #normals do
+						local point = run[k + (#run - #normals)]
+						local before = run[k - 1 + (#run - #normals)]
+						walked += (point - before).Magnitude
+						if walked >= nextTree then
+							nextTree = walked + pick:NextNumber(12, 16)
+							local model, scale = treeFor(corridor, piece.alongs[k])
+							plant(point + normals[k] * pick:NextNumber(4, 10), model, scale)
+						end
 					end
 				end
 			end
 		end
 
-		-- The hedge across a route's far end, with a gap in the middle that something else
-		-- fills (the old fence, the gatehouse).
+		-- The edge across a route's far end, in the style of the last stretch's left side, with a
+		-- gap in the middle that something else fills (the old fence, the gatehouse).
 		local gap = dressing.caps[corridor.id]
 		if gap then
 			local length = corridor.line.length
@@ -309,17 +317,23 @@ function Corridors.edges(
 			local run = heading(corridor.line, length)
 			local across = Vector3.new(-run.Z, 0, run.X)
 			local width = corridor.widthAt(length)
+			local style: WorldTypes.EdgeStyle = styleOf(keyAt(corridor, length), -1)
 			for _, side in { -1, 1 } do
-				Fences.hedge(
+				Edges.run(
 					folder,
 					{ centre + across * side * gap, centre + across * side * width },
-					waters
+					style,
+					waters,
+					pick,
+					{ outward = -side } -- its outside is beyond the route's end
 				)
 			end
 		end
 	end
 
-	-- A hedge round each ring clearing, open where a corridor comes in, with trees behind it.
+	-- An edge round each ring clearing, open where a corridor comes in, with trees behind it.
+	local ringStyle: WorldTypes.EdgeStyle = styleOf(biome.lair.id, -1)
+	local ringTrees = dressing.corridorTrees[biome.lair.id]
 	for _, ring in rings do
 		local points: { Vector3 } = {}
 		local count = 64
@@ -354,16 +368,19 @@ function Corridors.edges(
 			end
 		end
 		for _, piece in runs do
-			Fences.hedge(folder, piece, waters)
+			-- Walking round with the angle, the outside is on the right.
+			Edges.run(folder, piece, ringStyle, waters, pick, { outward = -1 })
 		end
-		for k = 0, 39 do
-			local angle = k / 40 * math.pi * 2 + pick:NextNumber(-0.04, 0.04)
-			local out = Vector3.new(math.cos(angle), 0, math.sin(angle))
-			plant(
-				ring.at + out * (ring.radius + pick:NextNumber(6, 12)),
-				if k % 3 == 0 then "Pine" else "Tree",
-				1.2
-			)
+		if ringStyle ~= "Cliff" and ringStyle ~= "SeaCliff" then
+			for k = 0, 39 do
+				local angle = k / 40 * math.pi * 2 + pick:NextNumber(-0.04, 0.04)
+				local out = Vector3.new(math.cos(angle), 0, math.sin(angle))
+				plant(
+					ring.at + out * (ring.radius + pick:NextNumber(6, 12)),
+					if ringTrees then ringTrees.model elseif k % 3 == 0 then "Pine" else "Tree",
+					if ringTrees then ringTrees.scale else 1.2
+				)
+			end
 		end
 	end
 end

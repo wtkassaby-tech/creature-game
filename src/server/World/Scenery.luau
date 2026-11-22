@@ -10,10 +10,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Layout = require(ReplicatedStorage.shared.Layout)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
+local Edges = require(script.Parent.Edges)
 local Fences = require(script.Parent.Fences)
+local Lanes = require(script.Parent.Lanes)
 local Props = require(script.Parent.Props)
+local Shapes = require(script.Parent.Shapes)
 local Signs = require(script.Parent.Signs)
 local Water = require(script.Parent.Water)
+local Yards = require(script.Parent.Yards)
 
 local Scenery = {}
 
@@ -52,8 +56,10 @@ function Scenery.waters(map: Layout.Map, dressing: WorldTypes.DressingSheet): { 
 	for _, stream in dressing.water do
 		table.insert(list, { points = placedAll(map, stream.points), half = stream.width / 2 })
 	end
-	local pond = placed(map, dressing.pond.at)
-	table.insert(list, { points = { pond, pond }, half = dressing.pond.radius })
+	if dressing.pond then
+		local pond = placed(map, dressing.pond.at)
+		table.insert(list, { points = { pond, pond }, half = dressing.pond.radius })
+	end
 	for _, pool in dressing.pools do
 		local at = placed(map, pool.at)
 		table.insert(list, { points = { at, at }, half = pool.radius })
@@ -121,6 +127,44 @@ local function towardStreet(at: Vector3, streets: { { Vector3 } }): Vector3
 	return best
 end
 
+-- The point `along` studs down a line of points.
+local function pointAlong(points: { Vector3 }, along: number): Vector3
+	local remaining = along
+	for index = 1, #points - 1 do
+		local a, b = points[index], points[index + 1]
+		local length = (b - a).Magnitude
+		if remaining <= length and length > 1e-6 then
+			return a:Lerp(b, remaining / length)
+		end
+		remaining -= length
+	end
+	return points[#points]
+end
+
+-- The direction square to a fence that points away from the nearest route, for a broken bridge
+-- across a route's end: out over the drop.
+local function awayFromRoutes(points: { Vector3 }, routes: { { Vector3 } }): Vector3?
+	local run = points[#points] - points[1]
+	if #points < 2 or run.Magnitude < 1e-3 then
+		return nil
+	end
+	local middle = (points[1] + points[#points]) / 2
+	local normal = Vector3.new(-run.Unit.Z, 0, run.Unit.X)
+	local behind: Vector3? = nil
+	local bestOff = math.huge
+	for _, line in routes do
+		local along, off = Props.nearest(line, middle)
+		if off < bestOff then
+			bestOff = off
+			behind = pointAlong(line, math.max(along - 10, 0))
+		end
+	end
+	if behind == nil then
+		return nil
+	end
+	return if (middle - behind):Dot(normal) >= 0 then normal else -normal
+end
+
 -- Builds the dressing sheet's town and route scenery under `parent`.
 function Scenery.build(
 	parent: Instance,
@@ -134,10 +178,18 @@ function Scenery.build(
 
 	-- Streets, side paths, the jetty and the shut shortcut.
 	local streets: { { Vector3 } } = {}
-	for _, street in dressing.lanes do
+	for index, street in dressing.lanes do
 		local points = placedAll(map, street.points)
 		table.insert(streets, points)
-		lane(town, points, street.width, Props.colour(street.colour), 0.42)
+		if street.deck then
+			Lanes.deck(town, points, street.width, Props.colour(street.colour))
+		else
+			-- Each street a hundredth of a stud above the one before, so where two of different
+			-- colours meet, one shows rather than both flickering (a pinwheel at the Westcut).
+			-- The first is the main street: the side streets sit on it.
+			local top = 0.42 + math.min(index - 1, 20) * 0.01
+			lane(town, points, street.width, Props.colour(street.colour), top)
+		end
 	end
 	-- The mown footpath round the meadow's grass, with rustic rails each side that stop short
 	-- of the route lanes so they never fence one off.
@@ -215,34 +267,59 @@ function Scenery.build(
 		Water.pool(town, placed(map, pool.at), pool.radius, Props.colour(pool.colour))
 	end
 	local pond = dressing.pond
-	Water.pond(
-		town,
-		placed(map, pond.at),
-		pond.radius,
-		Props.colour(pond.colour),
-		placedAll(map, pond.jetty),
-		pick
-	)
-	if #dressing.pools > 0 then
+	if pond then
+		Water.pond(
+			town,
+			placed(map, pond.at),
+			pond.radius,
+			Props.colour(pond.colour),
+			placedAll(map, pond.jetty),
+			pick
+		)
+	end
+	local fall, spring = dressing.waterfall, dressing.pools[1]
+	if fall and spring then
+		local stream = dressing.water[1]
 		Water.waterfall(
 			town,
-			placed(map, dressing.waterfall),
-			placed(map, dressing.pools[1].at),
-			Props.colour(dressing.water[1].colour)
+			placed(map, fall),
+			placed(map, spring.at),
+			Props.colour(if stream then stream.colour else spring.colour)
 		)
 	end
 	local bridge = dressing.footbridge
-	Water.footbridge(
-		town,
-		placed(map, bridge.at),
-		Props.facing(bridge.faces),
-		bridge.length,
-		bridge.width
-	)
+	if bridge then
+		Water.footbridge(
+			town,
+			placed(map, bridge.at),
+			Props.facing(bridge.faces),
+			bridge.length,
+			bridge.width
+		)
+	end
+	-- Flat ground of another colour (a gorge floor, the sea), each a hair above the last and
+	-- under the corridors' own ground. Nothing stands on them or bumps into them.
+	local flats: { WorldTypes.DressFlat } = dressing.flats or {}
+	for index, flat in flats do
+		local a, b = placed(map, flat.from), placed(map, flat.to)
+		local size = (a - b):Abs()
+		local slab = Props.part(
+			town,
+			Vector3.new(size.X, 0.1, size.Z),
+			CFrame.new((a.X + b.X) / 2, 0.06 + 0.002 * index - 0.05, (a.Z + b.Z) / 2),
+			Props.colour(flat.colour)
+		)
+		slab.Name = if flat.water then "WaterFlat" else "Flat"
+		slab.CanQuery = false
+		slab.CanTouch = false
+		if flat.water then
+			slab.Reflectance = 0.1
+		end
+	end
 
 	-- Arches and signposts.
 	for _, arch in dressing.arches do
-		Signs.arch(town, placed(map, arch.at), arch.faces, arch.outside, arch.inside)
+		Signs.arch(town, placed(map, arch.at), arch.faces, arch.outside, arch.inside, arch.model)
 	end
 	for _, sign in dressing.signs do
 		Signs.signpost(town, placed(map, sign.at), sign.faces, sign.lines)
@@ -251,7 +328,7 @@ function Scenery.build(
 	-- Trees: clumps one by one, belts in rows.
 	local trees = folderIn(town, "Trees")
 	for _, tree in dressing.trees do
-		Props.tree(trees, placed(map, tree.at), tree.model, tree.scale or 1, pick)
+		Shapes.plant(trees, placed(map, tree.at), tree.model, tree.scale or 1, pick)
 	end
 	for _, row in dressing.rows do
 		local from, to = placed(map, row.from), placed(map, row.to)
@@ -259,14 +336,17 @@ function Scenery.build(
 		local count = math.floor(length / row.step + 1e-6)
 		for k = 0, count do
 			local at = if length > 0 then from + (to - from).Unit * (k * row.step) else from
-			Props.tree(trees, at, row.model, 1, pick)
+			Shapes.plant(trees, at, row.model, 1, pick)
 		end
 	end
 
 	-- Fences, walls and the town hedge.
 	for _, fence in dressing.fences do
 		local points = placedAll(map, fence.points)
-		Fences.fence(town, points, fence.style, waters)
+		local away = if fence.across and fence.style == "Rope"
+			then awayFromRoutes(points, routeLines)
+			else nil
+		Edges.fence(town, points, fence.style, waters, pick, away)
 		if fence.style == "Rustic" and fence.across and #points >= 2 then
 			-- The broken stile in the middle of the old fence: two steps, one of them fallen.
 			local middle = (points[1] + points[#points]) / 2
@@ -291,87 +371,26 @@ function Scenery.build(
 	for _, run in dressing.hedges do
 		Fences.hedge(hedges, placedAll(map, run), waters)
 	end
-
-	-- The breeder's yard: a hen coop and straw nests with eggs.
-	local coop = placed(map, dressing.coop)
-	local house = Props.part(
-		town,
-		Vector3.new(8, 5, 6),
-		CFrame.new(coop + Vector3.yAxis * 2.5),
-		Props.rgb(200, 150, 90)
-	)
-	house.CanCollide = true
-	Props.part(
-		town,
-		Vector3.new(9, 1, 7),
-		CFrame.new(coop + Vector3.yAxis * 5.5),
-		Props.rgb(206, 88, 72)
-	)
-	for k = 1, 4 do
-		local nest = coop + Vector3.new(-12 + k * 4, 0, 9)
-		Props.lump(
-			town,
-			Vector3.new(3, 0.8, 3),
-			nest + Vector3.yAxis * 0.3,
-			Props.rgb(222, 196, 120)
-		)
-		Props.lump(
-			town,
-			Vector3.new(0.9, 1.2, 0.9),
-			nest + Vector3.yAxis * 0.9,
-			Props.rgb(250, 244, 230)
-		)
-	end
-	-- The mentor's vegetable rows.
-	local patchFrom, patchTo = placed(map, dressing.patch.from), placed(map, dressing.patch.to)
-	for x = patchFrom.X, patchTo.X, 3.5 do
-		local a, b = Vector3.new(x, 0, patchFrom.Z), Vector3.new(x, 0, patchTo.Z)
-		Props.strip(town, a, b, 2, 0.6, 0.5, EARTH)
-		for _, at in Props.resample({ a, b }, 2.2) do
-			Props.lump(
-				town,
-				Vector3.new(1.2, 1, 1.2),
-				at + Vector3.yAxis * 0.9,
-				Props.rgb(96, 170, 80)
+	-- Cliffs, dunes and sea walls that are not corridor edges, centred on their lines with their
+	-- faces to the town.
+	local walls = dressing.walls
+	if walls then
+		local folder = folderIn(town, "Walls")
+		local centre = Vector3.new(map.hub.x, 0, map.hub.z)
+		for _, wall in walls do
+			Edges.run(
+				folder,
+				placedAll(map, wall.points),
+				wall.style,
+				waters,
+				pick,
+				{ towards = centre, tall = wall.tall }
 			)
 		end
 	end
 
-	-- The Ring: an oval rail open at the front, with benches either side.
-	local ringAt = map.buildings.ring
-	local ringFaces = map.faces.ring
-	if ringAt and ringFaces then
-		local centre = Vector3.new(ringAt.x, 0, ringAt.z)
-		local ahead = Props.facing(ringFaces)
-		local across = Vector3.new(-ahead.Z, 0, ahead.X)
-		local halfAcross, halfAhead = dressing.ring.width / 2 + 1, dressing.ring.depth / 2 + 1
-		local rail: { Vector3 } = {}
-		local count = 40
-		for k = 0, count do
-			local angle = k / count * math.pi * 2
-			local at = centre
-				+ across * math.sin(angle) * halfAcross
-				+ ahead * math.cos(angle) * halfAhead
-			-- The opening faces the keeper at the front.
-			local front = (at - centre):Dot(ahead)
-			local sideways = math.abs((at - centre):Dot(across))
-			if front > 0 and sideways < dressing.ring.gap / 2 + 1 then
-				if #rail > 1 then
-					Fences.fence(town, rail, "Rustic", waters)
-				end
-				rail = {}
-			else
-				table.insert(rail, at)
-			end
-		end
-		if #rail > 1 then
-			Fences.fence(town, rail, "Rustic", waters)
-		end
-		for _, side in { -1, 1 } do
-			local foot = centre + across * side * (halfAcross + 4)
-			Props.bench(town, foot, -across * side)
-		end
-	end
+	-- The breeder's coop, the garden rows and the Circuit's rail.
+	Yards.build(town, biome, map, dressing, waters)
 end
 
 return Scenery

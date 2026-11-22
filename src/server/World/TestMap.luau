@@ -1,9 +1,11 @@
 --!strict
 -- Builds a walkable world from the layout, so the game can be played and tested before the
--- real map exists. A biome with a map sheet (Greenwood) is built as designed: streets, lanes in
--- hedged corridors, water, fences, signs and painted models where the sheet puts them
--- (docs/plans/08_GREENWOOD_MAP.md). A biome without one gets flat ground, slabs for paths and a
--- random scatter of greenery. Nothing here is final art.
+-- real map exists. A biome with a map sheet and a dressing sheet (Greenwood, Dust Canyon) is
+-- built as designed: streets, lanes in corridors edged with hedges, cliffs or boulders, water,
+-- fences, signs and painted models where the sheet puts them (docs/plans/08_GREENWOOD_MAP.md,
+-- 09_DUST_CANYON_MAP.md). A biome without one gets flat ground, slabs for paths and a random
+-- scatter of greenery. Each biome's ground slab stops where the next one's starts, 30 studs
+-- past its gate. Nothing here is final art.
 -- TODO(art): replaced by the real map; its markers will carry the same attributes.
 --
 -- Everything a player can use carries a ProximityPrompt with two attributes the device reads:
@@ -13,36 +15,47 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Giants = require(ReplicatedStorage.content.Giants)
+local DustCanyonDressing = require(ReplicatedStorage.content.map_data.DustCanyonDressing)
 local GreenwoodDressing = require(ReplicatedStorage.content.map_data.GreenwoodDressing)
+local TideFlatsDressing = require(ReplicatedStorage.content.map_data.TideFlatsDressing)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Tamers = require(ReplicatedStorage.content.Tamers)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
+local CorridorGround = require(script.Parent.CorridorGround)
 local Corridors = require(script.Parent.Corridors)
 local Dressing = require(script.Parent.Dressing)
 local Grass = require(script.Parent.Grass)
+local Lair = require(script.Parent.Lair)
 local Landmarks = require(script.Parent.Landmarks)
 local Lanes = require(script.Parent.Lanes)
 local Markers = require(script.Parent.Markers)
 local Props = require(script.Parent.Props)
 local Scatter = require(script.Parent.Scatter)
 local Scenery = require(script.Parent.Scenery)
-local Water = require(script.Parent.Water)
 
 local TestMap = {}
 
 -- The dressing sheet of each biome that has one, by biome id.
 local DRESSINGS: { [string]: WorldTypes.DressingSheet } = {
 	greenwood = GreenwoodDressing,
+	dust_canyon = DustCanyonDressing,
+	tide_flats = TideFlatsDressing,
 }
+
+-- Where one biome's ground slab ends and the next one's begins: this far past the earlier
+-- biome's gate, across its sealed road (docs/plans/09_DUST_CANYON_MAP.md section 4d). Gates face
+-- east, so the line runs north to south.
+local SLAB_CLIP_PAST_GATE = 30
+
+-- The east-west limits of a biome's ground slab, as world x: nil where it is not clipped.
+type Clip = { west: number?, east: number? }
 
 local GROUND = Color3.fromRGB(116, 178, 92)
 local PATH = Color3.fromRGB(196, 178, 128)
 local STONE = Color3.fromRGB(150, 150, 150)
 local STONE_LANE = Color3.fromRGB(186, 180, 168)
-local ARENA = Color3.fromRGB(120, 96, 66)
 local WOOD = Color3.fromRGB(140, 105, 70)
 local REEDS = Color3.fromRGB(70, 110, 60)
 local MUD = Color3.fromRGB(120, 104, 70)
@@ -51,36 +64,47 @@ local block, label, prompt = Markers.block, Markers.label, Markers.prompt
 local at, slab, person = Markers.at, Markers.slab, Markers.person
 
 -- Builds one biome under `parent`.
-local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.Map, first: boolean)
+local function buildBiome(
+	parent: Folder,
+	biome: WorldTypes.Biome,
+	map: Layout.Map,
+	first: boolean,
+	clip: Clip
+)
 	local world = Instance.new("Folder")
 	world.Name = biome.id
 	world.Parent = parent
 	local dressing = if biome.map then DRESSINGS[biome.id] else nil
 	local pick = Random.new(biome.number * 7919) -- the same map every time
 
-	-- A slab of ground under everything in this biome, with room to spare.
+	-- A slab of ground under everything in this biome, with room to spare, cut off where the
+	-- next biome's begins so two colours of field never overlap.
 	local minX, maxX, minZ, maxZ = math.huge, -math.huge, math.huge, -math.huge
 	for _, place in map.places do
 		minX, maxX = math.min(minX, place.x), math.max(maxX, place.x)
 		minZ, maxZ = math.min(minZ, place.z), math.max(maxZ, place.z)
 	end
 	local margin = 220
+	local middleX, middleZ = (minX + maxX) / 2, (minZ + maxZ) / 2
+	local width = math.min(2048, maxX - minX + margin * 2)
+	local west, east = middleX - width / 2, middleX + width / 2
+	west = if clip.west then math.max(west, clip.west) else west
+	east = if clip.east then math.min(east, clip.east) else east
+	local fieldColour = if dressing and dressing.fieldGround
+		then Props.colour(dressing.fieldGround)
+		else GROUND
 	local ground = block(
 		world,
 		"Ground",
-		Vector3.new(
-			math.min(2048, maxX - minX + margin * 2),
-			4,
-			math.min(2048, maxZ - minZ + margin * 2)
-		),
-		CFrame.new((minX + maxX) / 2, -2, (minZ + maxZ) / 2),
-		GROUND
+		Vector3.new(east - west, 4, math.min(2048, maxZ - minZ + margin * 2)),
+		CFrame.new((west + east) / 2, -2, middleZ),
+		fieldColour
 	)
 	Markers.addGround(ground)
 
 	local waters = if dressing then Scenery.waters(map, dressing) else {}
 	if dressing then
-		Corridors.ground(world, biome, map, dressing)
+		CorridorGround.build(world, biome, map, dressing)
 		Corridors.edges(world, biome, map, dressing, waters, pick)
 		Scenery.build(world, biome, map, dressing, waters, pick)
 		Landmarks.build(world, map, dressing)
@@ -122,6 +146,7 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 	end
 	if dressing then
 		local plaza = dressing.plaza
+		local well = dressing.well
 		Dressing.square(
 			hub,
 			Vector3.new(map.hub.x + plaza.at.x, 0, map.hub.z + plaza.at.z),
@@ -129,8 +154,10 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 			{
 				plaza = plaza.size,
 				rim = plaza.rim,
-				well = Vector3.new(map.hub.x + dressing.well.x, 0, map.hub.z + dressing.well.z),
+				well = if well then Vector3.new(map.hub.x + well.x, 0, map.hub.z + well.z) else nil,
 				green = Props.colour(dressing.townGround),
+				colour = if plaza.colour then Props.colour(plaza.colour) else nil,
+				rimColour = if plaza.rimColour then Props.colour(plaza.rimColour) else nil,
 			}
 		)
 	else
@@ -199,7 +226,14 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		for _, area in route.areas do
 			local grass = map.places[Layout.grassId(area.id)]
 			if grass and dressing then
-				Grass.patch(folder, Layout.grassId(area.id), Vector3.new(grass.x, 0, grass.z), pick)
+				local looks = dressing.grassLooks
+				Grass.patch(
+					folder,
+					Layout.grassId(area.id),
+					Vector3.new(grass.x, 0, grass.z),
+					pick,
+					if looks then looks[area.id] else nil
+				)
 			elseif grass then
 				local size = WorldConfig.GRASS_RADIUS * 2
 				local patch = block(
@@ -226,18 +260,14 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 				local mesh = Instance.new("SpecialMesh")
 				mesh.MeshType = Enum.MeshType.Sphere
 				mesh.Parent = patch
-				local centre = patch.Position
-				local wooded = string.find(spot.area, "wood", 1, true) ~= nil
-				for k = 0, if wooded then 4 else 7 do
-					local turn = k / (if wooded then 5 else 8) * math.pi * 2
-					local foot =
-						Vector3.new(centre.X + math.cos(turn) * 9, 0, centre.Z + math.sin(turn) * 9)
-					if wooded then
-						Props.tree(folder, foot, "Tree", 0.6, pick)
-					else
-						Water.reeds(folder, foot, pick)
-					end
-				end
+				local looks = dressing.grassLooks
+				Grass.rustle(
+					folder,
+					patch,
+					spot.area,
+					pick,
+					if looks then looks[spot.area] else nil
+				)
 			end
 			label(patch, spot.name)
 			prompt(patch, "Rustle", spot.id, "Search", spot.name, WorldConfig.RUSTLE_RADIUS)
@@ -299,82 +329,7 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 	end
 
 	-- The lair's spur and arena.
-	if #map.lairSpur >= 2 then
-		local arenaAt = map.lairSpur[#map.lairSpur]
-		if not dressing then
-			for index = 1, #map.lairSpur - 1 do
-				slab(world, "LairSpur", map.lairSpur[index], map.lairSpur[index + 1], 24, PATH)
-			end
-		end
-		local arena = block(
-			world,
-			biome.lair.id,
-			Vector3.new(biome.lair.arenaSize, 0.6, biome.lair.arenaSize),
-			at(arenaAt, 0.3),
-			STONE
-		)
-		if dressing then
-			-- A round clearing of bare earth, the giant's arena.
-			arena.Shape = Enum.PartType.Cylinder
-			arena.Size = Vector3.new(0.3, biome.lair.arenaSize, biome.lair.arenaSize)
-			arena.CFrame = at(arenaAt, 0.2) * CFrame.Angles(0, 0, math.rad(90))
-			arena.Color = ARENA
-		end
-		label(arena, biome.lair.name)
-		local giant = Giants[biome.lair.giant]
-		if giant then
-			-- The giant sleeps in the middle of its arena; a Giant Horn wakes it.
-			local sleeper = block(world, giant.id, Vector3.new(20, 40, 20), at(arenaAt, 20.6), WOOD)
-			label(sleeper, `{giant.name} (Lv {giant.level})`)
-			local body = Props.model(giant.name)
-			if body then -- the giant itself, asleep, in place of the plain block
-				sleeper.Transparency = 1
-				local feet = Vector3.new(arenaAt.x, 0.4, arenaAt.z)
-				Props.stand(world, body, feet, 40, Vector3.new(-1, 0, 1))
-			end
-			prompt(sleeper, "Giant", giant.id, "Blow the Giant Horn", giant.name, 40)
-		end
-		local stall = map.places[Layout.stallId(biome)]
-		if stall then
-			local join = map.lairSpur[1]
-			local toward = Vector3.new(join.x, 0, join.z)
-			local keeper = person(world, "Hollow Stall", stall, toward)
-			prompt(
-				keeper,
-				"Shop",
-				Layout.stallId(biome),
-				"Shop",
-				"Hollow Stall",
-				WorldConfig.TALK_RADIUS
-			)
-			if dressing then
-				-- The stall's counter stands beside the keeper, off the lane.
-				local down = Vector3.new(join.x - stall.x, 0, join.z - stall.z)
-				local facing = if down.Magnitude > 1e-3 then down.Unit else Vector3.zAxis
-				local side = Vector3.new(-facing.Z, 0, facing.X) * dressing.stall.side
-				local foot = Vector3.new(stall.x, 0, stall.z) + side * 12
-				local painted = Props.model("Stall")
-				local counter = block(
-					world,
-					"StallCounter",
-					Vector3.new(8, 4, 3),
-					CFrame.lookAt(foot + Vector3.yAxis * 2, foot + Vector3.yAxis * 2 + facing),
-					WOOD
-				)
-				if painted then
-					counter.Transparency = 1
-					Props.stand(world, painted, foot, 9, facing)
-				else
-					Props.part(
-						world,
-						Vector3.new(9, 0.6, 5),
-						counter.CFrame * CFrame.new(0, 5, 0),
-						Color3.fromRGB(96, 150, 84)
-					)
-				end
-			end
-		end
-	end
+	Lair.build(world, biome, map, dressing)
 end
 
 -- Builds every biome under workspace.World, laid out as the world layout says. Does nothing if
@@ -389,10 +344,24 @@ function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
 	folder:SetAttribute("Generated", true)
 	-- In the workspace from the start, so people can find the ground beneath them by raycast.
 	folder.Parent = workspace
+	-- Each biome's gate, as world x, by biome number: where its ground slab meets the next one's.
+	local gateX: { [number]: number } = {}
+	for _, biome in biomes do
+		local map = world.maps[biome.number]
+		local gate = if map then map.places[biome.gate.id] else nil
+		if gate then
+			gateX[biome.number] = gate.x + SLAB_CLIP_PAST_GATE
+		end
+	end
 	for index, biome in biomes do
 		local map = world.maps[biome.number]
 		if map then
-			buildBiome(folder, biome, map, index == 1)
+			-- The last biome's slab runs on past its gate, under its sealed road.
+			local clip: Clip = {
+				west = gateX[biome.number - 1],
+				east = if world.maps[biome.number + 1] then gateX[biome.number] else nil,
+			}
+			buildBiome(folder, biome, map, index == 1, clip)
 		end
 	end
 end

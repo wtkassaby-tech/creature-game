@@ -299,6 +299,7 @@ local DustCanyon: WorldTypes.Biome = {
 	gate = gate,
 	levelMin = 12,
 	levelMax = 22,
+	map = require("../map_data/DustCanyon"),
 }
 
 return DustCanyon

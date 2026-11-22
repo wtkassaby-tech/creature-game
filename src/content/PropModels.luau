@@ -181,6 +181,140 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://120047194234084",
 		size = { 9.48, 10, 7.46 },
 	},
+	-- Dust Canyon (docs/plans/09_DUST_CANYON_MAP.md section 5)
+	CanyonArch = {
+		mesh = "rbxassetid://94831036269192",
+		texture = "rbxassetid://103313329721305",
+		size = { 14.64, 13.98, 6 },
+	},
+	AdobeHouse = {
+		mesh = "rbxassetid://103831095703014",
+		texture = "rbxassetid://128467975113266",
+		size = { 14.94, 18, 16.02 },
+	},
+	KilnCottage = {
+		mesh = "rbxassetid://125710218368326",
+		texture = "rbxassetid://112199485665997",
+		size = { 16.78, 18.94, 18 },
+	},
+	TradingPost = {
+		mesh = "rbxassetid://140614905092438",
+		texture = "rbxassetid://131854734889369",
+		size = { 21.8, 25.64, 20 },
+	},
+	BottleKiln = {
+		mesh = "rbxassetid://101371434213151",
+		texture = "rbxassetid://87856019932300",
+		size = { 24.26, 27.18, 26 },
+	},
+	WindTower = {
+		mesh = "rbxassetid://116582187331562",
+		texture = "rbxassetid://130926373786313",
+		size = { 16, 32.63, 15.26 },
+	},
+	StairGate = {
+		mesh = "rbxassetid://111981237181169",
+		texture = "rbxassetid://107639396503943",
+		size = { 26.06, 20.75, 16 },
+	},
+	RockSpire = {
+		mesh = "rbxassetid://116218017862560",
+		texture = "rbxassetid://74366126244368",
+		size = { 10, 20.89, 9.97 },
+	},
+	ScrubBush = {
+		mesh = "rbxassetid://84961450488135",
+		texture = "rbxassetid://127730714528766",
+		size = { 4.05, 4, 3.94 },
+	},
+	DryTuft = {
+		mesh = "rbxassetid://140594087130507",
+		texture = "rbxassetid://90720783128319",
+		size = { 2.64, 2.5, 2.61 },
+	},
+	CliffWall = {
+		mesh = "rbxassetid://111660835110033",
+		texture = "rbxassetid://98143360393382",
+		size = { 21.74, 16.38, 12 },
+	},
+	Boulders = {
+		mesh = "rbxassetid://98504594084730",
+		texture = "rbxassetid://139319414103286",
+		size = { 7.48, 7, 5.27 },
+	},
+	-- Tide Flats (docs/plans/10_TIDE_FLATS_MAP.md section 5)
+	HarbourArch = {
+		mesh = "rbxassetid://137162945661276",
+		texture = "rbxassetid://90217980784020",
+		size = { 15.23, 14.02, 6 },
+	},
+	StiltHouse = {
+		mesh = "rbxassetid://88643122021510",
+		texture = "rbxassetid://117558381982189",
+		size = { 17.02, 18.82, 18 },
+	},
+	NetLoft = {
+		mesh = "rbxassetid://111152835943745",
+		texture = "rbxassetid://131756071914431",
+		size = { 20, 17.98, 13.75 },
+	},
+	Chandlery = {
+		mesh = "rbxassetid://94560295444105",
+		texture = "rbxassetid://130707199901239",
+		size = { 24, 20.62, 17.4 },
+	},
+	LampTower = {
+		mesh = "rbxassetid://74534541286638",
+		texture = "rbxassetid://118012307125977",
+		size = { 16, 27.96, 14.83 },
+	},
+	BreakwaterGate = {
+		mesh = "rbxassetid://79397220878921",
+		texture = "rbxassetid://84903643861992",
+		size = { 36.34, 29.12, 16 },
+	},
+	OldLighthouse = {
+		mesh = "rbxassetid://94349549838379",
+		texture = "rbxassetid://96149118364646",
+		size = { 18, 28.75, 17.77 },
+	},
+	ShipRibs = {
+		mesh = "rbxassetid://131179034326921",
+		texture = "rbxassetid://73895156668602",
+		size = { 14.77, 21.65, 24 },
+	},
+	SeaCave = {
+		mesh = "rbxassetid://132368323720467",
+		texture = "rbxassetid://90314883818563",
+		size = { 18.65, 15.89, 18 },
+	},
+	MarramTuft = {
+		mesh = "rbxassetid://97089987274969",
+		texture = "rbxassetid://111757042085525",
+		size = { 3.22, 3, 3.19 },
+	},
+	-- Tide Flats, small pieces
+	Kelp = {
+		mesh = "rbxassetid://71966148332469",
+		texture = "rbxassetid://109981186234431",
+		size = { 4, 3.82, 3.97 },
+	},
+	SeaRocks = {
+		mesh = "rbxassetid://133543435108573",
+		texture = "rbxassetid://76505414225715",
+		size = { 6.24, 6, 6.19 },
+	},
+	Rowboat = {
+		mesh = "rbxassetid://91466779554077",
+		texture = "rbxassetid://111785511691000",
+		size = { 2.88, 1.93, 5 },
+	},
+	-- Tide Flats' grey sea cliff piece (the SeaCliff edge style)
+	SeaCliff = {
+		mesh = "rbxassetid://116568389077803",
+		texture = "rbxassetid://119424852006008",
+		size = { 12.2, 12.08, 12 },
+	},
 }
 
 return PropModels

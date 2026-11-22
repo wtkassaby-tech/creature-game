@@ -305,6 +305,7 @@ local TideFlats: WorldTypes.Biome = {
 	gate = gate,
 	levelMin = 22,
 	levelMax = 32,
+	map = require("../map_data/TideFlats"),
 }
 
 return TideFlats

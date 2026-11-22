@@ -9,6 +9,8 @@ local Signs = {}
 local TIMBER = Props.rgb(120, 84, 56)
 local CREAM = Props.rgb(244, 232, 208)
 local ROOF = Props.rgb(96, 150, 84)
+local CLAY_ROOF = Props.rgb(196, 98, 70)
+local SEA_ROOF = Props.rgb(70, 140, 150)
 
 -- The other way round: an arrow on the far side of a board points the opposite way.
 local function mirrored(text: string): string
@@ -19,12 +21,29 @@ local function mirrored(text: string): string
 end
 
 local PAINTED_ARCH_TALL = 23 -- wide enough at this height for the street to pass between its posts
-local PAINTED_BOARD_HALF = 1.35 -- from the middle of its hanging board to just clear of a face
+-- Where each painted arch's own sign board is, as shares of the arch's height and width, so the
+-- words sit on it: `height` its middle, `tall` and `wide` its size, `half` from its middle to
+-- just clear of a face, in studs. Read off the models in Studio (their collision is a box, so a
+-- ray cannot find the board). An arch not listed uses VillageArch's.
+type Board = { height: number, tall: number, wide: number, half: number }
+local BOARDS: { [string]: Board } = {
+	VillageArch = { height = 0.57, tall = 0.115, wide = 0.33, half = 1.35 },
+	CanyonArch = { height = 0.865, tall = 0.2, wide = 0.42, half = 3 },
+	HarbourArch = { height = 0.72, tall = 0.17, wide = 0.38, half = 1.2 },
+}
 
 -- A town arch facing `faces` (out of town): two timber posts 18 apart, a crossbeam with a small
 -- green roof, and a cream board reading `outside` to arrivals and `inside` to those leaving.
--- A flower box sits at each foot.
-function Signs.arch(parent: Instance, foot: Vector3, faces: number, outside: string, inside: string)
+-- A flower box sits at each foot. `model` names the painted arch (left out: VillageArch); a
+-- canyon's plain arch gets a terracotta roof instead of a green one.
+function Signs.arch(
+	parent: Instance,
+	foot: Vector3,
+	faces: number,
+	outside: string,
+	inside: string,
+	model: string?
+)
 	local folder = Instance.new("Folder")
 	folder.Name = "Arch"
 	folder.Parent = parent
@@ -32,7 +51,11 @@ function Signs.arch(parent: Instance, foot: Vector3, faces: number, outside: str
 	local base = CFrame.lookAt(foot, foot + out)
 	-- The painted arch if there is one: shingled roof, ivy posts and its own hanging board. Our
 	-- words go on a cream board over that one, and unseen posts do the blocking.
-	local painted = Props.model("VillageArch")
+	local painted = Props.model(model or "VillageArch")
+	local roofColour = if model == "CanyonArch"
+		then CLAY_ROOF
+		elseif model == "HarbourArch" then SEA_ROOF
+		else ROOF
 	if painted then
 		local stood = Props.stand(folder, painted, foot, PAINTED_ARCH_TALL, out)
 		local reach = stood.Size.X * 0.4
@@ -47,13 +70,14 @@ function Signs.arch(parent: Instance, foot: Vector3, faces: number, outside: str
 			post.Transparency = 1
 			post.CanCollide = true
 		end
-		-- The words are written straight on to the hanging board, one side each: an unseen
-		-- sheet just clear of each of its faces carries them.
+		-- The words are written straight on to the arch's own board, one side each: an
+		-- unseen sheet just clear of each of its faces carries them.
+		local board = BOARDS[model or "VillageArch"] or BOARDS.VillageArch
 		for _, side in { -1, 1 } do
 			local words = Props.part(
 				folder,
-				Vector3.new(stood.Size.X * 0.33, PAINTED_ARCH_TALL * 0.115, 0.1),
-				base * CFrame.new(0, PAINTED_ARCH_TALL * 0.57, side * PAINTED_BOARD_HALF),
+				Vector3.new(stood.Size.X * board.wide, PAINTED_ARCH_TALL * board.tall, 0.1),
+				base * CFrame.new(0, PAINTED_ARCH_TALL * board.height, side * board.half),
 				CREAM
 			)
 			words.Name = "ArchBoard"
@@ -93,7 +117,7 @@ function Signs.arch(parent: Instance, foot: Vector3, faces: number, outside: str
 		roof.Anchored = true
 		roof.CanCollide = false
 		roof.Size = Vector3.new(23, 2, 2)
-		roof.Color = ROOF
+		roof.Color = roofColour
 		roof.Material = Enum.Material.SmoothPlastic
 		roof.CFrame = base
 			* CFrame.new(0, 16, side * 1)
