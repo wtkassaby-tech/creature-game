@@ -145,7 +145,10 @@ function CreaturesView.start(playerGui: Instance)
 		list.Position = UDim2.fromOffset(0, teamHeight + GAP)
 		local below = teamHeight + GAP + (if breedShown then BreedStrip.HEIGHT + GAP else 0)
 		list.Size = UDim2.new(1, 0, 1, -below)
-		detail.setPortraitHeight(math.clamp(math.floor(columnHeight * 0.3), 90, 220))
+		-- On a phone the picture is kept short, so all the actions show without scrolling
+		-- (seen in Studio at 874 by 402: Release was cut off under a 94-pixel picture).
+		local picture = if columnHeight < 400 then 64 else math.floor(columnHeight * 0.3)
+		detail.setPortraitHeight(math.clamp(picture, 64, 220))
 	end
 
 	selectCreature = function(id: string)

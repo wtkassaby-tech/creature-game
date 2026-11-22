@@ -26,6 +26,8 @@ local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local StoryView = {}
 
+local TRACKER_WIDE = 300
+
 local DAY_ONE_BEAT = "first_quest"
 
 -- A short hint for what the story is waiting for, from the next beat's trigger.
@@ -93,11 +95,34 @@ function StoryView.start(playerGui: Instance)
 	-- The tracker: always on, top-left, clear of the bar at the top right.
 	local hud = Kit.screen(playerGui, "Tracker", 3)
 	hud.Enabled = true
-	local tracker = Kit.panel(hud, UDim2.fromOffset(330, 106), UDim2.fromOffset(10, 10))
-	tracker.BackgroundTransparency = 0.2
-	local trackerText = Kit.label(tracker, "", UDim2.new(1, -16, 1, -8), UDim2.fromOffset(8, 4), 16)
+	-- A little notebook page: a striped "TO DO" strip across the top and a line for each thing,
+	-- only as tall as its lines.
+	local tracker = Kit.panel(hud, UDim2.fromOffset(TRACKER_WIDE, 0), UDim2.fromOffset(10, 10))
+	tracker.AutomaticSize = Enum.AutomaticSize.Y
+	local trackerFoot = Instance.new("UIPadding")
+	trackerFoot.PaddingBottom = UDim.new(0, 8)
+	trackerFoot.Parent = tracker
+	local trackerHead = Instance.new("Frame")
+	trackerHead.Size = UDim2.new(1, -8, 0, 22)
+	trackerHead.Position = UDim2.fromOffset(4, 4)
+	trackerHead.BackgroundColor3 = Kit.COLOURS.accent
+	trackerHead.BorderSizePixel = 0
+	trackerHead.Parent = tracker
+	local headCorner = Instance.new("UICorner")
+	headCorner.CornerRadius = UDim.new(0, 5)
+	headCorner.Parent = trackerHead
+	Kit.stripes(trackerHead)
+	local headWords =
+		Kit.label(trackerHead, "TO DO", UDim2.new(1, -16, 1, -4), UDim2.fromOffset(8, 2), 16)
+	headWords.TextColor3 = Kit.COLOURS.white
+	Kit.pixel(headWords, 14)
+	local trackerText =
+		Kit.label(tracker, "", UDim2.new(1, -20, 0, 0), UDim2.fromOffset(10, 30), 16)
+	trackerText.AutomaticSize = Enum.AutomaticSize.Y
 	trackerText.TextWrapped = true
 	trackerText.TextYAlignment = Enum.TextYAlignment.Top
+	trackerText.TextScaled = false -- a fixed size: the page grows to fit its lines instead
+	trackerText.TextSize = 16
 	local opening = false -- the title and the mentor's words keep the tracker hidden
 
 	-- The dialogue box: bottom of the screen, one line at a time.

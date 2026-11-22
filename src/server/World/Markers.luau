@@ -46,7 +46,7 @@ end
 local function label(part: BasePart, text: string)
 	-- A building gets a larger plate, read from further off; a person or a post a small one.
 	local big = part.Size.Y > 12 and math.max(part.Size.X, part.Size.Z) > 8
-	local tall = if big then 3 else 1.7
+	local tall = if big then 3 else 1.3
 	local board = Instance.new("BillboardGui")
 	board.Size = UDim2.fromScale(math.clamp(#text * tall * 0.36 + tall, tall * 3, tall * 9), tall)
 	board.StudsOffsetWorldSpace = Vector3.new(0, part.Size.Y / 2 + tall / 2 + 1.2, 0)
