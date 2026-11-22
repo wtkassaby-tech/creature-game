@@ -291,12 +291,62 @@ do
 	)
 	check("with none left it is refused", Shop.useInBattle(profile, session, 3, "Revive", 2) == nil)
 
+	-- Clearwater Drops cure poison: only a standing, poisoned creature, and the turn is spent.
+	do
+		local drops, cureSession = setup()
+		drops.Items.Cure = 1
+		local mine = cureSession.state.sides[1].team[1]
+		check(
+			"Clearwater Drops on a creature that is not poisoned are refused and kept",
+			Shop.useInBattle(drops, cureSession, 1, "Cure", 1) == nil and drops.Items.Cure == 1
+		)
+		mine.poison = 3
+		local cured = assert(Shop.useInBattle(drops, cureSession, 1, "Cure", 1), "drops are used")
+		check(
+			"they cure the poison, are used up and spend the turn",
+			mine.poison == nil
+				and drops.Items.Cure == 0
+				and cured.events[1].kind == "Item"
+				and cured.events[2].kind == "Cured"
+				and cureSession.state.turn == 1
+		)
+		local fallen = cureSession.state.sides[1].team[2]
+		fallen.hp, fallen.poison = 0, 2
+		drops.Items.Cure = 1
+		check(
+			"Clearwater Drops cannot be used on a fallen creature",
+			Shop.useInBattle(drops, cureSession, 2, "Cure", 2) == nil and drops.Items.Cure == 1
+		)
+	end
+
 	local empty, other = setup()
 	empty.Items.Tonic = 0
 	other.state.sides[1].team[1].hp = 5
 	check(
 		"an item the player does not have is refused",
 		Shop.useInBattle(empty, other, 1, "Tonic", 1) == nil and other.state.turn == 0
+	)
+end
+
+print("\n== Clearwater Drops ==")
+do
+	local profile = Profile.template()
+	profile.Coins = 1000
+	profile.Items.Reedpith = 3
+	check(
+		"they cannot be made before the Mire",
+		Shop.craft(profile, "Cure") == nil and profile.Items.Reedpith == 3
+	)
+	profile.Story.biomeReached = 4
+	check(
+		"from the Mire, three Reedpith and a few coins make one",
+		Shop.craft(profile, "Cure") == "Cure"
+			and profile.Items.Cure == 1
+			and profile.Items.Reedpith == 0
+	)
+	check(
+		"they are not a field item for healing outside battle",
+		BattleSession.parseFieldItem("Cure") == nil
 	)
 end
 

@@ -30,8 +30,9 @@ export type ItemId =
 	| "GiantCall"
 	| "Bait"
 	| "BondCharm"
+	| "Cure"
 export type LassoTier = "Basic" | "Braided" | "Gilded"
-export type MaterialId = "Fernfluff" | "CanyonGrit" | "BrineShell"
+export type MaterialId = "Fernfluff" | "CanyonGrit" | "BrineShell" | "Reedpith"
 export type CandySource =
 	"MentorLesson"
 	| "DailyTask"
@@ -231,6 +232,13 @@ EconomyConfig.ITEMS = {
 		fieldItem = false,
 		note = "Tilts one breed's part choice toward the first parent (BreedConfig.CHARM_CHANCE); used up",
 	},
+	Cure = {
+		name = "Clearwater Drops",
+		price = 60,
+		scalesWithBiome = false,
+		fieldItem = false, -- giants never poison, so it has no place in a giant fight
+		note = "Cures one creature's poison in a battle; sold and made from the Mire (biome 4) on",
+	},
 } :: {
 	Basic: ItemDef,
 	Braided: ItemDef,
@@ -241,6 +249,7 @@ EconomyConfig.ITEMS = {
 	GiantCall: ItemDef,
 	Bait: ItemDef,
 	BondCharm: ItemDef,
+	Cure: ItemDef,
 }
 
 local ITEM_IDS: { ItemId } = {
@@ -253,11 +262,13 @@ local ITEM_IDS: { ItemId } = {
 	"GiantCall",
 	"Bait",
 	"BondCharm",
+	"Cure",
 }
 EconomyConfig.ITEM_IDS = ITEM_IDS
 local LASSO_TIERS: { LassoTier } = { "Basic", "Braided", "Gilded" }
 EconomyConfig.LASSO_TIERS = LASSO_TIERS
 EconomyConfig.BAIT_MIN_BIOME = 3
+EconomyConfig.CURE_MIN_BIOME = 4 -- poison arrives with the Mire
 -- Bait is used at a rustle spot (from Tide Flats on) and always brings a creature out; this is
 -- the chance that it is a gem-tier one. The economy simulation is balanced at this number.
 EconomyConfig.BAIT_GEM_CHANCE = 0.35
@@ -284,7 +295,7 @@ EconomyConfig.LASSO_MIN_TIER = {
 -- Crafted items cannot be sold back, so materials never turn into coins.
 ------------------------------------------------------------------------------------------------
 
-local MATERIAL_BY_BIOME: { MaterialId } = { "Fernfluff", "CanyonGrit", "BrineShell" }
+local MATERIAL_BY_BIOME: { MaterialId } = { "Fernfluff", "CanyonGrit", "BrineShell", "Reedpith" }
 EconomyConfig.MATERIAL_BY_BIOME = MATERIAL_BY_BIOME
 EconomyConfig.MATERIAL_DROP_CHANCE = 0.35 -- per wild win, times that win's diminishing factor
 
@@ -292,7 +303,8 @@ EconomyConfig.RECIPES = {
 	Tonic = { material = "Fernfluff", count = 3, coins = 0 },
 	GreatTonic = { material = "CanyonGrit", count = 3, coins = 20 },
 	Bait = { material = "BrineShell", count = 8, coins = 80 },
-} :: { Tonic: Recipe, GreatTonic: Recipe, Bait: Recipe }
+	Cure = { material = "Reedpith", count = 3, coins = 10 },
+} :: { Tonic: Recipe, GreatTonic: Recipe, Bait: Recipe, Cure: Recipe }
 
 ------------------------------------------------------------------------------------------------
 -- Releasing a creature: a few coins, plus materials for gem tiers. Never more than

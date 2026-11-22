@@ -369,13 +369,63 @@ function BattleSession.parseFieldItem(value: unknown): FieldItem?
 	return nil
 end
 
--- Uses a tonic or a Rally Root on one of the player's creatures. It spends the turn: the
+-- What can be used in a battle against the game: the field items, plus Clearwater Drops, which
+-- cures poison. Giants never poison, so a giant fight and healing outside battle take only field
+-- items (parseFieldItem).
+export type BattleItem = FieldItem | "Cure"
+
+function BattleSession.parseBattleItem(value: unknown): BattleItem?
+	if value == "Cure" then
+		return "Cure"
+	end
+	return BattleSession.parseFieldItem(value)
+end
+
+-- Logs an item used on the player's creature at team position `target`, then lets the opponent
+-- act: using an item spends the turn. `cured` adds the "Cured" event the screen shows.
+local function finishItem(
+	session: Session,
+	item: string,
+	fighter: Battle.Fighter,
+	target: number,
+	cured: boolean
+): TurnResult
+	local state = session.state
+	local logStart = #state.log + 1
+	local event: Battle.Event = {
+		turn = state.turn + 1,
+		side = PLAYER,
+		text = `{item} on {fighter.creature.id}`,
+		kind = "Item",
+		move = item,
+		damage = 0,
+		targetHp = fighter.hp,
+		slot = target,
+	}
+	table.insert(state.log, event)
+	if cured then
+		table.insert(state.log, {
+			turn = state.turn + 1,
+			side = PLAYER,
+			text = `{fighter.creature.id} is cured`,
+			kind = "Cured",
+			move = item,
+			damage = 0,
+			targetHp = fighter.hp,
+			slot = target,
+		})
+	end
+	Battle.step(state, { kind = "Pass" }, session.chooser(state, FOE))
+	return result(session, logStart)
+end
+
+-- Uses a tonic, a Rally Root or Clearwater Drops on one of the player's creatures. It spends the turn: the
 -- opponent still acts. A tonic needs a standing creature that is hurt; a Rally Root needs a
 -- fallen one. `target` is a team position. Returns the turn's result, or nil and a reason.
 function BattleSession.useItem(
 	session: Session,
 	turn: unknown,
-	item: FieldItem,
+	item: BattleItem,
 	target: unknown
 ): (TurnResult?, string?)
 	local state = session.state
@@ -395,8 +445,19 @@ function BattleSession.useItem(
 	if not fighter then
 		return nil, "Bad choice"
 	end
-	local effect = BattleConfig.FIELD_ITEMS[item]
 	local full = fighter.stats.Hp
+	local field = BattleSession.parseFieldItem(item)
+	if not field then
+		-- Clearwater Drops: a standing, poisoned creature is cured at once.
+		if fighter.hp <= 0 then
+			return nil, "That creature has fainted"
+		elseif (fighter.poison or 0) <= 0 then
+			return nil, "That creature is not poisoned"
+		end
+		fighter.poison = nil
+		return finishItem(session, item, fighter, target, true)
+	end
+	local effect = BattleConfig.FIELD_ITEMS[field]
 	if effect.kind == "Heal" then
 		if fighter.hp <= 0 then
 			return nil, "That creature has fainted"
@@ -410,20 +471,7 @@ function BattleSession.useItem(
 		end
 		fighter.hp = math.max(1, math.floor(full * effect.share))
 	end
-	local logStart = #state.log + 1
-	local event: Battle.Event = {
-		turn = state.turn + 1,
-		side = PLAYER,
-		text = `{item} on {fighter.creature.id}`,
-		kind = "Item",
-		move = item :: string,
-		damage = 0,
-		targetHp = fighter.hp,
-		slot = target,
-	}
-	table.insert(state.log, event)
-	Battle.step(state, { kind = "Pass" }, session.chooser(state, FOE))
-	return result(session, logStart), nil
+	return finishItem(session, item, fighter, target, false)
 end
 
 -- The opponent's active creature, for the lasso: its creature record and share of health left.

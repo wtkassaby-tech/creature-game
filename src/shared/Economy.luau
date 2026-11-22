@@ -141,6 +141,8 @@ end
 function Economy.itemAvailable(item: ItemId, furthestBiome: number): boolean
 	if item == "Bait" then
 		return furthestBiome >= EconomyConfig.BAIT_MIN_BIOME
+	elseif item == "Cure" then
+		return furthestBiome >= EconomyConfig.CURE_MIN_BIOME
 	end
 	return true
 end
@@ -175,6 +177,7 @@ function Economy.materialValue(material: MaterialId): number
 	consider("Tonic", recipes.Tonic)
 	consider("GreatTonic", recipes.GreatTonic)
 	consider("Bait", recipes.Bait)
+	consider("Cure", recipes.Cure)
 	return best
 end
 

@@ -69,8 +69,8 @@ function Shop.buy(
 	return { item = id, count = count, coins = coins }, nil
 end
 
-export type Craftable = "Tonic" | "GreatTonic" | "Bait"
-local CRAFTABLE: { Craftable } = { "Tonic", "GreatTonic", "Bait" }
+export type Craftable = "Tonic" | "GreatTonic" | "Bait" | "Cure"
+local CRAFTABLE: { Craftable } = { "Tonic", "GreatTonic", "Bait", "Cure" }
 
 -- Makes one item from a biome's material and a few coins (EconomyConfig.RECIPES). `item` comes
 -- from the device. It can be done anywhere: the materials are the cost.
@@ -160,7 +160,7 @@ function Shop.expandStable(profile: Profile.Profile, atShop: boolean): (number?,
 	return price, nil
 end
 
--- Uses a tonic or a Rally Root in a battle. The item is taken only if it was really used.
+-- Uses a tonic, a Rally Root or Clearwater Drops in a battle. The item is taken only if it was really used.
 function Shop.useInBattle(
 	profile: Profile.Profile,
 	session: BattleSession.Session,
@@ -168,7 +168,7 @@ function Shop.useInBattle(
 	item: unknown,
 	target: unknown
 ): (BattleSession.TurnResult?, string?)
-	local id: BattleSession.FieldItem? = BattleSession.parseFieldItem(item)
+	local id: BattleSession.BattleItem? = BattleSession.parseBattleItem(item)
 	if not id then
 		return nil, "That cannot be used in a battle"
 	end

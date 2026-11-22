@@ -124,6 +124,8 @@ function ShopView.start(playerGui: Instance): View
 					recipe = EconomyConfig.RECIPES.GreatTonic
 				elseif item == "Bait" then
 					recipe = EconomyConfig.RECIPES.Bait
+				elseif item == "Cure" then
+					recipe = EconomyConfig.RECIPES.Cure
 				end
 				if recipe then
 					local have = state.Items[recipe.material :: string] or 0

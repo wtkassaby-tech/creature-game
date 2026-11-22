@@ -458,6 +458,8 @@ event QuestUpdate {
 -- Items. Using a tonic or a Rally Root in a battle spends the turn. Buying happens at a shop:
 -- the server checks the player is standing there, the price and the coins.
 enum FieldItem = { Tonic, GreatTonic, Revive }
+-- In a battle against the game, Clearwater Drops (Cure) can also be used: they cure poison.
+enum BattleItem = { Tonic, GreatTonic, Revive, Cure }
 event UseItem {
 	From: Client,
 	Type: Reliable,
@@ -465,7 +467,7 @@ event UseItem {
 	Data: struct {
 		BattleId: u32,
 		Turn: u16,
-		Item: FieldItem,
+		Item: BattleItem,
 		Target: u8(1..6),
 	},
 }

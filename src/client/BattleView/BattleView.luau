@@ -15,7 +15,14 @@ local Net = require(ReplicatedStorage.net.generated.Client)
 
 local EVENT_SECONDS = 0.55 -- pause between the things that happen in a turn
 
-type Fighter = { name: string, level: number, hp: number, maxHp: number, moves: { string } }
+type Fighter = {
+	name: string,
+	level: number,
+	hp: number,
+	maxHp: number,
+	moves: { string },
+	poisoned: boolean?,
+}
 type Model = {
 	battleId: number,
 	wild: boolean,
@@ -197,6 +204,10 @@ function BattleView.start(playerGui: Instance)
 		offer("Tonic", "Field Tonic", current.active[1])
 		offer("GreatTonic", "Deep Tonic", current.active[1])
 		offer("Revive", "Rally Root", fallen)
+		local poisoned = current.sides[1][current.active[1]]
+		if poisoned and poisoned.poisoned then
+			offer("Cure", "Clearwater Drops", current.active[1])
+		end
 		choose(options)
 	end)
 	Kit.button(side, "Switch", Kit.COLOURS.panelLight, function()
@@ -380,10 +391,14 @@ function BattleView.start(playerGui: Instance)
 				local fallen = current.sides[actor][event.Slot]
 				if fallen then
 					fallen.hp = 0
+					fallen.poisoned = false
 					message.Text = `{fallen.name} fainted`
 				end
 			elseif event.Kind == "Poisoned" then
 				local victim = current.sides[actor][event.Slot]
+				if victim then
+					victim.poisoned = true
+				end
 				message.Text = `{if victim then victim.name else "It"} is poisoned!`
 			elseif event.Kind == "Poison" then
 				local victim = current.sides[actor][event.Slot]
@@ -393,6 +408,9 @@ function BattleView.start(playerGui: Instance)
 				end
 			elseif event.Kind == "Cured" then
 				local victim = current.sides[actor][event.Slot]
+				if victim then
+					victim.poisoned = false
+				end
 				message.Text = `{if victim then victim.name else "It"} shook off the poison`
 			elseif event.Kind == "Endure" then
 				local holding = current.sides[actor][event.Slot]
