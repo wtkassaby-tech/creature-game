@@ -7,6 +7,7 @@
 | Structure: loops, gating, what brings players back | `01_STRUCTURE.md` |
 | Art style: how the hits look, three directions for us | `02_ART_STYLE.md` |
 | Menus, HUD and battle screens, with a screen-by-screen plan | `03_MENUS_AND_UI.md` |
+| Pokemon: structure, presentation, and seven screens seen directly | `04_`, `05_`, `06_POKEMON_*.md` |
 
 ## How far to trust this
 
@@ -52,6 +53,39 @@ So the reports are good for direction, not for copying a layout. Before a screen
 After those: PERFECT / GREAT / MISS on the lasso (shown only; the server still judges), creature cards with rarity frames, a tidier phone HUD, a card-grid shop. Wireframes for every screen are in `03_MENUS_AND_UI.md`.
 
 Art that would have to be made later: a title logo, the stage-select map, rarity frames, type symbols, stars and badges.
+
+## Pokemon, looked at closely
+
+Added later on 22 November, after Ayrton said "Look at pokemon games". Three more files: `04_POKEMON_STRUCTURE.md`, `05_POKEMON_PRESENTATION.md`, and `06_POKEMON_SCREENS_SEEN.md` (seven real screens, opened and looked at one by one).
+
+Trust: the gym leader levels and catch rules come from pages the researchers read. The timings of the first half hour, route sizes and most screen layouts are from memory, and each file marks them. Bulbapedia blocked the researchers. The seven screens in file 06 were seen directly.
+
+**The Pokemon skeleton.** A guide gives a starter from three. The rival picks the one that beats it and fights at once. A short first route, a small town with a healer and a shop, a longer second route with more trainers, then the first gym: a few trainers, a simple puzzle, a leader with two or three creatures. The reward is a badge, a new move and the next road. Each later badge repeats this over one and a half to three hours, with the leader's best creature about four to five levels higher each time, and a rival or villain scene every two or three towns.
+
+**Our chapter 1 against it.**
+
+| | |
+| --- | --- |
+| Matches | Starter from three, the rival's counter-pick, town services, a longer second route, an optional lair, a first gate team of three, a locked road on |
+| Differs on purpose | The lasso lesson in the first four minutes, an egg by minute twelve, the first badge in under an hour, the rival as the gate, a hard level cap |
+| Worth changing | No move as a badge reward. No trainers or small puzzle on the approach to the gate. Only two rival fights in the chapter. No rest stop on the long second route. No table of what the shop unlocks with each badge |
+
+One point the researcher raised does not hold: our level cap rises ten per badge against Pokemon's four to five, but we have eleven badges to reach level 100 where Pokemon has eight to reach about fifty, so the pace per badge is ours by design.
+
+**What to take for the screens** (from the seven seen and the presentation report):
+
+1. Colour each move button by its type and print "strong" or "weak" on it. Players learn the type chart from the buttons.
+2. Put the battle camera low behind the player's creature. It costs only a camera position and makes your creature feel big and yours.
+3. A fast-battle switch and tap to skip from day one. Slow battles are the loudest complaint about Pokemon in what the researchers read.
+4. One hit, one bundle of feedback: a tiny freeze, a white flash, a shake, a floating number, a health bar with a trailing ghost, and a sound that differs for strong, normal and weak hits.
+5. The team as six rounded cards in a three by two grid, over a blurred view of the world.
+6. The menu shows the next goal and the next reward every time it opens.
+7. Bring six, pick three, see the other side's six first, blue against red: the layout for the challenge board and PvP.
+8. Giants staged on a raised, lit spot in a dark place, with your creature small in front.
+
+**Rules for our creatures**, so that mixed parts still look designed: one signature part per species that carries the outline; no two species share an outline when filled with black; two or three colour slots per species, so a bred child recolours to its own palette; the main colour leans to the type's colour; a small set of shared eye styles; a big head and short limbs; the back designed as carefully as the front, because the camera sits behind; one odd, memorable detail each.
+
+A full turn should take about three and a half seconds, and under two in fast mode. That is our own target, not a measurement from Pokemon.
 
 ## Things to check or decide
 
