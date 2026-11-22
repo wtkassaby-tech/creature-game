@@ -114,6 +114,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 22 Nov 2026 | **The look is "toy arcade", built in code**: outlined panels, buttons with a lip that sinks, one colour per type, loud battle feedback, a fast-battle switch. From the research in `docs/research/games/` and Ayrton's "a bit arcade style". Battle events pause 0.7 s (was 0.55), 0.35 s on fast | Claude (Default) | 12 |
 | 23 Nov 2026 | **The look follows the classic Roblox creature games, Project Pokemon first.** Ayrton on the first arcade restyle: "This looks really ai generated try and copy the project pokemon style". Battles are staged in the world (pads, camera behind your creature, slim plates); screens are flat and plain. Layout ideas only: nothing of Pokemon's is copied (hard rule 2). This replaces the "toy arcade" row above | Ayrton | 12 |
 | 23 Nov 2026 | **Creatures and the test world are given life in code** (toy bodies with faces that breathe and blink, per-species sketches from each species' written Look; warm light, cottages, people, trees). Ayrton: "really blocky and soulless, we need soul here". Stand-ins until the real meshes and map | Claude (Default) | 12 |
+| 23 Nov 2026 | **The look is an old handheld creature game in a storybook village.** Ayrton: "a great nostalgic feel, a homely feel". Cream boxes, ink borders, a pixel typeface, the classic battle menu; creatures and town as painted clay-toy models made with Roblox Studio's model generator from our own descriptions. This replaces the flat look and the code-built bodies and houses, which stay only as fallbacks | Ayrton (direction), Claude (how) | 12 |
 
 ## Still open
 
@@ -128,3 +129,5 @@ Only Ayrton can decide these:
 - Style references for biome 9.
 - **From the longer Studio run (22 Nov), to judge:** the Greenwood giant is very tight at the level cap (lost with 75 of 1,150 health left, won with 2 health left); giants were kept strict on 22 November, so nothing was changed. XP builds up at the level cap and pays out when the badge lifts it (the written rule in `Xp.luau`). The other four items from that run are fixed.
 - **Still to test after the first publish:** the five off-switches (ConfigService does not load in an unpublished place), saving, and play on a real phone.
+- **Music:** to be chosen by ear; none is in the game yet (birdsong only).
+- **Models to judge:** each generated creature and villager; Gorsling may want redoing.

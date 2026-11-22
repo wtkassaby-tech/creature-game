@@ -9,6 +9,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Ambience = require(script.Parent.Audio.Ambience)
 local BattleView = require(script.Parent.BattleView.BattleView)
 local ClientState = require(script.Parent.State.ClientState)
 local CreaturesView = require(script.Parent.Creatures.CreaturesView)
@@ -35,6 +36,7 @@ BattleView.start(playerGui)
 GiantView.start(playerGui)
 CreaturesView.start(playerGui)
 StoryView.start(playerGui)
+Ambience.start(playerGui)
 
 -- The world's prompts hide while a screen is open. A prompt is drawn on the screen and can be
 -- tapped: standing beside the rival, the "Battle" prompt sat right over the battle's Continue

@@ -2,6 +2,35 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (overnight: a nostalgic, homely look with real models)
+
+**In one line:** Ayrton, before going to sleep: the town "looks like it was made using 2002 software, the gui is bland and the creatures dont have any sort of recognisable feel... it needs to have some great nostalgic feel, a homely feel". Overnight the screens became those of an old handheld creature game, the creatures became real painted models, and the town became a storybook village. Checked in Studio; the full check passes.
+
+**About Project Pokemon's source:** no legitimate open-source release was found, and it could not be used anyway: its creatures and art are Nintendo's (Pokemon Brick Bronze was removed from Roblox in 2018 for this), and our own rule is original content only. Its layout ideas are followed; nothing of it is copied.
+
+| Changed | How | Where |
+| --- | --- | --- |
+| **Screens like an old handheld game** | Warm cream boxes with a thick ink border, ink text, a pixel typeface for names, titles and buttons | `src/client/UI/Kit.luau` |
+| **The classic battle menu** | A text box ("What will Sloshcalf do?") beside FIGHT / LASSO / ITEMS / SWITCH / RUN; FIGHT swaps both for the four moves, with BACK | `BattleView.luau` |
+| **Dialogue types itself out** | A letter at a time with a soft tick; pressing NEXT mid-line shows the rest | `StoryView.luau` |
+| **A face beside every name** | Each creature stands on its starter card and beside its name in the Creatures list | `src/client/Creatures/Portrait.luau` |
+| **Real creature models** | The eight Greenwood creatures are painted models with a clay-toy look, made with Roblox Studio's own model generator from the Look written in each species file. They load by asset id; the sphere sketches remain as the fallback | `src/content/CreatureModels.luau`, `ToyBody.luau` |
+| **A storybook village** | A thatched cottage, a red-roofed shop with an awning, a healer's house, two kinds of tree, a bush, a lamp post, a well, and four villagers (mentor, rival, shopkeeper, tamer), made the same way. The square is a village green with a round plaza | `src/content/PropModels.luau`, `src/server/World/Dressing.luau` |
+| **Birdsong** | A quiet loop from Roblox's licensed sound library, quieter during battles | `src/client/Audio/Ambience.luau` |
+
+Every outside or generated asset is in `docs/ASSETS.md`.
+
+**For Ayrton to know:**
+- The creature and town models were generated in your Studio, so they are assets on your Roblox account (192240344). The game loads them by id.
+- **No music yet.** I searched Roblox's free audio but cannot listen to a track, and will not put music I have not heard into a children's game. Tracks need choosing by ear.
+- All tamers share one villager model, and all keepers share the shopkeeper's. More villagers are an easy next step.
+- Creatures outside Greenwood still use the plain sphere bodies.
+- Gorsling's model came out more frog-like than the "whip-thin hedge runner" its Look describes. It is charming; it may want another try.
+
+**Not checked:** the other three biomes with the new scenery; the phone-sized view with the new screens; frame rate on a real phone (each painted tree is far heavier than a plain one; the scatter was thinned to allow for it); the lasso, shop and giant screens in the new look (they are built from the same kit, but were not opened).
+
+**To playtest:** start a new game. Do the starter cards, the town and a first battle feel nostalgic and homely now? Which creature models do you like, and which should be redone?
+
 ## 23 November 2026 (soul: creatures with faces, a town with life)
 
 **In one line:** Ayrton on the restaged battle: "really blocky and soulless, we need soul here". The creatures now have their own bodies and faces and are alive while they stand there, and the town has light, cottages, people and greenery. Checked in Studio; the full check passes. All of it is built in code from rounded shapes: nothing bought or uploaded.
