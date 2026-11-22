@@ -21,15 +21,9 @@ function MoveButton.new(parent: Instance, onPick: () -> ()): View
 	local button = Kit.button(parent, "", Kit.COLOURS.accent, onPick)
 	local name = Kit.label(button, "", UDim2.fromScale(1, 0.56), UDim2.new(), 22)
 	name.TextXAlignment = Enum.TextXAlignment.Center
-	name.TextStrokeColor3 = Kit.COLOURS.outline
-	name.TextStrokeTransparency = 0.35
 	local info = Kit.label(button, "", UDim2.fromScale(0.6, 0.4), UDim2.fromScale(0, 0.6), 16)
-	info.TextStrokeColor3 = Kit.COLOURS.outline
-	info.TextStrokeTransparency = 0.5
 	local hint = Kit.label(button, "", UDim2.fromScale(0.4, 0.4), UDim2.fromScale(0.6, 0.6), 16)
 	hint.TextXAlignment = Enum.TextXAlignment.Right
-	hint.TextStrokeColor3 = Kit.COLOURS.outline
-	hint.TextStrokeTransparency = 0.2
 
 	return {
 		button = button,

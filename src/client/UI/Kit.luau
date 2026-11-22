@@ -1,8 +1,9 @@
 --!strict
--- Small building blocks for the screens, in the "toy arcade" look (docs/research/games): chunky
--- rounded panels with a dark outline, buttons with a darker lip that sinks when pressed, big
--- outlined type, and bars that leave a pale trail as they drop. Every screen is built from
--- these so the look changes in one place. All of it is made in code: no images.
+-- Small building blocks for the screens. The look is the plain, flat one of the classic Roblox
+-- creature games (Ayrton, 22 November 2026: the outlined, shaded first try "looks really AI
+-- generated"): dark see-through plates, flat buttons, one bold typeface, and as little on the
+-- screen as possible, so the world and the creatures are what the player looks at. Every screen
+-- is built from these, so the look changes in one place. All of it is made in code: no images.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -13,91 +14,48 @@ local Types = require(ReplicatedStorage.shared.Types)
 local Kit = {}
 
 Kit.COLOURS = {
-	panel = Color3.fromRGB(36, 48, 66),
-	panelLight = Color3.fromRGB(54, 72, 98),
-	outline = Color3.fromRGB(14, 20, 30),
+	panel = Color3.fromRGB(20, 24, 32),
+	panelLight = Color3.fromRGB(44, 52, 66),
+	outline = Color3.fromRGB(10, 12, 18),
 	text = Color3.fromRGB(255, 255, 255),
-	textDim = Color3.fromRGB(196, 210, 226),
-	good = Color3.fromRGB(88, 196, 96),
-	warn = Color3.fromRGB(255, 205, 44),
-	bad = Color3.fromRGB(240, 84, 80),
-	accent = Color3.fromRGB(58, 160, 250),
-	lasso = Color3.fromRGB(255, 160, 40),
-	tempo = Color3.fromRGB(176, 92, 226),
-	gold = Color3.fromRGB(255, 214, 64),
+	textDim = Color3.fromRGB(190, 198, 210),
+	good = Color3.fromRGB(64, 200, 96),
+	warn = Color3.fromRGB(250, 200, 50),
+	bad = Color3.fromRGB(232, 72, 72),
+	accent = Color3.fromRGB(48, 132, 232),
+	lasso = Color3.fromRGB(240, 148, 40),
+	tempo = Color3.fromRGB(170, 96, 220),
+	gold = Color3.fromRGB(255, 210, 60),
 }
+
+-- How see-through a panel is: enough to feel light, not so much that text over grass is lost.
+Kit.PANEL_TRANSPARENCY = 0.05
 
 -- One colour per type, used wherever a type is shown (move buttons, chips), so players learn
 -- the types by colour.
 local ELEMENT_COLOURS: Types.ByElement<Color3> = {
-	Leaf = Color3.fromRGB(76, 176, 80),
-	Sand = Color3.fromRGB(206, 160, 84),
-	Water = Color3.fromRGB(58, 150, 240),
-	Toxic = Color3.fromRGB(156, 88, 204),
-	Frost = Color3.fromRGB(86, 196, 214),
-	Crystal = Color3.fromRGB(236, 96, 150),
-	Fire = Color3.fromRGB(240, 104, 56),
-	Storm = Color3.fromRGB(226, 176, 24),
-	Arcane = Color3.fromRGB(112, 124, 214),
-	Cosmic = Color3.fromRGB(84, 70, 170),
+	Leaf = Color3.fromRGB(70, 168, 76),
+	Sand = Color3.fromRGB(196, 150, 78),
+	Water = Color3.fromRGB(52, 140, 228),
+	Toxic = Color3.fromRGB(148, 84, 196),
+	Frost = Color3.fromRGB(72, 184, 204),
+	Crystal = Color3.fromRGB(224, 88, 142),
+	Fire = Color3.fromRGB(228, 96, 52),
+	Storm = Color3.fromRGB(212, 164, 20),
+	Arcane = Color3.fromRGB(104, 116, 204),
+	Cosmic = Color3.fromRGB(80, 66, 162),
 }
 Kit.ELEMENT_COLOURS = ELEMENT_COLOURS
 
-Kit.FONT = Enum.Font.FredokaOne
+Kit.FONT = Enum.Font.GothamBold
+Kit.FONT_HEAVY = Enum.Font.GothamBlack -- names and titles
 
-local BIG_TEXT = 24 -- text this size or larger gets a dark outline
+local BIG_TEXT = 24 -- text this size or larger is a title: heavier, with a thin dark edge
 
 local function round(instance: Instance, radius: number)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
 	corner.Parent = instance
-end
-
-local function outline(instance: Instance, thickness: number)
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Kit.COLOURS.outline
-	stroke.Thickness = thickness
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Parent = instance
-end
-
-local function grey(value: number): Color3
-	return Color3.new(value, value, value)
-end
-
-local LIP_PIXELS = 7 -- how tall the darker band under a button is, whatever the button's size
-
--- The share of a button's height that the lip takes.
-local function lipShare(button: GuiObject): number
-	return math.clamp(LIP_PIXELS / math.max(1, button.AbsoluteSize.Y), 0.03, 0.3)
-end
-
--- Top to bottom shading: lighter at the top, a little darker at the bottom.
-local function shade(instance: Instance): UIGradient
-	local gradient = Instance.new("UIGradient")
-	gradient.Rotation = 90
-	gradient.Color = ColorSequence.new(grey(1), grey(0.86))
-	gradient.Parent = instance
-	return gradient
-end
-
--- A button's shading has a darker band along the bottom, the lip, that makes it look raised.
--- The band is part of the gradient, so it follows the rounded corners; it is kept the same
--- height in pixels by redrawing the gradient when the button changes size.
-local function shadeWithLip(button: GuiObject): UIGradient
-	local gradient = shade(button)
-	local function draw()
-		local edge = 1 - lipShare(button)
-		gradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, grey(1)),
-			ColorSequenceKeypoint.new(edge - 0.01, grey(0.9)),
-			ColorSequenceKeypoint.new(edge, grey(0.62)),
-			ColorSequenceKeypoint.new(1, grey(0.62)),
-		})
-	end
-	button:GetPropertyChangedSignal("AbsoluteSize"):Connect(draw)
-	draw()
-	return gradient
 end
 
 function Kit.screen(parent: Instance, name: string, order: number): ScreenGui
@@ -116,11 +74,10 @@ function Kit.panel(parent: Instance, size: UDim2, position: UDim2, colour: Color
 	frame.Size = size
 	frame.Position = position
 	frame.BackgroundColor3 = colour or Kit.COLOURS.panel
+	frame.BackgroundTransparency = Kit.PANEL_TRANSPARENCY
 	frame.BorderSizePixel = 0
 	frame.Parent = parent
-	round(frame, 14)
-	outline(frame, 3)
-	shade(frame)
+	round(frame, 8)
 	return frame
 end
 
@@ -131,13 +88,14 @@ function Kit.label(
 	position: UDim2,
 	maxTextSize: number?
 ): TextLabel
+	local big = (maxTextSize or 22) >= BIG_TEXT
 	local label = Instance.new("TextLabel")
 	label.Size = size
 	label.Position = position
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.TextColor3 = Kit.COLOURS.text
-	label.Font = Kit.FONT
+	label.Font = if big then Kit.FONT_HEAVY else Kit.FONT
 	label.TextScaled = true
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = parent
@@ -145,63 +103,32 @@ function Kit.label(
 	limit.MaxTextSize = maxTextSize or 22
 	limit.MinTextSize = 8
 	limit.Parent = label
-	if (maxTextSize or 22) >= BIG_TEXT then
-		local stroke = Instance.new("UIStroke")
-		stroke.Color = Kit.COLOURS.outline
-		stroke.Thickness = 2
-		stroke.Parent = label -- on a label the stroke outlines the letters
+	if big then
+		label.TextStrokeColor3 = Kit.COLOURS.outline
+		label.TextStrokeTransparency = 0.5
 	end
 	return label
-end
-
-local PRESS = TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local RELEASE = TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-
-local function isPress(input: InputObject): boolean
-	return input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch
 end
 
 function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () -> ()): TextButton
 	local button = Instance.new("TextButton")
 	button.Text = text
 	button.TextColor3 = Kit.COLOURS.text
-	button.TextStrokeColor3 = Kit.COLOURS.outline
-	button.TextStrokeTransparency = 0.35
 	button.Font = Kit.FONT
 	button.TextScaled = true
-	button.AutoButtonColor = false -- the lip sinking is the press feedback
+	button.AutoButtonColor = true -- Roblox's own darkening on hover and press
 	button.BackgroundColor3 = colour
 	button.BorderSizePixel = 0
 	button.Parent = parent
-	round(button, 12)
-	outline(button, 2.5)
-	local gradient = shadeWithLip(button)
+	round(button, 8)
 	local pad = Instance.new("UIPadding")
 	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 8), UDim.new(0, 8)
-	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 5), UDim.new(0, 9) -- the lip is not for text
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 6), UDim.new(0, 6)
 	pad.Parent = button
 	local limit = Instance.new("UITextSizeConstraint")
-	limit.MaxTextSize = 22
+	limit.MaxTextSize = 20
 	limit.MinTextSize = 8
 	limit.Parent = button
-
-	-- Pressing slides the shading down so the lip disappears: the button looks pushed in. It
-	-- springs back on release. Nothing moves or resizes, so lists and grids are not disturbed.
-	local function sink(down: boolean)
-		local goal = { Offset = if down then Vector2.new(0, lipShare(button)) else Vector2.zero }
-		TweenService:Create(gradient, if down then PRESS else RELEASE, goal):Play()
-	end
-	button.InputBegan:Connect(function(input)
-		if isPress(input) then
-			sink(true)
-		end
-	end)
-	button.InputEnded:Connect(function(input)
-		if isPress(input) then
-			sink(false)
-		end
-	end)
 	button.Activated:Connect(function()
 		Sfx.play("press")
 		onClick()
@@ -209,8 +136,8 @@ function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () 
 	return button
 end
 
--- A scrolling list cuts off whatever pokes past its edge, which would shave the outlines of
--- the rows inside it. A few pixels of padding keeps them whole.
+-- A scrolling list cuts off whatever pokes past its edge. A few pixels of padding keeps the
+-- rows inside it whole.
 function Kit.roomForOutlines(list: Instance)
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 3), UDim.new(0, 3)
@@ -218,7 +145,7 @@ function Kit.roomForOutlines(list: Instance)
 	pad.Parent = list
 end
 
--- A panel that has just appeared grows the last few per cent with a little bounce.
+-- A panel that has just appeared grows the last few per cent.
 function Kit.pop(target: GuiObject)
 	local scale = target:FindFirstChildOfClass("UIScale")
 	if not scale then
@@ -227,8 +154,9 @@ function Kit.pop(target: GuiObject)
 		scale = made
 	end
 	if scale then
-		scale.Scale = 0.9
-		TweenService:Create(scale, RELEASE, { Scale = 1 }):Play()
+		scale.Scale = 0.94
+		local settle = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		TweenService:Create(scale, settle, { Scale = 1 }):Play()
 	end
 end
 
@@ -240,25 +168,26 @@ function Kit.bar(parent: Instance, size: UDim2, position: UDim2, colour: Color3)
 	local back = Instance.new("Frame")
 	back.Size = size
 	back.Position = position
-	back.BackgroundColor3 = Color3.fromRGB(12, 16, 24)
+	back.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
 	back.BorderSizePixel = 0
 	back.Parent = parent
-	round(back, 6)
-	outline(back, 2)
-	local trail = Instance.new("Frame")
-	trail.Size = UDim2.fromScale(1, 1)
-	trail.BackgroundColor3 = Color3.fromRGB(255, 244, 214)
-	trail.BorderSizePixel = 0
-	trail.Parent = back
-	round(trail, 6)
-	local fill = Instance.new("Frame")
-	fill.Size = UDim2.fromScale(1, 1)
-	fill.BackgroundColor3 = colour
-	fill.BorderSizePixel = 0
-	fill.ZIndex = 2
-	fill.Parent = back
-	round(fill, 6)
-	shade(fill)
+	local backCorner = Instance.new("UICorner")
+	backCorner.CornerRadius = UDim.new(0.5, 0)
+	backCorner.Parent = back
+	local function strip(stripColour: Color3, order: number): Frame
+		local made = Instance.new("Frame")
+		made.Size = UDim2.fromScale(1, 1)
+		made.BackgroundColor3 = stripColour
+		made.BorderSizePixel = 0
+		made.ZIndex = order
+		made.Parent = back
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = made
+		return made
+	end
+	local trail = strip(Color3.fromRGB(255, 244, 214), 1)
+	local fill = strip(colour, 2)
 	local shown = 1
 	local latest = 0
 	return {

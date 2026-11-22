@@ -2,6 +2,29 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (the battle restaged in the classic style)
+
+**In one line:** Ayrton saw the first arcade restyle and said it "looks really AI generated", and to follow Project Pokemon's style. The battle is now a scene in the world, staged the way that game stages it, and every screen has a plainer, flatter look. Checked in Studio; the full check passes.
+
+**What was taken from Project Pokemon** (its battle screens were looked at directly): the two creatures stand on round pads in the world; the camera sits behind the player's own creature with the opponent further off; the health plates are slim, dark and see-through; there is very little else on the screen. These are layout ideas. Nothing of Pokemon's is copied: no creature, name, icon or picture.
+
+| Changed | Where |
+| --- | --- |
+| The battle is a scene: pads, the two creatures, the camera behind yours, the tamer standing to one side. Name signs in the world hide while it shows | `BattleView/BattleStage.luau` (new) |
+| The attacker darts forward; the creature that is hit flashes white and shakes; a fainted creature sinks and fades; the damage floats up from the creature | `BattleStage.luau`, `BattleFx.luau` |
+| Slim health plates beside each creature: name, level, type chip, HP bar and numbers, tempo meter | `BattleView.luau` |
+| No panel behind the buttons, so the scene stays in view | `BattleView.luau` |
+| Every screen: flat dark panels, flat buttons, one bold typeface (Gotham), no outlines, shading or button lips | `UI/Kit.luau` |
+| A smaller result panel | `ResultPanel.luau` |
+
+Kept from the first try: move buttons in their type's colour with STRONG or WEAK, the pale trail on a dropping health bar, the sounds, the speed switch and tap to hurry, the counting result.
+
+**Stand-ins:** the creatures in the scene are round placeholder bodies in their type's colour. Real models (`Assembler.build`) take their place when the part meshes exist.
+
+**Not checked after the last two small changes** (panels made a little more solid, the result panel made smaller): they pass the full check but were not looked at again in Studio. The phone-sized view was not re-run for the new battle layout.
+
+**To playtest:** fight the rival. Does it look and feel closer to what you want? Which parts still look generated?
+
 ## 22 November 2026 (two fundamentals taken to finished quality)
 
 **In one line:** the shared look of every screen and the feel of a battle turn are now built properly, in the "toy arcade" direction from the research. Checked in Studio at desktop and phone size; the full check passes. Creatures are still not drawn, so the two battle cards stand in for them.

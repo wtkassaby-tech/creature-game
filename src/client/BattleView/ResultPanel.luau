@@ -26,8 +26,8 @@ local ROW_GAP_SECONDS = 0.25
 function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	local panel = Kit.panel(
 		gui,
-		UDim2.fromScale(0.5, 0.56),
-		UDim2.fromScale(0.25, 0.1),
+		UDim2.fromScale(0.4, 0.5),
+		UDim2.fromScale(0.3, 0.14),
 		Kit.COLOURS.panelLight
 	)
 	panel.Visible = false
