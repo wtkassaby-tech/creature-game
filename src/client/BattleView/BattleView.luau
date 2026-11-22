@@ -370,7 +370,10 @@ function BattleView.start(playerGui: Instance)
 			local fighter = if pad == 1 then mine else foe
 			if fighter and fighter.hp > 0 and staged[pad] ~= current.active[pad] then
 				staged[pad] = current.active[pad]
-				stage.swap(pad, { element = fighter.element, size = fighter.size })
+				stage.swap(
+					pad,
+					{ species = fighter.name, element = fighter.element, size = fighter.size }
+				)
 			end
 		end
 		local open = not current.waiting and not current.over
@@ -437,8 +440,8 @@ function BattleView.start(playerGui: Instance)
 		if current and mine and foe then
 			staged = { current.active[1], current.active[2] }
 			stage.open(
-				{ element = mine.element, size = mine.size },
-				{ element = foe.element, size = foe.size }
+				{ species = mine.name, element = mine.element, size = mine.size },
+				{ species = foe.name, element = foe.element, size = foe.size }
 			)
 		end
 		refresh()

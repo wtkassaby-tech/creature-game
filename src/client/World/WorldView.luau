@@ -17,6 +17,8 @@ local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
 local World = require(ReplicatedStorage.shared.World)
+local Species = require(ReplicatedStorage.content.Species)
+local ToyBody = require(script.Parent.Parent.Creatures.ToyBody)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
@@ -64,8 +66,13 @@ local function draw(parent: Instance, wild: Wild): BasePart
 	local size = 4 * wild.Size
 	ball.Size = Vector3.new(size, size, size)
 	ball.Position = Vector3.new(wild.X, groundHeight(wild.X, wild.Z) + size / 2, wild.Z)
-	ball.Color = RARITY_COLOURS[wild.Rarity] or RARITY_COLOURS.Common
-	ball.Material = Enum.Material.SmoothPlastic
+	-- The ball is only the thing the prompt and the name hang on; what the player sees is the
+	-- creature's toy body standing there, breathing and blinking, turned its own way.
+	ball.Transparency = 1
+	local def = Species[wild.Torso]
+	local toy = ToyBody.new(ball, wild.Torso, if def then def.element else "Leaf", wild.Size)
+	local ground = Vector3.new(wild.X, groundHeight(wild.X, wild.Z), wild.Z)
+	toy.place(CFrame.new(ground) * CFrame.Angles(0, math.rad((wild.Id * 73) % 360), 0))
 
 	local board = Instance.new("BillboardGui")
 	board.Size = UDim2.fromOffset(180, 34)
@@ -76,7 +83,7 @@ local function draw(parent: Instance, wild: Wild): BasePart
 	text.Size = UDim2.fromScale(1, 1)
 	text.BackgroundTransparency = 1
 	text.Text = `Lv {wild.Level} {wild.Torso}`
-	text.TextColor3 = Color3.new(1, 1, 1)
+	text.TextColor3 = RARITY_COLOURS[wild.Rarity] or RARITY_COLOURS.Common -- rarity, by colour
 	text.TextStrokeTransparency = 0.3
 	text.Font = Enum.Font.GothamBold
 	text.TextScaled = true

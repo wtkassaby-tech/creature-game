@@ -113,6 +113,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 22 Nov 2026 | **World prompts hide while a screen is open, and the shop closes when a fight starts**, so nothing can be started or tapped behind a screen (found in the longer Studio run) | Claude (Default) | 12 |
 | 22 Nov 2026 | **The look is "toy arcade", built in code**: outlined panels, buttons with a lip that sinks, one colour per type, loud battle feedback, a fast-battle switch. From the research in `docs/research/games/` and Ayrton's "a bit arcade style". Battle events pause 0.7 s (was 0.55), 0.35 s on fast | Claude (Default) | 12 |
 | 23 Nov 2026 | **The look follows the classic Roblox creature games, Project Pokemon first.** Ayrton on the first arcade restyle: "This looks really ai generated try and copy the project pokemon style". Battles are staged in the world (pads, camera behind your creature, slim plates); screens are flat and plain. Layout ideas only: nothing of Pokemon's is copied (hard rule 2). This replaces the "toy arcade" row above | Ayrton | 12 |
+| 23 Nov 2026 | **Creatures and the test world are given life in code** (toy bodies with faces that breathe and blink, per-species sketches from each species' written Look; warm light, cottages, people, trees). Ayrton: "really blocky and soulless, we need soul here". Stand-ins until the real meshes and map | Claude (Default) | 12 |
 
 ## Still open
 

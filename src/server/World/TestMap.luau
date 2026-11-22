@@ -1,7 +1,8 @@
 --!strict
--- Builds a plain grey-box Greenwood from the layout, so the game can be walked and tested before
--- the real map exists. Flat ground, slabs for paths, blocks for buildings and people, each with
--- its name floating above it. Nothing here is final art.
+-- Builds a simple Greenwood from the layout, so the game can be walked and tested before the
+-- real map exists. Flat ground, slabs for paths, blocks for buildings and people, each with its
+-- name floating above it; Dressing then gives it light, roofs, faces and greenery. Nothing here
+-- is final art.
 -- TODO(art): replaced by the real Greenwood map; its markers will carry the same attributes.
 --
 -- Everything a player can use carries a ProximityPrompt with two attributes the device reads:
@@ -17,9 +18,11 @@ local Tamers = require(ReplicatedStorage.content.Tamers)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
+local Dressing = require(script.Parent.Dressing)
+
 local TestMap = {}
 
-local GROUND = Color3.fromRGB(106, 153, 85)
+local GROUND = Color3.fromRGB(116, 178, 92)
 local PATH = Color3.fromRGB(196, 178, 128)
 local STONE = Color3.fromRGB(150, 150, 150)
 local WOOD = Color3.fromRGB(140, 105, 70)
@@ -112,7 +115,14 @@ end
 
 local function person(parent: Instance, name: string, point: Layout.Point): Part
 	local body = block(parent, name, Vector3.new(3, 6, 2), at(point, 3.4), PERSON)
-	label(body, name)
+	-- People with a real name wear it; a keeper known only by an id ("healer_keeper") does not,
+	-- since the building already says what it is. The rival's battle id is left off.
+	local shown = string.gsub(name, "%s*%b()", "")
+	if not string.find(shown, "_", 1, true) then
+		label(body, shown)
+	end
+	-- The same name always dresses the same way.
+	Dressing.person(body, Random.new(#name * 131 + string.byte(name, 1) + string.byte(name, #name)))
 	return body
 end
 
@@ -142,6 +152,8 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		GROUND
 	)
 
+	Dressing.scatter(world, biome, map, 44)
+
 	-- The hub.
 	local hub = Instance.new("Folder")
 	hub.Name = "Hub"
@@ -161,6 +173,7 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 		WOOD
 	)
 	label(sign, `{biome.hub.name} ({biome.name})`)
+	Dressing.square(hub, Vector3.new(map.hub.x, 0, map.hub.z), map.hub.size)
 	if first then
 		-- Everyone arrives in the first biome's square.
 		local spawn = Instance.new("SpawnLocation")
@@ -180,6 +193,7 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 			WOOD
 		)
 		label(house, building.name)
+		Dressing.house(house, building.role, Vector3.new(map.hub.x, 0, map.hub.z))
 		-- Every building's keeper stands at its door. Talking to one moves the story on if the
 		-- story is waiting for them, and offers or takes in that place's quests.
 		local body = person(hub, building.npc or `{building.id}_keeper`, map.places[building.id])
@@ -319,6 +333,7 @@ function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
 	if workspace:FindFirstChild("World") then
 		return
 	end
+	Dressing.mood()
 	local folder = Instance.new("Folder")
 	folder.Name = "World"
 	folder:SetAttribute("Generated", true)

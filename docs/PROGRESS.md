@@ -2,6 +2,27 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (soul: creatures with faces, a town with life)
+
+**In one line:** Ayrton on the restaged battle: "really blocky and soulless, we need soul here". The creatures now have their own bodies and faces and are alive while they stand there, and the town has light, cottages, people and greenery. Checked in Studio; the full check passes. All of it is built in code from rounded shapes: nothing bought or uploaded.
+
+| Added | Where |
+| --- | --- |
+| **Creatures you can see.** Mossmitt, Sloshcalf, Spadesnout, Gorsling and Stumpwarden each have their own body, drawn from the "Look" written in their species file (Mossmitt's moss mitts and clover tuft, Sloshcalf's pond bubble and lily-pad ears, Spadesnout's trowel snout and claws). Every other species gets a plain body for its body plan in its type's colour | `src/client/Creatures/ToySketches.luau` |
+| **They are alive.** Each one breathes, sways and blinks, out of step with the others. Eyes have a glint | `src/client/Creatures/ToyBody.luau` |
+| **In battles and in the world.** The battle scene uses them (lunge, flash, shake, sink). Wild creatures on the routes are these bodies too, not white balls; rarity is now the colour of the name over them | `BattleStage.luau`, `WorldView.luau` |
+| **Bystanders step aside.** A person or signpost standing where the battle is staged is hidden for its length, on that player's screen only | `BattleStage.luau` |
+| **Light.** Warm afternoon sun, a soft haze, drifting clouds, a little more colour | `src/server/World/Dressing.luau` |
+| **A town.** Cottages with pitched roofs (a colour for each kind of building), doors, windows and window boxes; lamp posts and flower beds round the square; people with heads, hair and coloured shirts | `Dressing.luau`, `TestMap.luau` |
+| **Greenery.** Trees, bushes, rocks and flowers along every route and round every town, different in each biome, always the same for the same biome. Scenery never blocks a path | `Dressing.luau` |
+| Name signs: keepers known only by an id no longer wear it; the rival's sign says "Rival" | `TestMap.luau` |
+
+**Still stand-ins:** these bodies are toys made of spheres, not the final part meshes; breeding does not yet mix their parts on screen. The world is still the test map underneath.
+
+**Not checked:** routes and the other three biomes with the new scenery (only the first town was looked at); the phone-sized view; frame rate on a real phone (about 400 more parts per biome).
+
+**To playtest:** walk the town and Route A, fight a wild creature and the rival. Does it have the feeling you want now? Which creature do you like most and least?
+
 ## 23 November 2026 (the battle restaged in the classic style)
 
 **In one line:** Ayrton saw the first arcade restyle and said it "looks really AI generated", and to follow Project Pokemon's style. The battle is now a scene in the world, staged the way that game stages it, and every screen has a plainer, flatter look. Checked in Studio; the full check passes.
