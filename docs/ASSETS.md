@@ -7,3 +7,4 @@ characters from other games; every script inside it is removed or read line by l
 
 | Date | Asset | Source and id | Creator | Licence | Scripts | Used for |
 | --- | --- | --- | --- | --- | --- | --- |
+| 22 Nov 2026 | Eight stand-in sounds for presses and battle moments: clickfast, electronicpingshort, snap, swordslash, kerplunk, bass, switch, victory | Built into Roblox itself (`rbxasset://sounds/...`); nothing uploaded | Roblox | Part of the Roblox engine, usable in any Roblox game | None | `src/client/Audio/Sfx.luau`, until the game has its own sounds |

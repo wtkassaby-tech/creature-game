@@ -2,22 +2,37 @@
 -- The battle screen: both creatures' health, the four moves with the damage each would do, and
 -- the lasso, items, switch and run. It only shows what the server sent and sends the player's
 -- one choice a turn; the server decides everything.
--- TODO(art): creatures are named, not drawn, until the part meshes exist. Not yet seen in Studio.
--- A little over 400 lines: it is one screen, kept whole so its layout reads top to bottom.
+-- TODO(art): creatures are named, not drawn, until the part meshes exist; until then the two
+-- cards stand in for them, so hits flash and shake the cards.
+-- Over 400 lines: it is one screen, kept whole so its layout reads top to bottom. The move
+-- buttons, the hit effects and the result panel live in their own modules beside this one.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local MovementLock = require(script.Parent.Parent.UI.MovementLock)
+local BattleFx = require(script.Parent.BattleFx)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local MoveButton = require(script.Parent.MoveButton)
+local Moves = require(ReplicatedStorage.content.Moves)
+local ResultPanel = require(script.Parent.ResultPanel)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local TypeChart = require(ReplicatedStorage.shared.TypeChart)
+local Types = require(ReplicatedStorage.shared.Types)
 local LassoView = require(script.Parent.Parent.Lasso.LassoView)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 
-local EVENT_SECONDS = 0.55 -- pause between the things that happen in a turn
+-- The pause between the things that happen in a turn. Slow battles are the commonest complaint
+-- about games of this kind, so there is a fast setting, and a tap anywhere hurries the turn
+-- being shown.
+local EVENT_SECONDS = 0.7
+local FAST_EVENT_SECONDS = 0.35
+local HURRIED_EVENT_SECONDS = 0.12
 
 type Fighter = {
 	name: string,
+	element: Types.Element,
 	level: number,
 	hp: number,
 	maxHp: number,
@@ -36,13 +51,12 @@ type Model = {
 	over: boolean,
 	caught: boolean,
 	outcome: number?, -- set when the last turn has been shown
-	rewards: { string }, -- lines for the end panel; may arrive before the last turn is shown
+	rewards: ResultPanel.Rewards?, -- may arrive before the last turn has been shown
 }
 
 local BattleView = {}
 
-local OUTCOME_TEXT: { [number]: string } =
-	{ [0] = "A draw", [1] = "You won!", [2] = "The battle is over" }
+local OUTCOME_KIND: { [number]: ResultPanel.Kind } = { [0] = "Draw", [1] = "Won", [2] = "Lost" }
 
 function BattleView.start(playerGui: Instance)
 	local gui = Kit.screen(playerGui, "Battle", 10)
@@ -51,20 +65,64 @@ function BattleView.start(playerGui: Instance)
 	MovementLock.whileOpen(gui)
 	local model: Model? = nil
 
-	-- The two creature cards.
-	local function card(position: UDim2): (TextLabel, Kit.Bar, Kit.Bar)
-		local panel = Kit.panel(gui, UDim2.new(0.44, 0, 0, 74), position)
-		local name = Kit.label(panel, "", UDim2.new(1, -20, 0, 26), UDim2.fromOffset(10, 6))
+	local fx = BattleFx.new(gui)
+	local fast = false -- the speed the player chose, kept for this visit only
+	local hurried = false -- a tap during a turn: finish showing it quickly
+
+	-- A tap anywhere that is not a button hurries the turn being shown. Made first, so every
+	-- button sits above it.
+	local hurry = Instance.new("TextButton")
+	hurry.Size = UDim2.fromScale(1, 1)
+	hurry.BackgroundTransparency = 1
+	hurry.Text = ""
+	hurry.ZIndex = 0
+	hurry.Parent = gui
+	hurry.Activated:Connect(function()
+		hurried = true
+	end)
+
+	-- The two creature cards: name and level, a chip in the colour of the type, health with its
+	-- numbers on the bar, and the tempo meter underneath.
+	type Card = {
+		panel: Frame,
+		name: TextLabel,
+		chip: TextLabel,
+		numbers: TextLabel,
+		health: Kit.Bar,
+		tempo: Kit.Bar,
+	}
+	local function card(position: UDim2): Card
+		local panel = Kit.panel(gui, UDim2.new(0.44, 0, 0, 84), position)
+		local name = Kit.label(panel, "", UDim2.new(1, -110, 0, 28), UDim2.fromOffset(12, 6), 24)
+		local chip = Kit.label(panel, "", UDim2.fromOffset(84, 24), UDim2.new(1, -96, 0, 8), 16)
+		chip.TextXAlignment = Enum.TextXAlignment.Center
+		chip.BackgroundTransparency = 0
+		chip.TextStrokeColor3 = Kit.COLOURS.outline
+		chip.TextStrokeTransparency = 0.4
+		local chipCorner = Instance.new("UICorner")
+		chipCorner.CornerRadius = UDim.new(0.5, 0)
+		chipCorner.Parent = chip
 		local health =
-			Kit.bar(panel, UDim2.new(1, -20, 0, 16), UDim2.fromOffset(10, 36), Kit.COLOURS.good)
+			Kit.bar(panel, UDim2.new(1, -24, 0, 22), UDim2.fromOffset(12, 40), Kit.COLOURS.good)
+		local numbers = Kit.label(health.frame, "", UDim2.fromScale(1, 1), UDim2.new(), 16)
+		numbers.TextXAlignment = Enum.TextXAlignment.Center
+		numbers.TextStrokeColor3 = Kit.COLOURS.outline
+		numbers.TextStrokeTransparency = 0
+		numbers.ZIndex = 3
 		local tempo =
-			Kit.bar(panel, UDim2.new(1, -20, 0, 6), UDim2.fromOffset(10, 58), Kit.COLOURS.tempo)
-		return name, health, tempo
+			Kit.bar(panel, UDim2.new(1, -24, 0, 7), UDim2.fromOffset(12, 68), Kit.COLOURS.tempo)
+		return {
+			panel = panel,
+			name = name,
+			chip = chip,
+			numbers = numbers,
+			health = health,
+			tempo = tempo,
+		}
 	end
-	local foeName, foeHealth, foeTempo = card(UDim2.fromScale(0.03, 0.08))
-	local myName, myHealth, myTempo = card(UDim2.fromScale(0.53, 0.42))
-	local message = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 30), UDim2.fromScale(0.03, 0.56), 24)
-	message.TextStrokeTransparency = 0.4
+	-- 1 = yours (lower right), 2 = theirs (upper left), matching the sides in the model.
+	local cards: { Card } = { card(UDim2.fromScale(0.53, 0.36)), card(UDim2.fromScale(0.03, 0.08)) }
+	local message = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 30), UDim2.fromScale(0.03, 0.585), 24)
 
 	-- The bottom panel: moves on the left, everything else on the right.
 	local actions = Kit.panel(gui, UDim2.fromScale(0.94, 0.3), UDim2.fromScale(0.03, 0.66))
@@ -142,9 +200,9 @@ function BattleView.start(playerGui: Instance)
 		return if state then state.Items[item] or 0 else 0
 	end
 
-	local moveButtons: { TextButton } = {}
+	local moveButtons: { MoveButton.View } = {}
 	for index = 1, 4 do
-		moveButtons[index] = Kit.button(moves, "", Kit.COLOURS.accent, function()
+		moveButtons[index] = MoveButton.new(moves, function()
 			send(function(current)
 				Net.BattleAction.Fire({
 					BattleId = current.battleId,
@@ -251,61 +309,41 @@ function BattleView.start(playerGui: Instance)
 	end)
 
 	-- Shown when the battle ends.
-	local done = Kit.panel(
-		gui,
-		UDim2.fromScale(0.6, 0.46),
-		UDim2.fromScale(0.2, 0.14),
-		Kit.COLOURS.panelLight
-	)
-	done.Visible = false
-	done.ZIndex = 8
-	-- The text shrinks to fit (a win can list coins, a material, XP and several level-ups) and the
-	-- button keeps a finger-sized height: on a phone the old 30%-tall panel gave a 30 px button.
-	local doneText = Kit.label(done, "", UDim2.new(1, -24, 1, -72), UDim2.fromOffset(12, 8), 26)
-	doneText.TextWrapped = true
-	doneText.TextScaled = true
-	local doneLimit = Instance.new("UITextSizeConstraint")
-	doneLimit.MaxTextSize = 26
-	doneLimit.MinTextSize = 12
-	doneLimit.Parent = doneText
-	doneText.ZIndex = 9
-	local closeButton = Kit.button(done, "Continue", Kit.COLOURS.accent, function()
+	local result: ResultPanel.View
+	result = ResultPanel.new(gui, function()
 		gui.Enabled = false
-		done.Visible = false
+		result.hide()
 		model = nil
 	end)
-	closeButton.Size = UDim2.new(0.5, 0, 0, 48)
-	closeButton.Position = UDim2.new(0.25, 0, 1, -58)
-	closeButton.ZIndex = 9
+
+	-- A small switch for battle speed, tucked under the wallet.
+	local speed: TextButton
+	speed = Kit.button(gui, "Speed: normal", Kit.COLOURS.panelLight, function()
+		fast = not fast
+		speed.Text = if fast then "Speed: fast" else "Speed: normal"
+	end)
+	speed.Size = UDim2.fromOffset(150, 44)
+	speed.Position = UDim2.new(1, -160, 0, 72)
 
 	-- The end panel appears once the last turn has been shown; rewards join it when they arrive.
 	local function showEnd(current: Model)
 		if current.outcome == nil then
 			return
 		end
-		local lines = {
-			if current.caught
-				then "Caught!"
-				else OUTCOME_TEXT[current.outcome] or "The battle is over",
-		}
-		for _, line in current.rewards do
-			table.insert(lines, line)
-		end
-		doneText.Text = table.concat(lines, "\n")
-		done.Visible = true
+		local kind: ResultPanel.Kind = if current.caught
+			then "Caught"
+			else OUTCOME_KIND[current.outcome] or "Draw"
+		result.show(kind, current.rewards)
 	end
 
-	local function showCard(
-		name: TextLabel,
-		health: Kit.Bar,
-		tempo: Kit.Bar,
-		fighter: Fighter,
-		tempoShare: number
-	)
-		name.Text = `{fighter.name}  Lv {fighter.level}   {fighter.hp}/{fighter.maxHp}`
+	local function showCard(shown: Card, fighter: Fighter, tempoShare: number)
+		shown.name.Text = `{fighter.name}  Lv {fighter.level}`
+		shown.chip.Text = fighter.element
+		shown.chip.BackgroundColor3 = Kit.ELEMENT_COLOURS[fighter.element]
+		shown.numbers.Text = `{fighter.hp} / {fighter.maxHp}`
 		local share = fighter.hp / math.max(1, fighter.maxHp)
-		health.set(share, Kit.healthColour(share))
-		tempo.set(tempoShare)
+		shown.health.set(share, Kit.healthColour(share))
+		shown.tempo.set(tempoShare)
 	end
 
 	refresh = function()
@@ -315,21 +353,15 @@ function BattleView.start(playerGui: Instance)
 		end
 		local mine, foe = current.sides[1][current.active[1]], current.sides[2][current.active[2]]
 		if mine then
-			showCard(myName, myHealth, myTempo, mine, current.tempo[1] / 100)
+			showCard(cards[1], mine, current.tempo[1] / 100)
 		end
 		if foe then
-			showCard(foeName, foeHealth, foeTempo, foe, current.tempo[2] / 100)
+			showCard(cards[2], foe, current.tempo[2] / 100)
 		end
 		local open = not current.waiting and not current.over
 		for index, button in moveButtons do
 			local move = if mine then mine.moves[index] else nil
-			button.Visible = move ~= nil
-			button.Active = open
-			button.BackgroundTransparency = if open then 0 else 0.5
-			if move then
-				local preview = current.previews[index]
-				button.Text = if preview then `{move}\n{preview} dmg` else move
-			end
+			button.show(move, current.previews[index], if foe then foe.element else nil, open)
 		end
 		lassoButton.Visible = current.wild
 		runButton.Visible = current.wild
@@ -349,10 +381,14 @@ function BattleView.start(playerGui: Instance)
 	local function fighters(list: { any }): { Fighter }
 		local made: { Fighter } = {}
 		for _, c in list do
-			table.insert(
-				made,
-				{ name = c.Torso, level = c.Level, hp = c.Hp, maxHp = c.MaxHp, moves = c.Moves }
-			)
+			table.insert(made, {
+				name = c.Torso,
+				element = c.Element,
+				level = c.Level,
+				hp = c.Hp,
+				maxHp = c.MaxHp,
+				moves = c.Moves,
+			})
 		end
 		return made
 	end
@@ -370,15 +406,20 @@ function BattleView.start(playerGui: Instance)
 			over = false,
 			caught = false,
 			outcome = nil,
-			rewards = {},
+			rewards = nil,
 		}
 		message.Text = if value.Kind == "Wild"
 			then `A wild {value.Theirs[1].Torso} appears!`
 			else "The battle begins!"
-		done.Visible, picker.Visible = false, false
+		picker.Visible = false
+		result.hide()
 		lasso.finish()
 		gui.Enabled = true
 		refresh()
+		Kit.pop(cards[1].panel)
+		Kit.pop(cards[2].panel)
+		fx.callout(if value.Kind == "Wild" then "WILD!" else "BATTLE!", Kit.COLOURS.gold)
+		Sfx.play("swap")
 	end)
 
 	Bus.listen(Net.BattleTurn, function(value)
@@ -387,27 +428,47 @@ function BattleView.start(playerGui: Instance)
 			return
 		end
 		-- Play the turn back one thing at a time.
+		hurried = false
 		for _, event in value.Events do
 			local actor = event.Side
 			local other = if actor == 1 then 2 else 1
 			local who = current.sides[actor][current.active[actor]]
 			if event.Kind == "Move" or event.Kind == "FollowUp" then
 				local struck = current.sides[other][current.active[other]]
+				local def = if event.Move then Moves[event.Move] else nil
+				local factor = if def and struck
+					then TypeChart.multiplier(def.element, struck.element)
+					else 1
 				if struck then
 					struck.hp = event.TargetHp
 				end
-				message.Text =
-					`{if who then who.name else "It"} used {event.Move or "a move"}: {event.Damage} damage`
+				message.Text = `{if who then who.name else "It"} used {event.Move or "a move"}!`
+				if event.Damage > 0 then
+					if factor > 1 then
+						fx.strike(cards[other].panel, event.Damage, Kit.COLOURS.gold, true)
+						fx.callout("STRONG HIT!", Kit.COLOURS.gold)
+						Sfx.play("strongHit")
+					elseif factor < 1 then
+						fx.strike(cards[other].panel, event.Damage, Kit.COLOURS.textDim, false)
+						Sfx.play("weakHit")
+					else
+						fx.strike(cards[other].panel, event.Damage, Kit.COLOURS.text, false)
+						Sfx.play("hit")
+					end
+				end
 			elseif event.Kind == "Switch" then
 				current.active[actor] = event.Slot
 				local entered = current.sides[actor][event.Slot]
 				message.Text = `{if entered then entered.name else "A creature"} steps in`
+				Kit.pop(cards[actor].panel)
+				Sfx.play("swap")
 			elseif event.Kind == "Faint" then
 				local fallen = current.sides[actor][event.Slot]
 				if fallen then
 					fallen.hp = 0
 					fallen.poisoned = false
 					message.Text = `{fallen.name} fainted`
+					Sfx.play("faint")
 				end
 			elseif event.Kind == "Poisoned" then
 				local victim = current.sides[actor][event.Slot]
@@ -420,6 +481,7 @@ function BattleView.start(playerGui: Instance)
 				if victim then
 					victim.hp = event.TargetHp
 					message.Text = `{victim.name} is hurt by poison`
+					fx.rise(cards[actor].panel, "poison", Kit.ELEMENT_COLOURS.Toxic)
 				end
 			elseif event.Kind == "Cured" then
 				local victim = current.sides[actor][event.Slot]
@@ -439,10 +501,17 @@ function BattleView.start(playerGui: Instance)
 				if treated then
 					treated.hp = event.TargetHp
 					message.Text = `{treated.name} was treated`
+					fx.rise(cards[actor].panel, "healed", Kit.COLOURS.good)
+					Sfx.play("confirm")
 				end
 			end
 			refresh()
-			task.wait(EVENT_SECONDS)
+			task.wait(
+				if hurried
+					then HURRIED_EVENT_SECONDS
+					elseif fast then FAST_EVENT_SECONDS
+					else EVENT_SECONDS
+			)
 		end
 		current.active = { value.YourActive, value.TheirActive }
 		current.tempo = { value.YourTempo, value.TheirTempo }
@@ -471,29 +540,16 @@ function BattleView.start(playerGui: Instance)
 		if not current or current.battleId ~= value.BattleId then
 			return
 		end
-		-- A battle that pays no coins (the story's rival battles) says nothing about coins.
-		local paid: { string } = {}
-		if value.Coins > 0 then
-			table.insert(paid, `+{value.Coins} coins`)
-		end
-		if value.Material ~= "" then
-			table.insert(paid, `1 {value.Material}`)
-		end
 		local xp = 0
+		local levels: { number } = {}
 		for _, member in value.Members do
 			xp = math.max(xp, member.Gained)
-		end
-		if xp > 0 then
-			table.insert(paid, `+{xp} XP`)
-		end
-		if #paid > 0 then
-			table.insert(current.rewards, table.concat(paid, ", "))
-		end
-		for _, member in value.Members do
 			if member.LevelsGained > 0 then
-				table.insert(current.rewards, `Level {member.Level}!`)
+				table.insert(levels, member.Level)
 			end
 		end
+		current.rewards =
+			{ coins = value.Coins, xp = xp, material = value.Material, levels = levels }
 		showEnd(current)
 	end)
 
@@ -507,6 +563,9 @@ function BattleView.start(playerGui: Instance)
 	end)
 	Bus.listen(Net.LassoResult, function(value)
 		lasso.finish()
+		if value.Outcome == "Caught" then
+			fx.callout("GOT IT!", Kit.COLOURS.gold)
+		end
 		message.Text = if value.Outcome == "Caught"
 			then "Caught!"
 			elseif value.Outcome == "Fled" then "It broke free and fled!"

@@ -111,6 +111,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 22 Nov 2026 | **The lasso's lag window gets 120 ms of slack on the early side** (`CLAIM_EARLY_MARGIN_MS`). The allowance was the smallest ping reading alone, so in the first Studio run every honest tap was thrown out. Reviewed as giving a cheat nothing new: the device already knows the whole sweep | Claude (Default) | 6 |
 | 22 Nov 2026 | **Four shop descriptions rewritten for players** (Rope Lasso, bait, Bond Charm, Clearwater Drops): they carried notes meant for us, one naming a config value. No price or effect changed | Claude (Default) | 10 |
 | 22 Nov 2026 | **World prompts hide while a screen is open, and the shop closes when a fight starts**, so nothing can be started or tapped behind a screen (found in the longer Studio run) | Claude (Default) | 12 |
+| 22 Nov 2026 | **The look is "toy arcade", built in code**: outlined panels, buttons with a lip that sinks, one colour per type, loud battle feedback, a fast-battle switch. From the research in `docs/research/games/` and Ayrton's "a bit arcade style". Battle events pause 0.7 s (was 0.55), 0.35 s on fast | Claude (Default) | 12 |
 
 ## Still open
 

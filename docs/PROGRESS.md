@@ -2,6 +2,31 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 22 November 2026 (two fundamentals taken to finished quality)
+
+**In one line:** the shared look of every screen and the feel of a battle turn are now built properly, in the "toy arcade" direction from the research. Checked in Studio at desktop and phone size; the full check passes. Creatures are still not drawn, so the two battle cards stand in for them.
+
+**1. The look of every screen** (`src/client/UI/Kit.luau`, one file, so every screen changed at once)
+- Panels and buttons have a dark outline and soft top-to-bottom shading.
+- Buttons have a darker lip along the bottom that sinks when pressed and springs back, and a click sound. The lip is the same height on a small button and a big one.
+- Big text has a dark outline so it reads over the world.
+- Bars leave a pale trail for a moment when they drop, so the size of a hit can be seen.
+- One colour per type (`Kit.ELEMENT_COLOURS`), used on move buttons, type chips and the starter pick.
+
+**2. The battle turn** (`src/client/BattleView/`)
+- **Move buttons** are in the colour of the move's type and say STRONG or WEAK against the creature in front of you (`MoveButton.luau`). Players learn the type chart from the buttons.
+- **Creature cards** show name and level, a chip in the type's colour, and health numbers on the bar.
+- **A hit** flashes and shakes the card that was hit, floats the damage up from it, and plays a different sound for a strong, normal or weak hit. A strong hit also shows a big STRONG HIT! (`BattleFx.luau`).
+- **Speed:** a switch for fast battles, and a tap anywhere hurries the turn being shown. Slow battles are the commonest complaint about games of this kind.
+- **The result** is a VICTORY!, CAUGHT! or DEFEATED panel where coins and XP count up and level-ups pop in one at a time (`ResultPanel.luau`).
+- Sounds are eight stand-ins that ship inside Roblox (`src/client/Audio/Sfx.luau`, logged in `docs/ASSETS.md`).
+
+Everything shown is the server's own result, played back. Nothing here changes a rule, a number or what is saved.
+
+**Not done, on purpose:** the over-the-shoulder battle camera and anything that needs creature models; the lasso screen; the speed switch is not remembered between visits (remembering it touches saving).
+
+**To playtest:** fight the rival and a few wild creatures. Does a hit feel like a hit? Is normal speed too slow, or fast too fast? Do the type colours and STRONG / WEAK help? Try it on a phone.
+
 ## 22 November 2026 (the longer Studio run and a phone-sized check)
 
 **In one line:** chapter 1 was played through to the Acorn Badge in Studio, then the shop, crafting, breeding, daily tasks, the giant (fight and capture) and the road into Dust Canyon. All of it works; the server logged no errors in about 60 battles. Eight screen fixes came out of it, half of them for phones. The full check passes.

@@ -141,7 +141,8 @@ function StoryView.start(playerGui: Instance)
 			for _, species in reward.choices do
 				local def = Species[species]
 				local label = if def then `{species}\n{def.element} type` else species
-				local button = Kit.button(choices, label, Kit.COLOURS.accent, function()
+				local colour = if def then Kit.ELEMENT_COLOURS[def.element] else Kit.COLOURS.accent
+				local button = Kit.button(choices, label, colour, function()
 					Net.CompleteBeat.Fire({ BeatId = startBeat.id, Choice = species })
 				end)
 				button.TextWrapped = true

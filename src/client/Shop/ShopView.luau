@@ -38,6 +38,7 @@ function ShopView.start(playerGui: Instance): View
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.CanvasSize = UDim2.new()
 	list.Parent = root
+	Kit.roomForOutlines(list)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = list
