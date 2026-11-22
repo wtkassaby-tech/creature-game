@@ -616,6 +616,19 @@ do
 			depth = house.depth,
 		})
 	end
+	-- Carts, barrels and apple trees that block the way count too, as squares.
+	for index, thing in Dressing.props do
+		if thing.solid then
+			table.insert(boxes, {
+				name = `{thing.model} {index}`,
+				at = at(thing.at),
+				faces = thing.faces,
+				width = thing.tall * 0.8,
+				depth = thing.tall * 0.8,
+			})
+		end
+	end
+	local standing = #boxes -- houses and props: these must also keep off the town's lanes
 	local gate = Dressing.gatehouse
 	local across = Layout.facing(gate.faces + 90)
 	for _, side in { -1, 1 } do
@@ -642,6 +655,27 @@ do
 			end
 		end
 	end
+	-- Nothing is built on a street or a path: every two studs along each town lane is clear of
+	-- every house and solid prop by half the lane's width.
+	local onLane: { string } = {}
+	for laneIndex, lane in Dressing.lanes do
+		for index = 1, #lane.points - 1 do
+			local from, to = at(lane.points[index]), at(lane.points[index + 1])
+			local length = Layout.distance(from, to)
+			for step = 0, math.floor(length / 2) do
+				local t = math.min(step * 2 / math.max(length, 1), 1)
+				local point = { x = from.x + (to.x - from.x) * t, z = from.z + (to.z - from.z) * t }
+				for number = 1, standing do
+					local box = boxes[number]
+					local label = `{box.name}/lane {laneIndex}`
+					if boxGap(box, point) < lane.width / 2 and not table.find(onLane, label) then
+						table.insert(onLane, label)
+					end
+				end
+			end
+		end
+	end
+	check("no house or solid prop stands on a town lane", #onLane == 0, join(onLane))
 	check(
 		"no fence, hedge, wall or building comes within 6 studs of a prompt",
 		#tooNear == 0,

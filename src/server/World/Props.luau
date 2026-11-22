@@ -6,6 +6,7 @@
 
 local AssetService = game:GetService("AssetService")
 
+local CreatureModels = require(game:GetService("ReplicatedStorage").content.CreatureModels)
 local PropModels = require(game:GetService("ReplicatedStorage").content.PropModels)
 
 local Props = {}
@@ -141,7 +142,8 @@ function Props.model(name: string): MeshPart?
 	if loaded[name] or missing[name] then
 		return loaded[name]
 	end
-	local def = PropModels[name]
+	-- A creature's own model can stand in the world too (a sleeping giant in its lair).
+	local def = PropModels[name] or CreatureModels[name]
 	if not def then
 		missing[name] = true
 		return nil
@@ -180,7 +182,7 @@ function Props.stand(
 ): MeshPart
 	local copy = model:Clone()
 	copy.Size = model.Size * (tall / model.Size.Y)
-	local def = PropModels[model.Name]
+	local def = PropModels[model.Name] or CreatureModels[model.Name]
 	local flat = Vector3.new(facing.X, 0, facing.Z)
 	local ahead = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.zAxis
 	copy.CFrame = CFrame.lookAt(foot, foot + ahead)

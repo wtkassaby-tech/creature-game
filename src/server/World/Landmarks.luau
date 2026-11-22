@@ -75,7 +75,7 @@ function Landmarks.build(parent: Instance, map: Layout.Map, dressing: WorldTypes
 			CFrame.lookAt(foot + Vector3.yAxis * 9, foot + Vector3.yAxis * 9 + facing),
 			Props.rgb(244, 232, 208)
 		)
-		wall.Name = "HamletCottage"
+		wall.Name = "HamletCottage" -- every keeperless cottage, in the hamlet or in town
 		wall.CanCollide = true
 		local painted = Props.model(cottage.model)
 		if painted then
@@ -88,6 +88,21 @@ function Landmarks.build(parent: Instance, map: Layout.Map, dressing: WorldTypes
 				wall.CFrame * CFrame.new(0, 12, 0),
 				Props.rgb(206, 88, 72)
 			)
+		end
+	end
+
+	-- Homely things standing about: a cart, washing lines, barrels, the orchard's apple trees.
+	for _, thing in dressing.props do
+		local painted = Props.model(thing.model)
+		if painted then
+			local stood = Props.stand(
+				town,
+				painted,
+				placed(map, thing.at),
+				thing.tall,
+				Props.facing(thing.faces)
+			)
+			stood.CanCollide = thing.solid == true
 		end
 	end
 

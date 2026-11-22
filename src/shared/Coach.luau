@@ -28,7 +28,7 @@ local LINES: { [string]: string } = {
 	wideGreen = "Tired creatures leave a wide green.",
 	missedCommon = "It slipped the rope. It will not run off. Try again!",
 	joined = "Joined your team!",
-	stable = "Sent to your stable.",
+	stable = "Waiting in Creatures. Open it to add your new friend to the team.",
 	friend = "A new friend!",
 }
 Coach.LINES = LINES

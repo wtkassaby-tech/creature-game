@@ -65,6 +65,10 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		{ points = { p(56, -8), p(69.3, -51.3) }, width = 8, colour = DIRT }, -- breeder
 		{ points = { p(48, 8), p(62, 42) }, width = 8, colour = DIRT }, -- the Ring
 		{ points = { p(-96, 62), p(-96, 76) }, width = 4, colour = PLANKS }, -- the jetty
+		-- Orchard Row: where the townsfolk live, south of the plaza.
+		{ points = { p(0, 28), p(0, 104) }, width = 8, colour = COBBLE },
+		{ points = { p(-34, 104), p(44, 104) }, width = 8, colour = DIRT },
+		{ points = { p(118, -8), p(118, -17) }, width = 6, colour = DIRT }, -- the east cottage
 		-- The shut shortcut from the lair to the wicket, overgrown.
 		{ points = { p(215, -250), p(160, -195), p(110, -150) }, width = 8, colour = OVERGROWN },
 	},
@@ -176,6 +180,10 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		p(-142, 11),
 		p(142, -11),
 		p(142, 11),
+		-- Orchard Row.
+		p(-7, 66),
+		p(7, 98),
+		p(-40, 98),
 		-- The gatehouse hamlet.
 		p(590, -66),
 		p(640, -94),
@@ -279,10 +287,31 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	houses = {
 		{ at = p(645, -130), faces = 180, model = "Cottage", width = 26, depth = 27, tall = 26 },
 		{ at = p(650, -36), faces = 0, model = "Cottage", width = 26, depth = 27, tall = 26 },
+		-- Orchard Row, facing the plaza, and one cottage by the east arch.
+		{ at = p(-34, 120), faces = 0, model = "CottageBlue", width = 24, depth = 18, tall = 22 },
+		{ at = p(4, 126), faces = 0, model = "CottageMoss", width = 24, depth = 24, tall = 22 },
+		{ at = p(44, 120), faces = 0, model = "Cottage", width = 22, depth = 23, tall = 22 },
+		{ at = p(118, -32), faces = 180, model = "CottageBlue", width = 24, depth = 18, tall = 22 },
+	},
+	props = {
+		{ model = "AppleCart", at = p(-45, 17), faces = 0, tall = 9, solid = true },
+		{ model = "Barrels", at = p(-8, 50), faces = 0, tall = 6.5, solid = true },
+		{ model = "WashingLine", at = p(24, 132), faces = 0, tall = 8 },
+		{ model = "WashingLine", at = p(96, -34), faces = 180, tall = 8 },
+		{ model = "Barrels", at = p(62, 116), faces = 300, tall = 6, solid = true },
+		-- The orchard between Orchard Row and the Ring.
+		{ model = "AppleTree", at = p(72, 100), faces = 20, tall = 17, solid = true },
+		{ model = "AppleTree", at = p(92, 112), faces = 140, tall = 19, solid = true },
+		{ model = "AppleTree", at = p(112, 98), faces = 250, tall = 16, solid = true },
+		{ model = "AppleTree", at = p(100, 132), faces = 80, tall = 18, solid = true },
+		{ model = "AppleTree", at = p(124, 124), faces = 200, tall = 17, solid = true },
+		{ model = "AppleTree", at = p(-64, 116), faces = 320, tall = 18, solid = true },
 	},
 	people = {
 		{ name = "Child", at = p(-80, 74), faces = 225, model = "GirlTamer" },
 		{ name = "Gardener", at = p(28, -88), faces = 270, model = "Tamer" },
+		{ name = "Neighbour", at = p(18, 112), faces = 315, model = "Carer" },
+		{ name = "Picker", at = p(84, 104), faces = 90, model = "Grandmother" },
 	},
 
 	knoll = { at = p(-238, -2), size = { 22, 7, 16 } },

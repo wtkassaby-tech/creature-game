@@ -32,8 +32,8 @@ local TITLES: { [Kind]: string } =
 
 local COUNT_SECONDS = 0.6
 local ROW_GAP_SECONDS = 0.25
-local CARD_HEIGHT = 118 -- the "New friend" card; its picture is 110 square
-local PICTURE = 110
+local CARD_HEIGHT = 118 -- the "New friend" card on a phone; its picture is 110 square
+local CARD_SHARE = 0.34 -- on a bigger screen the card takes this much of the panel's height
 local RIBBON = 52 -- the title band
 local BUTTON_ROOM = 64 -- the Continue button (50 tall) and its margins, kept clear below the rows
 
@@ -87,12 +87,10 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	friend.Visible = false
 	friend.ZIndex = 9
 	friend.Parent = panel
-	local textLeft = PICTURE + 10
-	local friendName =
-		Kit.label(friend, "", UDim2.new(1, -textLeft, 0, 28), UDim2.fromOffset(textLeft, 0), 24)
+	-- Sizes and places are set by `sizeCard`, from the height the card has on this screen.
+	local friendName = Kit.label(friend, "", UDim2.new(), UDim2.new(), 24)
 	friendName.ZIndex = 9
-	local friendChip =
-		Kit.label(friend, "", UDim2.fromOffset(78, 20), UDim2.fromOffset(textLeft, 32), 14)
+	local friendChip = Kit.label(friend, "", UDim2.new(), UDim2.new(), 14)
 	friendChip.TextXAlignment = Enum.TextXAlignment.Center
 	friendChip.TextColor3 = Kit.COLOURS.white
 	friendChip.BackgroundTransparency = 0
@@ -100,24 +98,49 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	local chipCorner = Instance.new("UICorner")
 	chipCorner.CornerRadius = UDim.new(0.5, 0)
 	chipCorner.Parent = friendChip
-	local friendBlurb =
-		Kit.label(friend, "", UDim2.new(1, -textLeft, 0, 38), UDim2.fromOffset(textLeft, 56), 17)
+	local friendBlurb = Kit.label(friend, "", UDim2.new(), UDim2.new(), 17)
 	friendBlurb.TextWrapped = true
 	friendBlurb.TextYAlignment = Enum.TextYAlignment.Top
 	friendBlurb.TextColor3 = Kit.COLOURS.textDim
 	friendBlurb.ZIndex = 9
-	local friendPlace =
-		Kit.label(friend, "", UDim2.new(1, -textLeft, 0, 22), UDim2.fromOffset(textLeft, 94), 18)
+	local friendPlace = Kit.label(friend, "", UDim2.new(), UDim2.new(), 18)
 	friendPlace.TextColor3 = Kit.COLOURS.good
+	friendPlace.TextWrapped = true
+	friendPlace.TextYAlignment = Enum.TextYAlignment.Top
 	friendPlace.ZIndex = 9
 	local picture: ViewportFrame? = nil
+	local cardTall = CARD_HEIGHT
+
+	-- The card's height on this screen, and everything in it laid out to that height: the
+	-- picture is a square the height of the card, the words a column beside it.
+	local function sizeCard()
+		local panelTall = gui.AbsoluteSize.Y * 0.92
+		cardTall = math.max(CARD_HEIGHT, math.floor(panelTall * CARD_SHARE))
+		local k = cardTall / CARD_HEIGHT
+		local left = cardTall + 4
+		local function set(label: TextLabel, top: number, tall: number, text: number)
+			label.Position = UDim2.fromOffset(left, math.floor(top * k))
+			label.Size = UDim2.new(1, -left, 0, math.floor(tall * k))
+			local limit = label:FindFirstChildOfClass("UITextSizeConstraint")
+			if limit then
+				limit.MaxTextSize = math.floor(text * k)
+			end
+		end
+		set(friendName, 0, 28, 22)
+		set(friendChip, 32, 20, 14)
+		friendChip.Size = UDim2.fromOffset(math.floor(78 * k), math.floor(20 * k))
+		set(friendBlurb, 56, 26, 17)
+		set(friendPlace, 84, 34, 16)
+		friend.Size = UDim2.new(1, -24, 0, cardTall)
+	end
 
 	-- A catch needs room for the card; every other result keeps the small panel.
 	local function layout(withCard: boolean)
 		if withCard then
 			panel.Size = UDim2.fromScale(0.52, 0.92)
 			panel.Position = UDim2.fromScale(0.24, 0.04)
-			local top = RIBBON + 10 + CARD_HEIGHT + 4
+			sizeCard()
+			local top = RIBBON + 10 + cardTall + 4
 			rows.Position = UDim2.fromOffset(12, top)
 			rows.Size = UDim2.new(1, -24, 1, -(top + BUTTON_ROOM))
 		else
@@ -137,7 +160,7 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 			friend,
 			caught.name,
 			caught.element,
-			UDim2.fromOffset(PICTURE, PICTURE),
+			UDim2.fromOffset(cardTall - 8, cardTall - 8),
 			UDim2.fromOffset(0, 4)
 		)
 		made.ZIndex = 9

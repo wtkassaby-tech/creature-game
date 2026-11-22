@@ -222,6 +222,11 @@ function BattleView.start(playerGui: Instance)
 		end)
 		close.Size = UDim2.new(1, 0, 0, 40)
 		close.ZIndex = 6
+		-- Only as tall as its rows, and sitting just above the bottom panels, so the two
+		-- creatures stay in view behind it.
+		local tall = 16 + #options * 50 + 46
+		picker.Size = UDim2.new(0.44, 0, 0, tall)
+		picker.Position = UDim2.new(0.28, 0, 0.68, -tall)
 		picker.Visible = true
 	end
 
@@ -296,7 +301,13 @@ function BattleView.start(playerGui: Instance)
 				})
 			end
 		end
-		choose(options)
+		if #options == 1 then
+			options[1].pick() -- one kind of lasso: nothing to choose, so throw it
+		elseif #options == 0 then
+			choose({ { text = "No lassos left. The shop sells them.", pick = function() end } })
+		else
+			choose(options)
+		end
 	end)
 	lassoButton.LayoutOrder = 2
 	lassoScale.Parent = lassoButton

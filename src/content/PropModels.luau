@@ -95,10 +95,46 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://94264757221587",
 		size = { 26.78, 19.64, 14 },
 	},
+	-- A golden oak with a round, rooted trunk (the first try had a square one).
 	AncientTree = {
-		mesh = "rbxassetid://86401537618792",
-		texture = "rbxassetid://130150468810323",
-		size = { 30, 29.59, 29.75 },
+		mesh = "rbxassetid://114095487046982",
+		texture = "rbxassetid://114156806187872",
+		size = { 56, 64, 52.3 },
+	},
+	VillageArch = {
+		mesh = "rbxassetid://115744713494140",
+		texture = "rbxassetid://78919905690989",
+		size = { 15.9, 14.9, 6 },
+	},
+	CottageBlue = {
+		mesh = "rbxassetid://113914046494128",
+		texture = "rbxassetid://115412098124800",
+		size = { 21.7, 20, 16 },
+	},
+	CottageMoss = {
+		mesh = "rbxassetid://120930615629458",
+		texture = "rbxassetid://130020925359678",
+		size = { 21.4, 20, 21.3 },
+	},
+	AppleCart = {
+		mesh = "rbxassetid://136748752214368",
+		texture = "rbxassetid://78945263935849",
+		size = { 7.8, 9, 5.6 },
+	},
+	WashingLine = {
+		mesh = "rbxassetid://117208821191074",
+		texture = "rbxassetid://113408208477191",
+		size = { 10.6, 8, 1.6 },
+	},
+	Barrels = {
+		mesh = "rbxassetid://97123620414873",
+		texture = "rbxassetid://118437046884539",
+		size = { 8, 6.7, 5.5 },
+	},
+	AppleTree = {
+		mesh = "rbxassetid://134795896466827",
+		texture = "rbxassetid://128101296679369",
+		size = { 14, 16, 12.3 },
 	},
 	Birch = {
 		mesh = "rbxassetid://91570444640112",

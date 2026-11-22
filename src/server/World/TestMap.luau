@@ -326,6 +326,12 @@ local function buildBiome(parent: Folder, biome: WorldTypes.Biome, map: Layout.M
 			-- The giant sleeps in the middle of its arena; a Giant Horn wakes it.
 			local sleeper = block(world, giant.id, Vector3.new(20, 40, 20), at(arenaAt, 20.6), WOOD)
 			label(sleeper, `{giant.name} (Lv {giant.level})`)
+			local body = Props.model(giant.name)
+			if body then -- the giant itself, asleep, in place of the plain block
+				sleeper.Transparency = 1
+				local feet = Vector3.new(arenaAt.x, 0.4, arenaAt.z)
+				Props.stand(world, body, feet, 40, Vector3.new(-1, 0, 1))
+			end
 			prompt(sleeper, "Giant", giant.id, "Blow the Giant Horn", giant.name, 40)
 		end
 		local stall = map.places[Layout.stallId(biome)]

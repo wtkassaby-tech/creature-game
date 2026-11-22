@@ -252,7 +252,11 @@ function StoryView.start(playerGui: Instance)
 				return -- the first creature arrived while the title ran
 			end
 			table.insert(afterQueue, function()
-				pick.show() -- the tracker stays hidden until a friend is chosen
+				-- Only if there is still no first friend: the choice may have been made already.
+				local latest = ClientState.get()
+				if not (latest and latest.Starter ~= "") then
+					pick.show() -- the tracker stays hidden until a friend is chosen
+				end
 			end)
 			-- Every line of the first beat, read from the story data.
 			if startBeat then

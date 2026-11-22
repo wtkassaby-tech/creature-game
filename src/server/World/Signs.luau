@@ -18,6 +18,9 @@ local function mirrored(text: string): string
 	return swapped
 end
 
+local PAINTED_ARCH_TALL = 23 -- wide enough at this height for the street to pass between its posts
+local PAINTED_BOARD_HALF = 1.35 -- from the middle of its hanging board to just clear of a face
+
 -- A town arch facing `faces` (out of town): two timber posts 18 apart, a crossbeam with a small
 -- green roof, and a cream board reading `outside` to arrivals and `inside` to those leaving.
 -- A flower box sits at each foot.
@@ -27,6 +30,43 @@ function Signs.arch(parent: Instance, foot: Vector3, faces: number, outside: str
 	folder.Parent = parent
 	local out = Props.facing(faces)
 	local base = CFrame.lookAt(foot, foot + out)
+	-- The painted arch if there is one: shingled roof, ivy posts and its own hanging board. Our
+	-- words go on a cream board over that one, and unseen posts do the blocking.
+	local painted = Props.model("VillageArch")
+	if painted then
+		local stood = Props.stand(folder, painted, foot, PAINTED_ARCH_TALL, out)
+		local reach = stood.Size.X * 0.4
+		for _, side in { -reach, reach } do
+			local post = Props.part(
+				folder,
+				Vector3.new(3, PAINTED_ARCH_TALL * 0.8, 3),
+				base * CFrame.new(side, PAINTED_ARCH_TALL * 0.4, 0),
+				TIMBER
+			)
+			post.Name = "ArchPost"
+			post.Transparency = 1
+			post.CanCollide = true
+		end
+		-- The words are written straight on to the hanging board, one side each: an unseen
+		-- sheet just clear of each of its faces carries them.
+		for _, side in { -1, 1 } do
+			local words = Props.part(
+				folder,
+				Vector3.new(stood.Size.X * 0.33, PAINTED_ARCH_TALL * 0.115, 0.1),
+				base * CFrame.new(0, PAINTED_ARCH_TALL * 0.57, side * PAINTED_BOARD_HALF),
+				CREAM
+			)
+			words.Name = "ArchBoard"
+			words.Transparency = 1
+			-- "Route A · Clover Lane" reads as two lines on the board.
+			if side == -1 then
+				Props.text(words, Enum.NormalId.Front, (string.gsub(outside, " · ", "\n")))
+			else
+				Props.text(words, Enum.NormalId.Back, (string.gsub(inside, " · ", "\n")))
+			end
+		end
+		return
+	end
 	for _, side in { -9, 9 } do
 		local post =
 			Props.part(folder, Vector3.new(2, 14, 2), base * CFrame.new(side, 7, 0), TIMBER)

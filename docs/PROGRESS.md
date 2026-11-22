@@ -27,21 +27,31 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | **More models** | The Greenwood giant, the eight Dust Canyon creatures, six Tide Flats creatures, six more people and twelve map pieces (waystation, gatehouse, ancient tree, birch, grass tuft, reeds, fence, signpost, footbridge, notice board, bench, stall) | `src/content/CreatureModels.luau`, `PropModels.luau`, `docs/ASSETS.md` |
 | **Creatures stand on the ground** | A wild creature could appear on a roof or a treetop. It now looks through anything that is not ground | `src/client/World/WorldView.luau` |
 
-**Seen in Studio and still wrong (being fixed):**
-- The two town arches and the ancient tree's trunk are plain boxes. Painted replacements are being generated.
-- The south half of Thistledown is an empty lawn. More homes and homely things (washing lines, a cart, an orchard) are being made for it.
-- Beyond the gatehouse you can see Dust Canyon's town across open grass. It needs a wall of trees or a rise behind the gate.
-- In a battle beside the rival, the rival and the well can fill the left of the screen.
-- With the Leaf starter the first battle is still close: picking the weakest move ends it with almost no health left (it cannot be lost).
+**Second pass, the same day (seen in Studio):**
+- **Painted town arches.** A shingled, ivy-wrapped arch stands at each end of the street, with the route's name written on its hanging board.
+- **Orchard Row.** South of the plaza: three homes (thatched, mossy, blue slate), an orchard of apple trees with ladders, washing lines, barrels, an apple cart by the street, two more villagers, and a fourth home by the east arch. A test now checks that nothing solid is built on a town lane.
+- **The ancient tree** is a golden oak with a round, rooted trunk, and **Hollowbough itself sleeps in the lair** (it was a brown block).
+- **A catch, played through on the new map:** the coach says "It is tired now. Time to throw!", LASSO pulses, and the "New friend" card shows the creature, its type, its line and where it went. With one kind of lasso the throw starts at once (it used to open a large empty list); with several, the list is only as tall as its rows. The card's picture and words now grow with the screen.
+- **The Creatures strip works:** dark silhouettes with "?" for species not yet met, the painted creature once owned.
+- **The starter pick can no longer appear a second time** once a friend has been chosen.
+- **Where a catch goes:** the card now says "Waiting in Creatures. Open it to add your new friend to the team." The server puts a catch on the team only when the team is empty; see the question below.
 
-**Not checked:** a catch on the new map, with the "New friend" card; the Creatures strip and its silhouettes; the "Day one" card; the phone-sized view of any of this; walking times; frame rate with about 1,000 hedge bushes and 300 trees.
+**Still wrong:**
+- Beyond the gatehouse you can see Dust Canyon's town across open grass. It needs a wall of trees or a rise behind the gate.
+- The town and route hedges are box-shaped under their row of bushes.
+- With the Leaf starter the first battle is still close: picking the weakest move ends it with almost no health left (it cannot be lost).
+- The lasso bar is a plain black strip, and the Creatures screen is still a list of rows. Both are next.
+- Dust Canyon, Tide Flats and the Mire still use the old generated layout.
+
+**Not checked:** the "Day one" card; the phone-sized view of any of this; walking times; frame rate with about 1,000 hedge bushes and 300 trees.
 
 **Waiting for Ayrton (nothing is built until a yes):**
 1. **Move the first catch earlier** (plan 07, package 6): tame a creature before the first tamer, not after. It changes the story order.
 2. **Nicknames** for creatures: needs a save change and Roblox's text filter.
 3. **A "pick one of two" gift** from the mentor, and the Hollow Log's spawn table.
 4. **Painted models against the brief's art rule.** The brief locks "low-poly, flat colours". You said you like the painted clay models, so I am treating that rule as replaced. Say if that is wrong.
-5. **A name.** My pick is **Patchlings** for the creatures and **"Patchlings: Thistledown"** for the game; runner-up **Quiltlings**. Neither has been cleared legally (`docs/research/games/09_NAMES.md`).
+5. **A caught creature should join the team when there is room.** Today it goes to the stable unless the team is empty, so a new player's second catch is not on their team. It is a one-line rule on the server, but it is part of catching, so it waits for your yes.
+6. **A name.** My pick is **Patchlings** for the creatures and **"Patchlings: Thistledown"** for the game; runner-up **Quiltlings**. Neither has been cleared legally (`docs/research/games/09_NAMES.md`).
 
 **To playtest:** start a new game on the new map. Does the town feel like a place? Is it clear where to go? Does the first battle feel won?
 

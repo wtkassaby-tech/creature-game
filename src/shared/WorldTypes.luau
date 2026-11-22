@@ -182,6 +182,15 @@ export type DressHouse = {
 	tall: number,
 }
 export type DressPerson = { name: string, at: SheetPoint, faces: number, model: string }
+-- A painted thing standing somewhere for its own sake: a cart, a washing line, an apple tree.
+-- `solid` makes it block the way.
+export type DressProp = {
+	model: string,
+	at: SheetPoint,
+	faces: number,
+	tall: number,
+	solid: boolean?,
+}
 -- A patch of coloured ground: a whole stretch's corridor (`area`), or a band beside a route
 -- from `from` to `to` along it, `near` to `far` studs to its left (negative: right).
 export type DressGround = {
@@ -223,6 +232,7 @@ export type DressingSheet = {
 	buildings: { [string]: { width: number, depth: number, tall: number } }, -- hub buildings
 	houses: { DressHouse }, -- cottages with no keeper (the gatehouse hamlet)
 	people: { DressPerson }, -- villagers with nothing to say yet
+	props: { DressProp }, -- homely things: carts, washing lines, barrels, apple trees
 	knoll: { at: SheetPoint, size: { number } },
 	picnic: { at: SheetPoint, radius: number },
 	pocket: { at: SheetPoint, radius: number },
