@@ -12,6 +12,8 @@ local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local DailyTasks = require(ReplicatedStorage.content.DailyTasks)
 local Economy = require(ReplicatedStorage.shared.Economy)
+local Portrait = require(script.Parent.Portrait)
+local Species = require(ReplicatedStorage.content.Species)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
@@ -74,6 +76,7 @@ function CreaturesView.start(playerGui: Instance)
 	notices.Enabled = true
 	local notice = Kit.label(notices, "", UDim2.new(0.6, 0, 0, 28), UDim2.new(0.2, 0, 0, 68), 20)
 	notice.TextXAlignment = Enum.TextXAlignment.Center
+	Kit.overWorld(notice)
 	notice.TextStrokeTransparency = 0.3
 
 	local gui = Kit.screen(playerGui, "Creatures", 6)
@@ -269,7 +272,17 @@ function CreaturesView.start(playerGui: Instance)
 				else `{math.floor((1 - view.Hurt) * 100 + 0.5)}% health`
 			local text =
 				`{if onTeam then `[{onTeam}] ` else ""}{view.Torso.Species}  Lv {view.Level}  {view.Rarity}  {health}`
-			local name = Kit.label(row, text, UDim2.new(0.4, 0, 1, -8), UDim2.fromOffset(10, 4))
+			local kind = Species[view.Torso.Species]
+			if kind then
+				Portrait.new(
+					row,
+					view.Torso.Species,
+					kind.element,
+					UDim2.fromOffset(52, 52),
+					UDim2.fromOffset(4, 1)
+				)
+			end
+			local name = Kit.label(row, text, UDim2.new(0.4, -52, 1, -8), UDim2.fromOffset(60, 4))
 			if view.Hurt > 0 then
 				name.TextColor3 = Kit.healthColour(1 - view.Hurt)
 				-- Treat with what fits: a Rally Root if it has fainted, otherwise a tonic.

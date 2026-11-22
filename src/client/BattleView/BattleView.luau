@@ -97,10 +97,10 @@ function BattleView.start(playerGui: Instance)
 	}
 	local function card(position: UDim2): Card
 		local panel = Kit.panel(gui, UDim2.new(0.3, 0, 0, 72), position)
-		panel.BackgroundTransparency = 0.3
 		local name = Kit.label(panel, "", UDim2.new(1, -90, 0, 24), UDim2.fromOffset(12, 5), 24)
 		local chip = Kit.label(panel, "", UDim2.fromOffset(66, 18), UDim2.new(1, -76, 0, 8), 13)
 		chip.TextXAlignment = Enum.TextXAlignment.Center
+		chip.TextColor3 = Kit.COLOURS.white
 		chip.BackgroundTransparency = 0
 		local chipCorner = Instance.new("UICorner")
 		chipCorner.CornerRadius = UDim.new(0.5, 0)
@@ -127,13 +127,29 @@ function BattleView.start(playerGui: Instance)
 	-- 1 = yours (left, beside your creature), 2 = theirs (upper right, beside theirs), matching
 	-- the sides in the model and where the camera puts the two creatures.
 	local cards: { Card } = { card(UDim2.fromScale(0.03, 0.3)), card(UDim2.fromScale(0.67, 0.2)) }
-	local message = Kit.label(gui, "", UDim2.new(0.94, 0, 0, 28), UDim2.fromScale(0.03, 0.63), 24)
-
-	-- The bottom panel: moves on the left, everything else on the right.
-	local actions = Kit.panel(gui, UDim2.fromScale(0.96, 0.27), UDim2.fromScale(0.02, 0.71))
-	actions.BackgroundTransparency = 1 -- only the buttons show: the scene stays in view
+	-- The bottom of the screen, as in the old handheld games: a text box that says what is
+	-- happening, with the menu beside it (FIGHT, LASSO, ITEMS, SWITCH, RUN). FIGHT swaps both for
+	-- the four moves.
+	local box = Kit.panel(gui, UDim2.fromScale(0.56, 0.26), UDim2.fromScale(0.02, 0.72))
+	local message = Kit.label(box, "", UDim2.new(1, -32, 1, -20), UDim2.fromOffset(16, 10), 22)
+	message.TextWrapped = true
+	message.TextYAlignment = Enum.TextYAlignment.Top
+	Kit.pixel(message, 22)
+	local menu = Kit.panel(gui, UDim2.fromScale(0.38, 0.26), UDim2.fromScale(0.6, 0.72))
+	local side = Instance.new("Frame")
+	side.Size = UDim2.new(1, -16, 1, -16)
+	side.Position = UDim2.fromOffset(8, 8)
+	side.BackgroundTransparency = 1
+	side.Parent = menu
+	local sideGrid = Instance.new("UIGridLayout")
+	sideGrid.CellSize = UDim2.new(0.333, -6, 0.5, -4)
+	sideGrid.CellPadding = UDim2.fromOffset(8, 8)
+	sideGrid.SortOrder = Enum.SortOrder.LayoutOrder
+	sideGrid.Parent = side
+	local actions = Kit.panel(gui, UDim2.fromScale(0.96, 0.26), UDim2.fromScale(0.02, 0.72))
+	actions.Visible = false
 	local moves = Instance.new("Frame")
-	moves.Size = UDim2.new(0.64, -12, 1, -16)
+	moves.Size = UDim2.new(0.84, -12, 1, -16)
 	moves.Position = UDim2.fromOffset(8, 8)
 	moves.BackgroundTransparency = 1
 	moves.Parent = actions
@@ -141,15 +157,7 @@ function BattleView.start(playerGui: Instance)
 	moveGrid.CellSize = UDim2.new(0.5, -4, 0.5, -4)
 	moveGrid.CellPadding = UDim2.fromOffset(8, 8)
 	moveGrid.Parent = moves
-	local side = Instance.new("Frame")
-	side.Size = UDim2.new(0.36, -12, 1, -16)
-	side.Position = UDim2.new(0.64, 4, 0, 8)
-	side.BackgroundTransparency = 1
-	side.Parent = actions
-	local sideGrid = Instance.new("UIGridLayout")
-	sideGrid.CellSize = UDim2.new(0.5, -4, 0.5, -4)
-	sideGrid.CellPadding = UDim2.fromOffset(8, 8)
-	sideGrid.Parent = side
+	local choosingMove = false -- FIGHT was pressed: the four moves are showing
 
 	-- A list of choices over the bottom panel (which lasso, which item, who to switch to).
 	local picker = Kit.panel(
@@ -220,7 +228,20 @@ function BattleView.start(playerGui: Instance)
 		end)
 	end
 
-	local lassoButton = Kit.button(side, "Lasso", Kit.COLOURS.lasso, function()
+	local refreshMenu: () -> ()
+	local fightButton = Kit.button(side, "FIGHT", Kit.COLOURS.bad, function()
+		choosingMove = true
+		refreshMenu()
+	end)
+	fightButton.LayoutOrder = 1
+	local backButton = Kit.button(actions, "BACK", Kit.COLOURS.panelLight, function()
+		choosingMove = false
+		refreshMenu()
+	end)
+	backButton.Size = UDim2.new(0.16, -4, 1, -16)
+	backButton.Position = UDim2.new(0.84, 0, 0, 8)
+
+	local lassoButton = Kit.button(side, "LASSO", Kit.COLOURS.lasso, function()
 		local options = {}
 		for _, tier in { "Basic", "Braided", "Gilded" } do
 			if held(tier) > 0 then
@@ -240,7 +261,8 @@ function BattleView.start(playerGui: Instance)
 		end
 		choose(options)
 	end)
-	Kit.button(side, "Items", Kit.COLOURS.good, function()
+	lassoButton.LayoutOrder = 2
+	local itemsButton = Kit.button(side, "ITEMS", Kit.COLOURS.good, function()
 		local current = model
 		if not current then
 			return
@@ -278,7 +300,8 @@ function BattleView.start(playerGui: Instance)
 		end
 		choose(options)
 	end)
-	Kit.button(side, "Switch", Kit.COLOURS.panelLight, function()
+	itemsButton.LayoutOrder = 3
+	local switchButton = Kit.button(side, "SWITCH", Kit.COLOURS.accent, function()
 		local current = model
 		if not current then
 			return
@@ -303,7 +326,8 @@ function BattleView.start(playerGui: Instance)
 		end
 		choose(options)
 	end)
-	local runButton = Kit.button(side, "Run", Kit.COLOURS.bad, function()
+	switchButton.LayoutOrder = 4
+	local runButton = Kit.button(side, "RUN", Kit.COLOURS.panelLight, function()
 		send(function(current)
 			Net.BattleAction.Fire({
 				BattleId = current.battleId,
@@ -382,9 +406,23 @@ function BattleView.start(playerGui: Instance)
 			button.show(move, current.previews[index], if foe then foe.element else nil, open)
 		end
 		lassoButton.Visible = current.wild
+		-- Three choices against a tamer fill one tall row; five against a wild creature take two.
+		sideGrid.CellSize = if current.wild
+			then UDim2.new(0.333, -6, 0.5, -4)
+			else UDim2.new(0.333, -6, 1, 0)
 		runButton.Visible = current.wild
-		actions.Visible = not current.over
+		if not open then
+			choosingMove = false -- a choice was made, or the battle ended
+		end
+		box.Visible = not current.over and not choosingMove
+		menu.Visible = open and not choosingMove
+		actions.Visible = open and choosingMove
+		if open and not choosingMove and mine then
+			message.Text = `What will {mine.name} do?`
+		end
 	end
+
+	refreshMenu = refresh
 
 	-- A fainted creature does not lead: the battle opens with the first one still standing.
 	local function firstStanding(list: { any }): number
@@ -486,7 +524,7 @@ function BattleView.start(playerGui: Instance)
 						Sfx.play("weakHit")
 					else
 						stage.hit(other, false)
-						fx.rise(stage.point(other), hurt, Kit.COLOURS.text, false)
+						fx.rise(stage.point(other), hurt, Kit.COLOURS.white, false)
 						Sfx.play("hit")
 					end
 				end

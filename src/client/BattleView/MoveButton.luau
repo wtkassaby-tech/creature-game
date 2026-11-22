@@ -24,6 +24,10 @@ function MoveButton.new(parent: Instance, onPick: () -> ()): View
 	local info = Kit.label(button, "", UDim2.fromScale(0.6, 0.4), UDim2.fromScale(0, 0.6), 16)
 	local hint = Kit.label(button, "", UDim2.fromScale(0.4, 0.4), UDim2.fromScale(0.6, 0.6), 16)
 	hint.TextXAlignment = Enum.TextXAlignment.Right
+	-- On a coloured button the words are white; the hint is set in the pixel face.
+	name.TextColor3, info.TextColor3 = Kit.COLOURS.white, Kit.COLOURS.white
+	Kit.pixel(name, 18)
+	Kit.pixel(hint, 13)
 
 	return {
 		button = button,
@@ -46,9 +50,9 @@ function MoveButton.new(parent: Instance, onPick: () -> ()): View
 			info.Text = if def then `{def.element}  {damage}` else damage
 			local factor = if def and foe then TypeChart.multiplier(def.element, foe) else 1
 			if factor > 1 then
-				hint.Text, hint.TextColor3 = "STRONG", Kit.COLOURS.gold
+				hint.Text, hint.TextColor3 = "STRONG", Color3.fromRGB(255, 240, 150)
 			elseif factor < 1 then
-				hint.Text, hint.TextColor3 = "WEAK", Kit.COLOURS.textDim
+				hint.Text, hint.TextColor3 = "WEAK", Color3.fromRGB(226, 226, 232)
 			else
 				hint.Text = ""
 			end

@@ -32,6 +32,7 @@ type Live = {
 	eyes: { BasePart },
 	lids: { BasePart },
 	sunk: boolean,
+	inWorld: boolean, -- false for one shown inside a screen, which is always near enough
 }
 
 local live: { [Model]: Live } = {}
@@ -72,7 +73,8 @@ local function step(now: number)
 	local camera = Workspace.CurrentCamera
 	local eye = if camera then camera.CFrame.Position else Vector3.zero
 	for model, toy in live do
-		if toy.sunk or (toy.home.Position - eye).Magnitude > ANIMATE_WITHIN then
+		local far = toy.inWorld and (toy.home.Position - eye).Magnitude > ANIMATE_WITHIN
+		if toy.sunk or far then
 			continue
 		end
 		-- Breathing: a slow rise and fall with a slight lean, each one out of step with the rest.
@@ -143,6 +145,7 @@ function ToyBody.new(parent: Instance, species: string, element: Types.Element, 
 		eyes = eyes,
 		lids = lids,
 		sunk = false,
+		inWorld = parent:IsDescendantOf(Workspace),
 	}
 	live[model] = toy
 	model.Destroying:Once(function()

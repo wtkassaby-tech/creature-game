@@ -19,11 +19,11 @@ export type Fx = {
 function BattleFx.new(gui: ScreenGui): Fx
 	-- One callout at a time, across the upper middle of the screen.
 	local word = Instance.new("TextLabel")
-	word.Size = UDim2.new(0.8, 0, 0, 48)
+	word.Size = UDim2.new(0.8, 0, 0, 34)
 	word.AnchorPoint = Vector2.new(0.5, 0.5)
 	word.Position = UDim2.fromScale(0.5, 0.26)
 	word.BackgroundTransparency = 1
-	word.Font = Kit.FONT_HEAVY
+	word.Font = Kit.FONT_PIXEL
 	word.TextScaled = true
 	word.TextStrokeColor3 = Kit.COLOURS.outline
 	word.TextStrokeTransparency = 0.2
@@ -63,12 +63,12 @@ function BattleFx.new(gui: ScreenGui): Fx
 	-- Text that floats up from a point on the screen and fades.
 	local function rise(at: Vector2, text: string, colour: Color3, big: boolean)
 		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromOffset(220, if big then 46 else 34)
+		label.Size = UDim2.fromOffset(220, if big then 34 else 24)
 		label.AnchorPoint = Vector2.new(0.5, 0.5)
 		local start = UDim2.fromOffset(at.X + scatter:NextInteger(-24, 24), at.Y)
 		label.Position = start
 		label.BackgroundTransparency = 1
-		label.Font = Kit.FONT_HEAVY
+		label.Font = Kit.FONT_PIXEL
 		label.TextScaled = true
 		label.Text = text
 		label.TextColor3 = colour

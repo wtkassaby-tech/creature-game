@@ -9,6 +9,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local Portrait = require(script.Parent.Parent.Creatures.Portrait)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
@@ -60,11 +62,37 @@ function StoryView.start(playerGui: Instance)
 	local gui = Kit.screen(playerGui, "Dialogue", 20)
 	local box = Kit.panel(gui, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
 	local speaker = Kit.label(box, "", UDim2.new(1, -150, 0, 26), UDim2.fromOffset(14, 8), 22)
-	speaker.TextColor3 = Kit.COLOURS.warn
+	speaker.TextColor3 = Kit.COLOURS.bad
+	Kit.pixel(speaker, 16)
 	local line = Kit.label(box, "", UDim2.new(1, -28, 0, 68), UDim2.fromOffset(14, 54), 22)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
+	Kit.pixel(line, 20)
 	local queue: { { speaker: string, text: string } } = {}
+	-- Lines are typed out a letter at a time with a soft tick, as in the old handheld games.
+	-- Pressing Next while a line is still being typed shows the rest of it at once.
+	local typing = 0
+	local function typeOut(text: string)
+		typing += 1
+		local mine = typing
+		line.Text = text
+		line.MaxVisibleGraphemes = 0
+		task.spawn(function()
+			for count = 1, #text do
+				if typing ~= mine then
+					return
+				end
+				line.MaxVisibleGraphemes = count
+				if count % 3 == 0 then
+					Sfx.play("count")
+				end
+				task.wait(0.022)
+			end
+			if typing == mine then
+				line.MaxVisibleGraphemes = -1
+			end
+		end)
+	end
 	-- The box waits while the battle screen is open: it sat on top of the moves and the
 	-- "You won!" panel (first Studio run). The line on show comes back when the battle closes.
 	local showing = false
@@ -77,7 +105,7 @@ function StoryView.start(playerGui: Instance)
 			return
 		end
 		speaker.Text = nextLine.speaker
-		line.Text = nextLine.text
+		typeOut(nextLine.text)
 		showing = true
 		gui.Enabled = not battleOpen
 	end
@@ -98,7 +126,14 @@ function StoryView.start(playerGui: Instance)
 		battle:GetPropertyChangedSignal("Enabled"):Connect(battleChanged)
 		battleChanged()
 	end)
-	local nextButton = Kit.button(box, "Next", Kit.COLOURS.accent, showNext)
+	local nextButton = Kit.button(box, "NEXT", Kit.COLOURS.accent, function()
+		if line.MaxVisibleGraphemes ~= -1 then
+			typing += 1
+			line.MaxVisibleGraphemes = -1
+		else
+			showNext()
+		end
+	end)
 	nextButton.Size = UDim2.fromOffset(120, 44) -- finger-sized on a phone
 	nextButton.Position = UDim2.new(1, -132, 0, 6)
 
@@ -146,6 +181,11 @@ function StoryView.start(playerGui: Instance)
 					Net.CompleteBeat.Fire({ BeatId = startBeat.id, Choice = species })
 				end)
 				button.TextWrapped = true
+				-- The creature itself stands on its card; its name sits underneath.
+				button.TextYAlignment = Enum.TextYAlignment.Bottom
+				if def then
+					Portrait.new(button, species, def.element, UDim2.fromScale(1, 0.8), UDim2.new())
+				end
 			end
 		end
 	end
