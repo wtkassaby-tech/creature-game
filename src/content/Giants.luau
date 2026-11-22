@@ -7,13 +7,14 @@ local GiantBattle = require("../shared/GiantBattle")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local DustCanyon = require("./giants/DustCanyon")
 local Greenwood = require("./giants/Greenwood")
+local Mire = require("./giants/Mire")
 local TideFlats = require("./giants/TideFlats")
 
 local Giants: { [string]: GiantBattle.GiantDef } = {}
 
 -- In biome order: the position in this list is the giant's biome number. Only open biomes'
 -- giants are listed (src/config/ReleaseConfig.luau).
-local ordered: { GiantBattle.GiantDef } = { Greenwood, DustCanyon, TideFlats }
+local ordered: { GiantBattle.GiantDef } = { Greenwood, DustCanyon, TideFlats, Mire }
 for number, giant in ordered do
 	if number <= ReleaseConfig.OPEN_BIOMES then
 		Giants[giant.id] = giant

@@ -7,6 +7,7 @@
 
 local DustCanyon = require("./tamers/DustCanyon")
 local Greenwood = require("./tamers/Greenwood")
+local Mire = require("./tamers/Mire")
 local TideFlats = require("./tamers/TideFlats")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
@@ -23,7 +24,7 @@ local story: { [string]: WorldTypes.StoryBattle } = {}
 
 -- In biome order: the position in this list is the biome number. Only open biomes' tamers are
 -- listed (src/config/ReleaseConfig.luau).
-local biomes: { WorldTypes.BiomeTamers } = { Greenwood, DustCanyon, TideFlats }
+local biomes: { WorldTypes.BiomeTamers } = { Greenwood, DustCanyon, TideFlats, Mire }
 
 for number, biome in biomes do
 	if number > ReleaseConfig.OPEN_BIOMES then

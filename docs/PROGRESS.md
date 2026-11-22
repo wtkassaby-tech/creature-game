@@ -19,7 +19,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 2. Mixing all four biomes one-on-one is less balanced than three (the best bred creature wins 81 to 85% of fights, against a target of 70%). The cause is the type chart, and it is recorded as a known gap, not hidden.
 3. One Mire species was renamed (to Keelsnap) because its first name was too close to a creature in another game. All names remain placeholders.
 
-**Next for the Mire:** its town, routes, tamers with teams of four, giant, quests and chapter 4. Giants do not react to poison yet.
+**The Mire's world** is also written (22 November): the village of Sedgeholm, two routes, five tamers with teams of four, the rival, champion Honora Vell at the gate, the giant Sloughback, a quest line and chapter 4. Twelve robot players finish all four biomes when it is opened in a test. It is **closed in the live game** by one number, `OPEN_BIOMES` in `src/config/ReleaseConfig.luau` (3 at launch), and a test checks nothing from it leaks into the open biomes. Opening it needs its map and art in the place first. Details: `docs/content/MIRE_WORLD.md`.
 
 ## 21 November 2026 (Tide Flats, and robots that play the whole game)
 

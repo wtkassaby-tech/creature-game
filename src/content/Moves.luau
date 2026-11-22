@@ -131,6 +131,9 @@ local Moves: { [string]: MoveDef } = {
 	["Still Water"] = { element = "Water", power = 65 },
 	-- Frost: a teaser for Frostline, on the two Water torsos only (see the roster document)
 	["Hoarmist"] = { element = "Frost", power = 70 },
+	-- Sloughback's own (the captured giant's signature moves; see src/content/giants).
+	["Marsh Gas"] = { element = "Toxic", power = 65 },
+	["Sinking Pull"] = { element = "Water", power = 60 },
 }
 
 return Moves

@@ -4,6 +4,7 @@
 
 local DustCanyon = require("./biomes/DustCanyon")
 local Greenwood = require("./biomes/Greenwood")
+local Mire = require("./biomes/Mire")
 local TideFlats = require("./biomes/TideFlats")
 local ReleaseConfig = require("../config/ReleaseConfig")
 local WorldTypes = require("../shared/WorldTypes")
@@ -12,7 +13,7 @@ local Biomes: { [string]: WorldTypes.Biome } = {}
 
 -- In biome order: the position in this list is the biome's number. Only open biomes are listed
 -- (src/config/ReleaseConfig.luau).
-local ordered: { WorldTypes.Biome } = { Greenwood, DustCanyon, TideFlats }
+local ordered: { WorldTypes.Biome } = { Greenwood, DustCanyon, TideFlats, Mire }
 for number, biome in ordered do
 	assert(biome.number == number, `{biome.id} is listed out of order`)
 	if number <= ReleaseConfig.OPEN_BIOMES then
