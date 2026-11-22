@@ -100,7 +100,7 @@ Rojo maps: `src/shared`, `src/config`, `src/content` and `src/net` -> `Replicate
 
 ## Assets
 
-The asset rule is [Open] in the brief (section 15). Until Ayrton decides: generate art (AI tools or built in code) to the part specification in brief section 12. Ask before inserting any Creator Store or marketplace asset; if one is approved, check its licence, strip or read every script in it, and record its id, creator and licence.
+Any source is allowed (Ayrton, 22 November 2026: "No restrictions at all, use whatever is needed"): AI tools, art built in code, the Creator Store, the marketplace or packs. What stays, because it protects the game: no real brands, IP or recognisable characters from other games; every script inside an outside asset is removed, or read line by line first (free models often hide backdoors such as `require(id)`, `loadstring` or `getfenv`); the licence allows use in a commercial game; and every outside asset is recorded in `docs/ASSETS.md` with its id, creator and licence. Ask before spending money on anything.
 
 ## Roblox docs for agents
 
