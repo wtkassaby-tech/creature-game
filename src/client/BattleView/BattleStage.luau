@@ -72,6 +72,7 @@ function BattleStage.new(): Stage
 	-- Whatever happens to stand where the creatures will (a person, a signpost, a bush) steps
 	-- out of the picture for the length of the battle. Only on this player's own screen.
 	local cleared: { BasePart } = {}
+	local clearedFaces: { Decal } = {}
 	local function clearAround(at: Vector3, ignore: { Instance })
 		local params = OverlapParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
@@ -82,7 +83,7 @@ function BattleStage.new(): Stage
 				top = top.Parent :: BasePart
 			end
 			-- Ground, paths and whole buildings stay: they are the scenery.
-			if top.Size.Y >= 1.5 and top.Size.X < 20 and top.Size.Z < 20 then
+			if top.Size.Y >= 1.5 and math.max(top.Size.X, top.Size.Z) < 100 then
 				for _, piece in { top :: Instance, table.unpack(top:GetDescendants()) } do
 					if piece:IsA("BasePart") and piece.LocalTransparencyModifier == 0 then
 						piece.LocalTransparencyModifier = 1
@@ -96,7 +97,25 @@ function BattleStage.new(): Stage
 		for _, piece in cleared do
 			piece.LocalTransparencyModifier = 0
 		end
+		for _, face in clearedFaces do
+			face.LocalTransparencyModifier = 0
+		end
 		cleared = {}
+		clearedFaces = {}
+	end
+
+	-- How many things stand in the way at a spot (ground and paths do not count).
+	local function inTheWay(at: Vector3, ignore: { Instance }): number
+		local params = OverlapParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = ignore
+		local count = 0
+		for _, found in Workspace:GetPartBoundsInRadius(at + Vector3.yAxis * 4, 9, params) do
+			if found.Size.Y >= 1.5 and math.max(found.Size.X, found.Size.Z) < 100 then
+				count += 1
+			end
+		end
+		return count
 	end
 
 	local function groundAt(position: Vector3, fallback: number, ignore: { Instance }): Vector3
@@ -178,13 +197,36 @@ function BattleStage.new(): Stage
 			local look = camera.CFrame.LookVector
 			local forward = Vector3.new(look.X, 0, look.Z)
 			forward = if forward.Magnitude > 0.1 then forward.Unit else Vector3.zAxis
-			local right = forward:Cross(Vector3.yAxis)
 			local centre = root.Position
 			local floor = centre.Y - 3
 			local ignore: { Instance } = { made }
 			if character then
 				table.insert(ignore, character)
 			end
+			-- Turn the scene to whichever way has the clearest ground, so a battle is not
+			-- fought through a well or a cottage wall.
+			local best, fewest = forward, math.huge
+			for _, angle in { 0, 35, -35, 70, -70, 110, -110, 150, -150, 180 } do
+				local way = CFrame.Angles(0, math.rad(angle), 0):VectorToWorldSpace(forward)
+				local side = way:Cross(Vector3.yAxis)
+				local near = centre + way * 7 + side * 6
+				local far = centre + way * 27 + side * 10
+				local toFar = (far - near).Unit
+				local eyeSpot = near - toFar * 19 + toFar:Cross(Vector3.yAxis) * 8
+				local blocked = inTheWay(near, ignore)
+					+ inTheWay(far, ignore)
+					+ inTheWay(near:Lerp(far, 0.5), ignore)
+					+ inTheWay(eyeSpot, ignore) * 2 -- something in the lens is worst of all
+					+ inTheWay(eyeSpot:Lerp(near, 0.5), ignore)
+				if blocked < fewest then
+					best, fewest = way, blocked
+				end
+				if blocked == 0 then
+					break
+				end
+			end
+			forward = best
+			local right = forward:Cross(Vector3.yAxis)
 			grounds[1] = groundAt(centre + forward * 7 + right * 6, floor, ignore)
 			grounds[2] = groundAt(centre + forward * 27 + right * 10, floor, ignore)
 			facings[1] = (grounds[2] - grounds[1]).Unit
@@ -204,6 +246,19 @@ function BattleStage.new(): Stage
 			local sideways = facings[1]:Cross(Vector3.yAxis)
 			local eye = grounds[1] - facings[1] * 19 + sideways * 8 + Vector3.yAxis * 11
 			local target = grounds[1]:Lerp(grounds[2], 0.45) - Vector3.yAxis * 3
+			clearAround(eye - Vector3.yAxis * 8, ignore)
+			clearAround(eye:Lerp(grounds[1], 0.5) - Vector3.yAxis * 4, ignore)
+			if character then
+				for _, piece in character:GetDescendants() do
+					if piece:IsA("BasePart") then
+						piece.LocalTransparencyModifier = 1
+						table.insert(cleared, piece)
+					elseif piece:IsA("Decal") then
+						piece.LocalTransparencyModifier = 1
+						table.insert(clearedFaces, piece)
+					end
+				end
+			end
 			camera.CameraType = Enum.CameraType.Scriptable
 			camera.FieldOfView = FIELD_OF_VIEW
 			camera.CFrame = CFrame.lookAt(eye, target)

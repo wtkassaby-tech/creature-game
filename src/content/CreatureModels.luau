@@ -50,6 +50,47 @@ local CreatureModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://100242962567609",
 		size = { 3.66, 5.5, 7.58 },
 	},
+	-- Dust Canyon
+	Duneskit = {
+		mesh = "rbxassetid://96012957016164",
+		texture = "rbxassetid://96531496946685",
+		size = { 2.78, 6, 5.7 },
+	},
+	Thatchling = {
+		mesh = "rbxassetid://130507681027192",
+		texture = "rbxassetid://113419826150254",
+		size = { 4.85, 7, 3.3 },
+	},
+	Wadibuck = {
+		mesh = "rbxassetid://131450818451720",
+		texture = "rbxassetid://77170353510199",
+		size = { 3.41, 7, 5.13 },
+	},
+	Spurlet = {
+		mesh = "rbxassetid://77670204494847",
+		texture = "rbxassetid://120064062249068",
+		size = { 3.06, 5, 5.39 },
+	},
+	Spirecap = {
+		mesh = "rbxassetid://124373840906518",
+		texture = "rbxassetid://127647793761402",
+		size = { 5.66, 6.5, 7 },
+	},
+	Cairnback = {
+		mesh = "rbxassetid://82902934798690",
+		texture = "rbxassetid://100508861737593",
+		size = { 4.95, 6, 6.15 },
+	},
+	Whirlgrit = {
+		mesh = "rbxassetid://132116005977696",
+		texture = "rbxassetid://88773151107356",
+		size = { 4.35, 5.26, 5 },
+	},
+	Flintknap = {
+		mesh = "rbxassetid://122638617134798",
+		texture = "rbxassetid://119657784227242",
+		size = { 5.78, 7, 4.55 },
+	},
 }
 
 return CreatureModels

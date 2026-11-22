@@ -13,6 +13,7 @@ local ClientState = require(script.Parent.Parent.State.ClientState)
 local MovementLock = require(script.Parent.Parent.UI.MovementLock)
 local BattleFx = require(script.Parent.BattleFx)
 local BattleStage = require(script.Parent.BattleStage)
+local Portrait = require(script.Parent.Parent.Creatures.Portrait)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local MoveButton = require(script.Parent.MoveButton)
 local Moves = require(ReplicatedStorage.content.Moves)
@@ -94,9 +95,12 @@ function BattleView.start(playerGui: Instance)
 		numbers: TextLabel,
 		health: Kit.Bar,
 		tempo: Kit.Bar,
+		species: string?, -- whose cutout is behind the text now
+		cutout: ViewportFrame?,
 	}
 	local function card(position: UDim2): Card
 		local panel = Kit.panel(gui, UDim2.new(0.3, 0, 0, 72), position)
+		panel.ClipsDescendants = true -- the cutout behind the text runs off the plate's edge
 		local name = Kit.label(panel, "", UDim2.new(1, -90, 0, 24), UDim2.fromOffset(12, 5), 24)
 		local chip = Kit.label(panel, "", UDim2.fromOffset(66, 18), UDim2.new(1, -76, 0, 8), 13)
 		chip.TextXAlignment = Enum.TextXAlignment.Center
@@ -122,6 +126,8 @@ function BattleView.start(playerGui: Instance)
 			numbers = numbers,
 			health = health,
 			tempo = tempo,
+			species = nil,
+			cutout = nil,
 		}
 	end
 	-- 1 = yours (left, beside your creature), 2 = theirs (upper right, beside theirs), matching
@@ -131,6 +137,9 @@ function BattleView.start(playerGui: Instance)
 	-- happening, with the menu beside it (FIGHT, LASSO, ITEMS, SWITCH, RUN). FIGHT swaps both for
 	-- the four moves.
 	local box = Kit.panel(gui, UDim2.fromScale(0.56, 0.26), UDim2.fromScale(0.02, 0.72))
+	box.ClipsDescendants = true
+	local boxCutout: ViewportFrame? = nil
+	local boxSpecies: string? = nil
 	local message = Kit.label(box, "", UDim2.new(1, -32, 1, -20), UDim2.fromOffset(16, 10), 22)
 	message.TextWrapped = true
 	message.TextYAlignment = Enum.TextYAlignment.Top
@@ -367,7 +376,34 @@ function BattleView.start(playerGui: Instance)
 		result.show(kind, current.rewards)
 	end
 
+	-- A flat, faded picture of a creature, set behind the text of a box that is about it.
+	local function cutout(
+		parent: Instance,
+		fighter: Fighter,
+		across: number,
+		fade: number
+	): ViewportFrame
+		local picture = Portrait.new(
+			parent,
+			fighter.name,
+			fighter.element,
+			UDim2.fromOffset(across, across),
+			UDim2.new(1, -across * 0.92, 0.5, -across * 0.5)
+		)
+		picture.ImageTransparency = fade
+		picture.ZIndex = 0 -- behind everything else in the box
+		return picture
+	end
+
 	local function showCard(shown: Card, fighter: Fighter, tempoShare: number)
+		if shown.species ~= fighter.name then
+			local old = shown.cutout
+			if old then
+				old:Destroy()
+			end
+			shown.species = fighter.name
+			shown.cutout = cutout(shown.panel, fighter, 130, 0.5)
+		end
 		shown.name.Text = `{fighter.name}  Lv {fighter.level}`
 		shown.chip.Text = fighter.element
 		shown.chip.BackgroundColor3 = Kit.ELEMENT_COLOURS[fighter.element]
@@ -385,6 +421,13 @@ function BattleView.start(playerGui: Instance)
 		local mine, foe = current.sides[1][current.active[1]], current.sides[2][current.active[2]]
 		if mine then
 			showCard(cards[1], mine, current.tempo[1] / 100)
+			if boxSpecies ~= mine.name then
+				if boxCutout then
+					boxCutout:Destroy()
+				end
+				boxSpecies = mine.name
+				boxCutout = cutout(box, mine, 230, 0.6)
+			end
 		end
 		if foe then
 			showCard(cards[2], foe, current.tempo[2] / 100)

@@ -69,6 +69,21 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://80001629612418",
 		size = { 2.66, 6, 2.73 },
 	},
+	Carer = {
+		mesh = "rbxassetid://112826814903729",
+		texture = "rbxassetid://94022202139377",
+		size = { 2.65, 5.36, 3 },
+	},
+	GirlTamer = {
+		mesh = "rbxassetid://90600276834758",
+		texture = "rbxassetid://93305984311114",
+		size = { 3.38, 6, 2.31 },
+	},
+	Grandmother = {
+		mesh = "rbxassetid://75980247652960",
+		texture = "rbxassetid://89782871390988",
+		size = { 3.11, 6.19, 3 },
+	},
 }
 
 return PropModels

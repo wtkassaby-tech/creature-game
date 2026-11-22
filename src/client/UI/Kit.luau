@@ -77,6 +77,9 @@ function Kit.screen(parent: Instance, name: string, order: number): ScreenGui
 	gui.Name = name
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
+	-- Children draw over their parent and are ordered among their siblings: a picture set
+	-- behind a box's text stays inside the box.
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = order
 	gui.Enabled = false
 	gui.Parent = parent
@@ -160,6 +163,43 @@ function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () 
 		onClick()
 	end)
 	return button
+end
+
+-- Diagonal candy stripes across a coloured surface, a shade lighter and darker than its own
+-- colour, so it is not one flat block. One gradient with hard steps: it follows the rounded
+-- corners and costs nothing to draw.
+function Kit.stripes(target: GuiObject)
+	local points: { ColorSequenceKeypoint } = {}
+	local bands = 9
+	for band = 0, bands - 1 do
+		local from, to = band / bands, (band + 1) / bands
+		local shade = if band % 2 == 0 then 1 else 0.88
+		table.insert(points, ColorSequenceKeypoint.new(from, Color3.new(shade, shade, shade)))
+		table.insert(
+			points,
+			ColorSequenceKeypoint.new(
+				if band == bands - 1 then 1 else to - 0.001,
+				Color3.new(shade, shade, shade)
+			)
+		)
+	end
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(points)
+	gradient.Rotation = 35
+	gradient.Parent = target
+end
+
+-- A darker strip set into a coloured button, for the small print along its bottom edge.
+function Kit.inset(parent: Instance, size: UDim2, position: UDim2): Frame
+	local band = Instance.new("Frame")
+	band.Size = size
+	band.Position = position
+	band.BackgroundColor3 = Kit.COLOURS.outline
+	band.BackgroundTransparency = 0.55
+	band.BorderSizePixel = 0
+	band.Parent = parent
+	round(band, 4)
+	return band
 end
 
 -- A scrolling list cuts off whatever pokes past its edge, which would shave the borders of the

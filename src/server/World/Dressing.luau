@@ -94,7 +94,7 @@ local function prop(name: string): MeshPart?
 		made.Size = Vector3.new(def.size[1], def.size[2], def.size[3])
 		made.Anchored = true
 		made.CanCollide = false
-		made.CanQuery = false
+		made.CanQuery = true -- so a battle can tell that something stands where it wants to be
 		made.CanTouch = false
 		made.Material = Enum.Material.SmoothPlastic
 		loaded[name] = made
@@ -242,24 +242,29 @@ function Dressing.house(house: Part, role: string, square: Vector3)
 	end
 end
 
--- Which villager model a person wears, from their name.
-local function villager(name: string): string
+-- Which villager model a person wears, from their name. Tamers out on the routes are one of
+-- two, chosen by `pick`, so the same tamer always looks the same.
+local function villager(name: string, pick: Random): string
 	local lower = string.lower(name)
 	if string.find(lower, "mentor", 1, true) then
 		return "Mentor"
 	elseif string.find(lower, "rival", 1, true) then
 		return "Rival"
+	elseif string.find(lower, "healer", 1, true) then
+		return "Carer"
+	elseif string.find(lower, "breeder", 1, true) then
+		return "Grandmother"
 	elseif string.find(lower, "tuppence", 1, true) or string.find(lower, "_keeper", 1, true) then
 		return "Shopkeeper"
 	end
-	return "Tamer"
+	return if pick:NextNumber() < 0.5 then "Tamer" else "GirlTamer"
 end
 
 -- Gives a plain block of a person a body: a painted villager if there is one for them, turned
 -- to face `toward`; otherwise a head, hair and a coloured shirt. `pick` chooses the colours, so
 -- the same person looks the same every time.
 function Dressing.person(body: Part, pick: Random, name: string, toward: Vector3?)
-	local painted = prop(villager(name))
+	local painted = prop(villager(name, pick)) or prop("Tamer")
 	if painted then
 		body.Transparency = 1
 		local foot = body.Position - Vector3.yAxis * body.Size.Y / 2
