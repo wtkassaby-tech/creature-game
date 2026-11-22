@@ -7,6 +7,7 @@ local Types = require("../shared/Types")
 local Species: { [string]: Types.SpeciesDef } = {
 	-- Greenwood (biome 1). See docs/content/GREENWOOD_ROSTER.md.
 	Burlhorn = require("./species/Burlhorn"),
+	Furrowfoot = require("./species/Furrowfoot"),
 	Gorsling = require("./species/Gorsling"),
 	Mossmitt = require("./species/Mossmitt"),
 	Sloshcalf = require("./species/Sloshcalf"),

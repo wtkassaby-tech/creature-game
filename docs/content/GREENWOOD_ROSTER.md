@@ -1,6 +1,6 @@
 # Greenwood roster
 
-The first real roster: the eight species of Greenwood (biome 1), their parts and moves, and the balance gate they pass. Data lives in `src/content/species/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 2 seconds). Everything here is a [Default] the owner can change.
+The first real roster: the nine species of Greenwood (biome 1), their parts and moves, and the balance gate they pass. Data lives in `src/content/species/`, `src/content/Moves.luau` and `src/content/Species.luau`; the gate is `tests/roster.test.luau` (about 2 seconds). Everything here is a [Default] the owner can change.
 
 ## At a glance
 
@@ -9,13 +9,15 @@ The first real roster: the eight species of Greenwood (biome 1), their parts and
 | Burlhorn | Four-legged | Leaf | Uncommon | Bruiser: hits hard and soaks hits, but slow | No |
 | Gorsling | Four-legged | Leaf | Common | Sprinter: fast, thin Defence | No |
 | Spadesnout | Four-legged | Sand | Common | Striker: the most Attack in Greenwood | **Sand starter** |
+| Furrowfoot | Four-legged | Sand | Common | Guard: the most Defence in Greenwood, lighter Hp | No (added 22 Nov 2026) |
 | Sloshcalf | Four-legged | Water | Common | Fast all-rounder | **Water starter** |
 | Stumpwarden | Two-legged | Leaf | Common | Tank: the most Hp in Greenwood, slow | No |
 | Stiltbark | Two-legged | Leaf | Uncommon | Sprinter: the fastest, very thin Defence, deep Hp | No |
 | Mossmitt | Two-legged | Leaf | Common | All-rounder: even stats | **Leaf starter** |
 | Splashjack | Two-legged | Water | Common | All-rounder: even Attack, Defence and Speed | No |
 
-- Five Leaf, one Sand, two Water. Four species on each plan. Six Common, two Uncommon.
+- Five Leaf, two Sand, two Water. Five four-legged species and four two-legged. Seven Common, two Uncommon.
+- **Furrowfoot is the ninth species**, added (not swapped in) on 22 Nov 2026 so that a player who picks the Leaf or Water starter meets a Sand creature early, in Route A's clover meadow (levels 3 to 5). See "The ninth species" below.
 - **Starters also appear in the wild**, as ordinary commons in one spot each (Mossmitt in the mossy glade near the hub, Spadesnout on the sandy river bank, Sloshcalf along the stream). Breeding needs wild partners on the same plan, and every creature stays earnable for ever. The player's pick is still special: it is the one they get first, at minute 0.
 - The starters avoid the usual trio (fire lizard, water turtle, grass reptile): a moss-fisted brawler, a shovel-snouted digger and a calf with a pond on its back.
 - Lasso difficulty: commons 1.0 (Gorsling 1.1, it is jumpy); uncommons 1.4 (Burlhorn) and 1.5 (Stiltbark).
@@ -52,6 +54,13 @@ Art direction for every part: chunky low-poly, flat colours, and every joint end
 - Hind legs: sturdy, a little longer than the front, same webbed paddles.
 - Tail: short, ending in a fan like a tuft of reeds with one droplet hanging from the tip.
 
+**Furrowfoot**: a stocky field-tiller of Clover Lane that cuts a furrow behind it wherever it walks.
+- Head: broad, blunt head like a smooth sand boulder, small round eyes under a heavy brow, two short forward horns shaped like plough tips; sandy ochre with a darker band across the eyes.
+- Torso: low, barrel-shaped body of packed sandy earth with raised ridges across the back like freshly ploughed rows, pale smooth belly.
+- Front legs: thick, with wide, flat, blade-shaped hooves that slice into the soil.
+- Hind legs: short and heavy, broad flat feet for pushing, caked in dried mud.
+- Tail: short and flat, dragging behind like a harrow, with a row of blunt pebble teeth along its edge.
+
 **Stumpwarden**: a squat, patient guardian that plants itself in the path like a living tree stump.
 - Head: low and wide, sunk into the shoulders, a shelf of bracket fungus as a visor over two glowing green eyes, a crown of new shoots.
 - Torso: broad barrel-shaped stump with growth rings on the chest, rough bark sides, a collar of moss.
@@ -80,17 +89,18 @@ Art direction for every part: chunky low-poly, flat colours, and every joint end
 - Legs: huge hopping legs with long flat paddle-shaped webbed feet.
 - Tail: long and flat like a beaver's paddle, used to slap the water.
 
-**Sizes.** Weights run 77 (Burlhorn) to 50 (Gorsling) on four legs and 67 (Stumpwarden) to 43 (Stiltbark) on two. Every socket and plug radius is a base size times the cube root of the weight (a creature twice as heavy is about 1.26 times as big), and each part's plug equals its own species' socket, so a pure creature fits at scale 1 and every part fits every torso on its plan inside the assembler's 0.6 to 1.6 range (the test checks this). Lengths and radii are planning values until the meshes exist.
+**Sizes.** Weights run 77 (Burlhorn) to 50 (Gorsling) on four legs (Furrowfoot 63) and 67 (Stumpwarden) to 43 (Stiltbark) on two. Every socket and plug radius is a base size times the cube root of the weight (a creature twice as heavy is about 1.26 times as big), and each part's plug equals its own species' socket, so a pure creature fits at scale 1 and every part fits every torso on its plan inside the assembler's 0.6 to 1.6 range (the test checks this). Lengths and radii are planning values until the meshes exist.
 
 ## Stats
 
-Budget score = Hp x 0.6 + Attack + Defence + Speed at quality 5. Every species scores 200, the plan budget.
+Budget score = Hp x 0.6 + Attack + Defence + Speed at quality 5. Every species scores 200, the plan budget (Furrowfoot 199, inside the 5% the test allows).
 
 | Species | Base Hp / Atk / Def / Spd | Budget score | Level 15 | Level 50 | Weight |
 | --- | --- | --- | --- | --- | --- |
 | Burlhorn | 128 / 47 / 39 / 37 | 200 | 217 / 79 / 66 / 62 | 441 / 162 / 134 / 127 | 77 |
 | Gorsling | 132 / 40 / 29 / 52 | 200 | 224 / 68 / 49 / 88 | 455 / 138 / 100 / 179 | 50 |
 | Spadesnout | 120 / 55 / 38 / 35 | 200 | 204 / 93 / 64 / 59 | 414 / 189 / 131 / 120 | 67 |
+| Furrowfoot | 120 / 41 / 49 / 37 | 199 | 204 / 69 / 83 / 62 | 414 / 141 / 169 / 127 | 63 |
 | Sloshcalf | 125 / 40 / 33 / 52 | 200 | 212 / 68 / 56 / 88 | 431 / 138 / 113 / 179 | 61 |
 | Stumpwarden | 143 / 41 / 36 / 37 | 200 | 243 / 69 / 61 / 62 | 493 / 141 / 124 / 127 | 67 |
 | Stiltbark | 142 / 40 / 20 / 55 | 200 | 241 / 68 / 34 / 93 | 489 / 138 / 69 / 189 | 43 |
@@ -134,6 +144,18 @@ Default four moves at level 15: Bramble Rake, Thorn Volley, Leaf Gust, Pollen Bu
 | Tail | Atk 3, Def 12 | Grit Spray (L1) |
 
 Default four moves at level 15: Dig Strike, Grit Spray, Dust Kick, Scree Kick
+
+**Furrowfoot** (Quad, Sand)
+
+| Part | Stats | Moves |
+| --- | --- | --- |
+| Head | Hp 10, Atk 30, Def 8 | Clod Hurl (L1) |
+| Torso | Hp 90, Def 21, Spd 3 | Grit Spray (L1), Root Lash (L8) |
+| Front legs | Hp 10, Atk 11, Def 12, Spd 3 | Dust Kick (L1) |
+| Legs | Hp 5, Spd 31 | Puddle Stomp (L1) |
+| Tail | Hp 5, Def 8 | Fern Whip (L1) |
+
+Default four moves at level 15: Grit Spray, Clod Hurl, Dust Kick, Root Lash
 
 **Sloshcalf** (Quad, Water)
 
@@ -197,29 +219,30 @@ Default four moves at level 15: Ripple Ram, Silt Surge, Spore Puff, Brook Rush
 
 ## Moves
 
-24 moves: 12 Leaf, 6 Sand, 4 Water, 1 Storm, 1 Toxic. Power 35 to 70. No status effects (they arrive with the Mire). Every part's first move is known from level 1; second moves unlock at 7 to 12.
+25 moves: 12 Leaf, 7 Sand, 4 Water, 1 Storm, 1 Toxic (Clod Hurl, Furrowfoot's, is the 25th). Power 35 to 70. No status effects (they arrive with the Mire). Every part's first move is known from level 1; second moves unlock at 7 to 12.
 
 | Move | Type | Power | Brought by |
 | --- | --- | --- | --- |
 | Moss Slam | Leaf | 35 | Burlhorn head L1; Stumpwarden arms L1; Mossmitt torso L1 |
 | Seed Shot | Leaf | 35 | Gorsling head L1; Stumpwarden head L1; Stiltbark head L1; Mossmitt head L1 |
-| Fern Whip | Leaf | 40 | Burlhorn tail L1; Stumpwarden tail L1; Stiltbark arms L1 |
+| Fern Whip | Leaf | 40 | Burlhorn tail L1; Furrowfoot tail L1; Stumpwarden tail L1; Stiltbark arms L1 |
 | Twig Snap | Leaf | 40 | Burlhorn front legs L1; Gorsling front legs L1; Stumpwarden legs L1; Mossmitt arms L1 |
 | Pollen Burst | Leaf | 45 | Gorsling tail L1; Stiltbark tail L1 |
 | Leaf Gust | Leaf | 50 | Gorsling torso L1; Stiltbark torso L1; Mossmitt legs L1 |
-| Root Lash | Leaf | 50 | Burlhorn torso L1; Spadesnout torso L8; Stumpwarden torso L1 |
+| Root Lash | Leaf | 50 | Burlhorn torso L1; Spadesnout torso L8; Furrowfoot torso L8; Stumpwarden torso L1 |
 | Sap Hammer | Leaf | 55 | Stumpwarden head L9 |
 | Thorn Volley | Leaf | 55 | Gorsling head L10; Stiltbark head L10; Mossmitt head L10 |
 | Bramble Rake | Leaf | 60 | Gorsling front legs L12; Mossmitt arms L10 |
 | Burl Charge | Leaf | 60 | Burlhorn head L9 |
 | Canopy Drop | Leaf | 60 | Stiltbark arms L12 |
-| Dust Kick | Sand | 45 | Spadesnout torso L1; Spadesnout legs L1 |
+| Dust Kick | Sand | 45 | Spadesnout torso L1; Spadesnout legs L1; Furrowfoot front legs L1 |
+| Clod Hurl | Sand | 45 | Furrowfoot head L1 |
 | Scree Kick | Sand | 45 | Spadesnout front legs L1 |
-| Grit Spray | Sand | 50 | Spadesnout head L1; Spadesnout tail L1 |
+| Grit Spray | Sand | 50 | Spadesnout head L1; Spadesnout tail L1; Furrowfoot torso L1 |
 | Mud Slap | Sand | 55 | Sloshcalf torso L7 |
 | Dig Strike | Sand | 65 | Spadesnout head L9 |
 | Silt Surge | Sand | 65 | Splashjack torso L7 |
-| Puddle Stomp | Water | 40 | Burlhorn legs L1; Sloshcalf legs L1; Splashjack arms L1 |
+| Puddle Stomp | Water | 40 | Burlhorn legs L1; Furrowfoot legs L1; Sloshcalf legs L1; Splashjack arms L1 |
 | Dew Splash | Water | 45 | Sloshcalf head L1; Sloshcalf front legs L1; Splashjack head L1; Splashjack legs L1 |
 | Brook Rush | Water | 50 | Sloshcalf torso L1; Mossmitt torso L8; Splashjack torso L1 |
 | Ripple Ram | Water | 70 | Sloshcalf head L10; Splashjack head L9 |
@@ -228,12 +251,38 @@ Default four moves at level 15: Ripple Ram, Silt Surge, Spore Puff, Brook Rush
 
 Where coverage sits is a balance tool, not decoration:
 - **Anti-Leaf coverage on Water torsos only** (Mud Slap on Sloshcalf, Silt Surge on Splashjack). A torso move always comes with the torso's type, so a Water creature can fight back against Leaf, but a Leaf hybrid cannot borrow the move to bully other Leafs.
-- **Anti-Sand coverage on Leaf parts** (Puddle Stomp, Gale Hop, Brook Rush on Mossmitt's torso), so Leaf builds can answer Spadesnout.
+- **Anti-Sand coverage on Leaf parts** (Puddle Stomp, Gale Hop, Brook Rush on Mossmitt's torso), so Leaf builds can answer Spadesnout. Furrowfoot's legs bring Puddle Stomp too, so its parts help a Leaf build against Sand rather than bully other Leafs.
+- **No strong Sand move off a Sand torso.** Furrowfoot's only head move is the modest Clod Hurl (45), and its best Sand move, Grit Spray, is on the torso. Measured: a 60-power Sand move on its head let Leaf hybrids bully Leafs (the weakest pure species fell to 42%); on its torso it made Sand hybrids too strong (best build 79%).
 - **Spore Puff (Toxic)** previews the Mire and gives Water creatures a way through Water mirrors.
 
 ## Balance gate: measured results
 
-How the test works: every combination of parts on a plan (4 species, 1,024 builds), at quality 5. A fixed field of 160: every pure species, the five best by Hp, Attack, Defence, Speed and total, then a random sample (seed 2026). Every pair fights twice with sides swapped (25,440 fights per run), ranked rules (no variance), the game's default move choice and opponent. Draws count half.
+How the test works: every combination of parts on a plan (4 species and 1,024 builds on two legs; 5 species and 3,125 builds on four legs since Furrowfoot), at quality 5. A fixed field of 160: every pure species, the five best by Hp, Attack, Defence, Speed and total, then a random sample (seed 2026). Every pair fights twice with sides swapped (25,440 fights per run), ranked rules (no variance), the game's default move choice and opponent. Draws count half.
+
+**Now, with nine species** (22 Nov 2026, after Furrowfoot; measured under the battle rules of that date). The "before" column is the same gate run that day on the eight species, so the difference is Furrowfoot alone; the battle rules have changed since the first measurements further down, which is why those differ.
+
+| | Before (eight species) | After (nine species) | Pure species after |
+| --- | --- | --- | --- |
+| Four-legged, level 15 | best 71%, lowest pure 53% | best 74% Spadesnout/Furrowfoot/Gorsling/Furrowfoot/Burlhorn, lowest pure 49% | Spadesnout 71, Sloshcalf 57, Furrowfoot 55, Gorsling 51, Burlhorn 49 |
+| Four-legged, level 50 | best 72%, lowest pure 54% | best 73% Spadesnout/Spadesnout/Furrowfoot/Spadesnout/Sloshcalf, lowest pure 48% | Spadesnout 71, Sloshcalf 58, Furrowfoot 55, Gorsling 52, Burlhorn 48 |
+| Two-legged, level 15 | best 69%, lowest pure 51% | unchanged | Mossmitt 66, Stiltbark 56, Splashjack 53, Stumpwarden 51 |
+| Two-legged, level 50 | best 67%, lowest pure 50% | unchanged | Mossmitt 66, Splashjack 54, Stiltbark 53, Stumpwarden 50 |
+
+All marks pass: best build at most 75%, every pure species at least 40%, top ten on four legs with 3 torsos and 4 leg sets. Battle length (3v3, random wild teams): 11.9 turns at level 5, 10.5 at level 15 and 10.5 at level 50, all inside 8 to 14 (before: 11.8, 10.2 and 10.1).
+
+**The mixed pools** (the gaps noted in the later rosters' documents; these marks are noted, not failed, with guard rails on the three- and four-biome pools):
+
+| Pool, four-legged | Before: best / lowest pure | After: best / lowest pure | Guard rail |
+| --- | --- | --- | --- |
+| Greenwood and Dust Canyon, level 25 / 50 | 79% / 34%, 78% / 35% | 81% / 34%, 81% / 34% | none (noted) |
+| Three biomes, level 35 / 50 | 75% / 41%, 75% / 41% | 76% / 34%, 77% / 33% (lowest is Furrowfoot) | 80% / 30%: pass |
+| Four biomes, level 45 / 50 | 83% / 26%, 83% / 26% | 79% / 27%, 79% / 27% | 88% / 24%: pass |
+
+Two-legged pools are unchanged. In every pool no pure species beats every pure species of another biome (pass). In the later pools Furrowfoot is a weak pure species (33 to 42%): Tide Flats is mostly Water, which beats Sand, and its stat shape spends on Defence rather than Hp.
+
+**How robust this is** (scratch runs, not in the test): on nine other fields (160, 200 and 300 builds, seeds 1 to 3) the four-legged gate gives best build 72 to 80% and lowest pure species 36 to 45%, against 70 to 73% and 46 to 55% for the same fields without Furrowfoot. So the gate passes on its fixed field, but a second Sand species on four legs makes the four-legged balance less comfortable: seed 1 fails both marks (best 79 to 80%, lowest 36 to 39%). The cause is structural, see "The ninth species".
+
+**First eight species, as first measured** (before later rule changes):
 
 | | Best build | Pure species | Top ten torsos / leg sets |
 | --- | --- | --- | --- |
@@ -251,6 +300,22 @@ Builds are head/torso/front limbs/legs/tail. Next best, four-legged level 15: 67
 **How robust this is** (scratch runs, not in the test):
 - Every one of the 1,024 builds against the gate field, not just the 160 in it: no build passes 75% on two legs or at level 15 on four legs. At level 50 on four legs three builds outside the field reach 75 to 77% (best: Spadesnout/Sloshcalf/Spadesnout/Spadesnout/Sloshcalf, 77%).
 - Nine other fields (160, 200 and 300 builds, three seeds): best build 65 to 78%, lowest pure species 41 to 54%. The two-legged level-50 top is 73 to 75%, the four-legged level-50 top 69 to 78%. So the gate passes on its fixed field, and the honest range is "best build about 70 to 78%".
+
+## The ninth species
+
+Ayrton's decision (22 Nov 2026): Greenwood's only Sand species was the Sand starter, so a player who picked Leaf or Water met no Sand creature before Dust Canyon. A ninth species was added, not swapped in.
+
+**Where it lives.** Route A's clover meadow (levels 3 to 5), open ground, weight 35 of 135 (about a quarter of meadow encounters). Every player crosses it on Route A, before the brook tamer and long before the gate. Sand beats Leaf, so a Water-starter player has an answer to Greenwood's mostly Leaf tamers, and a Leaf-starter player gains a second type early.
+
+**Why four-legged, not two-legged.** Two legs was the first choice (there were no Sand parts for two-legged breeding), but on two legs the plan has three Leaf species, and Stumpwarden carries no move that hurts Sand. Every two-legged Sand design tried dropped pure Stumpwarden to 28 to 37% and put the best build at 78 to 92%. Fixing that needs an anti-Sand move on Stumpwarden (outside this change). On four legs the Leaf species already have anti-Sand parts (Puddle Stomp, Gale Hop), and the gate passes.
+
+**How it was tuned.** Seeded searches over stat shapes and move placements against the gate, then against the three-biome pool:
+- A strong Sand move anywhere but the torso lets Leaf hybrids bully Leafs; a strong one on the torso makes Sand hybrids too good. So its own move, Clod Hurl, is 45 power, and its best Sand move (Grit Spray, 50) is on the torso.
+- A light, Defence-heavy torso (Hp 90, Def 21) keeps Sand hybrids built on it from topping the chart. Every stat shape that lifted pure Furrowfoot to 39% or more in the three-biome pool put a best build over a mark: Greenwood's four-legged best at 78 to 88%, or the three-biome best at 82 to 84% (guard rail 80%).
+- Root Lash on its torso (as on Spadesnout's) gives a Sand creature an answer to Water. Without it Furrowfoot fell to 29% in the three-biome pool, under the 30% guard rail.
+- Puddle Stomp on its legs hands Leaf builds another answer to Sand.
+
+**The robot players** (`tests/playthrough.test.luau`) give exactly the same numbers as before (first badge typically 32 wild battles and 39 minutes, then 40 and 49, then 58 and 66; 57 of 108 story battles won first time). The robots always pick the Leaf starter and train at the furthest stretch they can handle, so none of them ever fights in the clover meadow; the economy model's measured wild battle counts are unchanged.
 
 ## How the roster was designed, and why the placeholders failed
 
@@ -280,7 +345,7 @@ Under the current rules damage does not grow with level but Hp does, so the same
 
 ## Open questions for Ayrton
 
-1. **Five Leaf, two Water, one Sand.** "Mostly Leaf" forces one plan to have three Leaf species; I paired them with Water (Splashjack), which balanced better than a second Sand. That means the only Sand creature in Greenwood is the Sand starter. Happy with that, or would you rather swap Splashjack for a Sand biped and accept a harder balance problem?
+1. ~~**Five Leaf, two Water, one Sand.**~~ Answered 22 Nov 2026: a second Sand species is added (Furrowfoot, four-legged). Still open: a two-legged Sand species would give two-legged breeders Sand parts, but needs an anti-Sand move on Stumpwarden first (see "The ninth species").
 2. **The level-15 battle length rule change** above: adopt it (and re-tune giants and tamers), or accept shorter battles before the first badge?
 3. **Starters in the wild**: I have made all three catchable as ordinary commons in one spot each. The alternative is to keep the two you did not pick for a later quest.
 4. **Uncommons**: Burlhorn and Stiltbark. Any preference?

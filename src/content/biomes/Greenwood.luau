@@ -7,6 +7,7 @@
 -- Where each species lives (every one appears; the two uncommon ones only at rustle spots):
 --   Mossmitt, Gorsling: the glade and meadow. Sloshcalf, Splashjack: the brook and the river.
 --   Spadesnout: the sandy river bank and the old wood. Stumpwarden: meadow, birch rise, old wood.
+--   Furrowfoot: the clover meadow on Route A, so every starter meets a Sand creature early.
 --   Stiltbark (uncommon): reed beds, at two rustle spots. Burlhorn (uncommon): the burl thicket.
 -- The weights are [Default]s to tune from playtests. The rare-colour chance reuses the breeding
 -- rule's rare mutation chance, so one number keeps the two in step.
@@ -98,6 +99,7 @@ local routeA: WorldTypes.Route = {
 		row("Gorsling", 45, 3, 5, "clover_meadow", LEAF_COLOURS),
 		row("Mossmitt", 30, 3, 4, "clover_meadow", LEAF_COLOURS),
 		row("Stumpwarden", 25, 4, 5, "clover_meadow", LEAF_COLOURS),
+		row("Furrowfoot", 35, 3, 5, "clover_meadow", SAND_COLOURS),
 		row("Sloshcalf", 45, 4, 6, "brook_bend", WATER_COLOURS),
 		row("Splashjack", 40, 4, 6, "brook_bend", WATER_COLOURS),
 		row("Gorsling", 15, 4, 5, "brook_bend", LEAF_COLOURS),

@@ -33,6 +33,8 @@ local Moves: { [string]: MoveDef } = {
 	["Mud Slap"] = { element = "Sand", power = 55 },
 	["Dig Strike"] = { element = "Sand", power = 65 },
 	["Silt Surge"] = { element = "Sand", power = 65 },
+	-- Furrowfoot's own (Greenwood's ninth species, added 22 Nov 2026)
+	["Clod Hurl"] = { element = "Sand", power = 45 },
 	-- Water
 	["Puddle Stomp"] = { element = "Water", power = 40 },
 	["Dew Splash"] = { element = "Water", power = 45 },

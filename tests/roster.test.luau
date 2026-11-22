@@ -9,8 +9,8 @@
 -- and has every pair fight twice with sides swapped, using the real battle rules, at each biome's
 -- level cap and at the ranked level. Results are in docs/content/GREENWOOD_ROSTER.md,
 -- docs/content/DUST_CANYON_ROSTER.md, docs/content/TIDE_FLATS_ROSTER.md and
--- docs/content/MIRE_ROSTER.md. The four-biome pool (16 species a plan, about a million builds)
--- makes this the slowest test: about a minute and a half in all.
+-- docs/content/MIRE_ROSTER.md. The four-biome pool (16 or 17 species a plan, up to 1.4 million
+-- builds) makes this the slowest test: about two minutes in all.
 
 local AssemblyMath = require("../src/shared/AssemblyMath")
 local Battle = require("../src/shared/Battle")
@@ -59,7 +59,7 @@ local TIDE_FLATS_CAP = 35 -- plus 10 more for the second badge
 local MIRE_CAP = 45 -- plus 10 more for the third badge
 local RANKED = BattleConfig.RANKED_LEVEL
 local FIELD_SIZE = 160
-local MIXED_FIELD_SIZE = 200 -- eight species a plan: 32,768 builds; twelve: 248,832
+local MIXED_FIELD_SIZE = 200 -- eight species a plan: 32,768 builds (nine: 59,049); thirteen: 371,293
 local FIELD_SEED = 2026
 local MAX_WIN = 0.75
 local MIN_PURE = 0.40
@@ -112,15 +112,26 @@ end
 
 ------------------------------------------------------------------------------------------------
 -- Checks every roster shares. Returns the set of move names the roster's parts bring.
-local function commonData(roster: Roster, cap: number, secondBy: number): { [string]: boolean }
+-- `quads` and `bipeds` are how many species the roster has on each plan: four and four, except
+-- Greenwood, which has a ninth (a second Sand species, four-legged; docs/DECISIONS.md, 22 Nov 2026).
+local function commonData(
+	roster: Roster,
+	cap: number,
+	secondBy: number,
+	quads: number?,
+	bipeds: number?
+): { [string]: boolean }
 	local registryOk = true
 	for name, def in Species do
 		registryOk = registryOk and def.name == name
 	end
 	check("every species is in the registry under its own name", registryOk)
+	local wantQuads, wantBipeds = quads or 4, bipeds or 4
 	check(
-		"eight species, four on each body plan",
-		#roster.all == 8 and #roster.Quad == 4 and #roster.Biped == 4,
+		`{wantQuads + wantBipeds} species: {wantQuads} four-legged, {wantBipeds} two-legged`,
+		#roster.all == wantQuads + wantBipeds
+			and #roster.Quad == wantQuads
+			and #roster.Biped == wantBipeds,
 		`{#roster.all}: {#roster.Quad} four-legged, {#roster.Biped} two-legged`
 	)
 
@@ -250,7 +261,7 @@ end
 
 print("\n== Greenwood roster data ==")
 do
-	local used = commonData(greenwood, GREENWOOD_CAP, 12)
+	local used = commonData(greenwood, GREENWOOD_CAP, 12, 5, 4)
 	local counts: { [string]: number } = {}
 	for _, name in greenwood.all do
 		local def = Species[name]
@@ -296,7 +307,8 @@ do
 		local power = Moves[moveName].power
 		powerOk = powerOk and power >= 35 and power <= 70
 	end
-	check("20 to 24 distinct moves", distinct >= 20 and distinct <= 24, `{distinct}`)
+	-- 24 for the first eight species, plus Furrowfoot's one new move (Clod Hurl).
+	check("20 to 25 distinct moves", distinct >= 20 and distinct <= 25, `{distinct}`)
 	check("move power is between 35 and 70", powerOk)
 	checkFits({ greenwood }, "Greenwood")
 end

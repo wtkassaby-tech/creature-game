@@ -9,7 +9,7 @@ Thistledown (hub, 300 x 300) sits between the two routes. Distances run from the
 | Route | Stretch (studs) | Levels | Lives here (open) | Rustle spot (uncommon) |
 | --- | --- | --- | --- | --- |
 | **A: Clover Lane** (400) | Mossy Glade 0-130 | 2-3 | Mossmitt, Gorsling | none |
-| | Clover Meadow 130-270 | 3-5 | Gorsling, Mossmitt, Stumpwarden | none |
+| | Clover Meadow 130-270 | 3-5 | Gorsling, Mossmitt, Stumpwarden, Furrowfoot (Sand, added 22 Nov 2026) | none |
 | | Brook Bend 270-400 | 4-6 | Sloshcalf, Splashjack, Gorsling | **Reed Bed** (340): Stiltbark, Splashjack, Sloshcalf |
 | **B: River Road** (600) | Sandy Bank 0-150 | 6-8 | Spadesnout, Sloshcalf, Splashjack | **Heron Pool** (90): Stiltbark, Splashjack |
 | | Birch Rise 150-330 | 7-9 | Gorsling, Stumpwarden, Mossmitt | none |

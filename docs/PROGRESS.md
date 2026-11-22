@@ -2,6 +2,23 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 22 November 2026 (your answers, built)
+
+**In one line:** your answers to the decisions pack are recorded and the ones that need no further approval are built. The full check passes. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Furrowfoot: Greenwood's second Sand species, in Route A's Clover Meadow | Balanced and tested | `src/content/species/Furrowfoot.luau`, `docs/content/GREENWOOD_ROSTER.md` |
+| The Mire one level harder | Tested | `src/content/tamers/Mire.luau` |
+| Reedpith (the Mire's material) and Clearwater Drops, a poison cure for battles | Tested | `src/config/EconomyConfig.luau`, `src/shared/BattleSession.luau` |
+| A creature's default four moves keep its best poisoning move | Tested | `src/shared/Battle.luau` |
+| Assets from any source, with safety checks; a register | Rule changed | `CLAUDE.md`, `docs/ASSETS.md` |
+| The live brief updated to match the decisions log | Done | the brief doc |
+| Approval pack 6: the challenge board and move imprint | Draft, waiting for your answers | `docs/plans/06_CHALLENGES_AND_IMPRINT.md` |
+| Purchases | Waiting: the list and prices to go over together | `docs/plans/05_PURCHASES.md` |
+
+**To try in Studio:** pick the Leaf or Water starter and check you meet a Furrowfoot in the Clover Meadow, before the brook tamer.
+
 ## 21 November 2026 (the Mire roster, poison, live switches)
 
 **In one line:** the fourth biome's eight creatures now exist as data, with the first poisoning moves; nothing in the three launch biomes changes. The full check passes. **None of it has run in Roblox Studio yet.**
