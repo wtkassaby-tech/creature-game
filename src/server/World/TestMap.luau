@@ -64,6 +64,30 @@ local block, label, prompt = Markers.block, Markers.label, Markers.prompt
 local at, slab, person = Markers.at, Markers.slab, Markers.person
 
 -- Builds one biome under `parent`.
+-- A sheet's flats (the sea, a mudflat) are drawn generously; trim each to its biome's ground so
+-- none hangs past the slab's edge or into the next biome (Tide Flats' open sea did, seen from
+-- the air on 23 November 2026). A flat wholly off the ground is removed.
+local function clipFlats(world: Instance, ground: BasePart)
+	local half = ground.Size / 2
+	local low, high = ground.Position - half, ground.Position + half
+	for _, part in world:GetDescendants() do
+		if not (part:IsA("BasePart") and (part.Name == "WaterFlat" or part.Name == "Flat")) then
+			continue
+		end
+		local size = part.Size / 2
+		local x0 = math.max(part.Position.X - size.X, low.X)
+		local x1 = math.min(part.Position.X + size.X, high.X)
+		local z0 = math.max(part.Position.Z - size.Z, low.Z)
+		local z1 = math.min(part.Position.Z + size.Z, high.Z)
+		if x1 - x0 < 1 or z1 - z0 < 1 then
+			part:Destroy()
+		else
+			part.Size = Vector3.new(x1 - x0, part.Size.Y, z1 - z0)
+			part.CFrame = CFrame.new((x0 + x1) / 2, part.Position.Y, (z0 + z1) / 2)
+		end
+	end
+end
+
 local function buildBiome(
 	parent: Folder,
 	biome: WorldTypes.Biome,
@@ -108,6 +132,7 @@ local function buildBiome(
 		Corridors.edges(world, biome, map, dressing, waters, pick)
 		Scenery.build(world, biome, map, dressing, waters, pick)
 		Landmarks.build(world, map, dressing)
+		clipFlats(world, ground)
 	else
 		Scatter.build(world, biome, map, 44)
 	end

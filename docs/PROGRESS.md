@@ -8,7 +8,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 
 **Found while playing:** Studio had an old copy of the first-battle story lines and Greenwood's tamers (the rival still had Mossmitt against a Sloshcalf). Every source file was compared and the three stale ones replaced; nothing else differed.
 
-**Small thing noticed, not changed yet:** the end-of-battle card says "Level 6!" and "Level 4!" without saying which creature levelled up.
+**Also fixed after playing:** the end-of-battle card said "Level 6!" without saying whose level it was; it now says "Mossmitt reached level 6!" (seen in Studio). Tide Flats' open sea and the other flats are trimmed to the biome's ground, so nothing hangs past its edge; from the air the beach now runs into the sea and the horizon with no seam (seen in Studio).
 
 **To playtest:** catch two creatures early on and check both are on your team for the next battle.
 
@@ -23,7 +23,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 
 **Fixed while looking:** the town name on each painted arch now sits on the arch's own board; where two town streets of different colours met, the ground flickered in a pinwheel (each street now sits a hair above the one before); search spots look like their stretch (dry grass in the canyon) instead of Greenwood's reeds on mud.
 
-**Not checked:** walking either new town at a player's height end to end; the phone-sized view and frame rate there (about 650 grass pieces and 1,400 studs of rope rail in Tide Flats); the plank decks underfoot; whether each story trigger fires at its spot; Tide Flats' open sea runs past the edge of its ground and may show from the air.
+**Not checked:** walking either new town at a player's height end to end; the phone-sized view and frame rate there (about 650 grass pieces and 1,400 studs of rope rail in Tide Flats); the plank decks underfoot; whether each story trigger fires at its spot; Tide Flats' open sea ran past the edge of its ground (fixed the same day).
 
 **For Ayrton:** the healer and waystation reuse Greenwood's buildings in every town so they are easy to recognise (say if each town should have its own); all new place names are placeholders.
 
