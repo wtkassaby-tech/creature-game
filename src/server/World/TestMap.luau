@@ -31,6 +31,7 @@ local Barriers = require(script.Parent.Barriers)
 local CorridorGround = require(script.Parent.CorridorGround)
 local Corridors = require(script.Parent.Corridors)
 local Dressing = require(script.Parent.Dressing)
+local Detail = require(script.Parent.Detail)
 local Elevate = require(script.Parent.Elevate)
 local FarScenery = require(script.Parent.FarScenery)
 local Fill = require(script.Parent.Fill)
@@ -262,6 +263,9 @@ local function buildBiome(
 	end
 	Markers.buildings(hub, biome, map, dressing)
 	if dressing then
+		if dressing.scatter then
+			Detail.plaza(hub, biome, map, dressing, levels)
+		end
 		for _, villager in dressing.people do
 			person(
 				hub,
@@ -373,6 +377,9 @@ local function buildBiome(
 	end
 	if dressing then
 		Lanes.build(world, biome, map, dressing, levels)
+		if dressing.scatter then
+			Detail.scatter(world, biome, map, dressing, levels)
+		end
 	end
 
 	-- The people the story sends the player to battle (the rival, a gate's champion) stand where

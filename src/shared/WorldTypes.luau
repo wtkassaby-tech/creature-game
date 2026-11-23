@@ -334,6 +334,29 @@ export type Ambience = {
 export type FillStyle = "Forest" | "Rock" | "Dune" | "Swamp"
 export type DressFill = { style: FillStyle, band: number, floor: Colour }
 
+-- Small ground detail (src/shared/DetailPlan.luau): what grows and lies about on a biome's lawns
+-- and route verges. `shape`: "Model" stands a small painted model (a tuft, a boulder); the others
+-- are flat clay parts, `count` of them in each cluster. `zone`: "Town" the town's ground, "Verge"
+-- the ground between a lane and its edge, "Edging" a fringe hugging the lane's border. `density`
+-- is items per 100x100 studs of that ground (before anything is cleared away); `tall` is the
+-- range of heights (a bloom's or pebble's width) in studs; `colours` are picked from, then varied.
+export type ScatterShape = "Model" | "Blooms" | "Pebbles" | "Shells"
+export type ScatterZone = "Town" | "Verge" | "Edging"
+export type ScatterKind = {
+	id: string,
+	shape: ScatterShape,
+	zone: ScatterZone,
+	density: number,
+	model: string?,
+	tall: { number },
+	colours: { Colour },
+	count: { number }?,
+}
+export type ScatterSheet = {
+	budget: number, -- the most parts the biome's scatter may add; the densities scale down to fit
+	kinds: { ScatterKind },
+}
+
 -- Every field marked "left out" is optional: a biome without that feature leaves it out and the
 -- builder skips it (Greenwood fills them all in).
 export type DressingSheet = {
@@ -398,6 +421,7 @@ export type DressingSheet = {
 	patch: { from: SheetPoint, to: SheetPoint }?, -- the mentor's vegetable rows
 	fill: DressFill?, -- the trees, rock or dunes that close in everything past the edges
 	ambience: Ambience?, -- smoke, lights and drifting motes (src/server/World/Ambience)
+	scatter: ScatterSheet?, -- small ground detail on the lawns and verges (src/server/World/Detail)
 }
 
 export type Biome = {

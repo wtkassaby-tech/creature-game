@@ -181,14 +181,14 @@ function BattleStage.new(): Stage
 			end
 			return false
 		end
+		-- Everything standing in the way, not only grass: hedge bushes, fill and wall facings are
+		-- built with CanQuery off too, and a battle beside a hedge had the camera inside the
+		-- bushes (Studio, 23 November 2026). Ground, lanes, tiers and slabs (flat, wide or
+		-- tagged WorldGround) always stay.
 		local holders: { Instance } = {}
 		local world = Workspace:FindFirstChild("World")
 		if world then
-			for _, tufts in world:GetDescendants() do
-				if tufts:IsA("Folder") and string.sub(tufts.Name, -6) == "_tufts" then
-					table.insert(holders, tufts)
-				end
-			end
+			table.insert(holders, world)
 		end
 		local wild = Workspace:FindFirstChild("WildCreatures")
 		if wild then
@@ -199,6 +199,10 @@ function BattleStage.new(): Stage
 				if
 					piece:IsA("BasePart")
 					and piece.LocalTransparencyModifier == 0
+					and piece.Size.Y >= 1.5
+					and math.max(piece.Size.X, piece.Size.Z) < 60
+					and piece.Name ~= "Ground"
+					and not piece:HasTag("WorldGround")
 					and near(piece.Position)
 				then
 					piece.LocalTransparencyModifier = 1
@@ -369,13 +373,12 @@ function BattleStage.new(): Stage
 			local target = grounds[1]:Lerp(grounds[2], 0.45) - Vector3.yAxis * 3
 			clearAround(eye - Vector3.yAxis * 8, ignore)
 			clearAround(eye:Lerp(grounds[1], 0.5) - Vector3.yAxis * 4, ignore)
-			-- The grass round both creatures and along the camera's view of them.
-			clearGrass({
-				grounds[1],
-				grounds[2],
-				grounds[1]:Lerp(grounds[2], 0.5),
-				eye:Lerp(grounds[1], 0.5),
-			}, 10)
+			-- Round both creatures, and all along the camera's line of sight to them.
+			local spots = { grounds[1], grounds[2], grounds[1]:Lerp(grounds[2], 0.5) }
+			for step = 0, 6 do
+				table.insert(spots, eye:Lerp(target, step / 6))
+			end
+			clearGrass(spots, 10)
 			if character then
 				for _, piece in character:GetDescendants() do
 					if piece:IsA("BasePart") then

@@ -58,7 +58,7 @@ end
 
 local DustCanyonDressing: WorldTypes.DressingSheet = {
 	roomEdge = "Boulders", -- pockets and dead ends are ringed with boulders, not hedges
-	fieldGround = { 214, 172, 124 },
+	fieldGround = { 202, 154, 106 }, -- a warmer, deeper sand: the paler one washed out to white
 	ground = {
 		{ area = "pebble_wash", colour = { 214, 204, 182 } },
 		{ area = "tumbleweed_flats", colour = { 226, 196, 140 } },
@@ -68,7 +68,7 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		{ area = "spire_garden", colour = { 206, 160, 120 } },
 		{ area = "stair_approach", colour = { 200, 184, 160 } },
 	},
-	townGround = { 232, 196, 150 },
+	townGround = { 220, 176, 126 },
 	laneColour = { 232, 206, 160 },
 	laneSurfaces = {
 		-- The Redstone Steps in red flagstone, and the stair road in stone.
@@ -450,6 +450,86 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 			{ kind = "Dust", at = p(-6, -352), height = 5, area = { 100, 80, 8 } },
 			{ kind = "Dust", at = p(188, 84), height = 5, area = { 90, 80, 8 } },
 			{ kind = "Dust", at = p(-20, 30), height = 5, area = { 110, 90, 8 } },
+		},
+	},
+
+	-- Small clay detail on the lawns and verges (src/shared/DetailPlan.luau): pebbles, dry tufts,
+	-- scrub and a few boulders, with the odd desert bloom; pebbles fringe the lanes.
+	scatter = {
+		budget = 520,
+		kinds = {
+			{
+				id = "yard_pebbles",
+				shape = "Pebbles",
+				zone = "Town",
+				density = 14,
+				count = { 2, 3 },
+				tall = { 0.7, 1.2 },
+				colours = { { 196, 150, 112 }, { 176, 128, 96 }, { 214, 176, 132 } },
+			},
+			{
+				id = "yard_tufts",
+				shape = "Model",
+				zone = "Town",
+				density = 11,
+				model = "DryTuft",
+				tall = { 1.3, 1.9 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_tufts",
+				shape = "Model",
+				zone = "Verge",
+				density = 45,
+				model = "DryTuft",
+				tall = { 1.4, 2.2 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_pebbles",
+				shape = "Pebbles",
+				zone = "Verge",
+				density = 58,
+				count = { 2, 3 },
+				tall = { 0.7, 1.2 },
+				colours = { { 196, 150, 112 }, { 176, 128, 96 }, { 214, 176, 132 } },
+			},
+			{
+				id = "verge_blooms",
+				shape = "Blooms",
+				zone = "Verge",
+				density = 13,
+				count = { 1, 2 },
+				tall = { 0.7, 1.0 },
+				colours = { { 240, 150, 90 }, { 236, 120, 130 }, { 250, 214, 110 } },
+			},
+			{
+				id = "verge_rocks",
+				shape = "Model",
+				zone = "Verge",
+				density = 4,
+				model = "Boulders",
+				tall = { 0.9, 1.5 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_scrub",
+				shape = "Model",
+				zone = "Verge",
+				density = 3.2,
+				model = "ScrubBush",
+				tall = { 1.8, 2.6 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "lane_pebbles",
+				shape = "Pebbles",
+				zone = "Edging",
+				density = 112,
+				count = { 1, 3 },
+				tall = { 0.5, 0.9 },
+				colours = { { 190, 150, 116 }, { 168, 128, 98 }, { 214, 178, 138 } },
+			},
 		},
 	},
 }

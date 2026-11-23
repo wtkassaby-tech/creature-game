@@ -395,6 +395,78 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 			{ kind = "Fluff", at = p(-300, 62), height = 5, area = { 80, 50, 8 } },
 		},
 	},
+
+	-- Small clay detail on the lawns and verges (src/shared/DetailPlan.luau): clover and
+	-- meadow flowers, little tufts and a few bushes; pebbles fringe the lanes.
+	scatter = {
+		budget = 540,
+		kinds = {
+			{
+				id = "lawn_blooms",
+				shape = "Blooms",
+				zone = "Town",
+				density = 14,
+				count = { 2, 3 },
+				tall = { 0.8, 1.1 },
+				colours = {
+					{ 250, 226, 100 },
+					{ 250, 250, 244 },
+					{ 240, 140, 160 },
+					{ 176, 148, 236 },
+				},
+			},
+			{
+				id = "lawn_tufts",
+				shape = "Model",
+				zone = "Town",
+				density = 16,
+				model = "GrassTuft",
+				tall = { 1.3, 1.9 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_blooms",
+				shape = "Blooms",
+				zone = "Verge",
+				density = 64,
+				count = { 2, 4 },
+				tall = { 0.8, 1.1 },
+				colours = {
+					{ 250, 226, 100 },
+					{ 250, 250, 244 },
+					{ 240, 140, 160 },
+					{ 176, 148, 236 },
+				},
+			},
+			{
+				id = "verge_tufts",
+				shape = "Model",
+				zone = "Verge",
+				density = 48,
+				model = "GrassTuft",
+				tall = { 1.5, 2.3 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_bushes",
+				shape = "Model",
+				zone = "Verge",
+				density = 4.8,
+				model = "Bush",
+				tall = { 1.6, 2.4 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "lane_pebbles",
+				shape = "Pebbles",
+				zone = "Edging",
+				density = 112,
+				count = { 1, 3 },
+				tall = { 0.5, 0.9 },
+				colours = { { 170, 160, 140 }, { 150, 142, 128 }, { 190, 180, 160 } },
+			},
+		},
+	},
 }
 
 return GreenwoodDressing

@@ -69,7 +69,7 @@ end
 
 local TideFlatsDressing: WorldTypes.DressingSheet = {
 	roomEdge = "Rocks", -- pockets by the sea are ringed with sea rocks
-	fieldGround = { 238, 224, 184 },
+	fieldGround = { 222, 202, 158 }, -- warmer sand: the paler one washed out to white
 	ground = {
 		{ area = "wrack_beach", colour = { 226, 210, 168 } },
 		{ area = "rockpool_shelf", colour = { 84, 84, 92 } }, -- black rock
@@ -88,7 +88,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			colour = { 110, 96, 70 },
 		},
 	},
-	townGround = { 236, 226, 196 },
+	townGround = { 226, 208, 166 },
 	laneColour = { 236, 224, 196 }, -- packed shell-sand
 	laneSurfaces = {
 		-- The sunken plank path through the shallows, and the boardwalk on stilts over the mud.
@@ -445,6 +445,86 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			{ kind = "Mist", at = p(40, 110), height = 3, area = { 110, 80, 4 } },
 			{ kind = "Mist", at = p(120, 240), height = 3, area = { 160, 100, 4 } },
 			{ kind = "Mist", at = p(345, 30), height = 3, area = { 150, 110, 4 } },
+		},
+	},
+
+	-- Small clay detail on the lawns and verges (src/shared/DetailPlan.luau): shells, pebbles,
+	-- marram tufts and a few low rocks; shells and pebbles fringe the lanes.
+	scatter = {
+		budget = 520,
+		kinds = {
+			{
+				id = "quay_shells",
+				shape = "Shells",
+				zone = "Town",
+				density = 20,
+				count = { 1, 2 },
+				tall = { 0.9, 1.4 },
+				colours = { { 244, 234, 222 }, { 240, 214, 200 }, { 232, 226, 236 } },
+			},
+			{
+				id = "quay_pebbles",
+				shape = "Pebbles",
+				zone = "Town",
+				density = 14,
+				count = { 2, 3 },
+				tall = { 0.6, 1.0 },
+				colours = { { 150, 150, 156 }, { 128, 130, 138 }, { 176, 170, 160 } },
+			},
+			{
+				id = "quay_marram",
+				shape = "Model",
+				zone = "Town",
+				density = 16,
+				model = "MarramTuft",
+				tall = { 1.4, 2.0 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_marram",
+				shape = "Model",
+				zone = "Verge",
+				density = 56,
+				model = "MarramTuft",
+				tall = { 1.6, 2.4 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_shells",
+				shape = "Shells",
+				zone = "Verge",
+				density = 48,
+				count = { 1, 3 },
+				tall = { 0.9, 1.4 },
+				colours = { { 244, 234, 222 }, { 240, 214, 200 }, { 232, 226, 236 } },
+			},
+			{
+				id = "verge_pebbles",
+				shape = "Pebbles",
+				zone = "Verge",
+				density = 60,
+				count = { 2, 3 },
+				tall = { 0.6, 1.0 },
+				colours = { { 150, 150, 156 }, { 128, 130, 138 }, { 176, 170, 160 } },
+			},
+			{
+				id = "verge_rocks",
+				shape = "Model",
+				zone = "Verge",
+				density = 5,
+				model = "SeaRocks",
+				tall = { 1.0, 1.6 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "lane_shells",
+				shape = "Shells",
+				zone = "Edging",
+				density = 120,
+				count = { 1, 2 },
+				tall = { 0.8, 1.2 },
+				colours = { { 244, 234, 222 }, { 240, 214, 200 } },
+			},
 		},
 	},
 }

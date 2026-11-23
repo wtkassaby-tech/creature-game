@@ -9,9 +9,9 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local EdgeTrace = require(ReplicatedStorage.shared.EdgeTrace)
 local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
-local Walk = require(ReplicatedStorage.shared.Walk)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local Edges = require(script.Parent.Edges)
@@ -21,14 +21,7 @@ local Shapes = require(script.Parent.Shapes)
 
 local Corridors = {}
 
--- One corridor: a lane's centre line and how wide its corridor is at a distance along it.
-type Corridor = {
-	id: string,
-	line: Layout.RouteLine,
-	points: { Vector3 },
-	widthAt: (along: number) -> number,
-	areaAt: (along: number) -> string?,
-}
+type Corridor = EdgeTrace.Corridor
 
 -- A run of edge in one style, with the outward normal and the distance along at each point.
 type Run = {
@@ -38,87 +31,8 @@ type Run = {
 	style: WorldTypes.EdgeStyle,
 }
 
-local EDGE_STEP = 3 -- studs between the points an edge is traced through
-local INSIDE_MARGIN = 1.5 -- an edge point this far inside another corridor gives way
-
 local function flat(point: Layout.Point): Vector3
 	return Vector3.new(point.x, 0, point.z)
-end
-
-local function flatAll(points: { Layout.Point }): { Vector3 }
-	local out: { Vector3 } = {}
-	for _, point in points do
-		table.insert(out, flat(point))
-	end
-	return out
-end
-
--- Every corridor of a biome with a map sheet: its routes, and its lair spur.
-local function corridors(biome: WorldTypes.Biome, map: Layout.Map): { Corridor }
-	local list: { Corridor } = {}
-	for _, route in biome.routes do
-		local line = map.routes[route.id]
-		local widths = line and line.halfWidth
-		if line and widths then
-			local function areaAt(along: number): string?
-				for _, area in route.areas do
-					if along >= area.from and along <= area.to then
-						return area.id
-					end
-				end
-				return nil
-			end
-			table.insert(list, {
-				id = route.id,
-				line = line,
-				points = flatAll(line.points),
-				widthAt = function(along: number): number
-					local area = areaAt(along)
-					return Layout.halfWidthAt(
-						line.widths,
-						along,
-						(if area then widths[area] else nil) or 50
-					)
-				end,
-				areaAt = areaAt,
-			})
-		end
-	end
-	local spurWidth = map.lairHalfWidth
-	if spurWidth and #map.lairSpur >= 2 then
-		local length = 0
-		for index = 1, #map.lairSpur - 1 do
-			length += Layout.distance(map.lairSpur[index], map.lairSpur[index + 1])
-		end
-		table.insert(list, {
-			id = biome.lair.id,
-			line = { id = biome.lair.id, points = map.lairSpur, length = length, side = 0 },
-			points = flatAll(map.lairSpur),
-			widthAt = function(along: number): number
-				return Layout.halfWidthAt(map.lairWidths, along, spurWidth)
-			end,
-			areaAt = function(): string?
-				return nil
-			end,
-		})
-	end
-	return list
-end
-
--- True when `at` is well inside any corridor (`margin` studs or more within its edge).
-local function insideAny(list: { Corridor }, at: Vector3, margin: number): boolean
-	for _, corridor in list do
-		local along, off = Props.nearest(corridor.points, at)
-		if off < corridor.widthAt(along) - margin then
-			return true
-		end
-	end
-	return false
-end
-
-local function inTown(map: Layout.Map, at: Vector3, pad: number): boolean
-	local half = map.hub.size / 2 + pad
-	return math.abs(at.X - map.hub.x) < half and math.abs(at.Z - map.hub.z) < half
 end
 
 local function wet(waters: { Fences.Water }, at: Vector3, pad: number): boolean
@@ -129,15 +43,6 @@ local function wet(waters: { Fences.Water }, at: Vector3, pad: number): boolean
 		end
 	end
 	return false
-end
-
--- The direction of a line at a distance along it, smoothed over a few studs so edges round the
--- bends instead of jumping.
-local function heading(line: Layout.RouteLine, along: number): Vector3
-	local a = Layout.pointAt(line, math.max(along - 4, 0))
-	local b = Layout.pointAt(line, math.min(along + 4, line.length))
-	local run = Vector3.new(b.x - a.x, 0, b.z - a.z)
-	return if run.Magnitude > 1e-3 then run.Unit else Vector3.xAxis
 end
 
 -- The edges down both sides of every corridor, the edge across a route's far end, the edge round
@@ -156,22 +61,19 @@ function Corridors.edges(
 	local folder = Instance.new("Folder")
 	folder.Name = "Edges"
 	folder.Parent = parent
-	local list = corridors(biome, map)
-	local space = Walk.space(biome, map, dressing)
-	-- True where a hedge must not stand: stairs and ramps are open at their ends (their sides have
-	-- cheeks), a ledge is open on purpose, and a tier's wall at its foot is wall enough.
-	local function openByDesign(x: number, z: number): boolean
-		return Ground.linkAt(ground, x, z, 3) ~= nil
-			or Ground.ledgeAt(ground, x, z, 1.5) ~= nil
-			or Ground.atFoot(ground, x, z, 3)
-	end
+	-- Where each edge stands is worked out as plain numbers (EdgeTrace), so the tests can check it:
+	-- it leaves a gap round every tamer, person and prompt.
+	local trace = EdgeTrace.new(biome, map, dressing, ground)
+	local list = trace.corridors
+	local space = trace.space
 	local origin = Vector3.new(map.hub.x, 0, map.hub.z)
 	local rings: { { at: Vector3, radius: number } } = {}
-	local bulges: { { at: Vector3, radius: number } } = {}
 	for _, clearing in dressing.clearings do
 		local entry =
 			{ at = origin + Vector3.new(clearing.at.x, 0, clearing.at.z), radius = clearing.radius }
-		table.insert(if clearing.ring then rings else bulges, entry)
+		if clearing.ring then
+			table.insert(rings, entry)
+		end
 	end
 	local function inRing(at: Vector3, pad: number): boolean
 		for _, ring in rings do
@@ -212,8 +114,8 @@ function Corridors.edges(
 			return
 		end
 		if
-			insideAny(list, at, -2)
-			or inTown(map, at, 4)
+			EdgeTrace.insideAny(trace, at.X, at.Z, -2)
+			or EdgeTrace.inTown(map, at.X, at.Z, 4)
 			or wet(waters, at, 3)
 			or inRing(at, 2)
 			or atSea(at)
@@ -247,22 +149,11 @@ function Corridors.edges(
 		for _, side in { -1, 1 } do
 			local runs: { Run } = {}
 			local current: Run? = nil
-			local along = 0
-			while true do
-				local centre = flat(Layout.pointAt(corridor.line, along))
-				local run = heading(corridor.line, along)
-				local normal = Vector3.new(-run.Z, 0, run.X) * side
-				local point = centre + normal * corridor.widthAt(along)
-				for _, bulge in bulges do
-					local out = point - bulge.at
-					if out.Magnitude < bulge.radius + 2 and out.Magnitude > 1e-3 then
-						point = bulge.at + out.Unit * (bulge.radius + 2)
-					end
-				end
-				local keep = not inTown(map, point, 2)
-					and Walk.depth(space, point.X, point.Z, false, nil) < INSIDE_MARGIN
-					and not inRing(point, 1)
-					and not openByDesign(point.X, point.Z)
+			for _, sample in EdgeTrace.side(trace, corridor, side) do
+				local along = sample.along
+				local point = Vector3.new(sample.x, 0, sample.z)
+				local normal = Vector3.new(sample.nx, 0, sample.nz)
+				local keep = sample.keep
 				local style: WorldTypes.EdgeStyle = styleOf(keyAt(corridor, along), side)
 				if keep then
 					local into: Run
@@ -290,10 +181,6 @@ function Corridors.edges(
 					table.insert(runs, current)
 					current = nil
 				end
-				if along >= corridor.line.length then
-					break
-				end
-				along = math.min(along + EDGE_STEP, corridor.line.length)
 			end
 			if current then
 				table.insert(runs, current)
@@ -334,8 +221,8 @@ function Corridors.edges(
 		if gap then
 			local length = corridor.line.length
 			local centre = flat(Layout.pointAt(corridor.line, length))
-			local run = heading(corridor.line, length)
-			local across = Vector3.new(-run.Z, 0, run.X)
+			local runX, runZ = EdgeTrace.heading(corridor.line, length)
+			local across = Vector3.new(-runZ, 0, runX)
 			local width = corridor.widthAt(length)
 			local style: WorldTypes.EdgeStyle = styleOf(keyAt(corridor, length), -1)
 			for _, side in { -1, 1 } do
@@ -356,15 +243,11 @@ function Corridors.edges(
 	for _, room in space.sheetRooms do
 		local runs: { { Vector3 } } = {}
 		local run: { Vector3 } = {}
-		local samples = Ground.outline(room, EDGE_STEP)
+		local samples = EdgeTrace.room(trace, room)
 		local allKept = true
 		for _, sample in samples do
 			local point = Vector3.new(sample.x, 0, sample.z)
-			local keep = not inTown(map, point, 2)
-				and Walk.depth(space, sample.x, sample.z, false, room) < INSIDE_MARGIN
-				and not inRing(point, 1)
-				and not openByDesign(sample.x, sample.z)
-			if keep then
+			if sample.keep then
 				table.insert(run, point)
 			else
 				allKept = false
@@ -381,10 +264,7 @@ function Corridors.edges(
 			-- The loop starts mid-edge: join the last run to the first when both touch the seam.
 			local first = samples[1]
 			local last = samples[#samples]
-			local seam = #runs > 0
-				and Walk.depth(space, first.x, first.z, false, room) < INSIDE_MARGIN
-				and Walk.depth(space, last.x, last.z, false, room) < INSIDE_MARGIN
-			if seam and not openByDesign(first.x, first.z) and not openByDesign(last.x, last.z) then
+			if #runs > 0 and first.keep and last.keep then
 				for _, point in runs[1] do
 					table.insert(run, point)
 				end
@@ -416,7 +296,7 @@ function Corridors.edges(
 		local run: { Vector3 } = {}
 		local runs: { { Vector3 } } = {}
 		for _, point in points do
-			if insideAny(list, point, INSIDE_MARGIN) then
+			if EdgeTrace.insideAny(trace, point.X, point.Z, EdgeTrace.INSIDE_MARGIN) then
 				if #run > 1 then
 					table.insert(runs, run)
 				end
@@ -427,7 +307,15 @@ function Corridors.edges(
 		end
 		if #run > 1 then
 			-- The circle closes: join the last run to the first when both touch the seam.
-			if #runs > 0 and not insideAny(list, points[1], INSIDE_MARGIN) then
+			if
+				#runs > 0
+				and not EdgeTrace.insideAny(
+					trace,
+					points[1].X,
+					points[1].Z,
+					EdgeTrace.INSIDE_MARGIN
+				)
+			then
 				for _, point in runs[1] do
 					table.insert(run, point)
 				end

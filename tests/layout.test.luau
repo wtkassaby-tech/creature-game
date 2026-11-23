@@ -16,6 +16,8 @@ local Chapter1 = require("../src/content/story_data/Chapter1")
 local Chapter2 = require("../src/content/story_data/Chapter2")
 local Chapter3 = require("../src/content/story_data/Chapter3")
 local Chapter4 = require("../src/content/story_data/Chapter4")
+local EdgeTrace = require("../src/shared/EdgeTrace")
+local Ground = require("../src/shared/Ground")
 local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
@@ -898,6 +900,73 @@ local function checkDressing(
 		#overlapping == 0,
 		join(overlapping)
 	)
+
+	-- Corridor edges and room edges keep clear of every tamer, person and prompt: no hedge, cliff
+	-- or boulder bank stands within 6 studs of anyone (Pip once stood inside a hedge on Route A).
+	-- Read from the same samples the builder joins into edges (src/shared/EdgeTrace.luau).
+	do
+		local ground = Ground.new(biome.map, origin)
+		local trace = EdgeTrace.new(biome, map, dressing, ground)
+		local spots: { Prompt } = table.clone(prompts)
+		for index, person in dressing.people do
+			table.insert(spots, { id = `person {index} ({person.name})`, at = at(person.at) })
+		end
+		-- A run of kept samples is built as straight pieces between neighbours.
+		local function gapTo(a: Layout.Point, b: Layout.Point, p: Layout.Point): number
+			local rx, rz = b.x - a.x, b.z - a.z
+			local length2 = rx * rx + rz * rz
+			local t = if length2 > 1e-9
+				then math.clamp(((p.x - a.x) * rx + (p.z - a.z) * rz) / length2, 0, 1)
+				else 0
+			return Layout.distance({ x = a.x + rx * t, z = a.z + rz * t }, p)
+		end
+		local buried: { string } = {}
+		local function inspect(label: string, run: { Layout.Point })
+			for index, point in run do
+				for _, spot in spots do
+					local gap = Layout.distance(point, spot.at)
+					if index > 1 then
+						gap = math.min(gap, gapTo(run[index - 1], point, spot.at))
+					end
+					local name = `{label}/{spot.id}`
+					if gap < 6 and not table.find(buried, name) then
+						table.insert(buried, name)
+					end
+				end
+			end
+		end
+		for _, corridor in trace.corridors do
+			for _, side in { -1, 1 } do
+				local run: { Layout.Point } = {}
+				for _, sample in EdgeTrace.side(trace, corridor, side) do
+					if sample.keep then
+						table.insert(run, { x = sample.x, z = sample.z })
+					else
+						inspect(`{corridor.id} edge {side}`, run)
+						run = {}
+					end
+				end
+				inspect(`{corridor.id} edge {side}`, run)
+			end
+		end
+		for index, room in trace.space.sheetRooms do
+			local run: { Layout.Point } = {}
+			for _, sample in EdgeTrace.room(trace, room) do
+				if sample.keep then
+					table.insert(run, { x = sample.x, z = sample.z })
+				else
+					inspect(`room {index} edge`, run)
+					run = {}
+				end
+			end
+			inspect(`room {index} edge`, run)
+		end
+		check(
+			"no corridor or room edge comes within 6 studs of a tamer, person or prompt",
+			#buried == 0,
+			join(buried)
+		)
+	end
 
 	if biome.number == 1 then
 		return
