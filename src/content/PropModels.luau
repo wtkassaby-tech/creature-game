@@ -46,6 +46,19 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://93835114123895",
 		size = { 3, 6.36, 1.15 },
 	},
+	-- Each town's own street lamp (23 November 2026), in place of Greenwood's vine-wrapped one:
+	-- a driftwood post with a ship's lantern and a float for Saltwick, an adobe pillar with a
+	-- lantern niche for Kilnrest.
+	SeaLamp = {
+		mesh = "rbxassetid://140560317577953",
+		texture = "rbxassetid://80528808470293",
+		size = { 2.39, 6.4, 0.93 },
+	},
+	AdobeLamp = {
+		mesh = "rbxassetid://79275864865978",
+		texture = "rbxassetid://107405804722268",
+		size = { 2.07, 6.4, 2.03 },
+	},
 	Well = {
 		mesh = "rbxassetid://129373922855631",
 		texture = "rbxassetid://135195250053253",
@@ -220,9 +233,11 @@ local PropModels: { [string]: ModelDef } = {
 		size = { 26.06, 20.75, 16 },
 	},
 	RockSpire = {
-		mesh = "rbxassetid://116218017862560",
-		texture = "rbxassetid://74366126244368",
-		size = { 10, 20.89, 9.97 },
+		-- A cream cap rock (23 November 2026): the first spire wore a glossy dark-brown cap that
+		-- read as a chocolate cake across the spire garden.
+		mesh = "rbxassetid://86935196518156",
+		texture = "rbxassetid://130693163991784",
+		size = { 9.74, 19.19, 10 },
 	},
 	ScrubBush = {
 		mesh = "rbxassetid://84961450488135",
@@ -342,6 +357,18 @@ local PropModels: { [string]: ModelDef } = {
 		mesh = "rbxassetid://124289960017648",
 		texture = "rbxassetid://78248099068134",
 		size = { 6.82, 8, 8.01 },
+	},
+	-- Per-biome stairs (23 November 2026): red sandstone for Dust Canyon, barnacled sea stone
+	-- for Tide Flats, in place of Greenwood's mossy steps.
+	SandstoneSteps = {
+		mesh = "rbxassetid://139107738453042",
+		texture = "rbxassetid://87308865971589",
+		size = { 5.98, 8.27, 10 },
+	},
+	SeaStoneSteps = {
+		mesh = "rbxassetid://78922560310781",
+		texture = "rbxassetid://113154080974873",
+		size = { 6.3, 8.37, 10 },
 	},
 	-- Far scenery and fill (plan 13 step 3, 23 November 2026): a snow-capped peak for the Crown
 	-- and the north, a wooded hill for the highlands, a cloud for the halo, a dune with marram.

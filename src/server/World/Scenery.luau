@@ -247,7 +247,7 @@ function Scenery.build(
 	-- The plaza's flower beds, the street lamps and the flower beds by the doors.
 	for _, at in dressing.lamps do
 		local foot = placed(map, at)
-		Props.lamp(town, foot, towardStreet(foot, streets))
+		Props.lamp(town, foot, towardStreet(foot, streets), dressing.lampModel)
 	end
 	for _, at in dressing.beds do
 		bed(town, placed(map, at), pick)

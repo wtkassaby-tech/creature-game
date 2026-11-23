@@ -33,7 +33,13 @@ local function solid(part: BasePart, name: string)
 	part:AddTag("WorldGround")
 end
 
-function Links.build(parent: Instance, ground: Ground.Ground): Counts
+function Links.build(
+	parent: Instance,
+	ground: Ground.Ground,
+	models: { stairs: string?, ramp: string? }?
+): Counts
+	local stairsModel = if models and models.stairs then models.stairs else "StoneSteps"
+	local rampModel = if models and models.ramp then models.ramp else "EarthRamp"
 	local folder = Instance.new("Folder")
 	folder.Name = "Links"
 	folder.Parent = parent
@@ -61,7 +67,7 @@ function Links.build(parent: Instance, ground: Ground.Ground): Counts
 
 		-- The painted flight or ramp sits over the slab (which stays as the walking surface,
 		-- unseen): its low end, the model's front, toward the low tier.
-		local painted = Props.model(if link.kind == "Stairs" then "StoneSteps" else "EarthRamp")
+		local painted = Props.model(if link.kind == "Stairs" then stairsModel else rampModel)
 		if painted then
 			local up = math.abs(rise)
 			local copy = painted:Clone()
@@ -76,7 +82,7 @@ function Links.build(parent: Instance, ground: Ground.Ground): Counts
 			copy.CanCollide = false
 			copy.CanQuery = false
 			copy.CanTouch = false
-			copy.Name = if link.kind == "Stairs" then "StoneSteps" else "EarthRamp"
+			copy.Name = if link.kind == "Stairs" then stairsModel else rampModel
 			copy:AddTag("WorldGround")
 			copy.Parent = folder
 			slab.Transparency = 1

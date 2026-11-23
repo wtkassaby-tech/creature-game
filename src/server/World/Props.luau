@@ -234,9 +234,10 @@ function Props.text(board: BasePart, face: Enum.NormalId, text: string)
 	label.Parent = gui
 end
 
--- A lamp post facing `facing`: the painted Lamp if there is one, else a post and a glowing lump.
-function Props.lamp(parent: Instance, foot: Vector3, facing: Vector3)
-	local painted = Props.model("Lamp")
+-- A lamp post facing `facing`: the painted model named (the biome's own lamp; left out, the
+-- Greenwood Lamp) if there is one, else a post and a glowing lump.
+function Props.lamp(parent: Instance, foot: Vector3, facing: Vector3, model: string?)
+	local painted = Props.model(model or "Lamp") or Props.model("Lamp")
 	if painted then
 		Props.stand(parent, painted, foot, 13, facing)
 		return

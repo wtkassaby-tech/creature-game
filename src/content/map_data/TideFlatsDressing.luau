@@ -206,6 +206,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		{ at = p(-200, -14), faces = 90, lines = { "Saltwick →" } },
 	},
 	-- Lantern posts: the Rope Walk, the square, the quay, East Street, the arches and the gate.
+	lampModel = "SeaLamp",
 	lamps = {
 		p(-120, -11),
 		p(-80, -11),
@@ -450,6 +451,8 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 
 	-- Small clay detail on the lawns and verges (src/shared/DetailPlan.luau): shells, pebbles,
 	-- marram tufts and a few low rocks; shells and pebbles fringe the lanes.
+	-- Pale sea-stone stairs with barnacles, to match the cliffs and rock pools.
+	linkModels = { stairs = "SeaStoneSteps" },
 	scatter = {
 		budget = 520,
 		kinds = {

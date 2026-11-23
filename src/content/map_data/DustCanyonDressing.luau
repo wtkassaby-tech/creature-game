@@ -176,6 +176,7 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		{ at = p(-200, -14), faces = 90, lines = { "Kilnrest →" } },
 	},
 	-- Lantern posts: Kiln Street, the square, East Road, Wash Lane, the arches and the stair road.
+	lampModel = "AdobeLamp",
 	lamps = {
 		p(-120, -11),
 		p(-90, 11),
@@ -455,6 +456,8 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 
 	-- Small clay detail on the lawns and verges (src/shared/DetailPlan.luau): pebbles, dry tufts,
 	-- scrub and a few boulders, with the odd desert bloom; pebbles fringe the lanes.
+	-- Red sandstone stairs to match the canyon walls; the earth ramp suits the canyon already.
+	linkModels = { stairs = "SandstoneSteps" },
 	scatter = {
 		budget = 520,
 		kinds = {

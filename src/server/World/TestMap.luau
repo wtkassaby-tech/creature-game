@@ -436,7 +436,7 @@ local function buildBiome(
 				return Enclosure.indexed(near, x, z) <= 40
 			end
 		)
-		local linkCounts = Links.build(world, levels)
+		local linkCounts = Links.build(world, levels, dressing.linkModels)
 		print(
 			`[World] {biome.id}: {lifted} parts lifted onto {#levels.tiers} tiers; `
 				.. `{tierCounts.blocks} tier blocks, {tierCounts.faces} wall facings, `
