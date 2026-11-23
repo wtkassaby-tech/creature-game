@@ -1,9 +1,13 @@
 --!strict
--- Short sounds for presses and battle moments. Every sound here ships inside Roblox itself
--- (rbxasset://sounds/...), so nothing is uploaded or bought; each was checked to load in Studio
--- on 22 November 2026 (docs/ASSETS.md). They are stand-ins until the game has its own sounds.
+-- Short sounds for presses and battle moments. Which file, volume and pitch each uses is data in
+-- src/config/AudioConfig (Roblox's licensed libraries; docs/ASSETS.md). A sound defined with a
+-- jingle plays that tune (Audio/Jingle) instead of a file.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
+
+local AudioConfig = require(ReplicatedStorage.config.AudioConfig)
+local Jingle = require(script.Parent.Jingle)
 
 local Sfx = {}
 
@@ -23,38 +27,38 @@ export type Name =
 	| "tug"
 	| "slip"
 	| "caught"
+	| "battleStart"
+	| "giantStart"
+	| "levelUp"
+	| "hatch"
+	| "questDone"
+	| "badge"
+	| "buy"
+	| "find"
+	| "travel"
+	| "tick"
+	| "heal"
+	| "journal"
+	| "spotted"
+	| "grass"
 
-type Def = { id: string, volume: number, speed: number }
-
-local SOUNDS: { [Name]: Def } = {
-	press = { id = "rbxasset://sounds/clickfast.wav", volume = 0.5, speed = 1 },
-	confirm = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.4, speed = 1.2 },
-	hit = { id = "rbxasset://sounds/snap.mp3", volume = 0.7, speed = 1 },
-	strongHit = { id = "rbxasset://sounds/swordslash.wav", volume = 0.8, speed = 0.9 },
-	weakHit = { id = "rbxasset://sounds/kerplunk.wav", volume = 0.5, speed = 1.1 },
-	faint = { id = "rbxasset://sounds/bass.wav", volume = 0.6, speed = 0.8 },
-	swap = { id = "rbxasset://sounds/switch.wav", volume = 0.6, speed = 1 },
-	win = { id = "rbxasset://sounds/victory.wav", volume = 0.6, speed = 1 },
-	lose = { id = "rbxasset://sounds/bass.wav", volume = 0.5, speed = 0.6 },
-	count = { id = "rbxasset://sounds/switch.wav", volume = 0.25, speed = 1.6 },
-	-- The catch: the same stand-in files, pitched to suit (a whoosh, a snap, a low creak, a jingle).
-	throw = { id = "rbxasset://sounds/swordslash.wav", volume = 0.45, speed = 1.5 },
-	cinch = { id = "rbxasset://sounds/snap.mp3", volume = 0.8, speed = 1.5 },
-	tug = { id = "rbxasset://sounds/kerplunk.wav", volume = 0.45, speed = 0.7 },
-	slip = { id = "rbxasset://sounds/snap.mp3", volume = 0.6, speed = 0.65 },
-	caught = { id = "rbxasset://sounds/victory.wav", volume = 0.55, speed = 1.25 },
-}
-
-local made: { [Name]: Sound } = {}
+local made: { [string]: Sound } = {}
 
 function Sfx.play(name: Name)
 	-- PlayLocalSound lets the same sound overlap itself (a fast count-up, two quick hits).
+	local def = AudioConfig.SFX[name]
+	if def and def.jingle then
+		Jingle.play(def.jingle, def.volume)
+		return
+	end
 	local ready: Sound? = made[name]
 	if ready then
 		SoundService:PlayLocalSound(ready)
 		return
 	end
-	local def = SOUNDS[name]
+	if not def then
+		return
+	end
 	local sound = Instance.new("Sound")
 	sound.Name = `Sfx_{name}`
 	sound.SoundId = def.id
