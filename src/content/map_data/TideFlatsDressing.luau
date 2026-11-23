@@ -366,6 +366,9 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 	-- Egg nests in seaweed behind the Brood Shallows.
 	coop = p(-4, -104),
 
+	-- Sand banks close in the land past the edges; the sea is walled by Barriers (plan 12, step 1).
+	fill = { style = "Dune", band = 80, floor = { 210, 192, 144 } },
+
 	-- Smoke from the chandlery and the stilt houses, warm lamps, the Lamp Tower's and the Old
 	-- Light's glow, spray along the harbour's shore, mist over the water and a slow glint on every
 	-- pool and sheet of water. The stilt house's chimney pot was measured from above in Studio; the

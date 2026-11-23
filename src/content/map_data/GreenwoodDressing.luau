@@ -355,6 +355,9 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	coop = p(126, -70),
 	patch = { from = p(22, -96), to = p(36, -78) },
 
+	-- Solid woods close in everything past the edges (docs/plans/12_MAP_STRUCTURE.md, step 1).
+	fill = { style = "Forest", band = 80, floor = { 70, 118, 58 } },
+
 	-- Smoke from the cottages' chimneys, a warm glow on each lamp, pollen and seed fluff over the
 	-- meadows, a glint on the pools and the pond. Chimney offsets measured from above in Studio
 	-- (23 November 2026); the moss cottage has no chimney.

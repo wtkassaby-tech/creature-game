@@ -192,6 +192,10 @@ function Corridors.edges(
 
 	-- A tree outside an edge, if the spot is clear of lanes, water, town and clearings.
 	local function plant(at: Vector3, model: string, scale: number)
+		-- A biome with a fill has solid woods past its edges (Fill.luau): no single trees.
+		if dressing.fill then
+			return
+		end
 		if
 			insideAny(list, at, -2)
 			or inTown(map, at, 4)

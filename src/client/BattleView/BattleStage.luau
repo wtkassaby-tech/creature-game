@@ -161,6 +161,46 @@ function BattleStage.new(): Stage
 			end
 		end
 	end
+	-- Tall grass is built with CanQuery off, so the search above never finds it, and a battle
+	-- in a patch had both creatures standing waist-deep in blades (seen in Studio). Grass
+	-- within `radius` of a spot is hidden by walking the tuft folders (and the swaying clumps
+	-- of hidden wild creatures) directly.
+	local function clearGrass(spots: { Vector3 }, radius: number)
+		local function near(position: Vector3): boolean
+			for _, spot in spots do
+				local flat = Vector3.new(position.X - spot.X, 0, position.Z - spot.Z)
+				if flat.Magnitude < radius then
+					return true
+				end
+			end
+			return false
+		end
+		local holders: { Instance } = {}
+		local world = Workspace:FindFirstChild("World")
+		if world then
+			for _, tufts in world:GetDescendants() do
+				if tufts:IsA("Folder") and string.sub(tufts.Name, -6) == "_tufts" then
+					table.insert(holders, tufts)
+				end
+			end
+		end
+		local wild = Workspace:FindFirstChild("WildCreatures")
+		if wild then
+			table.insert(holders, wild)
+		end
+		for _, holder in holders do
+			for _, piece in holder:GetDescendants() do
+				if
+					piece:IsA("BasePart")
+					and piece.LocalTransparencyModifier == 0
+					and near(piece.Position)
+				then
+					piece.LocalTransparencyModifier = 1
+					table.insert(cleared, piece)
+				end
+			end
+		end
+	end
 	local function bringBack()
 		for _, piece in cleared do
 			piece.LocalTransparencyModifier = 0
@@ -319,6 +359,13 @@ function BattleStage.new(): Stage
 			local target = grounds[1]:Lerp(grounds[2], 0.45) - Vector3.yAxis * 3
 			clearAround(eye - Vector3.yAxis * 8, ignore)
 			clearAround(eye:Lerp(grounds[1], 0.5) - Vector3.yAxis * 4, ignore)
+			-- The grass round both creatures and along the camera's view of them.
+			clearGrass({
+				grounds[1],
+				grounds[2],
+				grounds[1]:Lerp(grounds[2], 0.5),
+				eye:Lerp(grounds[1], 0.5),
+			}, 10)
 			if character then
 				for _, piece in character:GetDescendants() do
 					if piece:IsA("BasePart") then

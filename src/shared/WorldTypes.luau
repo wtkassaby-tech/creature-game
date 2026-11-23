@@ -282,6 +282,12 @@ export type Ambience = {
 	sources: { AmbienceSource },
 }
 
+-- The solid ground beyond a biome's edges (docs/plans/12_MAP_STRUCTURE.md section 10, step 1):
+-- "Forest" is walls of tall trees, "Rock" is spires and mesas, "Dune" is sand banks. `band` is how
+-- far past the edge it reaches, and `floor` is the colour of the open ground glimpsed through it.
+export type FillStyle = "Forest" | "Rock" | "Dune"
+export type DressFill = { style: FillStyle, band: number, floor: Colour }
+
 -- Every field marked "left out" is optional: a biome without that feature leaves it out and the
 -- builder skips it (Greenwood fills them all in).
 export type DressingSheet = {
@@ -337,6 +343,7 @@ export type DressingSheet = {
 	brambles: { SheetPoint }, -- may be empty
 	coop: SheetPoint?,
 	patch: { from: SheetPoint, to: SheetPoint }?, -- the mentor's vegetable rows
+	fill: DressFill?, -- the trees, rock or dunes that close in everything past the edges
 	ambience: Ambience?, -- smoke, lights and drifting motes (src/server/World/Ambience)
 }
 

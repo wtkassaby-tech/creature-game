@@ -276,6 +276,10 @@ function Edges.run(
 		elseif style == "SeaWall" then
 			seaWall(parent, run, opts, pick)
 		end
+		-- Low banks look low but must not be hopped: an unseen wall stands over them.
+		if style == "Boulders" or style == "Rocks" or style == "Dunes" or style == "SeaWall" then
+			Fences.cap(parent, run)
+		end
 	end
 	for _, gap in gaps do
 		if (gap[2] - gap[1]).Magnitude < 80 then

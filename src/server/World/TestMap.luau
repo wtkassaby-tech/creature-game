@@ -18,15 +18,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DustCanyonDressing = require(ReplicatedStorage.content.map_data.DustCanyonDressing)
 local GreenwoodDressing = require(ReplicatedStorage.content.map_data.GreenwoodDressing)
 local TideFlatsDressing = require(ReplicatedStorage.content.map_data.TideFlatsDressing)
+local Enclosure = require(ReplicatedStorage.shared.Enclosure)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Tamers = require(ReplicatedStorage.content.Tamers)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local Ambience = require(script.Parent.Ambience)
+local Barriers = require(script.Parent.Barriers)
 local CorridorGround = require(script.Parent.CorridorGround)
 local Corridors = require(script.Parent.Corridors)
 local Dressing = require(script.Parent.Dressing)
+local Fill = require(script.Parent.Fill)
 local Grass = require(script.Parent.Grass)
 local Lair = require(script.Parent.Lair)
 local Landmarks = require(script.Parent.Landmarks)
@@ -94,7 +97,8 @@ local function buildBiome(
 	biome: WorldTypes.Biome,
 	map: Layout.Map,
 	first: boolean,
-	clip: Clip
+	clip: Clip,
+	links: { Enclosure.Shape }
 )
 	local world = Instance.new("Folder")
 	world.Name = biome.id
@@ -115,13 +119,18 @@ local function buildBiome(
 	local west, east = middleX - width / 2, middleX + width / 2
 	west = if clip.west then math.max(west, clip.west) else west
 	east = if clip.east then math.min(east, clip.east) else east
-	local fieldColour = if dressing and dressing.fieldGround
-		then Props.colour(dressing.fieldGround)
+	-- Past the edges the open ground is the fill's own floor (dark under trees), so a glimpse
+	-- through a gap reads as wood or rock and not as lawn.
+	local fill = if dressing then dressing.fill else nil
+	local fieldColour = if fill
+		then Props.colour(fill.floor)
+		elseif dressing and dressing.fieldGround then Props.colour(dressing.fieldGround)
 		else GROUND
+	local depth = math.min(2048, maxZ - minZ + margin * 2)
 	local ground = block(
 		world,
 		"Ground",
-		Vector3.new(east - west, 4, math.min(2048, maxZ - minZ + margin * 2)),
+		Vector3.new(east - west, 4, depth),
 		CFrame.new((west + east) / 2, -2, middleZ),
 		fieldColour
 	)
@@ -129,6 +138,26 @@ local function buildBiome(
 
 	local waters = if dressing then Scenery.waters(map, dressing) else {}
 	if dressing then
+		-- Everything past the walkable space closes in: water blocks, and trees, rock or dunes
+		-- stand solid out to the fill's band (docs/plans/12_MAP_STRUCTURE.md section 10, step 1).
+		local shapes = Enclosure.walkable(biome, map, dressing, links)
+		local limits: Enclosure.Bounds =
+			{ x0 = west, z0 = middleZ - depth / 2, x1 = east, z1 = middleZ + depth / 2 }
+		Barriers.build(world, Enclosure.water(biome, map, dressing, shapes, limits))
+		if fill then
+			Fill.build(
+				world,
+				fill.style,
+				Enclosure.fill(
+					shapes,
+					limits,
+					fill.style,
+					fill.band,
+					biome.number * 101,
+					Enclosure.seas(map, dressing)
+				)
+			)
+		end
 		CorridorGround.build(world, biome, map, dressing)
 		Corridors.edges(world, biome, map, dressing, waters, pick)
 		Scenery.build(world, biome, map, dressing, waters, pick)
@@ -388,7 +417,18 @@ function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
 				west = gateX[biome.number - 1],
 				east = if world.maps[biome.number + 1] then gateX[biome.number] else nil,
 			}
-			buildBiome(folder, biome, map, index == 1, clip)
+			-- The walk from the biome before: its gate to this town's west edge, kept open.
+			local links: { Enclosure.Shape } = {}
+			local before = biomes[index - 1]
+			local beforeMap = if before then world.maps[before.number] else nil
+			local gate = if before and beforeMap then beforeMap.places[before.gate.id] else nil
+			if gate then
+				table.insert(
+					links,
+					Enclosure.link(gate, { x = map.hub.x - map.hub.size / 2, z = map.hub.z }, 40)
+				)
+			end
+			buildBiome(folder, biome, map, index == 1, clip, links)
 		end
 	end
 end

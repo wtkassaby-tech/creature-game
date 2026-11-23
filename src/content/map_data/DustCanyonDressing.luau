@@ -360,6 +360,9 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 	coop = p(100, 50),
 	patch = { from = p(-108, 12), to = p(-96, 22) },
 
+	-- Spires and mesas close in everything past the edges (docs/plans/12_MAP_STRUCTURE.md, step 1).
+	fill = { style = "Rock", band = 80, floor = { 170, 118, 84 } },
+
 	-- Smoke from the kiln cottages, warm lamps, the Cradle Kiln's glow and embers, dust motes over
 	-- the wash and the town, a glint on the Seep. The chimney offsets and the kiln's mouth are
 	-- guesses to check by eye.

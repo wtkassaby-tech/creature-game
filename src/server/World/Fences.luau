@@ -4,6 +4,8 @@
 -- least 1.5 tall and under 100 wide near its creatures, so long runs must come in short pieces
 -- (docs/plans/08_GREENWOOD_MAP.md section 6). The bushes and pickets on top are only looks.
 
+local WorldConfig = require(game:GetService("ReplicatedStorage").config.WorldConfig)
+
 local Props = require(script.Parent.Props)
 
 local Fences = {}
@@ -105,6 +107,22 @@ end
 -- the run by half its thickness so pieces meet at corners.
 Fences.block = block
 
+-- An unseen wall WALL_CORE_TALL high along a run (sampled every stud), over whatever is drawn
+-- there: a character jumps 7.2, so a hedge or boulder bank that looks tall must not be hopped.
+-- Never queried, so the camera, creatures' pads and the battle scene ignore it.
+function Fences.cap(parent: Instance, run: { Vector3 })
+	for _, piece in pieces(run) do
+		local made = block(parent, piece[1], piece[2], 2, WorldConfig.WALL_CORE_TALL)
+		if made then
+			made.Name = "WallCore"
+			made.Transparency = 1
+			made.CanQuery = false
+			made.CanTouch = false
+			made.CastShadow = false
+		end
+	end
+end
+
 -- A low rail across water where a hedge or fence stops: posts and a bar, easy to see over and
 -- just low enough to hop.
 function Fences.rail(parent: Instance, a: Vector3, b: Vector3)
@@ -140,6 +158,7 @@ function Fences.hedge(parent: Instance, points: { Vector3 }, waters: { Water })
 				made.Name = "Hedge"
 			end
 		end
+		Fences.cap(parent, run)
 		for _, at in Props.resample(run, BUSH_SPACING) do
 			local top = Vector3.new(at.X, 5.4, at.Z)
 			if bush then

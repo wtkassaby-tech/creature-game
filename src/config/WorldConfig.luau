@@ -67,4 +67,27 @@ WorldConfig.BIOME_GAP = 80
 WorldConfig.NEXT_HUB_ALLOWANCE = 160
 WorldConfig.ROUTE_ENTRY_DEPTH = 30 -- how far along a route its "entered" marker sits
 
+-- Enclosure (docs/plans/12_MAP_STRUCTURE.md section 10, step 1). A character jumps 7.2 studs, so
+-- every edge's blocking core and every water barrier stands this tall. All [Default]s.
+WorldConfig.WALL_CORE_TALL = 10
+WorldConfig.WATER_BARRIER_TALL = 10
+WorldConfig.WATER_CROSSING_MARGIN = 3 -- studs: water this close to a lane, bridge or stones is left open
+WorldConfig.WATER_TILE_STEP = 16 -- sea cells that block the way are cut on this grid
+WorldConfig.WATER_TILE_BAND = 48 -- sea is solid this far out from the walkable space
+WorldConfig.WATER_TILE_MARGIN = 2 -- studs of sea left walkable beside a lane, as the edge's own rail
+-- The fill past the edges, in three layers by distance out: a row of tall trees (or spires or
+-- dunes) at the edge, a row of masses behind it, then blocks on a coarse grid out to the band.
+WorldConfig.FILL_PAD = 4 -- studs from the edge to the first row
+WorldConfig.FILL_ROW_STEP = 14
+WorldConfig.FILL_ROW_WIDTH = 14
+WorldConfig.FILL_MASS_STEP = 22
+WorldConfig.FILL_MASS_WIDTH = 18
+WorldConfig.FILL_BLOCK_STEP = 40
+-- Heights { low, high } of each layer, by style.
+WorldConfig.FILL_TALL = {
+	Forest = { row = { 30, 38 }, mass = { 26, 32 }, block = { 24, 32 } },
+	Rock = { row = { 30, 42 }, mass = { 24, 34 }, block = { 22, 34 } },
+	Dune = { row = { 16, 22 }, mass = { 18, 24 }, block = { 18, 26 } },
+} :: { [string]: { [string]: { number } } }
+
 return WorldConfig
