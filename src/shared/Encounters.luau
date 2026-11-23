@@ -27,6 +27,7 @@ export type Spawn = {
 	at: Layout.Point,
 	misses: number, -- missed lasso throws so far, across battles
 	busy: boolean, -- in a battle now
+	calmUntil: number, -- after a battle it stays, it cannot be engaged again before this time
 }
 
 export type Book = {
@@ -76,10 +77,51 @@ local function add(
 		at = at,
 		misses = 0,
 		busy = false,
+		calmUntil = 0,
 	}
 	book.spawns[spawn.id] = spawn
 	book.nextId += 1
 	return spawn
+end
+
+-- Where a roaming creature hides: inside its stretch's long grass, not too close to another one
+-- hiding there (their triggers would overlap). A stretch with no patch falls back to the path.
+-- `taken` is the points already used in this stretch.
+function Encounters.hideAt(
+	map: Layout.Map,
+	line: Layout.RouteLine,
+	area: WorldTypes.Area,
+	taken: { Layout.Point },
+	rng: Rng.Rng
+): Layout.Point
+	-- Two draws from the caller's stream, as the old open-ground placement took, so the creature
+	-- picked after it is the same one as before; the tries use a stream of their own.
+	local first, second = Rng.next(rng), Rng.next(rng)
+	local own = Rng.new(1 + math.floor(first * 1000000) * 1000 + math.floor(second * 1000))
+	local patch = map.places[Layout.grassId(area.id)]
+	if patch == nil then
+		local along = area.from + first * (area.to - area.from)
+		return Layout.pointAt(line, along, (second * 2 - 1) * WorldConfig.SPAWN_SIDE_OFFSET)
+	end
+	local best: Layout.Point = patch
+	local bestGap = -1.0
+	for _ = 1, WorldConfig.GRASS_SPAWN_TRIES do
+		local angle = Rng.next(own) * math.pi * 2
+		local reach = math.sqrt(Rng.next(own)) * WorldConfig.GRASS_SPAWN_REACH
+		local point =
+			{ x = patch.x + math.cos(angle) * reach, z = patch.z + math.sin(angle) * reach }
+		local gap = math.huge
+		for _, other in taken do
+			gap = math.min(gap, Layout.distance(point, other))
+		end
+		if gap >= WorldConfig.GRASS_SPAWN_GAP then
+			return point
+		end
+		if gap > bestGap then
+			best, bestGap = point, gap
+		end
+	end
+	return best
 end
 
 -- Keeps the stretches near the player filled and clears the ones they have walked away from.
@@ -104,6 +146,7 @@ function Encounters.tick(
 				and centre ~= nil
 				and Layout.distance(centre, player) <= WorldConfig.ACTIVE_RANGE
 			local roaming = 0
+			local taken: { Layout.Point } = {}
 			for id, spawn in book.spawns do
 				if spawn.area == area.id then
 					if not active and not spawn.busy then
@@ -115,6 +158,7 @@ function Encounters.tick(
 						changed = true
 					elseif spawn.spot == nil then
 						roaming += 1
+						table.insert(taken, spawn.at)
 					end
 				end
 			end
@@ -124,15 +168,15 @@ function Encounters.tick(
 				and #World.candidates(route, { area = area.id }) > 0
 			then
 				while roaming < WorldConfig.SPAWNS_PER_AREA and total < WorldConfig.MAX_SPAWNS do
-					local along = area.from + Rng.next(rng) * (area.to - area.from)
-					local side = (Rng.next(rng) * 2 - 1) * WorldConfig.SPAWN_SIDE_OFFSET
+					local hidden = Encounters.hideAt(map, line, area, taken, rng)
+					table.insert(taken, hidden)
 					add(
 						book,
 						biome.number,
 						route,
 						area.id,
 						nil,
-						Layout.pointAt(line, along, side),
+						hidden,
 						Rng.int(rng, 1, 2147483646),
 						newId
 					)
@@ -291,8 +335,14 @@ end
 
 -- Starts a battle with one of the player's wild creatures. `id` comes from the device; the
 -- creature must exist in this player's book, be free, and be close to where the server sees
--- the player standing.
-function Encounters.engage(book: Book, id: unknown, player: Layout.Point): (Spawn?, string?)
+-- the player standing: a creature hiding in the grass must be walked right up to (the trigger
+-- radius), one a rustle spot brought out is already at the player's feet.
+function Encounters.engage(
+	book: Book,
+	id: unknown,
+	player: Layout.Point,
+	now: number?
+): (Spawn?, string?)
 	if typeof(id) ~= "number" then
 		return nil, "Bad request"
 	end
@@ -303,13 +353,16 @@ function Encounters.engage(book: Book, id: unknown, player: Layout.Point): (Spaw
 	if spawn.busy then
 		return nil, "You are already battling it"
 	end
+	if now ~= nil and now < spawn.calmUntil then
+		return nil, "It has slipped away for now"
+	end
 	if player.x ~= player.x or player.z ~= player.z then
 		return nil, "You are too far away"
 	end
-	if
-		Layout.distance(spawn.at, player)
-		> WorldConfig.ENGAGE_RADIUS + WorldConfig.POSITION_SLACK
-	then
+	local reach = if spawn.spot ~= nil
+		then WorldConfig.ENGAGE_RADIUS
+		else WorldConfig.GRASS_TRIGGER_RADIUS
+	if Layout.distance(spawn.at, player) > reach + WorldConfig.POSITION_SLACK then
 		return nil, "You are too far away"
 	end
 	spawn.busy = true
@@ -349,6 +402,8 @@ function Encounters.finish(
 		-- Ran, lost, a draw, or a battle dropped part way: it stays, and remembers its misses.
 		spawn.busy = false
 		spawn.misses = math.max(spawn.misses, misses)
+		-- Leaving a fight must not drop the player straight back into it.
+		spawn.calmUntil = now + WorldConfig.WILD_CALM_SECONDS
 	end
 end
 

@@ -29,6 +29,29 @@ WorldConfig.GRASS_CHANCE = 0.22 -- each second the player is moving inside a pat
 WorldConfig.GRASS_REST_SECONDS = 8 -- after a grass battle starts, before the next can
 WorldConfig.GRASS_MIN_MOVE = 3 -- studs moved in a second to count as walking
 
+-- Creatures hide in the long grass (nothing stands in the open): a stretch's roaming creatures
+-- sit inside its patch and the player finds one by walking up to it.
+WorldConfig.GRASS_SPAWN_REACH = 13 -- studs from the patch's middle a hiding place may lie (patch is 20)
+WorldConfig.GRASS_SPAWN_GAP = 11 -- hiding places in one patch keep at least this far apart
+WorldConfig.GRASS_SPAWN_TRIES = 24 -- tries at finding a hiding place that keeps the gap
+WorldConfig.GRASS_TRIGGER_RADIUS = 6 -- studs: walking this close to a hiding creature starts the battle
+WorldConfig.WILD_CALM_SECONDS = 10 -- after leaving a battle with one, it cannot be started again for this long
+WorldConfig.ENGAGE_MIN_SECONDS = 0.5 -- least gap between one player's battle requests
+WorldConfig.ENCOUNTER_BEAT_SECONDS = 0.45 -- the "!" beat before the request goes out (the client)
+-- Looks only (the client): how often a hidden creature's grass rustles, and the tell a rarer one
+-- gives, as sparkles per second (none for a Common).
+WorldConfig.RUSTLE_EVERY_MIN = 2.5
+WorldConfig.RUSTLE_EVERY_MAX = 5.5
+WorldConfig.RUSTLE_SEE_DISTANCE = 90 -- studs: further than this the grass is left still
+WorldConfig.TELL_RATE = {
+	Common = 0,
+	Uncommon = 2,
+	Gem = 3.5,
+	Ruby = 5,
+	Diamond = 6.5,
+	Cosmic = 8,
+} :: { [string]: number }
+
 -- The generated test map (until the real map is built): routes are straight runs of this length
 -- that bend left and right by this angle, so distance along the path is exact.
 WorldConfig.SEGMENT_LENGTH = 50

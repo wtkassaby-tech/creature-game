@@ -18,6 +18,11 @@ export type Name =
 	| "win"
 	| "lose"
 	| "count"
+	| "throw"
+	| "cinch"
+	| "tug"
+	| "slip"
+	| "caught"
 
 type Def = { id: string, volume: number, speed: number }
 
@@ -32,6 +37,12 @@ local SOUNDS: { [Name]: Def } = {
 	win = { id = "rbxasset://sounds/victory.wav", volume = 0.6, speed = 1 },
 	lose = { id = "rbxasset://sounds/bass.wav", volume = 0.5, speed = 0.6 },
 	count = { id = "rbxasset://sounds/switch.wav", volume = 0.25, speed = 1.6 },
+	-- The catch: the same stand-in files, pitched to suit (a whoosh, a snap, a low creak, a jingle).
+	throw = { id = "rbxasset://sounds/swordslash.wav", volume = 0.45, speed = 1.5 },
+	cinch = { id = "rbxasset://sounds/snap.mp3", volume = 0.8, speed = 1.5 },
+	tug = { id = "rbxasset://sounds/kerplunk.wav", volume = 0.45, speed = 0.7 },
+	slip = { id = "rbxasset://sounds/snap.mp3", volume = 0.6, speed = 0.65 },
+	caught = { id = "rbxasset://sounds/victory.wav", volume = 0.55, speed = 1.25 },
 }
 
 local made: { [Name]: Sound } = {}

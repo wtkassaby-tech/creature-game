@@ -524,6 +524,116 @@ do
 	)
 end
 
+print("\n== Creatures hide in the long grass ==")
+do
+	-- Every roaming creature of every biome sits inside its stretch's grass patch, whatever the
+	-- seed, and keeps its distance from the others there so their triggers do not overlap.
+	local inside, spaced, total = true, true, 0
+	for _, biome in Biomes do
+		local biomeMap = Layout.build(biome, Tamers.locals)
+		for seed = 1, 40 do
+			local book = Encounters.new()
+			for _, route in biome.routes do
+				for _, area in route.areas do
+					local centre = biomeMap.places[area.id]
+					if centre then
+						Encounters.tick(book, biome, biomeMap, centre, 0, seed, newId)
+					end
+				end
+			end
+			local list: { Encounters.Spawn } = {}
+			for _, spawn in book.spawns do
+				table.insert(list, spawn)
+				total += 1
+				local patch = biomeMap.places[Layout.grassId(spawn.area)]
+				if
+					patch == nil
+					or Layout.distance(patch, spawn.at) > WorldConfig.GRASS_SPAWN_REACH + 1e-6
+				then
+					inside = false
+				end
+			end
+			for a = 1, #list do
+				for b = a + 1, #list do
+					if list[a].area == list[b].area then
+						if
+							Layout.distance(list[a].at, list[b].at)
+							< WorldConfig.GRASS_TRIGGER_RADIUS * 1.2
+						then
+							spaced = false
+						end
+					end
+				end
+			end
+		end
+	end
+	check("some creatures were placed", total > 0)
+	check("every hiding place is inside its stretch's grass patch", inside)
+	check(
+		"the grass reach stays inside the patch itself",
+		WorldConfig.GRASS_SPAWN_REACH < WorldConfig.GRASS_RADIUS
+	)
+	check("creatures in one patch are too far apart to trigger together", spaced)
+
+	-- Finding one means walking right up to it; a roaming one cannot be fought from afar.
+	local book = Encounters.new()
+	local glade = map.places.mossy_glade
+	Encounters.tick(book, greenwood, map, glade, 0, 9, newId)
+	local spawn: Encounters.Spawn? = nil
+	for _, each in book.spawns do
+		spawn = each
+		break
+	end
+	local found = assert(spawn, "a creature is hiding")
+	local reach = WorldConfig.GRASS_TRIGGER_RADIUS + WorldConfig.POSITION_SLACK
+	check(
+		"it cannot be fought from beyond the trigger reach",
+		Encounters.engage(book, found.id, { x = found.at.x + reach + 3, z = found.at.z }, 1) == nil
+	)
+	check(
+		"walking up to it starts the battle",
+		Encounters.engage(book, found.id, { x = found.at.x + 3, z = found.at.z }, 1) == found
+	)
+	-- Running from it leaves it hiding, but not available at once.
+	Encounters.finish(book, found.id, "Ran", 0, 100)
+	check("it stays where it hid", book.spawns[found.id] ~= nil and not found.busy)
+	check(
+		"and cannot be started again straight away",
+		Encounters.engage(book, found.id, found.at, 101) == nil
+	)
+	check(
+		"but can once the calm has passed",
+		Encounters.engage(book, found.id, found.at, 100 + WorldConfig.WILD_CALM_SECONDS + 1)
+			== found
+	)
+
+	-- One a rustle spot brought out is at the player's feet, so the wider reach applies.
+	local spot = Encounters.rustle(
+		Encounters.new(),
+		greenwood,
+		map,
+		"reed_bed",
+		map.places.reed_bed,
+		0,
+		3,
+		newId
+	)
+	check("a rustle spot still brings a creature out", spot ~= nil)
+	if spot then
+		local book2 = Encounters.new()
+		book2.spawns[spot.id] = spot
+		check(
+			"and it can be fought from the spot's own reach",
+			Encounters.engage(
+				book2,
+				spot.id,
+				{ x = spot.at.x + WorldConfig.ENGAGE_RADIUS, z = spot.at.z },
+				1
+			) == spot
+		)
+	end
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("encounter checks failed")

@@ -24,6 +24,7 @@ export type Fx = {
 	switchIn: (side: number, element: Types.Element) -> (),
 	caught: (side: number) -> (),
 	levelUp: (side: number) -> (),
+	dust: (side: number) -> (), -- a scuff of dust at the creature's feet, as a held one tugs
 }
 
 type Piece = { kind: Particles.Kind, count: number, colour: Color3? }
@@ -336,6 +337,11 @@ function MoveFx.new(stage: BattleStage.Stage): Fx
 		end)
 	end
 
+	local function dust(side: number)
+		burst(side, "dustKick", DUST, 9, 0.9, true, 3)
+		burst(side, "smokePuff", GREY, 2, 0.6, true)
+	end
+
 	local function levelUp(side: number)
 		ring(side, GREEN, 6, 0.6)
 		for pulse = 0, 2 do
@@ -355,6 +361,7 @@ function MoveFx.new(stage: BattleStage.Stage): Fx
 		switchIn = switchIn,
 		caught = caught,
 		levelUp = levelUp,
+		dust = dust,
 	}
 end
 

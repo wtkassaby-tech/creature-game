@@ -16,6 +16,7 @@ local ClientState = require(script.Parent.Parent.State.ClientState)
 local MovementLock = require(script.Parent.Parent.UI.MovementLock)
 local BattleFx = require(script.Parent.BattleFx)
 local BattleStage = require(script.Parent.BattleStage)
+local CatchSequence = require(script.Parent.CatchSequence)
 local Portrait = require(script.Parent.Parent.Creatures.Portrait)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Transition = require(script.Parent.Parent.UI.Transition)
@@ -201,6 +202,33 @@ function BattleView.start(playerGui: Instance)
 
 	local lasso = LassoView.new(gui)
 	local refresh: () -> ()
+
+	-- The catch scene plays between the lasso result and everything the server sent after it (the
+	-- turn, the rewards, the end card). Those wait here, so nothing shows out of order.
+	local capturing = false
+	local catchModel: Model? = nil -- the battle the scene is playing for
+	local function waitForCatch()
+		while capturing do
+			task.wait()
+		end
+	end
+	local catchSequence = CatchSequence.new({
+		stage = stage,
+		moveFx = moveFx,
+		fx = fx,
+		say = function(text: string)
+			message.Text = text
+		end,
+		pace = function(): number
+			return if hurried then 0.25 elseif fast then 0.7 else 1
+		end,
+		hurried = function(): boolean
+			return hurried
+		end,
+		open = function(): boolean
+			return model ~= nil and model == catchModel and gui.Enabled
+		end,
+	})
 
 	local function send(make: (current: Model) -> ())
 		local current = model
@@ -414,7 +442,7 @@ function BattleView.start(playerGui: Instance)
 
 	-- The end panel appears once the last turn has been shown; rewards join it when they arrive.
 	local function showEnd(current: Model)
-		if current.outcome == nil then
+		if current.outcome == nil or capturing then
 			return
 		end
 		local kind: ResultPanel.Kind = if current.caught
@@ -603,6 +631,8 @@ function BattleView.start(playerGui: Instance)
 		picker.Visible = false
 		result.hide()
 		lasso.finish()
+		capturing = false
+		catchSequence.clear()
 		local opening = model
 		-- The cream bars sweep across; the battle scene is swapped in behind them.
 		Transition.intoBattle(function()
@@ -629,6 +659,7 @@ function BattleView.start(playerGui: Instance)
 	end)
 
 	Bus.listen(Net.BattleTurn, function(value)
+		waitForCatch() -- a throw's result is shown first
 		local current = model
 		if not current or current.battleId ~= value.BattleId then
 			return
@@ -777,6 +808,7 @@ function BattleView.start(playerGui: Instance)
 	end)
 
 	Bus.listen(Net.BattleRewards, function(value)
+		waitForCatch()
 		local current = model
 		if not current or current.battleId ~= value.BattleId then
 			return
@@ -814,24 +846,39 @@ function BattleView.start(playerGui: Instance)
 	end)
 	Bus.listen(Net.LassoResult, function(value)
 		lasso.finish()
-		if value.Outcome == "Caught" then
-			fx.callout("GOT IT!", Kit.COLOURS.gold)
-			moveFx.caught(2)
-		end
 		local current = model
+		if not current or not gui.Enabled then
+			return -- another screen's throw (a giant capture)
+		end
 		-- Only a Common creature is promised not to run off after a miss; others get the old line.
 		local missed = "It slipped the rope!"
-		if current and value.Outcome == "Missed" then
+		if value.Outcome == "Missed" then
 			missed = Coach.missLine(current.foeRarity) or missed
 		end
-		message.Text = if value.Outcome == "Caught"
+		local line = if value.Outcome == "Caught"
 			then "Caught!"
 			elseif value.Outcome == "Fled" then "It broke free and fled!"
 			else missed
-		if current and value.Outcome == "Caught" then
+		if value.Outcome == "Caught" then
 			current.caught = true
 			current.caughtFoe = current.sides[2][current.active[2]]
 		end
+		-- The result is already known; the scene only delays showing it. The turn that follows
+		-- (BattleTurn, BattleRewards) waits for `capturing` to clear.
+		hurried = false
+		capturing = true
+		catchModel = current
+		local problem: any = nil
+		local played = xpcall(catchSequence.play, function(err: any)
+			problem = err
+		end, value.Outcome, value.ZonesHit, line)
+		if not played then
+			warn("Catch scene failed:", problem)
+			message.Text = line
+		end
+		capturing = false
+		catchModel = nil
+		catchSequence.clear()
 	end)
 end
 

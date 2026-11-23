@@ -393,22 +393,17 @@ event PlayerState {
 }
 
 -- The world. Each player has their own wild creatures: the server tells the device where they
--- are, and the device asks to battle one by its id. The server checks the id is in that
+-- are (hidden in the long grass, so only a place and a rarity tell), and the device asks to
+-- battle one by its id when the player walks up to it. The server checks the id is in that
 -- player's list and that their character is standing next to it.
 struct WildView {
 	Id: u32,
 	X: f32,
 	Z: f32,
-	BodyPlan: BodyPlan,
-	Head: string(1..24),
-	Torso: string(1..24),
-	FrontLimbs: string(1..24),
-	Legs: string(1..24),
-	Tail: string(1..24),
-	Colour: string(1..24),
-	Size: f32,
+	-- Only the rarity is told, as a tell in the grass; never the species or level.
 	Rarity: Rarity,
-	Level: u8,
+	-- True for one a rustle spot or bait brought out (it steps out at once).
+	Spot: boolean,
 }
 event WildSpawns {
 	From: Server,

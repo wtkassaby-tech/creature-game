@@ -29,7 +29,14 @@ export type Stage = {
 	facing: (side: number) -> Vector3, -- the way it faces (toward the other creature)
 	effects: () -> Instance?, -- where effects go; nil once the battle has closed
 	shake: (power: number) -> (), -- a short camera shake; power is in studs
+	focus: (side: number, seconds: number) -> (), -- the camera eases in on that creature
+	refocus: (seconds: number) -> (), -- and back behind the player's own
+	squeeze: (side: number, scale: number, seconds: number) -> (), -- shrinks it, as when held
+	tug: (side: number) -> (), -- yanked toward the player and back, as on a taut rope
+	bound: (side: number) -> (), -- hops away and fades: it got free and fled
 }
+
+local FOCUS_FIELD_OF_VIEW = 42
 
 local PATCH_COLOUR = Color3.fromRGB(92, 134, 74) -- trodden grass, a shade under the meadow
 local RIM_COLOUR = Color3.fromRGB(226, 214, 170)
@@ -66,6 +73,11 @@ function BattleStage.new(): Stage
 	-- INTRO_SECONDS, and can be shaken. One frame loop runs only while one of those is moving.
 	local shotFrom, shotTo = CFrame.new(), CFrame.new()
 	local shotStart = 0
+	local shotSeconds = INTRO_SECONDS
+	local shotFovFrom, shotFovTo = WIDE_FIELD_OF_VIEW, FIELD_OF_VIEW
+	local homeShot = CFrame.new() -- the settled shot behind the player's creature
+	local ignoreList: { Instance } = {}
+	local squeezes: { number } = { 0, 0 } -- goes up with each squeeze, so an old one stops
 	local shakePower, shakeEnd = 0, 0
 	local shaking = Random.new() -- which way each frame of a shake jolts; looks only
 	local cameraLoop: RBXScriptConnection? = nil
@@ -86,10 +98,10 @@ function BattleStage.new(): Stage
 				return
 			end
 			local now = os.clock()
-			local progress = math.clamp((now - shotStart) / INTRO_SECONDS, 0, 1)
+			local progress = math.clamp((now - shotStart) / shotSeconds, 0, 1)
 			local eased = progress * progress * (3 - 2 * progress)
 			local frame = shotFrom:Lerp(shotTo, eased)
-			camera.FieldOfView = WIDE_FIELD_OF_VIEW + (FIELD_OF_VIEW - WIDE_FIELD_OF_VIEW) * eased
+			camera.FieldOfView = shotFovFrom + (shotFovTo - shotFovFrom) * eased
 			local left = shakeEnd - now
 			if left > 0 then
 				local power = shakePower * (left / SHAKE_SECONDS)
@@ -325,6 +337,10 @@ function BattleStage.new(): Stage
 			clearAround(wideEye - Vector3.yAxis * 10, ignore)
 			shotFrom = CFrame.lookAt(wideEye, middle)
 			shotTo = CFrame.lookAt(eye, target)
+			homeShot = shotTo
+			shotSeconds = INTRO_SECONDS
+			shotFovFrom, shotFovTo = WIDE_FIELD_OF_VIEW, FIELD_OF_VIEW
+			ignoreList = ignore
 			shotStart = os.clock()
 			shakeEnd = 0
 			camera.FieldOfView = WIDE_FIELD_OF_VIEW
@@ -380,6 +396,89 @@ function BattleStage.new(): Stage
 		end,
 		effects = function(): Instance?
 			return folder
+		end,
+		-- A glide from wherever the camera is now to a new shot.
+		focus = function(side: number, seconds: number)
+			local camera = Workspace.CurrentCamera
+			if not camera or not folder then
+				return
+			end
+			local across = facings[1]:Cross(Vector3.yAxis)
+			local eye = grounds[side] - facings[1] * 15 + across * 6 + Vector3.yAxis * 6
+			clearAround(eye - Vector3.yAxis * 6, ignoreList)
+			local target = grounds[side] + Vector3.yAxis * (1.4 + sizes[side])
+			shotFrom, shotFovFrom = camera.CFrame, camera.FieldOfView
+			shotTo, shotFovTo = CFrame.lookAt(eye, target), FOCUS_FIELD_OF_VIEW
+			shotSeconds, shotStart = math.max(0.05, seconds), os.clock()
+			driveCamera()
+		end,
+		refocus = function(seconds: number)
+			local camera = Workspace.CurrentCamera
+			if not camera or not folder then
+				return
+			end
+			shotFrom, shotFovFrom = camera.CFrame, camera.FieldOfView
+			shotTo, shotFovTo = homeShot, FIELD_OF_VIEW
+			shotSeconds, shotStart = math.max(0.05, seconds), os.clock()
+			driveCamera()
+		end,
+		-- The creature shrinks toward the ground (a model scales about its feet).
+		squeeze = function(side: number, scale: number, seconds: number)
+			local toy = toys[side]
+			if not toy then
+				return
+			end
+			squeezes[side] += 1
+			local mine = squeezes[side]
+			local model = toy.model
+			local from = model:GetScale()
+			task.spawn(function()
+				local began = os.clock()
+				local alpha = 0
+				while alpha < 1 and squeezes[side] == mine and model.Parent do
+					alpha = math.min(1, (os.clock() - began) / math.max(0.03, seconds))
+					local eased = alpha * alpha * (3 - 2 * alpha)
+					model:ScaleTo(math.max(0.05, from + (scale - from) * eased))
+					if alpha < 1 then
+						task.wait()
+					end
+				end
+			end)
+		end,
+		-- Pulled toward the player along the rope, then back, with a wobble across.
+		tug = function(side: number)
+			local toward = facings[side] * 1
+			local across = facings[side]:Cross(Vector3.yAxis) * 0.5
+			play(
+				side,
+				{ toward * 0.5, toward * 0.9, toward * 0.4, across, -across, across * 0.5 },
+				0.045
+			)
+		end,
+		-- A hop or two away from the player, then it fades into the ground.
+		bound = function(side: number)
+			local toy = toys[side]
+			if not toy then
+				return
+			end
+			squeezes[side] += 1
+			toy.model:ScaleTo(1)
+			busy[side] += 1
+			local mine = busy[side]
+			local away = -facings[side]
+			task.spawn(function()
+				for step = 1, 12 do
+					if busy[side] ~= mine or not toy.model.Parent then
+						return
+					end
+					local hop = math.abs(math.sin(step / 12 * math.pi * 2)) * 2.2
+					toy.nudge(away * step * 0.7 + Vector3.yAxis * hop)
+					task.wait(0.035)
+				end
+				if busy[side] == mine then
+					toy.sink()
+				end
+			end)
 		end,
 		shake = function(power: number)
 			if not folder then

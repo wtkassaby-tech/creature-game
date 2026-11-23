@@ -51,6 +51,7 @@ local timers: { [number]: Timers } = {}
 local KEEP_TIMERS_SECONDS = 600
 local lastRustle: { [Player]: number } = {}
 local lastTravel: { [Player]: number } = {}
+local lastEngage: { [Player]: number } = {}
 local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function(
 	_player: Player,
 	_biomeNumber: number
@@ -156,22 +157,13 @@ end
 local function send(player: Player)
 	local list = {}
 	for _, spawn in book(player).spawns do
-		local c = spawn.creature
 		if not spawn.busy and #list < 32 then
 			table.insert(list, {
 				Id = spawn.id,
 				X = spawn.at.x,
 				Z = spawn.at.z,
-				BodyPlan = c.bodyPlan,
-				Head = c.parts.Head.species,
-				Torso = c.parts.Torso.species,
-				FrontLimbs = c.parts.FrontLimbs.species,
-				Legs = c.parts.Legs.species,
-				Tail = c.parts.Tail.species,
-				Colour = c.colour.shown,
-				Size = c.size,
-				Rarity = c.rarity,
-				Level = math.clamp(c.level, 0, 255),
+				Rarity = spawn.creature.rarity,
+				Spot = spawn.spot ~= nil,
 			})
 		end
 	end
@@ -214,6 +206,11 @@ end
 
 -- Starts a battle with one of the player's wild creatures, or returns nil and a reason.
 function WorldService.engage(player: Player, spawnId: unknown): (Encounters.Spawn?, string?)
+	local now = os.clock()
+	if now - (lastEngage[player] or -math.huge) < WorldConfig.ENGAGE_MIN_SECONDS then
+		return nil, "Not so fast"
+	end
+	lastEngage[player] = now
 	local at = WorldService.position(player)
 	if not at then
 		return nil, "You are too far away"
@@ -223,7 +220,7 @@ function WorldService.engage(player: Player, spawnId: unknown): (Encounters.Spaw
 	if wanted and not engageAllowed(player, wanted.biome) then
 		return nil, "You have not earned your way here yet"
 	end
-	local spawn, why = Encounters.engage(book(player), spawnId, at)
+	local spawn, why = Encounters.engage(book(player), spawnId, at, now)
 	if spawn then
 		send(player)
 	end
@@ -426,6 +423,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 	end)
 
 	local leaving = Players.PlayerRemoving:Connect(function(player)
+		lastEngage[player] = nil
 		lastTravel[player] = nil
 		local left = books[player]
 		if left then

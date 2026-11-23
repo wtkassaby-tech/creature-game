@@ -1,26 +1,28 @@
 --!strict
--- Draws the player's own wild creatures in the world and turns the world's prompts into
--- requests. The server decides everything: a prompt is only a button, and the server checks the
--- player's position itself when the request arrives.
---
--- Wild creatures are drawn as plain coloured balls with a name tag for now.
--- TODO(art): draw them with the creature assembler once the part meshes exist.
--- Not yet run in Studio.
+-- Wild creatures are never drawn standing in the open. They hide in the long grass: where one
+-- hides there is only a clump of blades that sways now and then (and sparkles if it is rare).
+-- Walking up to it starts the encounter: a "!" and a burst of leaves, then the request. The
+-- server decides everything: the request only names the spawn, and the server checks the
+-- player's position itself when it arrives. Nothing here shows a species or a level.
+-- Also turns the world's prompts into requests. Not yet run in Studio.
 
+local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Storyline = require(ReplicatedStorage.content.Storyline)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Particles = require(script.Parent.Parent.Fx.Particles)
 local Transition = require(script.Parent.Parent.UI.Transition)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
 local World = require(ReplicatedStorage.shared.World)
-local Species = require(ReplicatedStorage.content.Species)
-local ToyBody = require(script.Parent.Parent.Creatures.ToyBody)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
@@ -28,11 +30,8 @@ export type Wild = {
 	Id: number,
 	X: number,
 	Z: number,
-	Torso: string,
-	Colour: string,
-	Size: number,
 	Rarity: string,
-	Level: number,
+	Spot: boolean,
 }
 
 local WorldView = {}
@@ -46,7 +45,6 @@ local RARITY_COLOURS: { [string]: Color3 } = {
 	Cosmic = Color3.fromRGB(190, 120, 255),
 }
 
-local shown: { [number]: BasePart } = {}
 local latest: { [number]: Wild } = {}
 
 -- The player's wild creatures as last sent, for other screens (the test panel).
@@ -80,67 +78,184 @@ local function groundHeight(x: number, z: number): number
 	return 0
 end
 
-local function draw(parent: Instance, wild: Wild): BasePart
-	local ball = Instance.new("Part")
-	ball.Name = `Wild{wild.Id}`
-	ball.Shape = Enum.PartType.Ball
-	ball.Anchored = true
-	ball.CanCollide = false
-	local size = 4 * wild.Size
-	ball.Size = Vector3.new(size, size, size)
-	ball.Position = Vector3.new(wild.X, groundHeight(wild.X, wild.Z) + size / 2, wild.Z)
-	-- The ball is only the thing the prompt and the name hang on; what the player sees is the
-	-- creature's toy body standing there, breathing and blinking, turned its own way.
-	ball.Transparency = 1
-	local def = Species[wild.Torso]
-	local toy = ToyBody.new(ball, wild.Torso, if def then def.element else "Leaf", wild.Size)
+-- A clump of taller blades marks where a creature hides: it is the only thing drawn (no model,
+-- no name, no level), and it sways now and then. A rarer creature also lets motes drift up from
+-- it in its rarity's colour. Nothing here shows what is hiding.
+type Hidden = {
+	wild: Wild,
+	root: Part,
+	ground: Vector3,
+	blades: { { part: BasePart, foot: Vector3, height: number, turn: number } },
+	alive: boolean,
+	fresh: boolean, -- brought out by a rustle spot or bait: steps out as soon as it is seen
+}
+
+local shown: { [number]: Hidden } = {}
+local calmUntil: { [number]: number } = {} -- spawn id -> when it may start another encounter
+local pausedUntil = 0 -- no new encounter before this time (one is already under way)
+
+local BLADE_LIGHT = Color3.fromRGB(112, 190, 78)
+local BLADE_DARK = Color3.fromRGB(80, 156, 64)
+
+local function bladeCFrame(
+	blade: { part: BasePart, foot: Vector3, height: number, turn: number },
+	lean: Vector3
+): CFrame
+	return CFrame.new(blade.foot)
+		* CFrame.Angles(0, blade.turn, 0)
+		* CFrame.Angles(lean.X, 0, lean.Z)
+		* CFrame.new(0, blade.height / 2, 0)
+end
+
+local function leafColour(): Color3
+	return BLADE_LIGHT
+end
+
+local function draw(parent: Instance, wild: Wild): Hidden
 	local ground = Vector3.new(wild.X, groundHeight(wild.X, wild.Z), wild.Z)
-	toy.place(CFrame.new(ground) * CFrame.Angles(0, math.rad((wild.Id * 73) % 360), 0))
+	local root = Instance.new("Part")
+	root.Name = `Hidden{wild.Id}`
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanQuery = false
+	root.CanTouch = false
+	root.CastShadow = false
+	root.Transparency = 1
+	root.Size = Vector3.new(4, 0.2, 4)
+	root.Position = ground + Vector3.new(0, 0.2, 0)
+	local hidden: Hidden =
+		{ wild = wild, root = root, ground = ground, blades = {}, alive = true, fresh = wild.Spot }
+	local count = if wild.Spot then 0 else 7
+	for index = 1, count do
+		local around = (index / count) * math.pi * 2 + wild.Id
+		local reach = if index == 1 then 0 else 1.3 + (index % 3) * 0.35
+		local height = 3.6 + (index % 3) * 0.5
+		local blade = Instance.new("WedgePart")
+		blade.Anchored = true
+		blade.CanCollide = false
+		blade.CanQuery = false
+		blade.CanTouch = false
+		blade.CastShadow = false
+		blade.Material = Enum.Material.SmoothPlastic
+		blade.Color = if index % 2 == 0 then BLADE_LIGHT else BLADE_DARK
+		blade.Size = Vector3.new(0.45, height, 1.2)
+		local record = {
+			part = blade :: BasePart,
+			foot = ground + Vector3.new(math.cos(around) * reach, 0.1, math.sin(around) * reach),
+			height = height,
+			turn = around * 2,
+		}
+		blade.CFrame = bladeCFrame(record, Vector3.zero)
+		blade.Parent = root
+		table.insert(hidden.blades, record)
+	end
+	local rate = WorldConfig.TELL_RATE[wild.Rarity] or 0
+	local colour = RARITY_COLOURS[wild.Rarity]
+	if rate > 0 and colour then
+		local motes = Particles.emitter(root, "motes", colour, 1.3)
+		motes.Rate = rate
+		motes.Enabled = true
+	end
+	root.Parent = parent
 
-	-- A small cream name plate, sized in studs so it shrinks with distance, and not drawn at
-	-- all from far off. Its edge is the rarity's colour (ink for a Common).
-	local words = `Lv {wild.Level} {wild.Torso}`
-	local board = Instance.new("BillboardGui")
-	board.Size = UDim2.fromScale(math.clamp(#words * 0.5 + 1.4, 5, 12), 1.5)
-	board.StudsOffsetWorldSpace = Vector3.new(0, size / 2 + 2.2, 0)
-	board.MaxDistance = 60
-	board.LightInfluence = 0
-	board.Parent = ball
-	local plate = Instance.new("Frame")
-	plate.Size = UDim2.fromScale(1, 1)
-	plate.BackgroundColor3 = Kit.COLOURS.panel
-	plate.BorderSizePixel = 0
-	plate.Parent = board
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.3, 0)
-	corner.Parent = plate
-	local rim = Instance.new("UIStroke")
-	rim.Thickness = 2
-	rim.Color = if wild.Rarity == "Common" or not RARITY_COLOURS[wild.Rarity]
-		then Kit.COLOURS.outline
-		else RARITY_COLOURS[wild.Rarity]
-	rim.Parent = plate
-	local text = Instance.new("TextLabel")
-	text.Size = UDim2.fromScale(0.9, 0.72)
-	text.Position = UDim2.fromScale(0.05, 0.14)
-	text.BackgroundTransparency = 1
-	text.Text = words
-	text.TextColor3 = Kit.COLOURS.text
-	text.Font = Kit.FONT
-	text.TextScaled = true
-	text.Parent = plate
+	-- Every few seconds the clump leans over and back, and sometimes a leaf or two lifts off.
+	task.spawn(function()
+		local pick = Random.new(wild.Id * 7919)
+		task.wait(pick:NextNumber(0, WorldConfig.RUSTLE_EVERY_MAX))
+		while hidden.alive do
+			local camera = workspace.CurrentCamera
+			local near = camera ~= nil
+				and (camera.CFrame.Position - ground).Magnitude
+					<= WorldConfig.RUSTLE_SEE_DISTANCE
+			if near and #hidden.blades > 0 then
+				local side = pick:NextNumber(-1, 1)
+				for _, blade in hidden.blades do
+					local lean =
+						Vector3.new(math.rad(12) * side, 0, math.rad(14) * pick:NextNumber(0.4, 1))
+					TweenService
+						:Create(
+							blade.part,
+							TweenInfo.new(
+								0.2,
+								Enum.EasingStyle.Sine,
+								Enum.EasingDirection.Out,
+								0,
+								true
+							),
+							{ CFrame = bladeCFrame(blade, lean) }
+						)
+						:Play()
+				end
+				if pick:NextNumber() < 0.5 then
+					Particles.burst(
+						parent,
+						ground + Vector3.new(0, 2.5, 0),
+						"leafFlutter",
+						leafColour(),
+						2,
+						0.7,
+						2
+					)
+				end
+			end
+			task.wait(pick:NextNumber(WorldConfig.RUSTLE_EVERY_MIN, WorldConfig.RUSTLE_EVERY_MAX))
+		end
+	end)
+	return hidden
+end
 
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Battle"
-	prompt.ObjectText = wild.Torso
-	prompt.MaxActivationDistance = WorldConfig.ENGAGE_RADIUS
-	prompt.RequiresLineOfSight = false
-	prompt:SetAttribute("PromptKind", "Wild")
-	prompt:SetAttribute("SpawnId", wild.Id)
-	prompt.Parent = ball
-
-	ball.Parent = parent
-	return ball
+-- The "!" beat: a mark pops over the player's head, the grass bursts into leaves where the
+-- creature was, and then the request goes out (the battle wipe is BattleView's, when the server
+-- answers). The player stands still for the beat.
+local function startEncounter(parent: Instance, hidden: Hidden)
+	local player = Players.LocalPlayer
+	local character = player.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+	local speed = if humanoid then humanoid.WalkSpeed else 16
+	if humanoid then
+		humanoid.WalkSpeed = 0
+	end
+	if root and root:IsA("BasePart") then
+		local board = Instance.new("BillboardGui")
+		board.Size = UDim2.fromScale(2.2, 2.2)
+		board.StudsOffsetWorldSpace = Vector3.new(0, 4.6, 0)
+		board.AlwaysOnTop = true
+		board.LightInfluence = 0
+		board.Adornee = root
+		local mark = Instance.new("TextLabel")
+		mark.Size = UDim2.fromScale(0, 0)
+		mark.AnchorPoint = Vector2.new(0.5, 0.5)
+		mark.Position = UDim2.fromScale(0.5, 0.5)
+		mark.BackgroundTransparency = 1
+		mark.Text = "!"
+		mark.Font = Kit.FONT
+		mark.TextScaled = true
+		mark.TextColor3 = Color3.fromRGB(255, 214, 80)
+		mark.TextStrokeColor3 = Kit.COLOURS.outline
+		mark.TextStrokeTransparency = 0
+		mark.Parent = board
+		board.Parent = root
+		TweenService:Create(
+			mark,
+			TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Size = UDim2.fromScale(1, 1) }
+		):Play()
+		Debris:AddItem(board, 0.8)
+	end
+	local at = hidden.ground + Vector3.new(0, 1.5, 0)
+	Particles.burst(parent, at, "leafFlutter", leafColour(), 16, 1.4, 6)
+	Particles.burst(parent, at, "dustKick", Color3.fromRGB(150, 190, 110), 6, 1, 4)
+	local tint = RARITY_COLOURS[hidden.wild.Rarity]
+	if tint and hidden.wild.Rarity ~= "Common" then
+		Particles.burst(parent, at, "sparkle", tint, 10, 1, 4)
+	end
+	task.delay(WorldConfig.ENCOUNTER_BEAT_SECONDS, function()
+		if humanoid and humanoid.Parent then
+			humanoid.WalkSpeed = speed
+		end
+		Net.StartBattle.Fire({ Kind = "Wild", TargetId = hidden.wild.Id, TargetName = nil })
+	end)
 end
 
 local function flagsSeen(): { [string]: boolean }
@@ -208,11 +323,8 @@ function WorldView.start(openShop: () -> ())
 				Id = sent.Id,
 				X = sent.X,
 				Z = sent.Z,
-				Torso = sent.Torso,
-				Colour = sent.Colour,
-				Size = sent.Size,
 				Rarity = sent.Rarity,
-				Level = sent.Level,
+				Spot = sent.Spot,
 			}
 			keep[wild.Id] = true
 			latest[wild.Id] = wild
@@ -220,23 +332,56 @@ function WorldView.start(openShop: () -> ())
 				shown[wild.Id] = draw(made, wild)
 			end
 		end
-		for id, part in shown do
+		for id, hidden in shown do
 			if not keep[id] then
-				part:Destroy()
+				hidden.alive = false
+				hidden.root:Destroy()
 				shown[id] = nil
+				calmUntil[id] = nil
+			end
+		end
+	end)
+
+	-- Walking up to a hidden creature (or having one step out of a rustle spot) starts the
+	-- encounter. The device only asks; the server checks the spawn is the player's own, free,
+	-- and within a few studs of where it sees the player.
+	local sinceLook = 0
+	RunService.Heartbeat:Connect(function(step)
+		sinceLook += step
+		if sinceLook < 0.1 then
+			return
+		end
+		sinceLook = 0
+		local character = Players.LocalPlayer.Character
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+		if not (root and root:IsA("BasePart")) or not humanoid or humanoid.Health <= 0 then
+			return
+		end
+		local now = os.clock()
+		if now < pausedUntil then
+			return
+		end
+		for id, hidden in shown do
+			if now >= (calmUntil[id] or 0) then
+				local flat =
+					Vector3.new(hidden.wild.X - root.Position.X, 0, hidden.wild.Z - root.Position.Z)
+				local reach = if hidden.fresh
+					then WorldConfig.RUSTLE_RADIUS
+					else WorldConfig.GRASS_TRIGGER_RADIUS
+				if flat.Magnitude <= reach then
+					hidden.fresh = false
+					calmUntil[id] = now + WorldConfig.WILD_CALM_SECONDS + 2
+					pausedUntil = now + WorldConfig.ENCOUNTER_BEAT_SECONDS + 1
+					startEncounter(made, hidden)
+					return
+				end
 			end
 		end
 	end)
 
 	ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		local kind = prompt:GetAttribute("PromptKind")
-		if kind == "Wild" then
-			local id = prompt:GetAttribute("SpawnId")
-			if typeof(id) == "number" then
-				Net.StartBattle.Fire({ Kind = "Wild", TargetId = id, TargetName = nil })
-			end
-			return
-		end
 		local id = prompt:GetAttribute("PromptId")
 		if typeof(id) ~= "string" then
 			return
