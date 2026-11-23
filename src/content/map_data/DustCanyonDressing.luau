@@ -125,6 +125,10 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		{ from = p(250, -14), to = p(560, 80), colour = { 152, 96, 74 }, water = false },
 		-- The dry fall beyond Route A's end.
 		{ from = p(96, -604), to = p(190, -552), colour = { 110, 72, 58 }, water = false },
+		-- Starfall Crater, seen across the gap and never reached (plan 13, side area a): a floor of
+		-- violet glass sand, lighter at its heart where the fragment fell.
+		{ from = p(30, -740), to = p(138, -628), colour = { 112, 78, 140 }, water = false },
+		{ from = p(52, -716), to = p(116, -652), colour = { 168, 124, 206 }, water = false },
 	},
 
 	arches = {
@@ -262,7 +266,14 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		wall({ p(-236, -20), p(-150, -20) }, "Cliff", 34), -- the Westcut, north
 		wall({ p(-236, 20), p(-150, 20) }, "Cliff", 34), -- the Westcut, south
 		wall({ p(250, 80), p(420, 92), p(560, 74) }, "Cliff", 34), -- the gorge's far wall
-		wall({ p(96, -604), p(190, -568) }, "Cliff", 26), -- the dry fall's far side
+		wall({ p(96, -604), p(190, -568) }, "Cliff", 14), -- the dry fall's far side, low enough to see over
+		-- Starfall Crater's rim: a low broken lip on the near side and a tall dark wall behind.
+		wall({ p(24, -636), p(54, -622), p(110, -624), p(150, -640) }, "Boulders", 9),
+		wall(
+			{ p(22, -650), p(18, -708), p(46, -748), p(96, -762), p(142, -744), p(156, -690) },
+			"Cliff",
+			44
+		),
 		-- The two lips of the Echo Notch, standing out from the rim's north cliff.
 		wall({ p(352, -84), p(350, -108) }, "Cliff", 24),
 		wall({ p(392, -84), p(394, -108) }, "Cliff", 24),
@@ -314,6 +325,16 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		-- The spires that split the Spire Garden: a bare way round on the far side.
 		{ model = "RockSpire", at = p(532, -122), faces = 0, tall = 26, solid = true },
 		{ model = "RockSpire", at = p(560, -122), faces = 90, tall = 24, solid = true },
+		-- Starfall Crater, far across the gap (none of it solid: nothing there can be reached). Glass
+		-- shards stand round where the fragment fell, and an old scorched camp sits on its east lip.
+		{ model = "RockSpire", at = p(84, -690), faces = 15, tall = 56 },
+		{ model = "RockSpire", at = p(58, -702), faces = 200, tall = 40 },
+		{ model = "RockSpire", at = p(112, -712), faces = 120, tall = 34 },
+		{ model = "RockSpire", at = p(70, -664), faces = 330, tall = 26 },
+		{ model = "Stall", at = p(122, -668), faces = 250, tall = 12 },
+		{ model = "Barrels", at = p(132, -678), faces = 0, tall = 6 },
+		{ model = "Bench", at = p(112, -656), faces = 90, tall = 3.8 },
+		{ model = "Boulders", at = p(108, -670), faces = 40, tall = 5 },
 		{ model = "Bench", at = p(-36, 10), faces = 0, tall = 3.8 },
 		{ model = "Bench", at = p(36, -14), faces = 270, tall = 3.8 },
 	},
@@ -413,6 +434,17 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 				area = { 3, 3, 1 },
 				light = { range = 26, brightness = 1.3, colour = { 255, 140, 60 } },
 			},
+			-- Starfall Crater's faint star-glow, high over the glass, and one thin thread of smoke
+			-- from its cold camp.
+			{
+				kind = "Halo",
+				at = p(84, -688),
+				height = 44,
+				scale = 3,
+				rate = 0.4,
+				light = { range = 60, brightness = 2.4, colour = { 190, 140, 255 } },
+			},
+			{ kind = "Smoke", at = p(112, -668), height = 3, area = { 3, 3, 1 } },
 			-- Dust motes in the light: over the wash, the flats, the steps and the town.
 			{ kind = "Dust", at = p(44, -212), height = 5, area = { 100, 80, 8 } },
 			{ kind = "Dust", at = p(-6, -352), height = 5, area = { 100, 80, 8 } },

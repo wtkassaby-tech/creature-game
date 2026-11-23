@@ -96,7 +96,7 @@ print("The launch three")
 local zones = World.zones
 check(
 	"each launch biome has a zone with its own id as the preset",
-	#zones == 3
+	#zones == 4 -- the three biomes, and Starfall Crater beside Dust Canyon's broken bridge
 		and ClimateConfig.PRESETS.greenwood ~= nil
 		and ClimateConfig.PRESETS.dust_canyon ~= nil
 		and ClimateConfig.PRESETS.tide_flats ~= nil
@@ -109,6 +109,25 @@ for number, hubId in hubIds do
 	hubsOk = hubsOk and Regions.dominant(Regions.presetWeights(zones, place)) == ordered[number].id
 end
 check("each hub is in its own biome and its own zone", hubsOk)
+do
+	local crater
+	for _, each in zones do
+		if each.id == "starfall_crater" then
+			crater = each
+		end
+	end
+	local bridgeEnd = { x = 1104.6, z = -625.4 }
+	local there = Regions.presetWeights(zones, bridgeEnd)
+	local gate = Regions.presetWeights(zones, world.map.places[ordered[2].hub.id])
+	check(
+		"Starfall Crater lightly tints the light at the broken bridge, and not at all in the town",
+		crater ~= nil
+			and crater.preset == "starfall"
+			and (there.starfall or 0) > 0.15
+			and (there.starfall or 0) < 0.5
+			and (gate.starfall or 0) == 0
+	)
+end
 check(
 	"the hubs have not moved",
 	near(world.maps[1].hub.x, 0, 1)

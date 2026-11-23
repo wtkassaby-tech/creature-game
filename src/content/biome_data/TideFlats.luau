@@ -307,7 +307,8 @@ local TideFlats: WorldTypes.Biome = {
 	levelMax = 32,
 	map = require("../map_data/TideFlats"),
 	-- From the Stair Gate swap (x 1793) east to the edge of the known world (x 4500).
-	region = { kind = "Box", at = { x = 3146.5, z = 0 }, size = { 2707, 8000 } },
+	-- Up to the start of the Heron Causeway (x 2836); the Mire's region begins there.
+	region = { kind = "Box", at = { x = 2314.5, z = 0 }, size = { 1043, 8000 } },
 }
 
 return TideFlats

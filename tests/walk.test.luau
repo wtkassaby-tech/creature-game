@@ -8,11 +8,15 @@
 --   * lanes are narrow with wider rooms, with pinch points, branches and tamers at the pinches.
 -- Run from the project folder:  lune run tests/walk.test
 
+-- The Mire is written ahead of launch (its map and art are built), so this test opens it first.
+require("../src/config/ReleaseConfig").OPEN_BIOMES = 4
+
 local Biomes = require("../src/content/Biomes")
 local Ground = require("../src/shared/Ground")
 local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
+local MireDressing = require("../src/content/map_data/MireDressing")
 local Tamers = require("../src/content/Tamers")
 local TideFlatsDressing = require("../src/content/map_data/TideFlatsDressing")
 local Walk = require("../src/shared/Walk")
@@ -182,6 +186,15 @@ local function suite(
 	print(`{name}: everything can be reached, and left`)
 	do
 		check("the town's spawn is open ground", Walk.open(space, start.x, start.z))
+		if biome.number == 2 then
+			-- Starfall Crater (dressed at (84, -684)) is seen across the broken bridge, never reached.
+			local crater = { x = map.hub.x + 84, z = map.hub.z - 684 }
+			check(
+				"Starfall Crater is scenery: no walkable ground lies within 50 studs of its middle",
+				not Walk.reachedNear(grid, out, crater.x, crater.z, 50)
+					and not Walk.open(space, crater.x, crater.z)
+			)
+		end
 		local lost: { string } = {}
 		local trapped: { string } = {}
 		local gated: { string } = {}
@@ -498,14 +511,20 @@ suite(
 suite(
 	Biomes.dust_canyon,
 	DustCanyonDressing,
-	{ x0 = -240.7, z0 = -620.7, x1 = 900, z1 = 150 },
+	{ x0 = -240.7, z0 = -800.7, x1 = 900, z1 = 150 },
 	{ x = 779, z = -100 }
 )
 suite(
 	Biomes.tide_flats,
 	TideFlatsDressing,
-	{ x0 = -240.7, z0 = -170.7, x1 = 880, z1 = 460 },
+	{ x0 = -300.7, z0 = -170.7, x1 = 880, z1 = 520 },
 	{ x = 743, z = 110 }
+)
+suite(
+	Biomes.mire,
+	MireDressing,
+	{ x0 = -340.7, z0 = -760.7, x1 = 580, z1 = 500 },
+	{ x = 150, z = -602 }
 )
 
 print(`\n{passed} passed, {failed} failed`)

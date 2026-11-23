@@ -15,6 +15,7 @@ local FindsConfig = require("../src/config/FindsConfig")
 local Grants = require("../src/shared/Grants")
 local Ground = require("../src/shared/Ground")
 local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
+local TideFlatsDressing = require("../src/content/map_data/TideFlatsDressing")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
 local Profile = require("../src/shared/Profile")
@@ -538,8 +539,8 @@ do
 	)
 	local _, totalTf = Finds.progress(owner, 3)
 	check(
-		"a biome whose places are not built counts only what can be reached",
-		totalTf == 4,
+		"a biome counts only the finds that can be reached (Gull Cove is built; its sighting is not)",
+		totalTf == 8,
 		`{totalTf}`
 	)
 end
@@ -548,13 +549,14 @@ end
 print("\n== Places not built are shut ==")
 do
 	local profile = fresh()
-	local cove = find("tf_cache_crevice")
+	local cove = find("tf_sighting_cove") -- the one find still pending: its rustle spot is not built
 	local result = Finds.claim(profile, cove, T0)
 	check(
 		"a pending find is shut and gives nothing",
-		result.outcome == "Shut"
+		cove.pending ~= nil
+			and result.outcome == "Shut"
 			and profile.Items.Bait == nil
-			and profile.Finds.once.tf_cache_crevice == nil
+			and profile.Finds.once.tf_sighting_cove == nil
 	)
 	check(
 		"a pending find has no point on the map",
@@ -916,9 +918,7 @@ do
 	check("no find is within 26 studs of the centre of long grass", #grassy == 0, join(grassy))
 end
 
-print(
-	"\n== Greenwood and Dust Canyon: every find can be walked to, and away from, without long grass =="
-)
+print("\n== Every find can be walked to, and away from, without long grass ==")
 do
 	type Spec = {
 		number: number,
@@ -933,6 +933,12 @@ do
 			dressing = DustCanyonDressing,
 			bounds = { -150, -620, 900, 140 },
 			expect = 7,
+		},
+		{
+			number = 3,
+			dressing = TideFlatsDressing,
+			bounds = { -300.7, -170.7, 880, 520 },
+			expect = 9,
 		},
 	}
 	for _, spec in specs do

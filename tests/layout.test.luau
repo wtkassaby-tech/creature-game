@@ -8,13 +8,18 @@
 -- Over 400 lines on purpose: it is one checklist per sheet, and the map and dressing checks share
 -- the same prompt and lane lists.
 
+-- The Mire is written ahead of launch (its map and art are built), so this test opens it first.
+require("../src/config/ReleaseConfig").OPEN_BIOMES = 4
+
 local Biomes = require("../src/content/Biomes")
 local Chapter1 = require("../src/content/story_data/Chapter1")
 local Chapter2 = require("../src/content/story_data/Chapter2")
 local Chapter3 = require("../src/content/story_data/Chapter3")
+local Chapter4 = require("../src/content/story_data/Chapter4")
 local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
+local MireDressing = require("../src/content/map_data/MireDressing")
 local ReleaseConfig = require("../src/config/ReleaseConfig")
 local Walk = require("../src/shared/Walk")
 local Tamers = require("../src/content/Tamers")
@@ -38,17 +43,19 @@ end
 
 -- The story chapter set in each biome, and each biome's dressing sheet (TestMap.DRESSINGS).
 local CHAPTERS: { [string]: WorldTypes.Chapter } =
-	{ greenwood = Chapter1, dust_canyon = Chapter2, tide_flats = Chapter3 }
+	{ greenwood = Chapter1, dust_canyon = Chapter2, tide_flats = Chapter3, mire = Chapter4 }
 local DRESSINGS: { [string]: WorldTypes.DressingSheet } = {
 	greenwood = GreenwoodDressing,
 	dust_canyon = DustCanyonDressing,
 	tide_flats = TideFlatsDressing,
+	mire = MireDressing,
 }
 -- A painted model each designed hub must wear, as a spot check that the sheet is read.
 local MODELS: { [string]: { id: string, model: string } } = {
 	greenwood = { id = "waystation", model = "Waystation" },
 	dust_canyon = { id = "kiln_trading_post", model = "TradingPost" },
 	tide_flats = { id = "lamp_tower", model = "LampTower" },
+	mire = { id = "bell_loft", model = "LampTower" },
 }
 
 -- Every open biome laid out in one world, as the server does.
@@ -280,11 +287,16 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 		check("each fitted line is exactly its length in the data", exact)
 		local b = map.routes[gateRoute.id]
 		local gate, sealed = map.places[biome.gate.id], map.places[biome.gate.sealedPath]
+		-- The sealed road runs on 60 studs in the route's last direction: due east for the first
+		-- three biomes, due north for the Mire (the Rimewater Gorge goes north).
+		local last, before = b.points[#b.points], b.points[#b.points - 1]
+		local run = math.max(Layout.distance(before, last), 1e-6)
 		check(
-			"the gate ends its route and the sealed road runs on 60 due east",
-			Layout.distance(gate, b.points[#b.points]) < 0.001
-				and math.abs(sealed.x - gate.x - 60) < 0.01
-				and math.abs(sealed.z - gate.z) < 0.01
+			"the gate ends its route and the sealed road runs on 60 along its last leg",
+			Layout.distance(gate, last) < 0.001
+				and math.abs(sealed.x - gate.x - (last.x - before.x) / run * 60) < 0.01
+				and math.abs(sealed.z - gate.z - (last.z - before.z) / run * 60) < 0.01
+				and (biome.site ~= nil or math.abs(sealed.x - gate.x - 60) < 0.01)
 		)
 		local lairRoute = map.routes[biome.lair.joinsRoute]
 		check(
@@ -579,7 +591,7 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 				"the keepers' facings come from the sheet",
 				map.faces.mentor == 180 and map.faces.shop == 0
 			)
-		else
+		elseif biome.site == nil then
 			-- A later biome is entered from the west: the arrival is just inside the town's west
 			-- edge, facing within 45 degrees of the hub's centre.
 			local half = biome.hub.size / 2
@@ -593,6 +605,19 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 					and turn <= 45
 			end
 			check("players arrive just inside the west edge, facing the town", ok)
+		else
+			-- A sited biome (the Mire) is entered by its own causeway: the arrival is just inside
+			-- the town's edge on that side (the south arch), facing within 45 degrees of the
+			-- hub's centre.
+			local half = biome.hub.size / 2
+			local ok = false
+			if spawn then
+				local toHub = math.deg(math.atan2(-spawn.at.x, spawn.at.z)) % 360
+				local turn = math.abs((spawn.faces - toHub + 180) % 360 - 180)
+				local inset = half - math.max(math.abs(spawn.at.x), math.abs(spawn.at.z))
+				ok = inset >= 0 and inset <= 30 and turn <= 45
+			end
+			check("players arrive just inside the town's edge, facing the town", ok)
 		end
 		local wanted = MODELS[biome.id]
 		check(
@@ -1005,6 +1030,11 @@ do
 	check(
 		"Tide Flats' hub sits where its plan says, 240 past Dust Canyon's sealed road",
 		flats ~= nil and math.abs(flats.hub.x - 2063.4) < 0.1 and math.abs(flats.hub.z + 180) < 0.1
+	)
+	local mire = world.maps[4]
+	check(
+		"the Mire's hub sits at its site, (3100, -550), and is not sited straight on",
+		mire ~= nil and math.abs(mire.hub.x - 3100) < 0.1 and math.abs(mire.hub.z + 550) < 0.1
 	)
 end
 

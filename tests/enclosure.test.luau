@@ -5,11 +5,15 @@
 -- water barriers taken out, has to reach every named place and every lane.
 -- Run from the project folder:  lune run tests/enclosure.test
 
+-- The Mire is written ahead of launch (its map and art are built), so this test opens it first.
+require("../src/config/ReleaseConfig").OPEN_BIOMES = 4
+
 local Biomes = require("../src/content/Biomes")
 local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
 local Enclosure = require("../src/shared/Enclosure")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
+local MireDressing = require("../src/content/map_data/MireDressing")
 local Tamers = require("../src/content/Tamers")
 local TideFlatsDressing = require("../src/content/map_data/TideFlatsDressing")
 local WorldConfig = require("../src/config/WorldConfig")
@@ -33,6 +37,7 @@ local DRESSINGS: { [string]: WorldTypes.DressingSheet } = {
 	greenwood = GreenwoodDressing,
 	dust_canyon = DustCanyonDressing,
 	tide_flats = TideFlatsDressing,
+	mire = MireDressing,
 }
 
 local ordered: { WorldTypes.Biome } = {}
@@ -55,7 +60,12 @@ local function shapesOf(index: number): { Enclosure.Shape }?
 	local links: { Enclosure.Shape } = {}
 	local before = ordered[index - 1]
 	local beforeMap = if before then world.maps[before.number] else nil
-	local gate = if before and beforeMap then beforeMap.places[before.gate.id] else nil
+	-- A sited biome (the Mire) carries its own causeway in its map sheet.
+	local gate = if before
+			and beforeMap
+			and not biome.site
+		then beforeMap.places[before.gate.id]
+		else nil
 	if gate then
 		table.insert(
 			links,

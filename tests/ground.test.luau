@@ -5,6 +5,9 @@
 -- checks straddles two levels.
 -- Run from the project folder:  lune run tests/ground.test
 
+-- The Mire is written ahead of launch (its map and art are built), so this test opens it first.
+require("../src/config/ReleaseConfig").OPEN_BIOMES = 4
+
 local Biomes = require("../src/content/Biomes")
 local Ground = require("../src/shared/Ground")
 local Layout = require("../src/shared/Layout")

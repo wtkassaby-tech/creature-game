@@ -302,6 +302,8 @@ withGems(routeA)
 withGems(routeB)
 
 local Mire: WorldTypes.Biome = {
+	-- From the Heron Causeway's start (x 2836) east to the world's edge.
+	region = { kind = "Box", at = { x = 3668, z = 0 }, size = { 1664, 8000 } },
 	id = "mire",
 	number = 4,
 	name = "Mire",
@@ -312,6 +314,9 @@ local Mire: WorldTypes.Biome = {
 	gate = gate,
 	levelMin = 32,
 	levelMax = 42,
+	map = require("../map_data/Mire"),
+	-- Plan 13 section 3a: Sedgeholm stands north-east of Saltwick, reached by the Heron Causeway.
+	site = { hub = { x = 3100, z = -550 }, base = 0 },
 }
 
 return Mire

@@ -53,13 +53,14 @@ local function mass(
 	foot: Vector3,
 	across: number,
 	tall: number,
-	pick: number
+	pick: number,
+	far: boolean?
 )
 	-- Painted where the model loads (a block of canyon cliff, a dune with marram), so the
 	-- fill never reads as plain drums and domes from a terrace or the camera's height.
 	local painted = if style == "Rock"
 		then Props.model("CliffWall")
-		elseif style == "Dune" then Props.model("SandDune")
+		elseif style == "Dune" then Props.model(if far then "SandDuneLow" else "SandDune")
 		else nil
 	if painted then
 		local facing = facingOf(second(pick))
@@ -138,7 +139,7 @@ function Fill.build(parent: Instance, style: WorldTypes.FillStyle, plan: Enclosu
 	end
 	for _, spot in plan.blocks do
 		local across = 36 + second(spot.pick) * 6
-		mass(folder, style, Vector3.new(spot.x, 0, spot.z), across, spot.tall, spot.pick)
+		mass(folder, style, Vector3.new(spot.x, 0, spot.z), across, spot.tall, spot.pick, true)
 	end
 	return { rows = #plan.rows, masses = #plan.masses, blocks = #plan.blocks }
 end

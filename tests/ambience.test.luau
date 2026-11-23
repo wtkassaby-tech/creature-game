@@ -9,6 +9,7 @@ local AmbienceConfig = require("../src/config/AmbienceConfig")
 local AmbiencePlan = require("../src/shared/AmbiencePlan")
 local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
+local MireDressing = require("../src/content/map_data/MireDressing")
 local TideFlatsDressing = require("../src/content/map_data/TideFlatsDressing")
 local WorldTypes = require("../src/shared/WorldTypes")
 
@@ -30,6 +31,7 @@ local BIOMES: { { id: string, sheet: WorldTypes.DressingSheet } } = {
 	{ id = "greenwood", sheet = GreenwoodDressing },
 	{ id = "dust_canyon", sheet = DustCanyonDressing },
 	{ id = "tide_flats", sheet = TideFlatsDressing },
+	{ id = "mire", sheet = MireDressing },
 }
 
 print("The look of each kind follows the particle rules")
@@ -131,6 +133,12 @@ check(
 check(
 	"Tide Flats has spray and mist",
 	count(TideFlatsDressing, "Spray") > 0 and count(TideFlatsDressing, "Mist") > 0
+)
+check(
+	"The Mire has mist, fireflies and smoke",
+	count(MireDressing, "Mist") > 0
+		and count(MireDressing, "Pollen") > 0
+		and count(MireDressing, "Smoke") > 0
 )
 
 print("The plan works out a chimney from its house")

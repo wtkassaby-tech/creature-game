@@ -29,7 +29,20 @@ for _, biome in ordered do
 end
 
 -- Side areas, tunnels and caves go here, with a higher `priority` than the biome they sit in.
-local EXTRA: { WorldTypes.ClimateZone } = {}
+local EXTRA: { WorldTypes.ClimateZone } = {
+	-- Starfall Crater (side area a), seen across Dust Canyon's broken rope bridge and never
+	-- reached: its centre is dressed at (84, -684) from Kilnrest, which is world (1068.4, -764). The
+	-- bridge end (1104.6, -625.4) is 70 studs past its edge, where the light has shifted about a
+	-- third of the way to the crater's violet decay. The zone reaches no walkable ground but the
+	-- bridge end and the arroyo's last nook.
+	{
+		id = "starfall_crater",
+		preset = "starfall",
+		shape = { kind = "Disc", at = { x = 1068.4, z = -764 }, r = 70 },
+		band = 110,
+		priority = 1,
+	},
+}
 for _, zone in EXTRA do
 	table.insert(zones, zone)
 end

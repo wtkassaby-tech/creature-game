@@ -228,6 +228,17 @@ local TideFlats: WorldTypes.MapSheet = {
 		{ id = "terrace_room", shape = box(-80, 366, -20, 414) },
 		{ id = "kelp_pocket", shape = disc(84, 418, 32) },
 		{ id = "kelp_nook", shape = disc(150, 398, 16) },
+		-- Gull Cove (plan 13, side area b): a sea arch in the beach pocket's west rim, a winding
+		-- walk down the cliff foot (about 290 studs from the lane), and a cove open to the sea. It
+		-- keeps 24 studs or more from the rock shelf and 100 from the lane's pockets, and has no
+		-- long grass. The world's plan put it at (1700, 300); that lies in Dust Canyon's region, so
+		-- it sits 130 studs east, on Tide Flats' side of the border.
+		{ id = "cove_arch", shape = strip(-186, 214, -212, 222, 7) },
+		{ id = "cove_walk_a", shape = strip(-212, 222, -224, 262, 7) },
+		{ id = "cove_walk_b", shape = strip(-224, 262, -204, 300, 7) },
+		{ id = "cove_walk_c", shape = strip(-204, 300, -226, 338, 7) },
+		{ id = "cove_walk_d", shape = strip(-226, 338, -212, 374, 7) },
+		{ id = "cove_room", shape = disc(-212, 412, 38) },
 		-- Route B.
 		{ id = "sandbar_pocket", shape = disc(176, 112, 32) },
 		{ id = "boardwalk_pocket", shape = disc(352, 226, 32) },

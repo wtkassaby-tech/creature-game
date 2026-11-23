@@ -3,9 +3,10 @@
 -- This biome's map is being rebuilt, so positions are points down a route (`route`, `along`,
 -- `side`), which stay put when the rooms around them change.
 --
--- Gull Cove is not in the map yet (plan 13, side area b): its finds are defined here so their ids
--- are permanent, and are `pending` (the server treats them as shut) until the cove is built. Its
--- sighting spot, `cove_pool`, is a rustle spot the cove's build adds, with the cove's own table.
+-- Gull Cove is built (plan 13, side area b; room `cove_room` in map_data/TideFlats): its notes, midden,
+-- crevice and cairn stand in it, by `at`, studs from the centre of Saltwick. Its sighting, `cove_pool`,
+-- stays `pending`: it needs a new rustle spot with its own spawn table, which changes encounter
+-- counts, so it waits for a separate change to biome_data/TideFlats (the table itself, existing species, is approved).
 --
 -- Find ids are permanent (rule 8): never rename, reuse or remove one once shipped.
 
@@ -14,7 +15,11 @@ local WorldTypes = require("../../shared/WorldTypes")
 local gullFeather: WorldTypes.Keepsake = { id = "gull_feather", name = "Gull feather" }
 local seaGlass: WorldTypes.Keepsake = { id = "sea_glass", name = "Sea glass" }
 
-local COVE = "Gull Cove is not built yet (plan 13, side area b)"
+local COVE_TABLE = "The cove's rustle spot and spawn rows are not in biome_data/TideFlats yet"
+
+local function at(x: number, z: number): WorldTypes.SheetPoint
+	return { x = x, z = z }
+end
 
 local finds: { WorldTypes.Find } = {
 	{
@@ -84,19 +89,19 @@ local finds: { WorldTypes.Find } = {
 		kind = "Note",
 		name = "A page on the cove bench",
 		rewards = {},
+		at = at(-194, 430),
 		text = {
 			"Gulls have the cove now. They watch me write and offer no opinions.",
 			"One more island each way, and the ring is closed. Not yet.",
 		},
-		pending = COVE,
 	},
 	{
 		id = "tf_gather_midden",
 		biome = 3,
 		kind = "Gather",
 		name = "Shell midden",
+		at = at(-230, 394),
 		rewards = { { kind = "Material", material = "BrineShell", count = 2 } },
-		pending = COVE,
 	},
 	{
 		id = "tf_cache_crevice",
@@ -104,8 +109,8 @@ local finds: { WorldTypes.Find } = {
 		kind = "Cache",
 		name = "A crevice in a sea stack",
 		hidden = true,
+		at = at(-230, 430),
 		rewards = { { kind = "Item", item = "Bait", count = 1 } },
-		pending = COVE,
 	},
 	{
 		id = "tf_cairn_cove",
@@ -113,8 +118,8 @@ local finds: { WorldTypes.Find } = {
 		kind = "Cairn",
 		name = "The cove point cairn",
 		rewards = { { kind = "Material", material = "BrineShell", count = 4 } },
+		at = at(-194, 394),
 		keepsake = gullFeather,
-		pending = COVE,
 	},
 	{
 		id = "tf_sighting_cove",
@@ -123,7 +128,7 @@ local finds: { WorldTypes.Find } = {
 		name = "The cove's rock pool",
 		spot = "cove_pool",
 		rewards = {},
-		pending = COVE,
+		pending = COVE_TABLE,
 	},
 }
 

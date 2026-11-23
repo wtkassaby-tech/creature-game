@@ -81,7 +81,7 @@ local PRESETS: { [string]: Preset } = {
 		bloom = { intensity = 0.35, size = 24, threshold = 1.2 },
 		rays = { intensity = 0.08, spread = 0.6 },
 		clouds = { cover = 0.2, density = 0.5, color = { 255, 248, 240 } },
-		bed = { soundId = "", volume = 0.35 }, -- wind and cicadas: still to be chosen
+		bed = { soundId = "rbxassetid://9112832297", volume = 0.3 }, -- "Mountain Birds 2 (SFX)": distant birds, heavy air
 	},
 	-- Bright sea light, a bluer air and a wider sky.
 	tide_flats = {
@@ -104,7 +104,30 @@ local PRESETS: { [string]: Preset } = {
 		bloom = { intensity = 0.3, size = 24, threshold = 1.2 },
 		rays = { intensity = 0.06, spread = 0.6 },
 		clouds = { cover = 0.5, density = 0.6, color = { 255, 255, 255 } },
-		bed = { soundId = "", volume = 0.35 }, -- surf and gulls: still to be chosen
+		bed = { soundId = "rbxassetid://9112751340", volume = 0.3 }, -- "British Surf Birds 2 (SFX)": gulls, waves on rocks
+	},
+	-- The Mire: a soft green-grey mist, a lower sun, the light filtered through cypress.
+	mire = {
+		clockTime = 15.4,
+		brightness = 2.3,
+		exposure = -0.15,
+		ambient = { 112, 122, 110 },
+		outdoorAmbient = { 136, 146, 130 },
+		shiftTop = { 236, 230, 190 },
+		shiftBottom = { 96, 112, 100 },
+		air = {
+			density = 0.4,
+			offset = 0.2,
+			haze = 1.6,
+			glare = 0.15,
+			color = { 214, 226, 206 },
+			decay = { 130, 150, 128 },
+		},
+		grade = { tint = { 240, 248, 236 }, saturation = -0.02, contrast = 0.08 },
+		bloom = { intensity = 0.28, size = 26, threshold = 1.25 },
+		rays = { intensity = 0.04, spread = 0.5 },
+		clouds = { cover = 0.65, density = 0.65, color = { 236, 240, 232 } },
+		bed = { soundId = "rbxassetid://9112809252", volume = 0.28 }, -- "Jungle Frogs 3 (SFX)": frogs, insects, wind in foliage
 	},
 	-- Starfall Crater (a side area of Dust Canyon): the same hot light with a violet decay.
 	starfall = {

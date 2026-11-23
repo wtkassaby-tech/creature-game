@@ -35,9 +35,11 @@ local PropModels: { [string]: ModelDef } = {
 		size = { 12, 18.44, 10.92 },
 	},
 	Bush = {
-		mesh = "rbxassetid://87032599633128",
-		texture = "rbxassetid://136271338465195",
-		size = { 3.44, 4, 3.24 },
+		-- Low-detail (about 400 triangles), 23 November 2026: thousands of these line every
+		-- edge, and the first version put millions of triangles on screen.
+		mesh = "rbxassetid://84741546858434",
+		texture = "rbxassetid://138040291921453",
+		size = { 4, 2.73, 3.94 },
 	},
 	Lamp = {
 		mesh = "rbxassetid://94441050764075",
@@ -233,14 +235,18 @@ local PropModels: { [string]: ModelDef } = {
 		size = { 2.64, 2.5, 2.61 },
 	},
 	CliffWall = {
-		mesh = "rbxassetid://111660835110033",
-		texture = "rbxassetid://98143360393382",
-		size = { 21.74, 16.38, 12 },
+		-- Low-detail (under 800 triangles), 23 November 2026: hundreds of these line the
+		-- terraces and canyons.
+		mesh = "rbxassetid://128084726086625",
+		texture = "rbxassetid://86364971552660",
+		size = { 22, 7.63, 7.94 },
 	},
 	Boulders = {
-		mesh = "rbxassetid://98504594084730",
-		texture = "rbxassetid://139319414103286",
-		size = { 7.48, 7, 5.27 },
+		-- Low-detail (about 400 triangles), 23 November 2026: thousands of these line every
+		-- edge, and the first version put millions of triangles on screen.
+		mesh = "rbxassetid://129301203865263",
+		texture = "rbxassetid://85100410731112",
+		size = { 5.74, 3.54, 5 },
 	},
 	-- Tide Flats (docs/plans/10_TIDE_FLATS_MAP.md section 5)
 	HarbourArch = {
@@ -289,9 +295,10 @@ local PropModels: { [string]: ModelDef } = {
 		size = { 18.65, 15.89, 18 },
 	},
 	MarramTuft = {
-		mesh = "rbxassetid://97089987274969",
-		texture = "rbxassetid://111757042085525",
-		size = { 3.22, 3, 3.19 },
+		-- Low-detail, 23 November 2026: hundreds of these line Tide Flats.
+		mesh = "rbxassetid://114948664116893",
+		texture = "rbxassetid://113849133027278",
+		size = { 2.95, 3.12, 3 },
 	},
 	-- Tide Flats, small pieces
 	Kelp = {
@@ -300,9 +307,11 @@ local PropModels: { [string]: ModelDef } = {
 		size = { 4, 3.82, 3.97 },
 	},
 	SeaRocks = {
-		mesh = "rbxassetid://133543435108573",
-		texture = "rbxassetid://76505414225715",
-		size = { 6.24, 6, 6.19 },
+		-- Low-detail (about 400 triangles), 23 November 2026: thousands of these line every
+		-- edge, and the first version put millions of triangles on screen.
+		mesh = "rbxassetid://81091229103104",
+		texture = "rbxassetid://109215229286720",
+		size = { 4.4, 5, 4.31 },
 	},
 	Rowboat = {
 		mesh = "rbxassetid://91466779554077",
@@ -317,9 +326,11 @@ local PropModels: { [string]: ModelDef } = {
 	},
 	-- Terraces (plan 12): a grassy earth bank tiled along each Earth tier face (23 November 2026).
 	EarthBank = {
-		mesh = "rbxassetid://73485906713072",
-		texture = "rbxassetid://135653546407001",
-		size = { 7.53, 4.96, 6 },
+		-- Low-detail (under 800 triangles), 23 November 2026: hundreds of these line the
+		-- terraces and canyons.
+		mesh = "rbxassetid://74756103378786",
+		texture = "rbxassetid://113351444068796",
+		size = { 6.35, 5, 4.2 },
 	},
 	-- Stairs and ramps between tiers (plan 12): low end at the model's front (-z).
 	StoneSteps = {
@@ -350,9 +361,16 @@ local PropModels: { [string]: ModelDef } = {
 		size = { 28.97, 17.01, 30 },
 	},
 	SandDune = {
-		mesh = "rbxassetid://103573813488604",
-		texture = "rbxassetid://93564260008841",
-		size = { 16.64, 12, 16.69 },
+		-- Low-detail, 23 November 2026: hundreds of these line Tide Flats.
+		mesh = "rbxassetid://102879198803815",
+		texture = "rbxassetid://109337496665521",
+		size = { 13.43, 10, 13.5 },
+	},
+	-- A cheap dune for the fill's farthest blocks; the detailed SandDune stays near the paths.
+	SandDuneLow = {
+		mesh = "rbxassetid://134687502938843",
+		texture = "rbxassetid://138064220553422",
+		size = { 7.5, 2.97, 16 },
 	},
 }
 

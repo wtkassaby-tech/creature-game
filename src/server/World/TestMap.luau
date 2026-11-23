@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DustCanyonDressing = require(ReplicatedStorage.content.map_data.DustCanyonDressing)
 local GreenwoodDressing = require(ReplicatedStorage.content.map_data.GreenwoodDressing)
+local MireDressing = require(ReplicatedStorage.content.map_data.MireDressing)
 local TideFlatsDressing = require(ReplicatedStorage.content.map_data.TideFlatsDressing)
 local Enclosure = require(ReplicatedStorage.shared.Enclosure)
 local Ground = require(ReplicatedStorage.shared.Ground)
@@ -51,6 +52,7 @@ local DRESSINGS: { [string]: WorldTypes.DressingSheet } = {
 	greenwood = GreenwoodDressing,
 	dust_canyon = DustCanyonDressing,
 	tide_flats = TideFlatsDressing,
+	mire = MireDressing,
 }
 
 -- Where one biome's ground slab ends and the next one's begins: this far past the earlier
@@ -117,6 +119,18 @@ local function buildBiome(
 	for _, place in map.places do
 		minX, maxX = math.min(minX, place.x), math.max(maxX, place.x)
 		minZ, maxZ = math.min(minZ, place.z), math.max(maxZ, place.z)
+	end
+	-- A designed map also has walkable rooms past its places (the Mire's causeway): keep them on the slab.
+	local drawn: { WorldTypes.Room } = if biome.map and biome.map.rooms then biome.map.rooms else {}
+	for _, room in drawn do
+		local shape = room.shape
+		local ends: { WorldTypes.SheetPoint } = if shape.kind == "Strip"
+			then { shape.from, shape.to }
+			else { shape.at }
+		for _, point in ends do
+			minX, maxX = math.min(minX, map.hub.x + point.x), math.max(maxX, map.hub.x + point.x)
+			minZ, maxZ = math.min(minZ, map.hub.z + point.z), math.max(maxZ, map.hub.z + point.z)
+		end
 	end
 	local margin = 220
 	local middleX, middleZ = (minX + maxX) / 2, (minZ + maxZ) / 2
@@ -460,14 +474,19 @@ function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
 		if map then
 			-- The last biome's slab runs on past its gate, under its sealed road.
 			local clip: Clip = {
-				west = gateX[biome.number - 1],
+				west = if biome.site then nil else gateX[biome.number - 1],
 				east = if world.maps[biome.number + 1] then gateX[biome.number] else nil,
 			}
 			-- The walk from the biome before: its gate to this town's west edge, kept open.
 			local links: { Enclosure.Shape } = {}
 			local before = biomes[index - 1]
 			local beforeMap = if before then world.maps[before.number] else nil
-			local gate = if before and beforeMap then beforeMap.places[before.gate.id] else nil
+			-- A sited biome (the Mire) carries its own causeway in its map sheet.
+			local gate = if before
+					and beforeMap
+					and not biome.site
+				then beforeMap.places[before.gate.id]
+				else nil
 			if gate then
 				table.insert(
 					links,

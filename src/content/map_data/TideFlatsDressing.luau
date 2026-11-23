@@ -131,6 +131,9 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 
 	water = {},
 	pools = {
+		-- Gull Cove's rock pools.
+		{ at = p(-238, 412), radius = 4.5, colour = { 120, 200, 200 } },
+		{ at = p(-186, 420), radius = 4, colour = { 100, 186, 200 } },
 		{ at = p(-92, -30), radius = 7, colour = { 120, 200, 200 } }, -- the Warm Pool
 		{ at = p(4, -84), radius = 5, colour = { 84, 170, 196 } }, -- the Brood Shallows' pens
 		{ at = p(56, -84), radius = 5, colour = { 84, 170, 196 } },
@@ -142,6 +145,9 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		flat(p(250, -80), p(440, 140), { 84, 170, 196 }, true), -- the outer water
 		flat(p(250, 240), p(470, 330), { 150, 140, 124 }, false), -- the mudflat
 		flat(p(236, 160), p(286, 330), { 240, 228, 190 }, false), -- the sandbar spit
+		-- Gull Cove: its sand beach, then the sea running on west of the open sea.
+		flat(p(-270, 440), p(-160, 462), { 238, 226, 186 }, false),
+		flat(p(-340, 462), p(-200, 900), { 56, 130, 176 }, true),
 		flat(p(-200, 470), p(900, 900), { 56, 130, 176 }, true), -- the open sea
 		flat(p(820, 140), p(900, 470), { 56, 130, 176 }, true), -- the sea east of the headland
 	},
@@ -159,6 +165,14 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			faces = 180,
 			outside = "Saltwick",
 			inside = "Route A · Strandline Path",
+			model = "HarbourArch",
+		},
+		-- The sea arch in the beach pocket's west rim, the way to Gull Cove.
+		{
+			at = p(-196, 217),
+			faces = 252,
+			outside = "Wrack Beach",
+			inside = "Gull Cove · the sea arch",
 			model = "HarbourArch",
 		},
 		{
@@ -179,6 +193,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			lines = { "Route B · Breakwater Road →", "↓ The Quay · Lamp Tower" },
 		},
 		{ at = p(-142, 200), faces = 285, lines = { "Dune grass:", "wild creatures hide here" } },
+		{ at = p(-184, 198), faces = 252, lines = { "Gull Cove →", "through the sea arch" } },
 		{ at = p(486, 168), faces = 143, lines = { "Carrackon's Wreck · Wreck Stall" } },
 		{
 			at = p(532, 212),
@@ -266,6 +281,9 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		wall({ p(-236, 20), p(-150, 20) }, "Dunes", 10), -- the Dune Road, south
 		-- The sea cave's outcrop, jutting from the reach's north cliff.
 		wall({ p(533.9, 129.4), p(525.3, 155), p(553.8, 163.6), p(562.4, 138) }, "SeaCliff", 24),
+		-- Gull Cove: the cliff the walk runs along, on its landward side, with a gap at the arch.
+		wall({ p(-196, 282), p(-186, 312), p(-196, 346), p(-190, 372) }, "SeaCliff", 22),
+		wall({ p(-236, 238), p(-246, 262), p(-238, 296) }, "SeaCliff", 14),
 	},
 	edges = {
 		wrack_beach = edge("Rope", "SeaCliff"),
@@ -315,6 +333,15 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		-- The Tide Cave's mouth: its face is 6.4 from the rustle spot's prompt.
 		{ model = "SeaCave", at = p(540.1, 157.9), faces = 198, tall = 24, solid = true },
 		{ model = "Bench", at = p(-36, 30), faces = 180, tall = 3.8 },
+		-- Gull Cove: sea stacks standing off the beach and in the surf, and a bench facing the open
+		-- sea, where Brine Isle and Palm Key lie.
+		{ model = "SeaRocks", at = p(-262, 448), faces = 30, tall = 30, solid = true },
+		{ model = "SeaRocks", at = p(-240, 484), faces = 200, tall = 38 },
+		{ model = "SeaRocks", at = p(-172, 474), faces = 120, tall = 24 },
+		{ model = "SeaRocks", at = p(-206, 506), faces = 300, tall = 44 },
+		{ model = "SeaRocks", at = p(-250, 376), faces = 70, tall = 10 },
+		{ model = "Bench", at = p(-210, 440), faces = 180, tall = 3.8 },
+		{ model = "Boulders", at = p(-176, 430), faces = 20, tall = 6 },
 	},
 	people = {
 		{ name = "Net-mender", at = p(-122, 72), faces = 90, model = "Grandmother" },
@@ -411,6 +438,9 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			-- Spray where the harbour and the bay meet the quay and the sand.
 			{ kind = "Spray", at = p(35, 52), height = 1.5, area = { 110, 4, 2 } },
 			{ kind = "Spray", at = p(-20, 152), height = 1.5, area = { 100, 4, 2 } },
+			-- Gull Cove: surf along its beach and a low mist over the pools.
+			{ kind = "Spray", at = p(-212, 456), height = 1.5, area = { 90, 4, 2 } },
+			{ kind = "Mist", at = p(-212, 424), height = 3, area = { 80, 60, 4 } },
 			-- Mist lying low over the harbour, the bay and the outer water.
 			{ kind = "Mist", at = p(40, 110), height = 3, area = { 110, 80, 4 } },
 			{ kind = "Mist", at = p(120, 240), height = 3, area = { 160, 100, 4 } },
