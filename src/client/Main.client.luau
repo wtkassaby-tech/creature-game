@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Ambience = require(script.Parent.Audio.Ambience)
+local Climate = require(script.Parent.World.Climate)
 local BattleView = require(script.Parent.BattleView.BattleView)
 local CameraLimits = require(script.Parent.World.CameraLimits)
 local ClientState = require(script.Parent.State.ClientState)
@@ -38,6 +39,7 @@ GiantView.start(playerGui)
 CreaturesView.start(playerGui)
 StoryView.start(playerGui)
 Ambience.start(playerGui)
+Climate.start()
 CameraLimits.start()
 
 -- The world's prompts hide while a screen is open. A prompt is drawn on the screen and can be

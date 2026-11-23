@@ -300,6 +300,8 @@ local DustCanyon: WorldTypes.Biome = {
 	levelMin = 12,
 	levelMax = 22,
 	map = require("../map_data/DustCanyon"),
+	-- From the Acorn Gatehouse swap (x 697.4) to the Stair Gate swap (x 1793); see Greenwood.
+	region = { kind = "Box", at = { x = 1245.2, z = 0 }, size = { 1095.6, 8000 } },
 }
 
 return DustCanyon

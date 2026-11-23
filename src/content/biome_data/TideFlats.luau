@@ -306,6 +306,8 @@ local TideFlats: WorldTypes.Biome = {
 	levelMin = 22,
 	levelMax = 32,
 	map = require("../map_data/TideFlats"),
+	-- From the Stair Gate swap (x 1793) east to the edge of the known world (x 4500).
+	region = { kind = "Box", at = { x = 3146.5, z = 0 }, size = { 2707, 8000 } },
 }
 
 return TideFlats

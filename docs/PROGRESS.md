@@ -2,6 +2,24 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (studio polish, hidden creatures, catch odds, a structured world)
+
+**In one line:** after Ayrton played, the game got studio-style effects and motion, wild creatures now hide in grass, the catch is a scene with real odds, Greenwood is rebuilt with terraces, stairs and one-way ledges, and the whole eleven-biome world is planned as one journey. `lune run check` passes; every piece below was run in Studio unless it says otherwise.
+
+| What | Now |
+| --- | --- |
+| **Effects and motion** (plan 11) | A move effect per type, STRONG hits with a camera shake and flash, faint, switch, catch and level-up effects; chimney smoke (positions measured from above), kiln embers, lamp lights, pollen, dust and sea spray; buttons squash, a cream wipe into battles, fades for travel and the healer, sliding panels |
+| **Hidden creatures** | Wild creatures hide in grass patches as a swaying clump; walking in gives a "!" and a battle. The server checks your position; species and level are no longer sent before a battle |
+| **The catch** | A scene: the rope arcs out, the loop cinches, one to three tugs, then gold sparkles or a slip. Odds instead of all-or-nothing (0.95 at the centre of the green to 0.75 at its edge, 0.45 just outside down to 0.05); an independent review found no exploit (docs/REVIEWS.md) |
+| **Greenwood rebuilt** (plan 12) | Walled routes (forest, rock and dune fill), blocking water, a capped camera; terraces with painted stone steps, earth ramps and earth-bank faces, one-way ledges home, an S-shaped Route A and a switchback Route B; grass patches beside the paths, never across them (a test proves a grass-free walk between every place) |
+| **The world** (plan 13) | Eleven biomes on one journey spiralling in to the Crown, a different crossing between each pair, twelve side areas, shortcuts home; `docs/plans/13_world_map.svg`. Light and ambient sound now blend between Greenwood, Dust Canyon and Tide Flats as you walk |
+
+**Not checked or not done:** the catch scene itself has not been seen on screen (test throws missed and the screenshot tool is too slow); the grass hidden round a battle in grass; phone frame rate with the new terraces and effects; a few hedge pieces lie across a terrace edge near the stairs; Dust Canyon and Tide Flats still have the old flat structure; only Greenwood's ambient sound has a sound id; no sky changes yet.
+
+**Waiting for Ayrton:** the finds-and-rewards plan (plan 14, being written) before anything is built; names for the later towns.
+
+**To playtest:** walk Route A up the stairs to the terrace and hop the ledge home; find a creature in the grass; throw the lasso a few times and see if the odds feel fair.
+
 ## 23 November 2026 (a catch joins your team)
 
 **In one line:** a caught creature now joins your team while it has a free place (three to start, more with badges); once the team is full, catches wait in Creatures as before. Played in Studio from a new save: Sloshcalf picked, the rival won in three turns with STRONG moves from the first turn, the lasso lesson's Gorsling made two, a wild Sloshcalf caught made three ("Joined your team!"), and a Spadesnout caught after that went to Creatures ("Waiting in Creatures..."). `lune run check` passes; an independent review found no exploit and two small issues, both fixed (`docs/REVIEWS.md`).

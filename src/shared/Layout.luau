@@ -14,6 +14,7 @@
 -- the sealed road), so splitting it would give the server two places to read positions from.
 
 local WorldConfig = require("../config/WorldConfig")
+local Regions = require("./Regions")
 local WorldTypes = require("./WorldTypes")
 
 export type Point = { x: number, z: number }
@@ -413,6 +414,7 @@ export type World = {
 	map: Map, -- every biome's places, routes and buildings together (ids are unique across biomes)
 	maps: { [number]: Map }, -- each biome's own map, by biome number
 	biomeOfPlace: { [string]: number }, -- which biome a place belongs to
+	regions: { { biome: number, shape: WorldTypes.Shape } }, -- each biome's region, when it has one
 }
 
 function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTypes.Tamer }): World
@@ -434,8 +436,17 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 	local maps: { [number]: Map } = {}
 	local biomeOfPlace: { [string]: number } = {}
 	local siting: Siting? = nil
+	local regions: { { biome: number, shape: WorldTypes.Shape } } = {}
 	for index, biome in ordered do
+		-- A biome with its own `site` stands there; otherwise it goes straight on (docs/plans/13 11b).
+		local site = biome.site
+		if site then
+			siting = { origin = { x = site.hub.x, z = site.hub.z }, headings = LATER_HEADINGS }
+		end
 		local map = Layout.build(biome, tamers, siting)
+		if biome.region then
+			table.insert(regions, { biome = biome.number, shape = biome.region })
+		end
 		maps[biome.number] = map
 		if index == 1 then
 			merged.hub, merged.lairSpur = map.hub, map.lairSpur
@@ -476,11 +487,17 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 			}
 		end
 	end
-	return { map = merged, maps = maps, biomeOfPlace = biomeOfPlace }
+	return { map = merged, maps = maps, biomeOfPlace = biomeOfPlace, regions = regions }
 end
 
--- The biome a point is in: the one that owns the nearest named place. Nil with no places at all.
+-- The biome a point is in: the one whose region holds it (the lowest number where two meet), else
+-- the one that owns the nearest named place. Nil with no places at all.
 function Layout.biomeAt(world: World, at: Point): number?
+	for _, entry in world.regions do
+		if Regions.contains(entry.shape, at) then
+			return entry.biome
+		end
+	end
 	local best: number? = nil
 	local bestDistance = math.huge
 	for id, place in world.map.places do

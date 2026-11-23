@@ -153,6 +153,12 @@ export type Shape =
 	{ kind: "Disc", at: SheetPoint, r: number }
 	| { kind: "Box", at: SheetPoint, size: { number } }
 	| { kind: "Strip", from: SheetPoint, to: SheetPoint, r: number }
+-- A point in world coordinates (x, z in studs; north is -z), as opposed to a SheetPoint, which is
+-- relative to a hub. The plan's world data (docs/plans/13_WORLD_DESIGN.md section 11c) uses these.
+export type WorldPoint = { x: number, z: number }
+-- Where a biome's hub stands in the world, when it is not "straight on past the sealed road".
+-- `base` is the ground height at the hub; `floor` is the fall line (Stormreach).
+export type Site = { hub: WorldPoint, base: number, floor: number? }
 -- A flat top at `height`; the ground is 0 where no tier lies, and later tiers win where they overlap.
 export type Tier = { id: string, height: number, shape: Shape }
 -- Stairs and ramps join two heights both ways, from `from` (the low end) along the line you walk to
@@ -404,7 +410,80 @@ export type Biome = {
 	levelMin: number, -- lowest wild level in the biome
 	levelMax: number, -- highest wild level on the main routes
 	map: MapSheet?, -- the designed map; nil keeps the generated layout
+	-- World placement and extent (docs/plans/13_WORLD_DESIGN.md section 11b). Both optional: with no
+	-- `site` the hub goes straight on past the previous biome's sealed road, and with no `region`
+	-- the biome owns whatever is nearest one of its places. `region` is in world coordinates.
+	site: Site?,
+	region: Shape?,
 }
+
+-- The world as one journey (docs/plans/13_WORLD_DESIGN.md section 11c). Data only.
+export type PassageKind =
+	"Gatehouse"
+	| "Pass"
+	| "Causeway"
+	| "CaveMouth"
+	| "Tunnel"
+	| "Lift"
+	| "Stair"
+	| "Bridge"
+	| "Ferry"
+-- The walk between one biome's sealed road and the next town's arch, in world coordinates.
+-- `swapAt` is studs along `points` where the sky and music change; it lies somewhere hidden
+-- (a gatehouse, a tunnel, a cloud layer). `swapRadius` is how near the player must be to it.
+export type Passage = {
+	id: string,
+	from: number, -- biome numbers
+	to: number,
+	kind: PassageKind,
+	points: { WorldPoint },
+	heights: { number }, -- y at each point
+	width: number,
+	swapAt: number,
+	swapRadius: number,
+	stations: { [string]: WorldPoint }?,
+}
+-- A patch of the world with a light, sky and sound preset (ClimateConfig). Its weight is 1 inside
+-- `shape` and eases to 0 over `band` studs beyond the edge. A zone of higher `priority` (a cave
+-- inside a biome) scales the others down. `hidden` marks a tunnel, cave or cloud, where a preset
+-- may change faster than the usual limit.
+export type ClimateZone = {
+	id: string,
+	preset: string,
+	shape: Shape,
+	band: number,
+	priority: number?,
+	hidden: boolean?,
+}
+export type WorldLandmark = {
+	id: string,
+	model: string,
+	at: WorldPoint,
+	base: number,
+	tall: number,
+	faces: number,
+	seenFrom: { string },
+	shownWhen: string?,
+}
+export type SideArea = {
+	id: string,
+	name: string,
+	owner: number,
+	preset: string,
+	shape: Shape,
+	entrance: WorldPoint,
+	opens: { badges: number?, flag: string? }?,
+	offers: { string },
+}
+export type FarScenery = {
+	id: string,
+	model: string,
+	at: WorldPoint,
+	base: number,
+	scale: number,
+	faces: number,
+}
+export type Shortcut = { id: string, from: string, to: string, oneWayUntil: string? }
 
 -- Tamers ------------------------------------------------------------------------------------
 

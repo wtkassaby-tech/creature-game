@@ -241,6 +241,10 @@ local Greenwood: WorldTypes.Biome = {
 	levelMax = 12,
 	-- Where everything stands, drawn on purpose (docs/plans/08_GREENWOOD_MAP.md section 3).
 	map = require("../map_data/Greenwood"),
+	-- World extent for "which biome am I in" and the climate zones (docs/plans/13_WORLD_DESIGN.md
+	-- sections 9b, 11b). It ends where the Acorn Gatehouse passage swaps the sky (x 697.4); the next
+	-- biome's region begins there. West and north are open ground, so it is a big box.
+	region = { kind = "Box", at = { x = -1151.3, z = 0 }, size = { 3697.4, 8000 } },
 }
 
 return Greenwood
