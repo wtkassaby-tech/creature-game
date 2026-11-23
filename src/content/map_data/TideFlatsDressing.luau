@@ -365,6 +365,44 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 	brambles = {}, -- no shut path: the ferry sign does that job
 	-- Egg nests in seaweed behind the Brood Shallows.
 	coop = p(-4, -104),
+
+	-- Smoke from the chandlery and the stilt houses, warm lamps, the Lamp Tower's and the Old
+	-- Light's glow, spray along the harbour's shore, mist over the water and a slow glint on every
+	-- pool and sheet of water. The stilt house's chimney pot was measured from above in Studio; the
+	-- chandlery is a flat-roofed stall with no chimney.
+	ambience = {
+		chimneys = {
+			StiltHouse = { -0.21, 0.95, 0.14 }, -- the pot at the back left of the roof
+		},
+		lamps = { range = 22, brightness = 1.1, colour = { 255, 208, 150 } },
+		glints = true,
+		sources = {
+			-- The Lamp Tower's lantern (36 high at p(124, 70)) and the Old Light (140 high).
+			{
+				kind = "Halo",
+				at = p(124, 70),
+				height = 33,
+				scale = 3.5,
+				rate = 0.6,
+				light = { range = 56, brightness = 2.6, colour = { 255, 214, 150 } },
+			},
+			{
+				kind = "Halo",
+				at = p(790, 470),
+				height = 126,
+				scale = 8,
+				rate = 0.5,
+				light = { range = 60, brightness = 3, colour = { 255, 226, 170 } },
+			},
+			-- Spray where the harbour and the bay meet the quay and the sand.
+			{ kind = "Spray", at = p(35, 52), height = 1.5, area = { 110, 4, 2 } },
+			{ kind = "Spray", at = p(-20, 152), height = 1.5, area = { 100, 4, 2 } },
+			-- Mist lying low over the harbour, the bay and the outer water.
+			{ kind = "Mist", at = p(40, 110), height = 3, area = { 110, 80, 4 } },
+			{ kind = "Mist", at = p(120, 240), height = 3, area = { 160, 100, 4 } },
+			{ kind = "Mist", at = p(345, 30), height = 3, area = { 150, 110, 4 } },
+		},
+	},
 }
 
 return TideFlatsDressing

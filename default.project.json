@@ -15,6 +15,13 @@
       "server": { "$path": "src/server" },
       "ServerPackages": { "$path": "ServerPackages" }
     },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "LightingStyle": "Realistic",
+        "PrioritizeLightingQuality": true
+      }
+    },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {

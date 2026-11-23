@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Storyline = require(ReplicatedStorage.content.Storyline)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Transition = require(script.Parent.Parent.UI.Transition)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
@@ -264,10 +265,16 @@ function WorldView.start(openShop: () -> ())
 				local reached = if state then math.max(1, state.BiomeReached) else 1
 				local here = prompt:GetAttribute("Biome")
 				if reached > 1 and typeof(here) == "number" then
-					Net.Travel.Fire({ BiomeNumber = here % reached + 1 })
+					-- The screen fades over the jump, so the world does not snap from town to town.
+					Transition.fade(function()
+						Net.Travel.Fire({ BiomeNumber = here % reached + 1 })
+					end)
 				end
 			elseif role == "Healer" then
-				Net.HealAtHealer.Fire(true) -- free; the server checks the player is standing here
+				-- A short fade while the team rests; free, and the server checks the player is here.
+				Transition.fade(function()
+					Net.HealAtHealer.Fire(true)
+				end)
 			end
 		end
 	end)

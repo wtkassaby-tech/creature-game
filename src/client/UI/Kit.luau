@@ -7,6 +7,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Types = require(ReplicatedStorage.shared.Types)
@@ -161,6 +162,67 @@ local function isDark(colour: Color3): boolean
 	return colour.R * 0.299 + colour.G * 0.587 + colour.B * 0.114 < 0.72
 end
 
+local PRESS_SCALE = 0.94 -- a pressed button squashes to this
+local HOVER_SCALE = 1.04 -- on a desktop a hovered button lifts to this
+local PRESS_IN = TweenInfo.new(0.07, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local PRESS_OUT = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+local HOVER_TWEEN = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+-- Press squash and hover lift for a button. Looks only: it only listens, so the click itself
+-- (Activated) is never delayed or swallowed. One tween at a time, so quick taps never stack.
+local function addPressMotion(button: TextButton)
+	local scale = Instance.new("UIScale")
+	scale.Name = "PressScale"
+	scale.Parent = button
+	local active: Tween? = nil
+	local hovering = false
+	local function go(goal: number, info: TweenInfo)
+		if active then
+			active:Cancel()
+		end
+		local made = TweenService:Create(scale, info, { Scale = goal })
+		active = made
+		made:Play()
+	end
+	local function resting(): number
+		return if hovering then HOVER_SCALE else 1
+	end
+	local function isPress(input: InputObject): boolean
+		return input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+	end
+	button.InputBegan:Connect(function(input: InputObject)
+		if isPress(input) then
+			go(PRESS_SCALE, PRESS_IN)
+		end
+	end)
+	button.InputEnded:Connect(function(input: InputObject)
+		if isPress(input) then
+			go(resting(), PRESS_OUT)
+		end
+	end)
+	if not UserInputService.TouchEnabled then
+		button.MouseEnter:Connect(function()
+			hovering = true
+			go(HOVER_SCALE, HOVER_TWEEN)
+		end)
+		button.MouseLeave:Connect(function()
+			hovering = false
+			go(1, HOVER_TWEEN)
+		end)
+	end
+	-- A button hidden mid-press must not come back squashed.
+	button:GetPropertyChangedSignal("Visible"):Connect(function()
+		if not button.Visible then
+			if active then
+				active:Cancel()
+			end
+			hovering = false
+			scale.Scale = 1
+		end
+	end)
+end
+
 function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () -> ()): TextButton
 	local button = Instance.new("TextButton")
 	button.Text = text
@@ -185,6 +247,7 @@ function Kit.button(parent: Instance, text: string, colour: Color3, onClick: () 
 	limit.MaxTextSize = 20
 	limit.MinTextSize = 7
 	limit.Parent = button
+	addPressMotion(button)
 	button.Activated:Connect(function()
 		Sfx.play("press")
 		onClick()
@@ -216,17 +279,18 @@ end
 
 -- A panel that has just appeared grows the last few per cent.
 function Kit.pop(target: GuiObject)
-	local scale = target:FindFirstChildOfClass("UIScale")
-	if not scale then
-		local made = Instance.new("UIScale")
-		made.Parent = target
-		scale = made
+	local found = target:FindFirstChild("PopScale")
+	local scale: UIScale
+	if found and found:IsA("UIScale") then
+		scale = found
+	else
+		scale = Instance.new("UIScale")
+		scale.Name = "PopScale"
+		scale.Parent = target
 	end
-	if scale then
-		scale.Scale = 0.94
-		local settle = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		TweenService:Create(scale, settle, { Scale = 1 }):Play()
-	end
+	scale.Scale = 0.94
+	local settle = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(scale, settle, { Scale = 1 }):Play()
 end
 
 export type Bar = { set: (share: number, colour: Color3?) -> (), frame: Frame }

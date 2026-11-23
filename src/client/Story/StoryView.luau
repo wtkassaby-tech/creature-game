@@ -7,6 +7,7 @@
 -- TODO(art): first cut, not yet seen in Studio.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
@@ -127,9 +128,34 @@ function StoryView.start(playerGui: Instance)
 
 	-- The dialogue box: bottom of the screen, one line at a time.
 	local gui = Kit.screen(playerGui, "Dialogue", 20)
-	local box = Kit.panel(gui, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
+	-- The box and its name tab sit in one holder, so they slide up together when the box opens.
+	local slide = Instance.new("Frame")
+	slide.Size = UDim2.fromScale(1, 1)
+	slide.BackgroundTransparency = 1
+	slide.BorderSizePixel = 0
+	slide.Parent = gui
+	local box = Kit.panel(slide, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
 	-- Who is speaking: a name tab on the box's top edge and, for some, a face at its left.
-	local face = SpeakerFace.new(gui, box)
+	local face = SpeakerFace.new(slide, box)
+	local slideTween: Tween? = nil
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+		if slideTween then
+			slideTween:Cancel()
+			slideTween = nil
+		end
+		if not gui.Enabled then
+			slide.Position = UDim2.new()
+			return
+		end
+		slide.Position = UDim2.fromOffset(0, 60)
+		local rise = TweenService:Create(
+			slide,
+			TweenInfo.new(0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+			{ Position = UDim2.new() }
+		)
+		slideTween = rise
+		rise:Play()
+	end)
 	-- The words keep clear of the NEXT button at the top right.
 	local line = Kit.label(box, "", UDim2.new(1, -170, 1, -28), UDim2.fromOffset(16, 14), 22)
 	line.TextWrapped = true

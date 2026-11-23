@@ -359,6 +359,41 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 	-- Egg nests warming in the lee of the kiln, and Calla's spring-watered garden rows.
 	coop = p(100, 50),
 	patch = { from = p(-108, 12), to = p(-96, 22) },
+
+	-- Smoke from the kiln cottages, warm lamps, the Cradle Kiln's glow and embers, dust motes over
+	-- the wash and the town, a glint on the Seep. The chimney offsets and the kiln's mouth are
+	-- guesses to check by eye.
+	ambience = {
+		chimneys = {
+			KilnCottage = { 0, 0.97, 0 }, -- the glowing vent on top of the dome (measured in Studio)
+		},
+		lamps = { range = 24, brightness = 1.2, colour = { 255, 190, 110 } },
+		glints = true,
+		sources = {
+			-- The Cradle Kiln (at p(72, 72), facing 315, 26 across and 40 high): a fire glowing in
+			-- its mouth and embers climbing out of its chimney.
+			{
+				kind = "Halo",
+				at = p(63.5, 63.5),
+				height = 4,
+				scale = 2,
+				rate = 0.7,
+				light = { range = 34, brightness = 2.4, colour = { 255, 150, 70 } },
+			},
+			{
+				kind = "Embers",
+				at = p(72, 72),
+				height = 39,
+				area = { 3, 3, 1 },
+				light = { range = 26, brightness = 1.3, colour = { 255, 140, 60 } },
+			},
+			-- Dust motes in the light: over the wash, the flats, the steps and the town.
+			{ kind = "Dust", at = p(42, -212), height = 5, area = { 100, 80, 8 } },
+			{ kind = "Dust", at = p(0, -377), height = 5, area = { 100, 80, 8 } },
+			{ kind = "Dust", at = p(186, 62), height = 5, area = { 90, 80, 8 } },
+			{ kind = "Dust", at = p(-20, 30), height = 5, area = { 110, 90, 8 } },
+		},
+	},
 }
 
 return DustCanyonDressing

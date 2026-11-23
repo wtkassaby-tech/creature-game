@@ -59,7 +59,7 @@ local function template(name: string): MeshPart?
 	return templates[name]
 end
 
-function SpeakerFace.new(gui: ScreenGui, box: GuiObject): View
+function SpeakerFace.new(gui: Instance, box: GuiObject): View
 	-- The name tab: on the box's top edge, a little in from its left.
 	local tab = Kit.panel(gui, UDim2.fromOffset(120, TAB_TALL), UDim2.new())
 	tab.AnchorPoint = Vector2.new(0, 1)

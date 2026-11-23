@@ -246,6 +246,42 @@ export type LaneSurface = {
 	colour: Colour,
 	deck: boolean?,
 }
+-- Ambient particles and lights (docs/plans/11_STUDIO_POLISH.md, package 2). Looks per kind are in
+-- src/config/AmbienceConfig; a sheet only says which, where and how strong.
+export type AmbienceKind =
+	"Smoke"
+	| "Embers"
+	| "Halo"
+	| "Pollen"
+	| "Fluff"
+	| "Dust"
+	| "Spray"
+	| "Mist"
+	| "Glint"
+export type AmbienceLight = { range: number, brightness: number, colour: Colour? }
+-- One effect by hand: `area` is { width, depth } of the volume it fills (left out: a point),
+-- `height` is studs above the ground, `rate` and `scale` default to the kind's.
+export type AmbienceSource = {
+	kind: AmbienceKind,
+	at: SheetPoint,
+	height: number?,
+	area: { number }?,
+	rate: number?,
+	scale: number?,
+	light: AmbienceLight?,
+}
+-- Where a chimney's smoke starts on a house, as fractions of its { width, height, depth } measured
+-- from its middle (across: positive to the right of its facing; back: positive behind it).
+export type ChimneyOffset = { number }
+export type Ambience = {
+	-- By model name: every house of that model (dressing.houses and `smokeHouses`) smokes.
+	chimneys: { [string]: ChimneyOffset }?,
+	smokeHouses: { DressHouse }?, -- hub buildings that are houses too, copied from the map sheet
+	lamps: AmbienceLight?, -- every lamp in `lamps` gets this light and a faint halo
+	glints: boolean?, -- a slow sparkle on its pools, pond and flats of water
+	sources: { AmbienceSource },
+}
+
 -- Every field marked "left out" is optional: a biome without that feature leaves it out and the
 -- builder skips it (Greenwood fills them all in).
 export type DressingSheet = {
@@ -301,6 +337,7 @@ export type DressingSheet = {
 	brambles: { SheetPoint }, -- may be empty
 	coop: SheetPoint?,
 	patch: { from: SheetPoint, to: SheetPoint }?, -- the mentor's vegetable rows
+	ambience: Ambience?, -- smoke, lights and drifting motes (src/server/World/Ambience)
 }
 
 export type Biome = {

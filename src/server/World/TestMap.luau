@@ -23,6 +23,7 @@ local Tamers = require(ReplicatedStorage.content.Tamers)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
+local Ambience = require(script.Parent.Ambience)
 local CorridorGround = require(script.Parent.CorridorGround)
 local Corridors = require(script.Parent.Corridors)
 local Dressing = require(script.Parent.Dressing)
@@ -133,6 +134,7 @@ local function buildBiome(
 		Scenery.build(world, biome, map, dressing, waters, pick)
 		Landmarks.build(world, map, dressing)
 		clipFlats(world, ground)
+		Ambience.build(world, map, dressing)
 	else
 		Scatter.build(world, biome, map, 44)
 	end

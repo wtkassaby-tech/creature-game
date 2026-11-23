@@ -60,9 +60,50 @@ function CreaturesView.start(playerGui: Instance)
 	-- Nearly the whole screen: at 874 by 402 this is 839 by 378 points.
 	local root = Kit.panel(gui, UDim2.fromScale(0.96, 0.94), UDim2.fromScale(0.02, 0.03))
 	local header = HeaderChips.new(root)
-	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
-		gui.Enabled = false
-	end)
+	-- The screen slides up when opened and back down when closed. A new open or close cancels
+	-- the tween before it, and nothing waits on it: the screen takes taps at once.
+	local SHOWN = root.Position
+	local HIDDEN = UDim2.fromScale(SHOWN.X.Scale, 1)
+	local slideTween: Tween? = nil
+	local closing = false
+	local function slideTo(goal: UDim2, info: TweenInfo, done: (() -> ())?)
+		if slideTween then
+			slideTween:Cancel()
+		end
+		local made = TweenService:Create(root, info, { Position = goal })
+		slideTween = made
+		made.Completed:Connect(function(state: Enum.PlaybackState)
+			if state == Enum.PlaybackState.Completed and done then
+				done()
+			end
+		end)
+		made:Play()
+	end
+	local function openScreen()
+		closing = false
+		if not gui.Enabled then
+			root.Position = HIDDEN
+		end
+		gui.Enabled = true
+		slideTo(SHOWN, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), nil)
+	end
+	local function closeScreen()
+		if closing or not gui.Enabled then
+			return
+		end
+		closing = true
+		slideTo(
+			HIDDEN,
+			TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			function()
+				if closing then
+					closing = false
+					gui.Enabled = false
+				end
+			end
+		)
+	end
+	local close = Kit.button(root, "Close", Kit.COLOURS.bad, closeScreen)
 	close.Size = UDim2.fromOffset(96, 44) -- finger-sized on a phone
 	close.Position = UDim2.new(1, -108, 0, 4)
 
@@ -321,14 +362,16 @@ function CreaturesView.start(playerGui: Instance)
 	-- Open and fill in one step: as two separate handlers the list was filled before the screen
 	-- opened, so it came up empty (first Studio run).
 	open.Activated:Connect(function()
-		gui.Enabled = not gui.Enabled
 		confirmRelease = nil
 		seenKey = lastKey -- looked at: the button settles until something new is waiting
-		updatePulse()
-		if gui.Enabled then
-			layout()
-			Kit.pop(root)
+		if gui.Enabled and not closing then
+			closeScreen()
+			updatePulse()
+			return
 		end
+		layout()
+		openScreen()
+		updatePulse()
 		rebuild()
 	end)
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)

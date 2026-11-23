@@ -59,6 +59,29 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	ribbonCorner.CornerRadius = UDim.new(0, 6)
 	ribbonCorner.Parent = ribbon
 	Kit.stripes(ribbon)
+	-- A pale band of light that sweeps across the ribbon once the panel has landed. It is a
+	-- frame with its own gradient (the ribbon's gradient is already the stripes).
+	ribbon.ClipsDescendants = true
+	local shine = Instance.new("Frame")
+	shine.Size = UDim2.fromScale(1, 1)
+	shine.BackgroundColor3 = Kit.COLOURS.white
+	shine.BorderSizePixel = 0
+	shine.ZIndex = 8
+	shine.Parent = ribbon
+	local shineCorner = Instance.new("UICorner")
+	shineCorner.CornerRadius = UDim.new(0, 6)
+	shineCorner.Parent = shine
+	local shineGradient = Instance.new("UIGradient")
+	shineGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.4, 1),
+		NumberSequenceKeypoint.new(0.5, 0.45),
+		NumberSequenceKeypoint.new(0.6, 1),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	shineGradient.Rotation = 20
+	shineGradient.Offset = Vector2.new(-1, 0)
+	shineGradient.Parent = shine
 	local title = Kit.label(ribbon, "", UDim2.new(1, -24, 1, -8), UDim2.fromOffset(12, 4), 40)
 	title.TextXAlignment = Enum.TextXAlignment.Center
 	title.ZIndex = 9
@@ -178,6 +201,36 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 	local shownKind: Kind? = nil
 	local paid = false
 	local run = 0 -- goes up each time the panel is hidden, so an old count-up stops
+	local dropTween: Tween? = nil
+	local shineTween: Tween? = nil
+
+	-- The panel drops in from above with a small bounce, then the ribbon shines once. Earlier
+	-- tweens are cancelled first so repeated shows never stack. Input is never held back.
+	local function dropIn()
+		if dropTween then
+			dropTween:Cancel()
+		end
+		if shineTween then
+			shineTween:Cancel()
+		end
+		local goal = panel.Position
+		panel.Position = goal - UDim2.fromOffset(0, 70)
+		local drop = TweenService:Create(
+			panel,
+			TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Position = goal }
+		)
+		dropTween = drop
+		drop:Play()
+		shineGradient.Offset = Vector2.new(-1, 0)
+		local sweep = TweenService:Create(
+			shineGradient,
+			TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, 0, false, 0.25),
+			{ Offset = Vector2.new(1, 0) }
+		)
+		shineTween = sweep
+		sweep:Play()
+	end
 
 	local function row(order: number, colour: Color3): TextLabel
 		-- Up to four rows share the space, so a long list shrinks instead of spilling.
@@ -259,7 +312,7 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 					then Kit.COLOURS.gold
 					else Kit.COLOURS.textDim
 				panel.Visible = true
-				Kit.pop(panel)
+				dropIn()
 				Sfx.play(if kind == "Lost" then "lose" else "win")
 			end
 			if rewards and not paid then
@@ -270,6 +323,12 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 		hide = function()
 			run += 1
 			shownKind, paid = nil, false
+			if dropTween then
+				dropTween:Cancel()
+			end
+			if shineTween then
+				shineTween:Cancel()
+			end
 			panel.Visible = false
 			layout(false)
 			if picture then

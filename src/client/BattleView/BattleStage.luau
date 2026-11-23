@@ -7,6 +7,7 @@
 -- Everything is made on the player's own device and removed when the battle closes.
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local ToyBody = require(script.Parent.Parent.Creatures.ToyBody)
@@ -23,11 +24,19 @@ export type Stage = {
 	lunge: (side: number) -> (),
 	hit: (side: number, big: boolean) -> (),
 	faint: (side: number) -> (),
+	anchor: (side: number) -> Vector3, -- the middle of that creature's body, in the world
+	ground: (side: number) -> Vector3, -- the point on its pad, under its feet
+	facing: (side: number) -> Vector3, -- the way it faces (toward the other creature)
+	effects: () -> Instance?, -- where effects go; nil once the battle has closed
+	shake: (power: number) -> (), -- a short camera shake; power is in studs
 }
 
 local PATCH_COLOUR = Color3.fromRGB(92, 134, 74) -- trodden grass, a shade under the meadow
 local RIM_COLOUR = Color3.fromRGB(226, 214, 170)
 local FIELD_OF_VIEW = 55
+local WIDE_FIELD_OF_VIEW = 68 -- the opening shot, wide on both creatures
+local INTRO_SECONDS = 0.8
+local SHAKE_SECONDS = 0.28
 
 local function disc(parent: Instance, width: number, colour: Color3, at: Vector3)
 	local made = Instance.new("Part")
@@ -51,6 +60,53 @@ function BattleStage.new(): Stage
 	local facings: { Vector3 } = { Vector3.zAxis, Vector3.zAxis }
 	local busy: { number } = { 0, 0 } -- goes up with each move of a creature, so an old one stops
 	local hidden: { BillboardGui } = {} -- name signs in the world, put away while the battle shows
+	local sizes: { number } = { 1, 1 } -- how big each creature stands, for where its middle is
+
+	-- The camera: it opens wide on both creatures and settles behind the player's own over
+	-- INTRO_SECONDS, and can be shaken. One frame loop runs only while one of those is moving.
+	local shotFrom, shotTo = CFrame.new(), CFrame.new()
+	local shotStart = 0
+	local shakePower, shakeEnd = 0, 0
+	local shaking = Random.new() -- which way each frame of a shake jolts; looks only
+	local cameraLoop: RBXScriptConnection? = nil
+	local function stopCamera()
+		if cameraLoop then
+			cameraLoop:Disconnect()
+			cameraLoop = nil
+		end
+	end
+	local function driveCamera()
+		if cameraLoop then
+			return
+		end
+		cameraLoop = RunService.RenderStepped:Connect(function()
+			local camera = Workspace.CurrentCamera
+			if not camera or not folder then
+				stopCamera()
+				return
+			end
+			local now = os.clock()
+			local progress = math.clamp((now - shotStart) / INTRO_SECONDS, 0, 1)
+			local eased = progress * progress * (3 - 2 * progress)
+			local frame = shotFrom:Lerp(shotTo, eased)
+			camera.FieldOfView = WIDE_FIELD_OF_VIEW + (FIELD_OF_VIEW - WIDE_FIELD_OF_VIEW) * eased
+			local left = shakeEnd - now
+			if left > 0 then
+				local power = shakePower * (left / SHAKE_SECONDS)
+				frame = frame
+					* CFrame.new(
+						shaking:NextNumber(-1, 1) * power,
+						shaking:NextNumber(-1, 1) * power,
+						0
+					)
+					* CFrame.Angles(0, 0, math.rad(shaking:NextNumber(-1, 1) * power * 2))
+			end
+			camera.CFrame = frame
+			if progress >= 1 and left <= 0 then
+				stopCamera()
+			end
+		end)
+	end
 
 	-- The floating names over buildings, people and wild creatures would hang across the scene.
 	local function showSigns(visible: boolean)
@@ -138,12 +194,15 @@ function BattleStage.new(): Stage
 		local toy = ToyBody.new(parent, look.species, look.element, look.size)
 		toy.place(CFrame.lookAt(grounds[side], grounds[side] + facings[side]))
 		toys[side] = toy
+		sizes[side] = look.size
 		busy[side] += 1
 	end
 
 	local function close()
 		local had = folder
 		folder = nil
+		stopCamera()
+		shakeEnd = 0
 		toys = { nil, nil }
 		if had then
 			had:Destroy()
@@ -260,8 +319,17 @@ function BattleStage.new(): Stage
 				end
 			end
 			camera.CameraType = Enum.CameraType.Scriptable
-			camera.FieldOfView = FIELD_OF_VIEW
-			camera.CFrame = CFrame.lookAt(eye, target)
+			-- The opening shot: high and wide, seeing both creatures, then in behind the player's.
+			local middle = grounds[1]:Lerp(grounds[2], 0.5)
+			local wideEye = middle + sideways * 30 + Vector3.yAxis * 20 - facings[1] * 4
+			clearAround(wideEye - Vector3.yAxis * 10, ignore)
+			shotFrom = CFrame.lookAt(wideEye, middle)
+			shotTo = CFrame.lookAt(eye, target)
+			shotStart = os.clock()
+			shakeEnd = 0
+			camera.FieldOfView = WIDE_FIELD_OF_VIEW
+			camera.CFrame = shotFrom
+			driveCamera()
 		end,
 		swap = place,
 		close = close,
@@ -300,6 +368,25 @@ function BattleStage.new(): Stage
 				busy[side] += 1
 				toy.sink()
 			end
+		end,
+		anchor = function(side: number): Vector3
+			return grounds[side] + Vector3.yAxis * (1.6 + 1.6 * math.clamp(sizes[side], 0.6, 1.8))
+		end,
+		ground = function(side: number): Vector3
+			return grounds[side]
+		end,
+		facing = function(side: number): Vector3
+			return facings[side]
+		end,
+		effects = function(): Instance?
+			return folder
+		end,
+		shake = function(power: number)
+			if not folder then
+				return
+			end
+			shakePower, shakeEnd = power, os.clock() + SHAKE_SECONDS
+			driveCamera()
 		end,
 	}
 end

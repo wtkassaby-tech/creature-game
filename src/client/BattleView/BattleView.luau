@@ -18,8 +18,10 @@ local BattleFx = require(script.Parent.BattleFx)
 local BattleStage = require(script.Parent.BattleStage)
 local Portrait = require(script.Parent.Parent.Creatures.Portrait)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Transition = require(script.Parent.Parent.UI.Transition)
 local MoveButton = require(script.Parent.MoveButton)
 local Moves = require(ReplicatedStorage.content.Moves)
+local MoveFx = require(script.Parent.Parent.Fx.MoveFx)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local ResultPanel = require(script.Parent.ResultPanel)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -81,6 +83,7 @@ function BattleView.start(playerGui: Instance)
 
 	local fx = BattleFx.new(gui)
 	local stage = BattleStage.new()
+	local moveFx = MoveFx.new(stage) -- shots, impacts, faint, catch and level-up effects
 	local staged: { number } = { 0, 0 } -- which team place is standing on each pad
 	local fast = false -- the speed the player chose, kept for this visit only
 	local hurried = false -- a tap during a turn: finish showing it quickly
@@ -600,22 +603,29 @@ function BattleView.start(playerGui: Instance)
 		picker.Visible = false
 		result.hide()
 		lasso.finish()
-		gui.Enabled = true
-		local current = model
-		local mine = current and current.sides[1][current.active[1]]
-		local foe = current and current.sides[2][current.active[2]]
-		if current and mine and foe then
-			staged = { current.active[1], current.active[2] }
-			stage.open(
-				{ species = mine.name, element = mine.element, size = mine.size },
-				{ species = foe.name, element = foe.element, size = foe.size }
-			)
-		end
-		refresh()
-		Kit.pop(cards[1].panel)
-		Kit.pop(cards[2].panel)
-		fx.callout(if value.Kind == "Wild" then "WILD!" else "BATTLE!", Kit.COLOURS.gold)
-		Sfx.play("swap")
+		local opening = model
+		-- The cream bars sweep across; the battle scene is swapped in behind them.
+		Transition.intoBattle(function()
+			if model ~= opening then
+				return -- another battle began meanwhile; it has its own wipe
+			end
+			gui.Enabled = true
+			local current = model
+			local mine = current and current.sides[1][current.active[1]]
+			local foe = current and current.sides[2][current.active[2]]
+			if current and mine and foe then
+				staged = { current.active[1], current.active[2] }
+				stage.open(
+					{ species = mine.name, element = mine.element, size = mine.size },
+					{ species = foe.name, element = foe.element, size = foe.size }
+				)
+			end
+			refresh()
+			Kit.pop(cards[1].panel)
+			Kit.pop(cards[2].panel)
+			fx.callout(if value.Kind == "Wild" then "WILD!" else "BATTLE!", Kit.COLOURS.gold)
+			Sfx.play("swap")
+		end)
 	end)
 
 	Bus.listen(Net.BattleTurn, function(value)
@@ -629,6 +639,7 @@ function BattleView.start(playerGui: Instance)
 			local actor = event.Side
 			local other = if actor == 1 then 2 else 1
 			local who = current.sides[actor][current.active[actor]]
+			local spent = 0 -- seconds of this event's pause already used by a shot in flight
 			if event.Kind == "Move" or event.Kind == "FollowUp" then
 				local struck = current.sides[other][current.active[other]]
 				local def = if event.Move then Moves[event.Move] else nil
@@ -640,9 +651,19 @@ function BattleView.start(playerGui: Instance)
 				end
 				message.Text = `{if who then who.name else "It"} used {event.Move or "a move"}!`
 				stage.lunge(actor)
+				local kind: Types.Element = if def
+					then def.element
+					elseif who then who.element
+					else "Arcane"
 				if event.Damage > 0 then
+					-- The shot flies from one creature to the other, then lands.
+					local flight = if hurried then 0 elseif fast then 0.16 else 0.3
+					spent = moveFx.cast(actor, other, kind, flight)
 					local hurt = `-{event.Damage}`
 					if factor > 1 then
+						moveFx.impact(other, kind, "strong")
+						stage.shake(0.45)
+						fx.flash()
 						stage.hit(other, true)
 						fx.rise(stage.point(other), hurt, Kit.COLOURS.gold, true)
 						fx.callout("STRONG HIT!", Kit.COLOURS.gold)
@@ -656,20 +677,27 @@ function BattleView.start(playerGui: Instance)
 							message.Text = `{message.Text}\n{praise}`
 						end
 					elseif factor < 1 then
+						moveFx.impact(other, kind, "weak")
 						stage.hit(other, false)
 						fx.rise(stage.point(other), hurt, Kit.COLOURS.textDim, false)
 						Sfx.play("weakHit")
 					else
+						moveFx.impact(other, kind, "normal")
 						stage.hit(other, false)
 						fx.rise(stage.point(other), hurt, Kit.COLOURS.white, false)
 						Sfx.play("hit")
 					end
+				else
+					moveFx.puff(actor, kind) -- a move that does no damage glows on its user
 				end
 			elseif event.Kind == "Switch" then
 				current.active[actor] = event.Slot
 				local entered = current.sides[actor][event.Slot]
 				message.Text = `{if entered then entered.name else "A creature"} steps in`
 				Kit.pop(cards[actor].panel)
+				if entered then
+					moveFx.switchIn(actor, entered.element)
+				end
 				Sfx.play("swap")
 			elseif event.Kind == "Faint" then
 				local fallen = current.sides[actor][event.Slot]
@@ -678,6 +706,7 @@ function BattleView.start(playerGui: Instance)
 					fallen.poisoned = false
 					message.Text = `{fallen.name} fainted`
 					stage.faint(actor)
+					moveFx.faint(actor, fallen.element)
 					Sfx.play("faint")
 				end
 			elseif event.Kind == "Poisoned" then
@@ -692,6 +721,7 @@ function BattleView.start(playerGui: Instance)
 					victim.hp = event.TargetHp
 					message.Text = `{victim.name} is hurt by poison`
 					fx.rise(stage.point(actor), "poison", Kit.ELEMENT_COLOURS.Toxic, false)
+					moveFx.puff(actor, "Toxic")
 				end
 			elseif event.Kind == "Cured" then
 				local victim = current.sides[actor][event.Slot]
@@ -712,16 +742,17 @@ function BattleView.start(playerGui: Instance)
 					treated.hp = event.TargetHp
 					message.Text = `{treated.name} was treated`
 					fx.rise(stage.point(actor), "healed", Kit.COLOURS.good, false)
+					moveFx.heal(actor)
 					Sfx.play("confirm")
 				end
 			end
 			refresh()
-			task.wait(
-				if hurried
-					then HURRIED_EVENT_SECONDS
-					elseif fast then FAST_EVENT_SECONDS
-					else EVENT_SECONDS
-			)
+			-- The time a shot spent in flight comes off the pause, so turns are not slower.
+			local pause = if hurried
+				then HURRIED_EVENT_SECONDS
+				elseif fast then FAST_EVENT_SECONDS
+				else EVENT_SECONDS
+			task.wait(math.max(0.05, pause - spent))
 		end
 		current.active = { value.YourActive, value.TheirActive }
 		current.tempo = { value.YourTempo, value.TheirTempo }
@@ -767,6 +798,9 @@ function BattleView.start(playerGui: Instance)
 		end
 		current.rewards =
 			{ coins = value.Coins, xp = xp, material = value.Material, levels = levels }
+		if #levels > 0 then
+			moveFx.levelUp(1) -- a column of motes rises from the player's creature
+		end
 		showEnd(current)
 	end)
 
@@ -782,6 +816,7 @@ function BattleView.start(playerGui: Instance)
 		lasso.finish()
 		if value.Outcome == "Caught" then
 			fx.callout("GOT IT!", Kit.COLOURS.gold)
+			moveFx.caught(2)
 		end
 		local current = model
 		-- Only a Common creature is promised not to run off after a miss; others get the old line.

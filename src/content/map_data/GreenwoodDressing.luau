@@ -354,6 +354,33 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	brambles = { p(180, -215) },
 	coop = p(126, -70),
 	patch = { from = p(22, -96), to = p(36, -78) },
+
+	-- Smoke from the cottages' chimneys, a warm glow on each lamp, pollen and seed fluff over the
+	-- meadows, a glint on the pools and the pond. Chimney offsets measured from above in Studio
+	-- (23 November 2026); the moss cottage has no chimney.
+	ambience = {
+		chimneys = {
+			Cottage = { -0.27, 1.0, 0.03 }, -- the stone stack on its left side
+			CottageBlue = { -0.22, 1.0, 0.01 }, -- the clay pot on its left side
+		},
+		-- The mentor's and the breeder's cottages stand in the hub.
+		smokeHouses = {
+			{ at = p(0, -82), faces = 180, model = "Cottage", width = 26, depth = 27, tall = 26 },
+			{ at = p(82, -64), faces = 225, model = "Cottage", width = 26, depth = 27, tall = 26 },
+		},
+		lamps = { range = 22, brightness = 1.1, colour = { 255, 206, 140 } },
+		glints = true,
+		sources = {
+			-- Pollen over the meadows beside the lane.
+			{ kind = "Pollen", at = p(-208, 43), height = 4, area = { 90, 70, 6 } },
+			{ kind = "Pollen", at = p(-311, 25), height = 4, area = { 90, 70, 6 } },
+			{ kind = "Pollen", at = p(214, -8), height = 4, area = { 90, 70, 6 } },
+			-- Seed fluff on the breeze: the birch rise, the orchard and the clover meadow.
+			{ kind = "Fluff", at = p(365, -44), height = 5, area = { 80, 70, 8 } },
+			{ kind = "Fluff", at = p(95, 112), height = 5, area = { 70, 50, 8 } },
+			{ kind = "Fluff", at = p(-270, 40), height = 5, area = { 80, 70, 8 } },
+		},
+	},
 }
 
 return GreenwoodDressing

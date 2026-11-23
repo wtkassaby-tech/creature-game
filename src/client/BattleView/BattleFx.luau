@@ -14,6 +14,7 @@ local scatter = Random.new() -- where a floating number starts; looks only, neve
 export type Fx = {
 	callout: (text: string, colour: Color3) -> (),
 	rise: (at: Vector2, text: string, colour: Color3, big: boolean) -> (),
+	flash: () -> (), -- a quick white glow around the screen's edge, for a strong hit
 }
 
 function BattleFx.new(gui: ScreenGui): Fx
@@ -89,7 +90,65 @@ function BattleFx.new(gui: ScreenGui): Fx
 		tween:Play()
 	end
 
-	return { callout = callout, rise = rise }
+	-- A brief white glow around the screen's edge, for a strong hit. Four strips, each fading
+	-- toward the middle, so the creatures stay clear.
+	local edges: { Frame } = {}
+	for _, turn in { 0, 180, 90, 270 } do -- left, right, top, bottom
+		local strip = Instance.new("Frame")
+		strip.AnchorPoint = Vector2.new(0.5, 0.5)
+		if turn % 180 == 0 then
+			strip.Size = UDim2.fromScale(0.22, 1)
+			strip.Position = if turn == 0
+				then UDim2.fromScale(0.11, 0.5)
+				else UDim2.fromScale(0.89, 0.5)
+		else
+			strip.Size = UDim2.fromScale(1, 0.3)
+			strip.Position = if turn == 90
+				then UDim2.fromScale(0.5, 0.15)
+				else UDim2.fromScale(0.5, 0.85)
+		end
+		strip.BackgroundColor3 = Color3.new(1, 1, 1)
+		strip.BackgroundTransparency = 1
+		strip.BorderSizePixel = 0
+		strip.Visible = false
+		strip.ZIndex = 17
+		strip.Active = false
+		local fade = Instance.new("UIGradient")
+		fade.Transparency = NumberSequence.new(0, 1)
+		fade.Rotation = turn
+		fade.Parent = strip
+		strip.Parent = gui
+		table.insert(edges, strip)
+	end
+	local flashTurn = 0
+
+	local function flash()
+		flashTurn += 1
+		local mine = flashTurn
+		for _, strip in edges do
+			strip.Visible = true
+			strip.BackgroundTransparency = 1
+			local snap = TweenInfo.new(0.05, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			TweenService:Create(strip, snap, { BackgroundTransparency = 0.25 }):Play()
+		end
+		task.delay(0.05, function()
+			if mine ~= flashTurn then
+				return
+			end
+			local fall = TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			for _, strip in edges do
+				TweenService:Create(strip, fall, { BackgroundTransparency = 1 }):Play()
+			end
+			task.wait(0.24)
+			if mine == flashTurn then
+				for _, strip in edges do
+					strip.Visible = false
+				end
+			end
+		end)
+	end
+
+	return { callout = callout, rise = rise, flash = flash }
 end
 
 return BattleFx
