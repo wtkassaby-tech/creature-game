@@ -372,6 +372,37 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://138064220553422",
 		size = { 7.5, 2.97, 16 },
 	},
+	-- The Mire (plan 15), 23 November 2026: low-detail props for Sedgeholm and its routes.
+	ReedHut = {
+		mesh = "rbxassetid://113345453917649",
+		texture = "rbxassetid://115837607353485",
+		size = { 11.66, 18, 11.33 },
+	},
+	Mangrove = {
+		mesh = "rbxassetid://136900276153112",
+		texture = "rbxassetid://128359071390211",
+		size = { 14, 17.97, 13.96 },
+	},
+	Cypress = {
+		mesh = "rbxassetid://137293726603660",
+		texture = "rbxassetid://107797443824402",
+		size = { 20, 25.51, 19.89 },
+	},
+	BellTower = {
+		mesh = "rbxassetid://76899620450012",
+		texture = "rbxassetid://116933567489410",
+		size = { 11.89, 13.01, 12 },
+	},
+	LilyPads = {
+		mesh = "rbxassetid://118072901016458",
+		texture = "rbxassetid://120367186419764",
+		size = { 4.98, 1.5, 4.71 },
+	},
+	Cattails = {
+		mesh = "rbxassetid://77562331568694",
+		texture = "rbxassetid://121501566329345",
+		size = { 5.72, 8.09, 6.08 },
+	},
 }
 
 return PropModels
