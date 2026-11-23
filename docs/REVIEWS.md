@@ -2,6 +2,24 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 23 November 2026: bug-hunt fixes to capture, saving, eggs, purchase switches and story holds (branch fix/studio-first-run)
+
+Reviewer: a read-only exploit review that did not write the fixes. Reviewed: `Lasso.luau`, `LassoConfig.luau`, `RoundTrip.luau`, `CaptureService.luau`, `GiantService.luau`, `Capture.luau`, `GiantCapture.luau`, `Grants.luau`, `DataService.luau`, `Profile.luau`, `StateSync.luau`, `Main.server.luau`, `BreedingService.luau`, `SerialGrants.luau`, `PurchaseService.luau`, `LiveConfigService.luau`, `WorldService.luau`, `BattleFlow.luau`, `BattleService.luau`, `FindService.luau`. **Found sound:** no duplication, double spend, double refund, double judgement or repeated serial. The giant-capture refund cannot be farmed (the net result is zero and the failure path cannot be reached while an offer is open). The trailing coalesced save cannot write stale data after release. One grant per PurchaseId still holds. Purchase flags are display only; every purchase path re-checks the switch and PolicyService on the server. `Player:GetNetworkPing` was confirmed in the Roblox docs as a round trip in seconds, so the engine cap leaves honest slow connections their allowance (the reviewer's finding 2 rested on it possibly being one way).
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | A lag switch held through the throw, then switched off, kept the slowed marker with quick taps | Medium | Each tap of a slowed sweep must lag at least half the capped round trip (`ASSIST_MIN_LAG_SHARE`), or the throw is Invalid. Tests added |
+| 2 | The engine-ping cap might shrink honest players' allowance if the figure were one way | Medium, unconfirmed | Not a bug: the docs say round trip. The allowance is engine ping + 40 + 120 ms against an honest tap's round trip + about 50 to 70 ms. Watch the `LassoInvalid` rate on live servers |
+| 3 | A modified client can solve the timing game, because the device knows the pattern | Medium for giants, known limit | Open, for Ayrton: act on `looksScripted` (at least hold a flagged account's giant grant for review) and measure errors against zone width |
+| 4 | A giant waiting for its number did not hold a stable place, so it could take the place a wild throw was counting on | Low | `Grants.room` counts waiting giants; `finishGiant` takes its own held place (`room < 0`). Tests added |
+| 5 | Finds and giant starts did not check the story's holds | Low | A find inside a hold, or searched from one, is Shut; StartGiant refuses with the hold's line |
+| 6 | `DataService.start`'s stop function also stopped ending sessions for leaving players | Low | Only joins are stopped |
+| 7 | The PlayStats repair ran after the save check and let NaN or infinity through, which would shut a player out | Low | Repaired before the check; a non-finite number counts as damaged |
+| 8 | A throw from `StartSessionAsync` left the player in the game unloaded | Low | Caught; logged and the player removed with a rejoin message |
+| 9 | The live-switch comment said the first read never fires a change | Low | Comment corrected; the defaults (purchases on) apply until the first read |
+
+Also open from the bug hunt: the player's position comes from client physics (a speed or teleport check risks false positives on respawns and server moves); every hold, battle start and find re-checks the position, which limits what a teleport can reach.
+
 ## 23 November 2026: purchase foundations (plan 16 steps 1 to 3) and the approved breeding numbers (branch fix/studio-first-run)
 
 Reviewer: two independent exploit reviews, read-only, that did not write the code (a full review, then a re-review of the fixes). Reviewed: `src/server/Purchases/PurchaseService.luau`, `src/shared/Purchases.luau`, `Gems.luau`, `PassEffects.luau`, `Capture.luau`, `Lasso.luau`, `Grants.luau`, `Breeding.luau`, `Profile.luau` (schema 2 to 3), `src/config/PurchaseConfig.luau`, `EconomyConfig.luau`, `BreedConfig.luau`, `LiveConfig.luau`, `src/net/Net.blink`, the Capture, Inventory, Breeding and Data services, and the tests. **Receipts are sound:** each PurchaseId is granted once, written in the same step as the grant, and PurchaseGranted is returned only after the save holds it; two servers are covered by the session lock. The breeding numbers (level share 0.75, faster first eggs) open no exploit.
