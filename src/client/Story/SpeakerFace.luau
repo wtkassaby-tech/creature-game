@@ -8,7 +8,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextService = game:GetService("TextService")
 
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Biomes = require(ReplicatedStorage.content.Biomes)
+local PersonModel = require(ReplicatedStorage.shared.PersonModel)
 local PropModels = require(ReplicatedStorage.content.PropModels)
+local Tamers = require(ReplicatedStorage.content.Tamers)
 
 local SpeakerFace = {}
 
@@ -21,8 +24,9 @@ export type View = {
 local FACE = 104 -- the picture frame, in pixels
 local TAB_TALL = 30
 
--- Which painted model is the face of which speaker. A speaker who is not here has a name tab
--- and no picture: better none than the wrong face.
+-- Speakers with a face that is not a named person standing in the world. Everyone else is read
+-- from the data below, so a new tamer or keeper gets their face with no change here. A speaker
+-- with no person in the world has a name tab and no picture: better none than the wrong face.
 local FACES: { [string]: string } = {
 	Mentor = "Mentor",
 	Rival = "Rival",
@@ -30,6 +34,40 @@ local FACES: { [string]: string } = {
 	["Marlow Tuppence"] = "Shopkeeper",
 	Sign = "Signpost",
 }
+
+-- Every named person in the world, as the world dresses them: tamers on the routes (by name),
+-- story opponents (their block is called "Name (battle_id)") and the keepers of hub buildings
+-- that have a named character (by character id). A speaker is matched by first or last name;
+-- one name shared by two people in different clothes gets no face. Built on first use.
+local people: { [string]: string }? = nil
+local function personFaces(): { [string]: string }
+	if people then
+		return people
+	end
+	local list: { PersonModel.Person } = {}
+	for _, tamer in Tamers.locals do
+		table.insert(list, { name = tamer.name, worldName = tamer.name })
+	end
+	for _, battle in Tamers.story do
+		table.insert(list, { name = battle.name, worldName = `{battle.name} ({battle.id})` })
+	end
+	for _, biome in Biomes do
+		for _, building in biome.hub.buildings do
+			if building.npc then
+				table.insert(list, { name = building.npc, worldName = building.npc })
+			end
+		end
+	end
+	local made = PersonModel.index(list, function(seed: number): number
+		return Random.new(seed):NextNumber()
+	end)
+	people = made
+	return made
+end
+
+local function faceFor(speaker: string): string?
+	return FACES[speaker] or personFaces()[string.lower(speaker)]
+end
 
 local templates: { [string]: MeshPart } = {}
 local failed: { [string]: boolean } = {}
@@ -135,7 +173,7 @@ function SpeakerFace.new(gui: Instance, box: GuiObject): View
 				TextService:GetTextSize(speaker, 16, Kit.FONT_PIXEL, Vector2.new(600, TAB_TALL)).X
 			tab.Size = UDim2.fromOffset(math.clamp(wide + 34, 90, 320), TAB_TALL)
 			tab.Visible = speaker ~= ""
-			local modelName = FACES[speaker]
+			local modelName = faceFor(speaker)
 			setFace(modelName)
 			return if modelName and not failed[modelName] then FACE + 14 else 0
 		end,

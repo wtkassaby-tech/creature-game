@@ -103,7 +103,7 @@ local beats: { WorldTypes.Beat } = {
 		grants = {},
 		lines = {
 			{
-				speaker = "Wren",
+				speaker = "Wren Ashby",
 				text = "Did you see? My Fenwhisk never got poisoned. Toxic ones just shrug it off.",
 			},
 		},
