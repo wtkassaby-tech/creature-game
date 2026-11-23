@@ -13,6 +13,7 @@ local BreedConfig = require("../config/BreedConfig")
 local Economy = require("./Economy")
 local FindIds = require("./FindIds")
 local ProfileConfig = require("../config/ProfileConfig")
+local PurchaseConfig = require("../config/PurchaseConfig")
 local Species = require("../content/Species")
 local TypeChart = require("./TypeChart")
 local Types = require("./Types")
@@ -65,6 +66,18 @@ export type Settings = {
 	reducedMotion: boolean,
 }
 
+-- What the player has bought with Robux (plan 16). `passes[id] = true` means the pass is owned AND
+-- its one-time effect (stable room, a pen) has been applied to this record, so applying it twice
+-- is impossible. `once` marks one-time products (the Starter Pack); `perks` marks cosmetic flags
+-- granted with them. Keys are only ever added. `receiptIds` is the last few developer-product
+-- PurchaseIds (ProfileConfig.RECEIPTS_REMEMBERED), written in the same step as the grant.
+export type Purchases = {
+	passes: { [string]: boolean },
+	receiptIds: { string },
+	once: { [string]: boolean },
+	perks: { [string]: boolean },
+}
+
 export type Profile = {
 	SchemaVersion: number,
 	Coins: number,
@@ -85,7 +98,7 @@ export type Profile = {
 	Quests: { active: { [string]: number }, done: { [string]: boolean } },
 	Daily: Daily,
 	Index: { seen: { [string]: boolean }, owned: { [string]: boolean } },
-	Purchases: { passes: { [string]: boolean }, receiptIds: { string } },
+	Purchases: Purchases,
 	Settings: Settings,
 	PlayStats: { firstJoin: number, playSeconds: number, sessions: number },
 	Finds: Finds,
@@ -114,6 +127,21 @@ MIGRATIONS[1] = function(data: any)
 	end
 	if typeof(data.Daily) == "table" and typeof(data.Daily.finds) ~= "table" then
 		data.Daily.finds = {}
+	end
+end
+
+-- Version 2 to 3 (plan 16, purchases): the one-time products bought and the cosmetic perks.
+-- Nothing is back-filled: no existing player has bought anything yet. Adds only the two maps.
+MIGRATIONS[2] = function(data: any)
+	if typeof(data.Purchases) ~= "table" then
+		data.Purchases = { passes = {}, receiptIds = {}, once = {}, perks = {} }
+		return
+	end
+	if typeof(data.Purchases.once) ~= "table" then
+		data.Purchases.once = {}
+	end
+	if typeof(data.Purchases.perks) ~= "table" then
+		data.Purchases.perks = {}
 	end
 end
 
@@ -151,7 +179,7 @@ function Profile.template(): Profile
 		},
 		Finds = { once = {} },
 		Index = { seen = {}, owned = {} },
-		Purchases = { passes = {}, receiptIds = {} },
+		Purchases = { passes = {}, receiptIds = {}, once = {}, perks = {} },
 		Settings = {
 			battleSpeed = ProfileConfig.DEFAULT_BATTLE_SPEED,
 			lassoSlowMode = false,
@@ -334,6 +362,13 @@ local function checkCreature(id: string, creature: Types.Creature, problems: { s
 	then
 		table.insert(problems, `creature {id} has bad health`)
 	end
+	if
+		creature.paidAssist ~= nil
+		and creature.paidAssist ~= "Pass"
+		and creature.paidAssist ~= "GemLasso"
+	then
+		table.insert(problems, `creature {id} has a bad paid-assist mark`)
+	end
 	if creature.isGiant and creature.serial == nil then
 		table.insert(problems, `creature {id} is a giant with no serial number`)
 	end
@@ -497,6 +532,52 @@ local function validateUnsafe(profile: Profile): { string }
 				`giant {pending.ref} is both captured and waiting to be captured`
 			)
 		end
+	end
+
+	-- Purchases: a pass key is a known pass and true; one-time and perk marks are true. An unknown
+	-- key is reported, never deleted (a later release may know it).
+	local bought = profile.Purchases
+	if
+		typeof(bought) ~= "table"
+		or typeof(bought.passes) ~= "table"
+		or typeof(bought.once) ~= "table"
+		or typeof(bought.perks) ~= "table"
+	then
+		table.insert(problems, "unreadable: purchases are missing")
+	else
+		-- The device is told these as lists of at most BLINK_MAX_MARKS names of 1 to BLINK_MAX_KEY
+		-- characters (PlayerState in Net.blink), so a record outside that is reported.
+		local function checkMarks(
+			name: string,
+			marks: { [string]: boolean },
+			known: boolean
+		): number
+			local count = 0
+			for id, mark in marks do
+				count += 1
+				if mark ~= true then
+					table.insert(problems, `{name} {tostring(id)} has a bad mark`)
+				end
+				if typeof(id) ~= "string" or #id < 1 or #id > PurchaseConfig.BLINK_MAX_KEY then
+					table.insert(problems, `{name} key {tostring(id)} is not 1 to 24 characters`)
+				elseif known and not PurchaseConfig.PASSES[id :: any] then
+					table.insert(problems, `pass {id} is unknown or has a bad mark`)
+				end
+			end
+			return count
+		end
+		local passCount = checkMarks("pass", bought.passes, true)
+		local markCount = checkMarks("one-time purchase", bought.once, false)
+			+ checkMarks("perk", bought.perks, false)
+		if
+			passCount > PurchaseConfig.BLINK_MAX_MARKS
+			or markCount > PurchaseConfig.BLINK_MAX_MARKS
+		then
+			table.insert(problems, "more passes or perks than the device can be told")
+		end
+	end
+	if profile.Gems > PurchaseConfig.MAX_GEMS then
+		table.insert(problems, "Gems are above the limit")
 	end
 
 	local receipts = profile.Purchases.receiptIds

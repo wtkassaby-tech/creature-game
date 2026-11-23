@@ -155,8 +155,8 @@ end
 print("\n== Migration 1 to 2: finds (approval pack 7) ==")
 do
 	check(
-		"the schema is at version 2",
-		Profile.CURRENT_VERSION == 2 and Profile.MIGRATIONS[1] ~= nil
+		"the schema is at version 3 and keeps the finds migration",
+		Profile.CURRENT_VERSION == 3 and Profile.MIGRATIONS[1] ~= nil
 	)
 
 	-- A version-1 save as it was before finds: the current sample with the new fields taken away.
@@ -174,7 +174,7 @@ do
 	check(
 		"it gains the two new fields, empty, and the new version",
 		upgraded ~= nil
-			and upgraded.SchemaVersion == 2
+			and upgraded.SchemaVersion == Profile.CURRENT_VERSION
 			and typeof(upgraded.Finds) == "table"
 			and next(upgraded.Finds.once) == nil
 			and typeof(upgraded.Daily.finds) == "table"
@@ -233,6 +233,99 @@ do
 		"a new player starts with nothing found",
 		next(blank.Finds.once) == nil and next(blank.Daily.finds) == nil
 	)
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== Migration 2 to 3: purchases (plan 16) ==")
+do
+	check(
+		"the schema is at version 3",
+		Profile.CURRENT_VERSION == 3 and Profile.MIGRATIONS[2] ~= nil
+	)
+
+	-- A version-2 save as it was before: Purchases had only passes and receiptIds.
+	local function version2(): any
+		local old: any = sample()
+		old.SchemaVersion = 2
+		old.Purchases = { passes = { BiggerStable = true }, receiptIds = { "r1", "r2" } }
+		return old
+	end
+	local old = version2()
+	local migrated, why = Profile.migrate(old)
+	check("a version 2 save is upgraded", migrated ~= nil, why)
+	local upgraded: any = migrated
+	check(
+		"it gains the two new maps, empty, and keeps what was bought",
+		upgraded ~= nil
+			and upgraded.SchemaVersion == 3
+			and next(upgraded.Purchases.once) == nil
+			and next(upgraded.Purchases.perks) == nil
+			and upgraded.Purchases.passes.BiggerStable == true
+			and #upgraded.Purchases.receiptIds == 2
+			and upgraded.Coins == 2000
+	)
+	check(
+		"the upgraded save is sound",
+		upgraded ~= nil and #Profile.validate(upgraded :: Profile.Profile) == 0
+	)
+	check(
+		"the original is untouched",
+		old.SchemaVersion == 2 and old.Purchases.once == nil and old.Purchases.perks == nil
+	)
+
+	local half = version2()
+	half.Purchases.once = { StarterPack = true }
+	local keep: any = Profile.migrate(half)
+	check(
+		"a one-time mark already there survives and the missing map is added",
+		keep ~= nil
+			and keep.Purchases.once.StarterPack == true
+			and typeof(keep.Purchases.perks) == "table"
+	)
+
+	local gone = version2()
+	gone.Purchases = nil
+	local fresh: any = Profile.migrate(gone)
+	check(
+		"a save with no Purchases record gets an empty one",
+		fresh ~= nil
+			and typeof(fresh.Purchases.once) == "table"
+			and #fresh.Purchases.receiptIds == 0
+	)
+
+	local blank = Profile.template()
+	check(
+		"a new player has bought nothing",
+		next(blank.Purchases.once) == nil
+			and next(blank.Purchases.perks) == nil
+			and next(blank.Purchases.passes) == nil
+	)
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== Purchases in a save are checked ==")
+do
+	local p = sample()
+	p.Purchases.passes.QuickHatch = true
+	p.Purchases.once.StarterPack = true
+	p.Purchases.perks.StarterCosmetic = true
+	check("known passes and marks are allowed", #Profile.validate(p) == 0)
+
+	p = sample()
+	p.Purchases.passes.MadeUp = true
+	check("an unknown pass is reported", has(Profile.validate(p), "unknown or has a bad mark"))
+
+	p = sample();
+	(p.Purchases.passes :: any).QuickHatch = false
+	check("a pass mark that is not true is reported", has(Profile.validate(p), "bad mark"))
+
+	p = sample();
+	(p.Purchases :: any).once = nil
+	check("a missing record is unreadable", has(Profile.validate(p), "unreadable"))
+
+	p = sample()
+	p.Gems = 10 ^ 12
+	check("Gems past the limit are reported", has(Profile.validate(p), "above the limit"))
 end
 
 ------------------------------------------------------------------------------------------------

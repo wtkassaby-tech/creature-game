@@ -6,6 +6,7 @@ local BattleSession = require("./BattleSession")
 local Economy = require("./Economy")
 local EconomyConfig = require("../config/EconomyConfig")
 local Grants = require("./Grants")
+local PassEffects = require("./PassEffects")
 local Profile = require("./Profile")
 
 export type Bought = { item: EconomyConfig.ItemId, count: number, coins: number }
@@ -132,9 +133,12 @@ function Shop.spendBait(profile: Profile.Profile, unixTime: number): boolean
 end
 
 -- How many coin-bought stable expansions the player has, from their stable's size. (Stable
--- room bought any other way will need its own count before it exists.)
+-- room from passes and the Starter Pack is taken off first.)
 function Shop.stableExpansions(profile: Profile.Profile): number
-	local extra = profile.StableCapacity - EconomyConfig.STABLE_FREE_SLOTS
+	-- Room from passes and the Starter Pack is not a coin expansion and must not count as one.
+	local extra = profile.StableCapacity
+		- EconomyConfig.STABLE_FREE_SLOTS
+		- PassEffects.bonusCapacity(profile)
 	return math.max(0, math.floor(extra / EconomyConfig.STABLE_EXPANSION_SLOTS))
 end
 

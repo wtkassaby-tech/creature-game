@@ -79,6 +79,10 @@ export type Creature = {
 	-- lasts after a battle until a tonic or the healer mends it. Missing means unhurt, so
 	-- records saved before this field existed need no migration.
 	hurt: number?,
+	-- Set if it was caught with paid help: "Pass" (the Lasso Pass raised the roll) or "GemLasso" (the
+	-- lasso thrown was bought with Gems; a GemLasso creature releases for no coins or materials). Set in the same step as the catch and never cleared. Missing means not, so
+	-- no migration is needed. (Paid items are never sold with Robux for creatures themselves.)
+	paidAssist: ("Pass" | "GemLasso")?,
 }
 
 -- A move a part brings, and the creature level at which it unlocks (1 = known from the start).

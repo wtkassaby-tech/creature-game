@@ -175,6 +175,11 @@ event LassoPattern {
 		Zones: LassoZone[1..6],
 		SlowMode: boolean,
 		ConnectionAssist: boolean,
+		-- The best catch chance this sweep allows, in percent, with the Lasso Pass counted when it
+		-- applies; absent for a giant (never shown). The throw screen shows it as "Catch chance: up to N%".
+		Chance: u8(0..100)?,
+		-- True when the Lasso Pass is in that number.
+		Boosted: boolean?,
 	},
 }
 
@@ -203,6 +208,8 @@ event LassoResult {
 		ZonesHit: u8(0..6),
 		Candy: u16,
 		Element: Element?,
+		-- The chance this throw was rolled against, in percent (wild throws only).
+		Chance: u8(0..100)?,
 	},
 }
 
@@ -249,6 +256,8 @@ struct MemberReward {
 	Gained: u32,
 	Level: u8,
 	LevelsGained: u8,
+	XpBefore: u32,
+	XpAfter: u32,
 	NewMoves: string(1..24)[0..8],
 }
 event BattleRewards {
@@ -396,6 +405,12 @@ event PlayerState {
 		-- sets) and renewable spots used today (gathering and sighting spots).
 		Finds: string(1..40)[0..400],
 		FindsToday: string(1..40)[0..64],
+		-- Purchases (plan 16), display only: passes owned, one-time and cosmetic marks, stable room
+		-- that came from purchases, and whether the stable opens anywhere (Field Satchel).
+		Passes: string(1..24)[0..16],
+		Perks: string(1..24)[0..16],
+		StableBonus: u16,
+		StableAnywhere: boolean,
 	},
 }
 
@@ -704,4 +719,68 @@ event CraftItem {
 	Type: Reliable,
 	Call: SingleAsync,
 	Data: struct { Item: string(1..24) },
+}
+
+-- Purchases and Gems (plan 16). The device only ever names a thing (an item id, a product key)
+-- and a count; the server decides the price, whether it is allowed and what is granted.
+
+-- Device -> server: ask to see Roblox's purchase prompt for a pass or Gem product, by its key in
+-- PurchaseConfig ("BiggerStable", "Gems99", "StarterPack"...). The server checks the switch, that
+-- the thing is for sale and not already owned, and then opens the prompt itself. Nothing is
+-- granted by this message: only Roblox's own receipt or pass check grants anything.
+event PromptPurchase {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Id: string(1..24) },
+}
+
+-- Device -> server: buy a consumable with Gems at a shop. The price is the server's.
+event BuyGemItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Count: u8(1..99),
+	},
+}
+event GemBuyResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Ok: boolean,
+		Reason: string(0..80),
+		Count: u8,
+		Gems: u32,
+	},
+}
+
+-- Device -> server: finish an egg now for Gems. The egg is named by its hatch time (from the
+-- state), so a list that shifted cannot charge for the wrong egg. The cost is
+-- Gems.eggFinishCost on the server; the device may work out the same number to show it.
+event FinishEgg {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { HatchAt: u32 },
+}
+
+-- Server -> device: what the shop may show this player. Sent when the data loads and whenever
+-- the answer changes. Open is false while the live switch is off, so hide every Robux button.
+-- PaidRandomRestricted comes from PolicyService (true until it answers): while true, hide the
+-- Lasso Pass. TradingAllowed is IsPaidItemTradingAllowed. LassoBoost is true when the pass is
+-- owned and active.
+event PurchaseFlags {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Open: boolean,
+		PaidRandomRestricted: boolean,
+		TradingAllowed: boolean,
+		LassoBoost: boolean,
+	},
 }

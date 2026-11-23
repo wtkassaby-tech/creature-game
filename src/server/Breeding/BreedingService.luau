@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Breeding = require(ReplicatedStorage.shared.Breeding)
 local Economy = require(ReplicatedStorage.shared.Economy)
 local Grants = require(ReplicatedStorage.shared.Grants)
+local PassEffects = require(ReplicatedStorage.shared.PassEffects)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rng = require(ReplicatedStorage.shared.Rng)
 local Types = require(ReplicatedStorage.shared.Types)
@@ -166,7 +167,9 @@ function BreedingService.requestBreed(
 	end
 	a.breedCount, a.breedReadyAt = result.parentA.breedCount, result.parentA.breedReadyAt
 	b.breedCount, b.breedReadyAt = result.parentB.breedCount, result.parentB.breedReadyAt
-	table.insert(data.Eggs, { child = result.child, hatchAt = result.hatchAt, seed = seed })
+	-- Quick Hatch shortens the timer only; the child was decided above and is not touched.
+	local hatchAt = PassEffects.hatchAt(data, time, result.hatchAt)
+	table.insert(data.Eggs, { child = result.child, hatchAt = hatchAt, seed = seed })
 
 	-- 5. Log it so any creature can be traced and any breed replayed.
 	self.log("Breed", {
@@ -181,8 +184,10 @@ function BreedingService.requestBreed(
 		candyPrism = payment.prism,
 		giantCandy = giantNeeds,
 		charm = charm ~= nil,
+		hatchAt = hatchAt,
+		quickHatch = hatchAt ~= result.hatchAt,
 	})
-	return true, result.hatchAt
+	return true, hatchAt
 end
 
 -- Moves finished eggs into the stable while there is room. An egg whose time is up but which

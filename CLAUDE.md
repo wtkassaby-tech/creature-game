@@ -28,7 +28,7 @@ The owner (Ayrton) reviews plans, plays builds and approves gates. You do the bu
 3. **Creatures change hands only through trading**, never through a battle result. Nothing is ever staked on a match.
 4. **Roblox policy rules** (brief section 11; re-check the live docs before launch, they changed several times in 2026):
    - Coins are never sold for Robux.
-   - Lassos, bait and breeding are paid with earned coins only, so catching and breeding stay free random outcomes.
+   - Breeding is paid with earned coins and Breeding Candy only, so breeding stays a free random outcome. Lassos, bait and other consumables may be bought with coins or with Gems, and a Robux lasso pass may raise the catch chance (Ayrton, 23 November 2026: a higher catch chance means more catches, not better odds of a particular creature). Any paid effect on a chance shows the live chance on every throw, and is offered only where `PolicyService` allows paid random items (`ArePaidRandomItemsRestricted` false); elsewhere players get the earnable path. See `docs/plans/16_MONETISATION.md`.
    - Anything random bought with Robux, or with a currency Robux can buy, shows every outcome and its odds (summing to 100%) before purchase. Check `PolicyService:GetPolicyInfoForPlayerAsync()` and honour `ArePaidRandomItemsRestricted` and `IsPaidItemTradingAllowed`.
    - No coin bets or staked matches (removed by Ayrton on 16 November 2026; see `docs/DECISIONS.md`). PvP rewards are created by the game: casual coin rewards with a daily cap, and ranked-season prizes.
 5. **All networking goes through Blink.** Every message is defined in `src/net/*.blink`. No raw RemoteEvents. Every server handler validates and rate-limits.
@@ -115,7 +115,7 @@ Any source is allowed (Ayrton, 22 November 2026: "No restrictions at all, use wh
 
 - Trust client data or let the client grant itself anything.
 - Write to DataStores outside ProfileStore (global serial counters and leaderboards use their own documented stores, server-side only, updated atomically).
-- Sell coins, stat boosts, rarity, serial numbers, cosmic wraps or anything with a random result.
+- Sell coins, stat boosts, Breeding Candy or cosmic wraps, or any random result whose odds are not shown. Paid limited releases (numbered or tradable) follow `docs/plans/16_MONETISATION.md`: tradable only where `IsPaidItemTradingAllowed` is true, and only once trading exists.
 - Let a creature or item change hands through a battle result, or put anything at stake on a match.
 - Skip `lune run check`, or commit with failing tests.
 - Change a [Locked] item in the brief without asking Ayrton.

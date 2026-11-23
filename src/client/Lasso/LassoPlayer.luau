@@ -13,6 +13,10 @@ export type Wire = {
 	Zones: { { Centre: number, Width: number, Speed: number, StartPhase: number, StartMs: number } },
 	SlowMode: boolean,
 	ConnectionAssist: boolean,
+	-- The best catch chance this sweep allows, in percent (wild throws only; nil for a giant), and
+	-- whether the Lasso Pass is in it.
+	Chance: number?,
+	Boosted: boolean?,
 }
 
 export type Playing = {

@@ -346,6 +346,11 @@ function Grants.release(profile: Profile, creatureId: string, isLocked: boolean)
 	local prior = profile.Daily.releases[element]
 	local candy = Economy.releaseCandy(creature.rarity, prior)
 	local payout = Economy.releasePayout(creature.rarity, creature.originBiome)
+	-- A creature caught with a Gem-bought lasso releases for no coins and no materials, so Gems
+	-- can never be turned into coins by catching and releasing. (Candy is falloff-limited as ever.)
+	if creature.paidAssist == "GemLasso" then
+		payout = { coins = 0, material = nil, materials = 0 }
+	end
 
 	profile.Daily.releases[element] = prior + 1
 	profile.Candy.typed[element] += candy

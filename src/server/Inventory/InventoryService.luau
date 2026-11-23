@@ -7,11 +7,13 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Gems = require(ReplicatedStorage.shared.Gems)
 local Grants = require(ReplicatedStorage.shared.Grants)
 local Health = require(ReplicatedStorage.shared.Health)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
+local PurchaseConfig = require(ReplicatedStorage.config.PurchaseConfig)
 local Shop = require(ReplicatedStorage.shared.Shop)
 local Team = require(ReplicatedStorage.shared.Team)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
@@ -23,6 +25,10 @@ local WorldService = require(script.Parent.Parent.World.WorldService)
 export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
 	changed: (player: Player) -> (),
+	save: (player: Player) -> (), -- ask for a save soon
+	-- PolicyService's answer for the player (true until it has answered): Gem lassos are refused
+	-- unless this is false.
+	paidRandomRestricted: (player: Player) -> boolean,
 	claimWaiting: (player: Player, profile: Profile.Profile) -> (), -- hand over gifts that waited for room
 	isLocked: (player: Player, creatureId: string) -> boolean, -- in a battle or a giant fight
 	isUnlocked: (profile: Profile.Profile, feature: string) -> boolean, -- opened by the story yet?
@@ -112,6 +118,66 @@ function InventoryService.start(hooks: Hooks)
 				coins = bought.coins,
 			})
 		end
+	end)
+
+	-- Consumables bought with Gems (plan 16; the owner allowed Gems for lassos, bait and tonics).
+	-- Same rules as the coin shop: at a shop or stall, the shop unlocked by the story. The price is
+	-- the server's (Gems.itemPrice); the device sends only an item and a count.
+	local lastGemBuy: { [Player]: number } = {}
+	Net.BuyGemItem.On(function(player, value)
+		local profile = hooks.getData(player)
+		if not profile then
+			return
+		end
+		local function answer(ok: boolean, reason: string, count: number)
+			Net.GemBuyResult.Fire(player, {
+				Item = value.Item,
+				Ok = ok,
+				Reason = string.sub(reason, 1, 80),
+				Count = count,
+				Gems = math.clamp(profile.Gems, 0, 4294967295),
+			})
+		end
+		local now = os.clock()
+		if now - (lastGemBuy[player] or -math.huge) < PurchaseConfig.GEM_BUY_COOLDOWN then
+			return answer(false, "Too fast", 0)
+		end
+		lastGemBuy[player] = now
+		if
+			not LiveConfigService.isOn("shop_open") or not LiveConfigService.isOn("purchases_open")
+		then
+			return answer(false, LiveConfigService.closedText(), 0)
+		end
+		if not hooks.isUnlocked(profile, "shop") then
+			return answer(false, "The shop is not open to you yet", 0)
+		end
+		local atShop = WorldService.buildingAt(player, "Shop", WorldConfig.TALK_RADIUS) ~= nil
+		for _, biome in WorldService.biomes() do
+			atShop = atShop
+				or WorldService.isNear(player, Layout.stallId(biome), WorldConfig.TALK_RADIUS)
+		end
+		local bought, problem = Gems.buyItem(
+			profile,
+			value.Item,
+			value.Count,
+			atShop,
+			hooks.paidRandomRestricted(player)
+		)
+		if not bought then
+			return answer(false, problem or "That cannot be bought", 0)
+		end
+		answer(true, "", bought.count)
+		hooks.changed(player)
+		hooks.save(player) -- a Gem spend is saved soon, like a purchase
+		hooks.log("GemSpend", {
+			player = player.UserId,
+			item = bought.item,
+			count = bought.count,
+			gems = bought.gems,
+			reason = bought.line.reason,
+			before = bought.line.before,
+			after = bought.line.after,
+		})
 	end)
 
 	local lastRelease: { [Player]: number } = {}
@@ -273,6 +339,7 @@ function InventoryService.start(hooks: Hooks)
 		lastTreat[player] = nil
 		lastItem[player] = nil
 		lastBuy[player] = nil
+		lastGemBuy[player] = nil
 		lastRelease[player] = nil
 	end)
 end

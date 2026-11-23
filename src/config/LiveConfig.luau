@@ -18,6 +18,7 @@ export type Key =
 	| "purchases_open"
 	| "trading_open"
 	| "pvp_open"
+	| "chance_display"
 
 export type Values = {
 	shop_open: boolean, -- buying with coins, crafting, stable room
@@ -25,9 +26,12 @@ export type Values = {
 	giants_open: boolean, -- starting a giant fight
 	daily_rewards_open: boolean, -- claiming a daily task
 	release_open: boolean, -- releasing a creature for coins, candy and materials
-	purchases_open: boolean, -- the Gem shop and anything bought with Robux
+	purchases_open: boolean, -- Robux prompts, Gem spending and the Gem shop; a receipt that arrives while off waits (NotProcessedYet) and is granted later
 	trading_open: boolean,
 	pvp_open: boolean,
+	-- The live catch chance is shown on every throw. While off, the Lasso Pass and Gem lassos are
+	-- treated as restricted (not offered, no effect): a paid chance must never be hidden.
+	chance_display: boolean,
 }
 
 local LiveConfig = {}
@@ -41,6 +45,7 @@ local KEYS: { Key } = {
 	"purchases_open",
 	"trading_open",
 	"pvp_open",
+	"chance_display",
 }
 LiveConfig.KEYS = KEYS
 
@@ -50,15 +55,16 @@ local DEFAULTS: Values = {
 	giants_open = true,
 	daily_rewards_open = true,
 	release_open = true,
-	purchases_open = false,
+	purchases_open = true, -- every product id is 0 (not for sale) until the place is published
 	trading_open = false,
 	pvp_open = false,
+	chance_display = true,
 }
 LiveConfig.DEFAULTS = DEFAULTS
 
 -- Parts of the game whose code does not exist yet. A live value can never switch these on:
 -- take a key off this list in the same release that ships its feature.
-local NOT_BUILT: { Key } = { "purchases_open", "trading_open", "pvp_open" }
+local NOT_BUILT: { Key } = { "trading_open", "pvp_open" }
 LiveConfig.NOT_BUILT = NOT_BUILT
 
 -- What a player is told when something is switched off.

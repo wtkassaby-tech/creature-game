@@ -4,6 +4,7 @@
 -- the message being sent, and an egg's child stays secret until it hatches.
 
 local DailyProgress = require("./DailyProgress")
+local PassEffects = require("./PassEffects")
 local Profile = require("./Profile")
 local Types = require("./Types")
 
@@ -71,6 +72,10 @@ export type State = {
 	Waiting: number,
 	Finds: { string }, -- one-time finds claimed, by id
 	FindsToday: { string }, -- renewable spots used today, by id
+	Passes: { string }, -- game passes owned and applied, by PurchaseConfig key
+	Perks: { string }, -- one-time purchases and cosmetic flags (StarterPack, StarterCosmetic)
+	StableBonus: number, -- stable room that came from purchases (not a coin expansion)
+	StableAnywhere: boolean, -- the Field Satchel: the stable opens away from a hub
 }
 
 local MAX_CREATURES = 400
@@ -250,6 +255,10 @@ function Snapshot.build(profile: Profile.Profile, unixTime: number?): State
 		Waiting = whole(#profile.Pending, 255),
 		Finds = found,
 		FindsToday = today,
+		Passes = PassEffects.list(profile),
+		Perks = PassEffects.perks(profile),
+		StableBonus = whole(PassEffects.bonusCapacity(profile), 65535),
+		StableAnywhere = PassEffects.stableAnywhere(profile),
 	}
 end
 

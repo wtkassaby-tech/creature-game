@@ -27,7 +27,7 @@ check(
 		and defaults.giants_open
 		and defaults.daily_rewards_open
 		and defaults.release_open
-		and not defaults.purchases_open
+		and defaults.purchases_open
 		and not defaults.trading_open
 		and not defaults.pvp_open
 )
@@ -72,8 +72,8 @@ local eager = Switches.read(function(_key: LiveConfig.Key): unknown
 end)
 check(
 	"a feature that is not built cannot be switched on from outside",
-	not eager.purchases_open and not eager.trading_open and not eager.pvp_open,
-	"purchases, trading and PvP stay off until their code ships"
+	not eager.trading_open and not eager.pvp_open,
+	"trading and PvP stay off until their code ships"
 )
 
 local everyKeyHasADefault = true
@@ -82,7 +82,7 @@ for _, key: LiveConfig.Key in LiveConfig.KEYS do
 		everyKeyHasADefault = false
 	end
 end
-check("every switch has a default", everyKeyHasADefault and #LiveConfig.KEYS == 8)
+check("every switch has a default", everyKeyHasADefault and #LiveConfig.KEYS == 9)
 check(
 	"the wait before trying Roblox again never reaches zero",
 	#LiveConfig.RETRY_SECONDS > 0 and math.min(table.unpack(LiveConfig.RETRY_SECONDS)) >= 1

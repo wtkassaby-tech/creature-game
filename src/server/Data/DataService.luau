@@ -28,6 +28,8 @@ export type Log = (event: string, fields: { [string]: any }) -> ()
 
 local DataService = {}
 
+local SAVE_RETRY_SECONDS = 5 -- between save attempts while a purchase waits to be saved
+
 local storeName = if ProfileConfig.USE_LIVE_STORE
 	then ProfileConfig.LIVE_STORE_NAME
 	else ProfileConfig.STORE_NAME
@@ -58,6 +60,34 @@ function DataService.saveSoon(player: Player)
 	if session ~= nil and session:IsActive() then
 		session:Save()
 	end
+end
+
+-- Waits until `isSaved` is true of the data ProfileStore last wrote to the data store, asking for
+-- saves as it goes, and returns true. Returns false if the session ends first (the player left and
+-- the save did not land). Used to answer Roblox's ProcessReceipt only once a purchase is really
+-- saved (ProfileStore's developer-product guide, "caching PurchaseIds"). It yields.
+function DataService.waitSaved(player: Player, isSaved: (saved: any) -> boolean): boolean
+	local session = sessions[player]
+	if session == nil then
+		return false
+	end
+	while session:IsActive() do
+		if isSaved(session.LastSavedData) then
+			return true
+		end
+		local before = session.LastSavedData
+		session:Save()
+		if session.LastSavedData == before then
+			session.OnAfterSave:Wait()
+		end
+		if isSaved(session.LastSavedData) then
+			return true
+		end
+		if session:IsActive() then
+			task.wait(SAVE_RETRY_SECONDS)
+		end
+	end
+	return isSaved(session.LastSavedData)
 end
 
 local function remove(player: Player, message: string)

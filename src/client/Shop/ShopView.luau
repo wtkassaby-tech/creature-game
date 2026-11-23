@@ -18,15 +18,15 @@ local ShopView = {}
 export type View = { open: () -> () }
 
 function ShopView.start(playerGui: Instance): View
-	local gui = Kit.screen(playerGui, "Shop", 12)
+	local gui = Kit.screen(playerGui, "Shop", 12, true)
 	local root = Kit.panel(gui, UDim2.fromScale(0.8, 0.8), UDim2.fromScale(0.1, 0.1))
-	local title = Kit.label(root, "Shop", UDim2.new(0.6, 0, 0, 34), UDim2.fromOffset(14, 8), 28)
+	local title = Kit.title(root, "Shop", UDim2.new(0.6, 0, 0, 34), UDim2.fromOffset(14, 8), 28)
 	local note = Kit.label(root, "", UDim2.new(1, -28, 0, 22), UDim2.new(0, 14, 1, -30), 16)
 	note.TextColor3 = Kit.COLOURS.textDim
-	local close = Kit.button(root, "Close", Kit.COLOURS.bad, function()
+	local close = Kit.button(root, "Close", Kit.COLOURS.neutral, function()
 		gui.Enabled = false
 	end)
-	close.Size = UDim2.fromOffset(96, 44) -- finger-sized on a phone
+	close.Size = Kit.CLOSE_SIZE
 	close.Position = UDim2.new(1, -108, 0, 4)
 
 	local list = Instance.new("ScrollingFrame")
@@ -57,7 +57,7 @@ function ShopView.start(playerGui: Instance): View
 		-- More stable room, while there is any left to buy (the server knows the real price).
 		local bought = math.max(
 			0,
-			(state.StableCapacity - EconomyConfig.STABLE_FREE_SLOTS)
+			(state.StableCapacity - EconomyConfig.STABLE_FREE_SLOTS - state.StableBonus)
 				// EconomyConfig.STABLE_EXPANSION_SLOTS
 		)
 		local roomPrice = Economy.stableExpansionPrice(bought)

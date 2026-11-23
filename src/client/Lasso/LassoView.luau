@@ -22,22 +22,7 @@ export type View = { begin: (wire: LassoPlayer.Wire) -> (), finish: () -> () }
 local ROPE = Color3.fromRGB(202, 158, 98)
 local LOOP = 30 -- the sliding loop, in pixels across
 local LOOP_OVER_GREEN = 38 -- it swells while a tap would land
-local PANEL_TALL = 148
-
-local function round(parent: Instance, radius: UDim)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = radius
-	corner.Parent = parent
-end
-
-local function edge(parent: Instance, colour: Color3, thickness: number): UIStroke
-	local line = Instance.new("UIStroke")
-	line.Color = colour
-	line.Thickness = thickness
-	line.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	line.Parent = parent
-	return line
-end
+local PANEL_TALL = 176
 
 function LassoView.new(parent: Instance): View
 	local root = Kit.panel(
@@ -61,6 +46,12 @@ function LassoView.new(parent: Instance): View
 	note.TextXAlignment = Enum.TextXAlignment.Right
 	note.ZIndex = 8
 
+	-- The live catch chance (hard rule 4: shown on every wild throw, and only wild ones).
+	local chance = Kit.label(root, "", UDim2.new(1, -24, 0, 26), UDim2.fromOffset(12, 70), 20)
+	chance.TextXAlignment = Enum.TextXAlignment.Left
+	chance.ZIndex = 8
+	chance.Visible = false
+
 	-- The rope: a tan strip with a twist of lighter and darker bands and an ink edge.
 	local rope = Instance.new("Frame")
 	rope.Size = UDim2.new(1, -40, 0, 24)
@@ -69,8 +60,8 @@ function LassoView.new(parent: Instance): View
 	rope.BorderSizePixel = 0
 	rope.ZIndex = 8
 	rope.Parent = root
-	round(rope, UDim.new(0.5, 0))
-	edge(rope, Kit.COLOURS.outline, 3)
+	Kit.round(rope, 999)
+	Kit.border(rope, Kit.STROKE.normal)
 	Kit.stripes(rope)
 	-- The green stretch: where a tap lands.
 	local zoneBox = Instance.new("Frame")
@@ -78,8 +69,8 @@ function LassoView.new(parent: Instance): View
 	zoneBox.BorderSizePixel = 0
 	zoneBox.ZIndex = 9
 	zoneBox.Parent = rope
-	round(zoneBox, UDim.new(0.5, 0))
-	edge(zoneBox, Kit.COLOURS.white, 2)
+	Kit.round(zoneBox, 999)
+	Kit.border(zoneBox, Kit.STROKE.thin, Kit.COLOURS.white)
 	-- The loop: a ring that slides along the rope.
 	local loop = Instance.new("Frame")
 	loop.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -89,8 +80,8 @@ function LassoView.new(parent: Instance): View
 	loop.BorderSizePixel = 0
 	loop.ZIndex = 11
 	loop.Parent = rope
-	round(loop, UDim.new(0.5, 0))
-	local loopEdge = edge(loop, Kit.COLOURS.outline, 5)
+	Kit.round(loop, 999)
+	local loopEdge = Kit.border(loop, Kit.STROKE.heavy + 1)
 
 	-- Where each tap fell stays marked on the rope until the next throw.
 	local stamps: { Frame } = {}
@@ -103,8 +94,8 @@ function LassoView.new(parent: Instance): View
 		mark.BorderSizePixel = 0
 		mark.ZIndex = 10
 		mark.Parent = rope
-		round(mark, UDim.new(0.5, 0))
-		edge(mark, Kit.COLOURS.outline, 3)
+		Kit.round(mark, 999)
+		Kit.border(mark, Kit.STROKE.normal)
 		table.insert(stamps, mark)
 	end
 	local function clearStamps()
@@ -132,9 +123,13 @@ function LassoView.new(parent: Instance): View
 			end
 		end
 	end
+	-- Ink letters, large, on the lasso orange (the button's lip is the darker orange): white on
+	-- this orange was the weak contrast.
 	local button = Kit.button(root, "THROW!", Kit.COLOURS.lasso, tap)
-	button.Size = UDim2.new(1, -24, 0, 56)
-	button.Position = UDim2.fromOffset(12, PANEL_TALL - 66)
+	button.TextColor3 = Kit.COLOURS.outline
+	Kit.textSize(button, 36)
+	button.Size = UDim2.new(1, -24, 0, 62)
+	button.Position = UDim2.fromOffset(12, PANEL_TALL - 72)
 	button.ZIndex = 8
 
 	RunService.RenderStepped:Connect(function()
@@ -151,8 +146,8 @@ function LassoView.new(parent: Instance): View
 		local count = #current.pattern.zones
 		local sweeping = LassoPlayer.elapsedMs(current) >= zone.startMs
 		title.Text = if count > 1
-			then `Loop {current.zone} of {count}: tap when it is over the green`
-			else "Tap THROW when the loop is over the green"
+			then `Swing... loop {current.zone} of {count}: tap when it is over the green`
+			else "Swing... tap THROW when the loop is over the green"
 		zoneBox.Visible, loop.Visible = true, sweeping
 		zoneBox.Position = UDim2.fromScale(zone.centre - zone.width / 2, 0)
 		zoneBox.Size = UDim2.fromScale(zone.width, 1)
@@ -167,6 +162,16 @@ function LassoView.new(parent: Instance): View
 		begin = function(wire: LassoPlayer.Wire)
 			clearStamps()
 			playing = LassoPlayer.begin(wire)
+			-- Nothing is shown for a giant: the server sends no chance for one.
+			local percent = wire.Chance
+			chance.Visible = percent ~= nil
+			if percent ~= nil then
+				chance.Text = `Catch chance: up to {percent}%`
+					.. (if wire.Boosted == true then "  (Lasso Pass included)" else "")
+				chance.TextColor3 = if wire.Boosted == true
+					then Kit.COLOURS.good
+					else Kit.COLOURS.text
+			end
 			root.Visible = true
 		end,
 		finish = function()
