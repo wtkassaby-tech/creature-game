@@ -104,6 +104,18 @@ function LookAt.start(placeId: string)
 	end
 end
 
+-- Stops at once and leaves the camera alone, for when something else (the battle camera) takes it
+-- over: easing back would fight that camera and then put the old shot back on top of it.
+function LookAt.cancel()
+	holding = false
+	alpha = 0
+	if bound then
+		bound = false
+		RunService:UnbindFromRenderStep(STEP_NAME)
+	end
+	home, homeType = nil, nil
+end
+
 -- Eases back to the ordinary camera.
 function LookAt.release()
 	holding = false

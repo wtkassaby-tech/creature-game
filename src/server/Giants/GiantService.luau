@@ -31,13 +31,15 @@ local OFFER_SECONDS = 90 -- how long the one capture attempt waits to be thrown
 
 export type Hooks = {
 	getData: (player: Player) -> Profile.Profile?,
-	team: (player: Player) -> ({ Types.Creature }?, number?), -- the team and the level cap
+	team: (player: Player) -> ({ Types.Creature }?, number?, string?), -- the team and the level cap
 	inOtherBattle: (player: Player) -> boolean,
 	mayEnter: (player: Player, biomeNumber: number) -> boolean, -- has the player earned this biome?
-	isOpen: (profile: Profile.Profile) -> boolean, -- has the story shown this player the giant yet?
+	isOpen: (profile: Profile.Profile, marker: string) -> boolean, -- has the story woken this biome's giant for this player?
 	biome: (player: Player) -> WorldTypes.Biome, -- the biome the player is standing in
 	map: () -> Layout.Map,
 	position: (player: Player) -> Layout.Point?,
+	-- The story's hold line if the player, or the named place, is somewhere not yet opened.
+	heldReason: (player: Player, placeId: string?) -> string?,
 	refuse: (player: Player, reason: string) -> (),
 	changed: (player: Player) -> (),
 	onWon: (player: Player, battleId: number, giantId: string, paid: Rewards.GiantPaid) -> (),
@@ -150,9 +152,9 @@ function GiantService.start(given: Hooks): () -> ()
 			return hooks.refuse(player, "You are already in a battle")
 		end
 		local profile = hooks.getData(player)
-		local creatures, cap = hooks.team(player)
+		local creatures, cap, why = hooks.team(player)
 		if not profile or not creatures or not cap then
-			return hooks.refuse(player, "Your data is not loaded")
+			return hooks.refuse(player, why or "Your data is not loaded")
 		end
 		-- The only giant that can be fought is the one whose lair the player is standing in.
 		local lair = hooks.biome(player).lair
@@ -167,10 +169,15 @@ function GiantService.start(given: Hooks): () -> ()
 		if not hooks.mayEnter(player, hooks.biome(player).number) then
 			return hooks.refuse(player, "You have not earned your way here yet")
 		end
+		-- Every battle start checks the story's holds, not only the 1 s tick (exploit review).
+		local heldLine = hooks.heldReason(player, lair.id)
+		if heldLine then
+			return hooks.refuse(player, heldLine)
+		end
 		if not LiveConfigService.isOn("giants_open") then
 			return hooks.refuse(player, LiveConfigService.closedText())
 		end
-		if not hooks.isOpen(profile) then
+		if not hooks.isOpen(profile, lair.giantMarker) then
 			return hooks.refuse(player, "The giant does not stir. Come back later in your journey")
 		end
 		nextBattleId += 1
@@ -403,8 +410,17 @@ function GiantService.start(given: Hooks): () -> ()
 			end
 		)
 		if not started then
+			-- The sweep could not be played (a throw already in the air): nothing was judged, so give
+			-- the lasso back and keep the one attempt on offer, rather than losing both silently.
 			throwing[player] = nil
+			local back = hooks.getData(player)
+			if back then
+				back.Items[throw.tier] = (back.Items[throw.tier] or 0) + 1
+				offers[player] = offer
+				hooks.changed(player)
+			end
 			hooks.log("GiantCaptureThrowLost", { player = player.UserId, giant = giant.id })
+			hooks.refuse(player, "Wait for your throw to finish")
 		end
 	end)
 

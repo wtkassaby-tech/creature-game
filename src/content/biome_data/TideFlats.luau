@@ -251,6 +251,7 @@ local lair: WorldTypes.Lair = {
 	spurLength = 280,
 	arenaSize = 170,
 	giant = "tide_flats_carrackon",
+	giantMarker = "tide_giant_marker",
 	supplyStall = "Wreck Stall, at the start of the spur: tonics and Giant Horns",
 	shortcutToHub = true,
 }

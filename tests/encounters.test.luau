@@ -691,6 +691,17 @@ do
 	check("a creature always hides inside one of the patches", hidden)
 end
 
+print("\n== A held stretch is never filled (bug hunt: world 2) ==")
+do
+	local book = Encounters.new()
+	local glade = map.places.mossy_glade
+	local changed = Encounters.tick(book, greenwood, map, glade, 0, 1, newId, function()
+		return true
+	end)
+	check("nothing is made where the story has not opened", Encounters.count(book) == 0)
+	check("so nothing changed to tell the device", not changed)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("encounter checks failed")

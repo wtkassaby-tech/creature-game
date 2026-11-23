@@ -425,6 +425,16 @@ local function validateUnsafe(profile: Profile): { string }
 	end
 	checkBalance("Coins", profile.Coins)
 	checkBalance("Gems", profile.Gems)
+	-- DataService adds to PlayStats.sessions at load (and repairs a bad record there).
+	local stats = profile.PlayStats
+	if
+		typeof(stats) ~= "table"
+		or not isWholeNumber(stats.firstJoin)
+		or not isWholeNumber(stats.sessions)
+		or typeof(stats.playSeconds) ~= "number"
+	then
+		table.insert(problems, "PlayStats is not a record of numbers")
+	end
 	-- One whole count of zero or more for every element, and nothing else in the record.
 	local function checkByElement(name: string, record: Types.ByElement<number>)
 		if typeof(record) ~= "table" then

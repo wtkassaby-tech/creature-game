@@ -66,7 +66,7 @@ local beats: { WorldTypes.Beat } = {
 		minuteFrom = 62,
 		minuteTo = 67,
 		trigger = { kind = "Talk", target = "tamsin_rook", requires = { "canyon_arrival" } },
-		unlocks = { "canyon_quest_line", "canyon_routes" },
+		unlocks = { "canyon_quest_line" },
 		grants = {},
 		lines = {
 			{
@@ -75,7 +75,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Tamsin",
-				text = "Win a few scraps on the Dry Wash and I will pay you. Mesa Road is open too.",
+				text = "Win a few scraps on the Dry Wash and I will pay you. The Mesa Road can wait.",
 			},
 		},
 	},
@@ -89,8 +89,8 @@ local beats: { WorldTypes.Beat } = {
 		grants = {},
 		lines = {
 			{
-				speaker = "Tamsin",
-				text = "Your first catch out here! If one ever shines amber, you have found a gem-tier.",
+				speaker = "You",
+				text = "My first catch out here! If one ever shines amber, I have found a gem-tier.",
 			},
 		},
 	},
@@ -105,7 +105,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Ines",
-				text = "Quick hands! Sand creatures dart about, so land your hits before they run.",
+				text = "Sand creatures dart about, so land your hits before they bolt. Watch their feet.",
 			},
 		},
 	},
@@ -115,7 +115,7 @@ local beats: { WorldTypes.Beat } = {
 		minuteFrom = 72,
 		minuteTo = 80,
 		trigger = { kind = "Talk", target = "fenwick_dray", requires = { "first_canyon_tamer" } },
-		unlocks = {},
+		unlocks = { "canyon_routes" },
 		grants = letter,
 		lines = {
 			{
@@ -157,15 +157,16 @@ local beats: { WorldTypes.Beat } = {
 		minuteFrom = 95,
 		minuteTo = 105,
 		trigger = { kind = "Sight", target = "spire_garden", requires = { "canyon_rival" } },
+		lookAt = "dust_canyon_lair",
 		unlocks = { "canyon_giant_marker" },
 		grants = {},
 		lines = {
 			{
-				speaker = "Scout",
+				speaker = "Hesper",
 				text = "That red mesa just stood up! Mesalith. Restless since the sky flickered over the Crown.",
 			},
 			{
-				speaker = "Scout",
+				speaker = "Hesper",
 				text = "Its shelf is off the Mesa Road. Bring something that can wash out its slam.",
 			},
 		},
@@ -181,7 +182,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Isolde",
-				text = "I am Isolde Karrow, warden of the Stair. A badge is earned here, not given.",
+				text = "I am Isolde Karrow, warden of the Stair. Nobody passes me on a borrowed team.",
 			},
 			{
 				speaker = "Isolde",
@@ -204,7 +205,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Isolde",
-				text = "A quick climb. The Cairn Badge is yours, and a friend from Kilnrest besides.",
+				text = "The Cairn Badge is yours, and a friend from Kilnrest besides.",
 			},
 			{
 				speaker = "Isolde",

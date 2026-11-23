@@ -203,6 +203,14 @@ function Lasso.nextCentreTimeMs(pattern: Pattern, zoneIndex: number, afterMs: nu
 	return best
 end
 
+-- False for a tap claimed before its loop has started sweeping. Such a tap says nothing about
+-- timing (the player is still on the loop before, e.g. a double tap), so the server drops it
+-- instead of letting it take the zone's place and make the whole throw Invalid. Dropping opens no
+-- retry: the real tap for that zone is still expected, and a throw is judged once.
+function Lasso.sweepStarted(startMs: number, claimedMs: number): boolean
+	return not (claimedMs == claimedMs and claimedMs < startMs)
+end
+
 local function invalid(reason: string): Judgement
 	return { verdict = "Invalid", zoneHits = {}, errorsMs = {}, chances = {}, reason = reason }
 end
@@ -213,7 +221,11 @@ end
 
 -- The round trip to trust for a player, from the server's own readings during the battle.
 -- The smallest reading is used: a delayed reply can raise a reading but nothing can lower one.
-function Lasso.trustedRoundTripMs(readingsMs: { number }): number
+-- A delayed reply raising it is itself a way to cheat (a slower marker, a wider claim window), so
+-- `enginePingMs` (the engine's own measurement for the player) caps it, plus a small margin. With
+-- too few readings the engine's figure is used on its own, so an honest slow connection gets a
+-- fitting allowance from the first throw; with neither, the generous default.
+function Lasso.trustedRoundTripMs(readingsMs: { number }, enginePingMs: number?): number
 	local smallest = math.huge
 	local good = 0
 	for _, reading in readingsMs do
@@ -222,8 +234,15 @@ function Lasso.trustedRoundTripMs(readingsMs: { number }): number
 			smallest = math.min(smallest, reading)
 		end
 	end
+	local engine: number? = nil
+	if enginePingMs ~= nil and isFiniteNumber(enginePingMs) and enginePingMs >= 0 then
+		engine = enginePingMs + LassoConfig.ROUND_TRIP_ENGINE_MARGIN_MS
+	end
 	if good < LassoConfig.ROUND_TRIP_MIN_SAMPLES then
-		return LassoConfig.ROUND_TRIP_DEFAULT_MS
+		return engine or LassoConfig.ROUND_TRIP_DEFAULT_MS
+	end
+	if engine ~= nil then
+		return math.min(smallest, engine)
 	end
 	return smallest
 end
@@ -247,8 +266,12 @@ function Lasso.judge(
 	if not isFiniteNumber(roundTripMs) or roundTripMs < 0 then
 		return invalid("bad round trip")
 	end
-	local allowance = math.min(roundTripMs, LassoConfig.ROUND_TRIP_CAP_MS)
-		+ LassoConfig.CLAIM_EARLY_MARGIN_MS
+	local capped = math.min(roundTripMs, LassoConfig.ROUND_TRIP_CAP_MS)
+	local allowance = capped + LassoConfig.CLAIM_EARLY_MARGIN_MS
+	-- A slowed sweep needs taps that really travelled slowly (see ASSIST_MIN_LAG_SHARE).
+	local leastLag = if pattern.connectionAssist
+		then capped * LassoConfig.ASSIST_MIN_LAG_SHARE
+		else -math.huge
 	for index = 1, count do
 		local claimed, serverNow = claimedMs[index], serverElapsedMs[index]
 		if not isFiniteNumber(claimed) or not isFiniteNumber(serverNow) then
@@ -262,6 +285,9 @@ function Lasso.judge(
 		end
 		if claimed > serverNow + LassoConfig.CLAIM_MARGIN_MS then
 			return invalid("claim too late for the server's clock")
+		end
+		if serverNow - claimed < leastLag then
+			return invalid("a slowed sweep tapped with too little lag")
 		end
 	end
 

@@ -329,6 +329,16 @@ do
 end
 
 ------------------------------------------------------------------------------------------------
+print("\n== PlayStats in a save is checked (bug hunt: data 2) ==")
+do
+	local p = sample();
+	(p :: any).PlayStats = true
+	check("a bad PlayStats is reported", has(Profile.validate(p), "PlayStats"))
+	p = sample()
+	check("a sound PlayStats is not", not has(Profile.validate(p), "PlayStats"))
+end
+
+------------------------------------------------------------------------------------------------
 print("\n== Finds in a save are checked ==")
 do
 	local p = sample()

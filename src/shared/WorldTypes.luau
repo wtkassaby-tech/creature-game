@@ -119,6 +119,7 @@ export type Lair = {
 	spurLength: number,
 	arenaSize: number,
 	giant: string, -- a key of Giants
+	giantMarker: string, -- the feature a story beat unlocks to wake this biome's giant
 	supplyStall: string,
 	shortcutToHub: boolean, -- opens once the giant is beaten
 }

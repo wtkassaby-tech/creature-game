@@ -19,6 +19,15 @@ local LiveConfigService = {}
 local values: LiveConfig.Values = Switches.defaults()
 local log: Log = function(_event: string, _fields: { [string]: any }) end
 
+local listeners: { (key: LiveConfig.Key, on: boolean) -> () } = {}
+
+-- Calls `callback` for each switch whose value changes on a refresh. The first read counts as a
+-- change for any switch that differs from its default, so players who joined before it are
+-- corrected too. Until that first read the defaults apply (purchases_open is on).
+function LiveConfigService.onChanged(callback: (key: LiveConfig.Key, on: boolean) -> ())
+	table.insert(listeners, callback)
+end
+
 local function apply(snapshot: ConfigSnapshot)
 	local after = Switches.read(function(key: LiveConfig.Key): unknown
 		local ok, value = pcall(function(): unknown
@@ -26,10 +35,15 @@ local function apply(snapshot: ConfigSnapshot)
 		end)
 		return if ok then value else nil
 	end)
-	for _, change in Switches.changes(values, after) do
-		log("SwitchChanged", { key = change.key, on = change.on })
-	end
+	local changes = Switches.changes(values, after)
 	values = after
+	for _, change in changes do
+		log("SwitchChanged", { key = change.key, on = change.on })
+		for _, callback in listeners do
+			-- A listener's trouble must not stop the others or the refresh.
+			pcall(callback, change.key, change.on)
+		end
+	end
 end
 
 -- Is this part of the game switched on right now?

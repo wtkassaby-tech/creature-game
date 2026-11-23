@@ -99,7 +99,11 @@ function StoryTriggers.ready(
 	elseif event.kind == "Win" then
 		met = trigger.kind == "Win" and trigger.target == event.battle
 	elseif event.kind == "Tame" then
+		-- Only a catch from the beat's own chapter biome (as creditTame): a creature caught on the
+		-- way back through an old biome does not finish a later chapter's beat.
+		local own = chapterOfBeat[beat.id]
 		met = trigger.kind == "Tame"
+			and (event.biome == nil or (own ~= nil and own.number == event.biome))
 	end
 	return if met then beat else nil
 end

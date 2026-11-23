@@ -148,7 +148,8 @@ function Encounters.tick(
 	player: Layout.Point,
 	now: number,
 	seed: number,
-	newId: () -> string
+	newId: () -> string,
+	isHeld: ((point: Layout.Point) -> boolean)?
 ): boolean
 	local changed = false
 	local rng = Rng.new(seed)
@@ -182,8 +183,18 @@ function Encounters.tick(
 				and now >= (book.freeAt[area.id] or 0)
 				and #World.candidates(route, { area = area.id }) > 0
 			then
+				local tries = 0
 				while roaming < WorldConfig.SPAWNS_PER_AREA and total < WorldConfig.MAX_SPAWNS do
 					local hidden = Encounters.hideAt(map, line, area, taken, rng)
+					-- A point inside a stretch the story has not opened is never filled (making
+					-- creatures there only to delete them again churned CPU and messages every tick).
+					tries += 1
+					if isHeld ~= nil and isHeld(hidden) then
+						if tries >= WorldConfig.SPAWNS_PER_AREA * 3 then
+							break
+						end
+						continue
+					end
 					table.insert(taken, hidden)
 					add(
 						book,

@@ -208,6 +208,15 @@ local CreatureModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://70819400297950",
 		size = { 3.3, 3.5, 6.35 },
 	},
+	-- Firstling, the ultimate mythic (23 November 2026): Ayrton's Meshy model, Roblox Model asset
+	-- 139464885640943; the ids below are its MeshPart's. One solid mesh (no parts: it never breeds).
+	-- Its aura comes from src/config/AuraConfig.luau (SPECIES.Firstling). Size is two thirds of the
+	-- 16-stud showcase, about a giant's.
+	Firstling = {
+		mesh = "rbxassetid://112704715632181",
+		texture = "rbxassetid://138790099468000",
+		size = { 9.31, 10.67, 14.39 },
+	},
 }
 
 return CreatureModels

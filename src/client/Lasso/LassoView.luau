@@ -112,6 +112,11 @@ function LassoView.new(parent: Instance): View
 			return
 		end
 		-- Where the loop is now, before the tap moves on to the next stretch.
+		-- A tap while the next loop is not yet sweeping is ignored (a double tap on the loop before).
+		local nextZone = current.pattern.zones[current.zone]
+		if nextZone and LassoPlayer.elapsedMs(current) < nextZone.startMs then
+			return
+		end
 		local position, zone = LassoPlayer.marker(current)
 		local message = LassoPlayer.tap(current)
 		if message then

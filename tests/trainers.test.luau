@@ -216,6 +216,11 @@ do
 		"and is met by a catch the server judged",
 		StoryTriggers.ready(Chapter1, profile, map, { kind = "Tame" }) ~= nil
 	)
+	check(
+		"but only one from the chapter's own biome (bug hunt: world 1)",
+		StoryTriggers.ready(Chapter1, profile, map, { kind = "Tame", biome = 1 }) ~= nil
+			and StoryTriggers.ready(Chapter1, profile, map, { kind = "Tame", biome = 2 }) == nil
+	)
 end
 
 print("\n== Features the story opens ==")

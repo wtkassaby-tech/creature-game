@@ -56,10 +56,10 @@ function BattleFlow.ambush(player: Player, spawn: Encounters.Spawn)
 	)
 end
 
-function BattleFlow.team(player: Player): ({ Types.Creature }?, number?)
+function BattleFlow.team(player: Player): ({ Types.Creature }?, number?, string?)
 	local profile = DataService.get(player)
 	if not profile then
-		return nil, nil
+		return nil, nil, "Your data is not loaded"
 	end
 	local team: { Types.Creature } = {}
 	for _, id in profile.Team do
@@ -71,9 +71,9 @@ function BattleFlow.team(player: Player): ({ Types.Creature }?, number?)
 		end
 	end
 	if #team == 0 then
-		return nil, nil
+		return nil, nil, "No one on your team can battle here yet"
 	end
-	return team, Xp.levelCap(profile.Story.badges)
+	return team, Xp.levelCap(profile.Story.badges), nil
 end
 
 -- Finds what the player asked to battle. The kind decides where to look, so a tamer can never
@@ -109,6 +109,11 @@ local function resolveTarget(
 		end
 		if not WorldService.isNear(player, opponent.place, WorldConfig.ENGAGE_RADIUS) then
 			return nil, "You are too far away"
+		end
+		-- Nor one inside a stretch the story has not opened (checked here, not only by the 1 s tick).
+		local heldLine = WorldService.heldReason(player, opponent.place)
+		if heldLine then
+			return nil, heldLine
 		end
 		local creatures, moves = Trainers.build(opponent)
 		local ref: TrainedRef = { kind = "Trained", opponent = opponent, foes = creatures }

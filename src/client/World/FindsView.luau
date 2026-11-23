@@ -419,6 +419,9 @@ function FindsView.start(playerGui: Instance)
 	local function close()
 		gui.Enabled = false
 	end
+	-- A battle that starts while the Journal is open must not begin hidden under it.
+	Bus.listen(Net.BattleStarted, close)
+	Bus.listen(Net.GiantStarted, close)
 	local closeButton = Kit.button(root, "Close", Kit.COLOURS.neutral, close)
 	closeButton.Size = Kit.CLOSE_SIZE
 	closeButton.Position = UDim2.new(1, -108, 0, 4)

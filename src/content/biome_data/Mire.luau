@@ -258,6 +258,7 @@ local lair: WorldTypes.Lair = {
 	spurLength = 280,
 	arenaSize = 170,
 	giant = "mire_sloughback",
+	giantMarker = "mire_giant_marker",
 	supplyStall = "Grove Stall, at the start of the spur: tonics and Giant Horns",
 	shortcutToHub = true,
 }

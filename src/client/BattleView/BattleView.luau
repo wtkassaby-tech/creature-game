@@ -827,6 +827,9 @@ function BattleView.start(playerGui: Instance)
 				if holding then
 					holding.hp = event.TargetHp
 					current.active[actor] = event.Slot
+					-- Its model sank and faded at the Faint just before: forget it was standing, so
+					-- refresh() puts a fresh one on the pad (otherwise the creature is gone for good).
+					staged[actor] = 0
 					message.Text = `{holding.name} holds on!`
 				end
 			elseif event.Kind == "Item" then

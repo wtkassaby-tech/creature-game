@@ -56,7 +56,7 @@ local quests: { WorldTypes.Quest } = {
 		optional = false,
 		giver = { name = "Bastian Wake", place = "The Ferry Steps" },
 		requires = { "tf_pool_friend" },
-		requiresFlags = {},
+		requiresFlags = { "mentors_note" },
 		objective = { kind = "BeatTamer", tamer = "tf_isaura" },
 		goal = "Beat Isaura Penhallow on Route B",
 		offer = "Isaura swears the lamp flickers by night. Steady her nerves, and mine.",

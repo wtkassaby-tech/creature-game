@@ -245,6 +245,7 @@ local lair: WorldTypes.Lair = {
 	spurLength = 260,
 	arenaSize = 160,
 	giant = "dust_canyon_mesalith",
+	giantMarker = "canyon_giant_marker",
 	supplyStall = "Shelf Stall, at the start of the spur: tonics and Giant Horns",
 	shortcutToHub = true,
 }

@@ -691,7 +691,8 @@ end
 
 -- Play the line through.
 local done: { [string]: boolean } = {}
-local flags: World.Flags = { canyon_trader = true }
+-- The Mesa Road quests wait for the mentor's letter, which opens the road they walk.
+local flags: World.Flags = { canyon_trader = true, mentors_letter = true }
 local order: { string } = {}
 local lastQuest: WorldTypes.Quest? = nil
 local stuck = false

@@ -72,6 +72,77 @@ do
 	check("the giant glimpse looks at the lair", beatOf("giant_glimpse").lookAt == "greenwood_lair")
 end
 
+print("\n== Chapters 2 and 3: who, where and how it reads ==")
+do
+	local function beatIn(id: string): WorldTypes.Beat
+		for _, chapter in chapters do
+			for _, beat in chapter.beats do
+				if beat.id == id then
+					return beat
+				end
+			end
+		end
+		error(`no beat {id}`)
+	end
+	-- Both champions are tier "Rival" in the data, but only the rival himself is "your rival".
+	check(
+		"the canyon rival is your rival, on the road he stands on",
+		BeatHint.text(beatIn("canyon_rival")) == "Beat your rival on the Mesa Road's Sunbaked Rim"
+	)
+	check(
+		"Isolde Karrow is named, not called your rival",
+		BeatHint.text(beatIn("canyon_badge")) == "Beat Isolde Karrow at The Stair Gate"
+	)
+	check(
+		"Hepzibah Marr is named, with the road her boardwalk is on",
+		BeatHint.text(beatIn("tide_champion"))
+			== "Beat Hepzibah Marr on the Breakwater Road's Mudflat Boardwalk"
+	)
+	check(
+		"the gate's rival is your rival",
+		BeatHint.text(beatIn("tide_badge")) == "Beat your rival at The Breakwater Gate"
+	)
+	check(
+		"the road on reads once, without a doubled article",
+		BeatHint.text(beatIn("canyon_road_on")) == "Walk onto the road beyond the Stair Gate"
+			and BeatHint.text(beatIn("tide_road_on"))
+				== "Walk onto the road beyond the Breakwater Gate"
+	)
+	check(
+		"the sightings name their stretch with its road",
+		BeatHint.text(beatIn("mesa_sighting")) == "Walk into the Mesa Road's Spire Garden"
+			and BeatHint.text(beatIn("wreck_sighting"))
+				== "Walk into the Breakwater Road's Shipwreck Reach"
+	)
+	for _, chapter in chapters do
+		for _, beat in chapter.beats do
+			local text = string.lower(BeatHint.text(beat))
+			check(
+				`{beat.id}: no word is doubled`,
+				string.match(text, "%f[%a](%a+) %1%f[%A]") == nil,
+				text
+			)
+		end
+	end
+	check(
+		"both sightings look at their giant's lair",
+		beatIn("mesa_sighting").lookAt == "dust_canyon_lair"
+			and beatIn("wreck_sighting").lookAt == "tide_flats_lair"
+	)
+end
+
+print("\n== The tracker's last words ==")
+do
+	local closing = BeatHint.closing()
+	check("the closing hint is not blank", closing ~= "", closing)
+	check(
+		"it says the next biome is not open yet",
+		string.find(closing, "Mire", 1, true) ~= nil
+			and string.find(closing, "not open yet", 1, true) ~= nil,
+		closing
+	)
+end
+
 print("\n== A beat's lookAt is a real place ==")
 for _, chapter in chapters do
 	for _, beat in chapter.beats do

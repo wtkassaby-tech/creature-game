@@ -207,7 +207,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		{
 			at = p(532, 212),
 			faces = 315,
-			lines = { "Ferry to Saltwick:", "not while the wreck is awake" },
+			lines = { "Keep back from the hulk:", "the wreck is awake" },
 		},
 		{ at = p(700, 124), faces = 90, lines = { "The Breakwater Gate", "badge challenge" } },
 		{ at = p(184, 336), faces = 59, lines = { "Plank bridge out.", "The tide took it." } },

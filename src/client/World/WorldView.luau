@@ -18,6 +18,7 @@ local Kit = require(script.Parent.Parent.UI.Kit)
 local Particles = require(script.Parent.Parent.Fx.Particles)
 local Transition = require(script.Parent.Parent.UI.Transition)
 local WorldLife = require(script.Parent.WorldLife)
+local StoryPeople = require(script.Parent.StoryPeople)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Motion = require(ReplicatedStorage.shared.Motion)
@@ -505,6 +506,9 @@ function WorldView.start(openShop: () -> ())
 
 	-- The people standing about breathe, look at you and hop when you come to talk.
 	WorldLife.start()
+
+	-- The rival stands in the world only while the story wants him there (StoryPeople).
+	StoryPeople.start()
 
 	-- Walking up to a hidden creature (or having one step out of a rustle spot) starts the
 	-- encounter. The device only asks; the server checks the spawn is the player's own, free,

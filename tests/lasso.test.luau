@@ -233,6 +233,20 @@ do
 		string.format("%.3f", laggy.zones[1].speed / normal.zones[1].speed)
 	)
 	check("the assist leaves the zone width alone", laggy.zones[1].width == normal.zones[1].width)
+	-- A lag switch turned off after the throw: the sweep was slowed, but the taps arrive quickly.
+	local least = LassoConfig.ROUND_TRIP_CAP_MS * LassoConfig.ASSIST_MIN_LAG_SHARE
+	check(
+		"a slowed sweep with quick taps is invalid",
+		Lasso.judge(laggy, { 2000 - least + 1 }, { 2000 }).verdict == "Invalid"
+	)
+	check(
+		"a slowed sweep with taps that really lag is judged",
+		Lasso.judge(laggy, { 2000 - 450 }, { 2000 }).verdict ~= "Invalid"
+	)
+	check(
+		"quick taps are fine when the sweep was not slowed",
+		Lasso.judge(normal, { 2000 }, { 2000 }).verdict ~= "Invalid"
+	)
 	local crawl = Lasso.createAttempt(input({ slowMode = true, roundTripMs = 2000 }))
 	check(
 		"slow mode and the assist together never go below the floor",
@@ -243,8 +257,30 @@ do
 		Lasso.trustedRoundTripMs({ 310, 95, 400, 120 }) == 95
 	)
 	check(
-		"with too few readings a default is used, however large they are",
+		"with too few readings (and no engine ping) the default is used, however large they are",
 		Lasso.trustedRoundTripMs({ 900, 900 }) == LassoConfig.ROUND_TRIP_DEFAULT_MS
+	)
+	local margin = LassoConfig.ROUND_TRIP_ENGINE_MARGIN_MS
+	check(
+		"held-back replies cannot raise it above the engine's own ping (bug hunt: net 1)",
+		Lasso.trustedRoundTripMs({ 1000, 1000, 1000, 1000 }, 60) == 60 + margin
+	)
+	check(
+		"an honest reading below the engine figure is kept",
+		Lasso.trustedRoundTripMs({ 50, 90, 80 }, 300) == 50
+	)
+	check(
+		"with too few readings an honest slow connection gets its own ping (capture 2)",
+		Lasso.trustedRoundTripMs({}, 300) == 300 + margin
+	)
+	check(
+		"with neither, the generous default (the cap, so no slowing)",
+		Lasso.trustedRoundTripMs({}, nil) == LassoConfig.ROUND_TRIP_CAP_MS
+			and Lasso.assistScale(Lasso.trustedRoundTripMs({}, nil)) == 1
+	)
+	check(
+		"a made-up engine figure is ignored",
+		Lasso.trustedRoundTripMs({ 70, 80, 90 }, 0 / 0) == 70
 	)
 	local slow = Lasso.createAttempt(input({ slowMode = true }))
 	local fast = Lasso.createAttempt(input())
@@ -456,6 +492,20 @@ do
 	)
 	check("no centred throw is guaranteed", centreRate < 1 and centreExpected < 0.96)
 	check("a far-out throw is not a guaranteed miss", outRate > 0)
+end
+
+print("\n== A tap before its loop sweeps is dropped (bug hunt: capture 1) ==")
+do
+	check("a tap before the loop starts does not count", not Lasso.sweepStarted(3000, 700))
+	check(
+		"a tap at or after the start counts",
+		Lasso.sweepStarted(3000, 3000) and Lasso.sweepStarted(3000, 3500)
+	)
+	check("the first loop starts at zero", Lasso.sweepStarted(0, 0))
+	check(
+		"a bad number is left to the judge (it is Invalid there)",
+		Lasso.sweepStarted(3000, 0 / 0)
+	)
 end
 
 print(`\n{passed} passed, {failed} failed`)

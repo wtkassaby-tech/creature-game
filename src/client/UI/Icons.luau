@@ -150,6 +150,19 @@ function Icons.coin(parent: Instance, size: number, position: UDim2?): Frame
 	return box
 end
 
+-- A Gem: a green faceted stone with a pale top facet and a glint, a different shape and colour
+-- from Prism's blue-and-pink diamond so the two never read as one.
+function Icons.gem(parent: Instance, size: number, position: UDim2?): Frame
+	local box = holder(parent, size, position)
+	box.Name = "GemIcon"
+	local stone = shape(box, 0.5, 0.56, 0.78, 0.62, Color3.fromRGB(52, 178, 120), 0.18)
+	ring(stone, stroke(size), INK)
+	shape(box, 0.5, 0.3, 0.46, 0.2, Color3.fromRGB(150, 232, 190), 0.2)
+	shape(box, 0.5, 0.64, 0.12, 0.32, Color3.fromRGB(30, 130, 90), 0.3)
+	shape(box, 0.3, 0.4, 0.1, 0.1, Color3.new(1, 1, 1), 0.5)
+	return box
+end
+
 function Icons.prism(parent: Instance, size: number, position: UDim2?): Frame
 	local box = holder(parent, size, position)
 	box.Name = "PrismIcon"

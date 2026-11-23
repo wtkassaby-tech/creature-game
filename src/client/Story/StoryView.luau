@@ -53,6 +53,8 @@ local function summarise(state: Snapshot.State, now: number): Tracker.Input
 		flags[flag] = true
 	end
 	local beat = World.nextBeat(Storyline, flags)
+	local last = Storyline.beats[#Storyline.beats]
+	local finished = last ~= nil and flags[last.id] == true
 	local quests: { Tracker.QuestLine } = {}
 	for id, progress in state.QuestsActive do
 		local quest = Quests[id]
@@ -74,7 +76,8 @@ local function summarise(state: Snapshot.State, now: number): Tracker.Input
 		table.insert(owned, view.Torso.Species)
 	end
 	return {
-		hint = if beat then BeatHint.text(beat) else nil,
+		-- Past the last open beat the tracker says what comes next, never a blank page.
+		hint = if beat then BeatHint.text(beat) elseif finished then BeatHint.closing() else nil,
 		quests = quests,
 		eggs = eggs,
 		now = now,
@@ -189,7 +192,7 @@ function StoryView.start(playerGui: Instance)
 	local battleOpen = false
 	local function showNext()
 		local nextLine = table.remove(queue, 1)
-		if nextLine and nextLine.look then
+		if nextLine and nextLine.look and not battleOpen then
 			LookAt.start(nextLine.look)
 		else
 			LookAt.release()
@@ -219,7 +222,7 @@ function StoryView.start(playerGui: Instance)
 		local function battleChanged()
 			battleOpen = battle.Enabled
 			if battleOpen then
-				LookAt.release()
+				LookAt.cancel() -- the battle camera takes over; an easing look would fight it
 			end
 			hud.Enabled = not battleOpen -- the tracker sits under the foe's card
 			if not showing and not battleOpen and #queue > 0 then

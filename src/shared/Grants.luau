@@ -33,13 +33,14 @@ local function count(profile: Profile): number
 	return n
 end
 
--- Free stable places right now.
--- Free places in the stable. A gem-tier catch that is waiting for its serial number already
--- holds a place, so catches cannot pile up in the waiting list beyond what the stable can take.
+-- Free places in the stable. A gem-tier catch or a giant that is waiting for its serial number
+-- already holds a place, so catches cannot pile up in the waiting list beyond what the stable can
+-- take, and a waiting giant cannot take the place a wild throw was counting on (exploit review,
+-- 23 November 2026).
 function Grants.room(profile: Profile): number
 	local held = 0
 	for _, pending in profile.Pending do
-		if pending.source == "Gem" then
+		if pending.source == "Gem" or pending.source == "Giant" then
 			held += 1
 		end
 	end
@@ -312,7 +313,8 @@ function Grants.finishGiant(profile: Profile, giantId: string, giant: Creature):
 	if at == nil then
 		return { outcome = "Refused", reason = "No capture of that giant is waiting" }
 	end
-	if Grants.room(profile) < 1 then
+	-- Its own held place is the one it takes (Grants.room counts it as taken already).
+	if Grants.room(profile) < 0 then
 		return {
 			outcome = "NoRoom",
 			reason = "Your stable is full: the giant waits until there is room",

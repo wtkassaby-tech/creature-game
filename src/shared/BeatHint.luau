@@ -6,6 +6,12 @@
 -- Roblox services.
 
 local Biomes = require("../content/Biomes")
+local DustCanyon = require("../content/biome_data/DustCanyon")
+local Greenwood = require("../content/biome_data/Greenwood")
+local Mire = require("../content/biome_data/Mire")
+local TideFlats = require("../content/biome_data/TideFlats")
+local ReleaseConfig = require("../config/ReleaseConfig")
+local StoryStand = require("./StoryStand")
 local Tamers = require("../content/Tamers")
 local WorldTypes = require("./WorldTypes")
 
@@ -20,6 +26,20 @@ local function shortRoute(name: string): string
 	return short or name
 end
 
+-- A stretch is named with its road, because a player looking at the map and the signs finds "the
+-- Mesa Road's Sunbaked Rim", not "Sunbaked Rim" alone. A stretch that already starts with its
+-- road's first word ("Clover Meadow" on Clover Lane) is left as it is.
+local function areaName(routeName: string, name: string): string
+	local route = shortRoute(routeName)
+	local first = string.match(route, "^(%S+)")
+	if first and string.sub(name, 1, #first) == first then
+		return name
+	end
+	-- "the Mesa Road's ...", but "Clover Lane's ...".
+	local article = if string.match(route, "Lane$") then "" else "the "
+	return `{article}{route}'s {name}`
+end
+
 local function places(): { [string]: Place }
 	local found: { [string]: Place } = {}
 	for _, biome in Biomes do
@@ -27,13 +47,15 @@ local function places(): { [string]: Place }
 		for _, route in biome.routes do
 			found[route.id] = { name = shortRoute(route.name), kind = "Route" }
 			for _, area in route.areas do
-				found[area.id] = { name = area.name, kind = "Area" }
+				found[area.id] = { name = areaName(route.name, area.name), kind = "Area" }
 			end
 		end
 		found[biome.lair.id] = { name = biome.lair.name, kind = "Lair" }
 		found[biome.gate.id] = { name = biome.gate.name, kind = "Gate" }
+		-- "The Stair Gate" -> "the road beyond the Stair Gate".
+		local gateName = string.gsub(biome.gate.name, "^The ", "the ")
 		found[biome.gate.sealedPath] = {
-			name = `the road beyond {biome.gate.name}`,
+			name = `the road beyond {gateName}`,
 			kind = "Sealed",
 		}
 	end
@@ -117,10 +139,13 @@ function BeatHint.resolve(beat: WorldTypes.Beat): (string, string?)
 		local battle = Tamers.story[target]
 		if battle then
 			local where = placeName(battle.place, known)
-			local who = if battle.tier == "Rival" then "your rival" else battle.name
-			-- "in Thistledown", but "at The Greenwood Gatehouse".
+			local who = if StoryStand.isRival(battle) then "your rival" else battle.name
+			-- "in Thistledown", "on the Mesa Road's Sunbaked Rim", but "at The Greenwood Gatehouse".
 			local place = known[battle.place]
-			local word = if place and place.kind == "Hub" then "in" else "at"
+			local word = if place and place.kind == "Hub"
+				then "in"
+				elseif place and place.kind == "Area" then "on"
+				else "at"
 			local words = if where then `Beat {who} {word} {where}` else `Beat {who}`
 			return words, who
 		end
@@ -132,7 +157,7 @@ function BeatHint.resolve(beat: WorldTypes.Beat): (string, string?)
 			elseif place.kind == "Gate" then
 				return `Walk up to {place.name}`, place.name
 			elseif place.kind == "Sealed" then
-				return `Walk the {place.name}`, place.name
+				return `Walk onto {place.name}`, place.name
 			end
 			return `Walk into {place.name}`, place.name
 		end
@@ -144,6 +169,21 @@ function BeatHint.resolve(beat: WorldTypes.Beat): (string, string?)
 		return "Tame a creature with your lasso", nil
 	end
 	return beat.name, nil
+end
+
+-- What the tracker says when the open story has run out, so it never goes blank: the next
+-- biome by name while one is written but not yet open, else a plain "more soon".
+local LATER_BIOMES: { WorldTypes.Biome } = { Greenwood, DustCanyon, TideFlats, Mire }
+
+function BeatHint.closing(): string
+	local following = LATER_BIOMES[ReleaseConfig.OPEN_BIOMES + 1]
+	if not following then
+		return "That is all the story for now. More soon."
+	end
+	local name = if string.match(following.name, "^The ")
+		then following.name
+		else `The {following.name}`
+	return `{name} is not open yet. More soon.`
 end
 
 function BeatHint.text(beat: WorldTypes.Beat): string

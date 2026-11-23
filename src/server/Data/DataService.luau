@@ -41,6 +41,9 @@ local store = if RunService:IsStudio() and not ProfileConfig.STUDIO_USES_REAL_ST
 type Session = typeof((nil :: any) :: typeof(store:StartSessionAsync("", {})))
 
 local sessions: { [Player]: any } = {}
+local MIN_SECONDS_BETWEEN_SAVES = 6
+local lastSaved: { [Player]: number } = {}
+local saveWaiting: { [Player]: boolean } = {}
 local log: Log = function(_event, _fields) end
 
 -- The player's data while their session is live on this server, or nil. Never a stale copy:
@@ -55,11 +58,33 @@ end
 
 -- Asks for a save as soon as possible (after a purchase, a giant capture or a hatch).
 -- This is a request: a crash before it lands puts the record back to the last save.
+-- Saves are coalesced: at most one per MIN_SECONDS_BETWEEN_SAVES per player (Roblox allows one
+-- write per key every 6 s), with one trailing save if more were asked for in between, so a
+-- client that triggers many saves cannot queue unlimited writes.
 function DataService.saveSoon(player: Player)
 	local session = sessions[player]
-	if session ~= nil and session:IsActive() then
-		session:Save()
+	if session == nil or not session:IsActive() then
+		return
 	end
+	if saveWaiting[player] then
+		return -- a trailing save is already scheduled and will carry this change
+	end
+	local last = lastSaved[player]
+	local now = os.clock()
+	if last == nil or now - last >= MIN_SECONDS_BETWEEN_SAVES then
+		lastSaved[player] = now
+		session:Save()
+		return
+	end
+	saveWaiting[player] = true
+	task.delay(MIN_SECONDS_BETWEEN_SAVES - (now - last), function()
+		saveWaiting[player] = nil
+		local current = sessions[player]
+		if current == session and session:IsActive() then
+			lastSaved[player] = os.clock()
+			session:Save()
+		end
+	end)
 end
 
 -- Waits until `isSaved` is true of the data ProfileStore last wrote to the data store, asking for
@@ -78,7 +103,20 @@ function DataService.waitSaved(player: Player, isSaved: (saved: any) -> boolean)
 		local before = session.LastSavedData
 		session:Save()
 		if session.LastSavedData == before then
-			session.OnAfterSave:Wait()
+			-- A failed save never fires OnAfterSave, so wait for it or for the retry time,
+			-- whichever comes first (otherwise one failed save stalls this until autosave).
+			local thread = coroutine.running()
+			local resumed = false
+			local function wake()
+				if not resumed then
+					resumed = true
+					task.spawn(thread)
+				end
+			end
+			local connection = session.OnAfterSave:Connect(wake)
+			task.delay(SAVE_RETRY_SECONDS, wake)
+			coroutine.yield()
+			connection:Disconnect()
 		end
 		if isSaved(session.LastSavedData) then
 			return true
@@ -96,18 +134,33 @@ local function remove(player: Player, message: string)
 	end
 end
 
-local function load(player: Player)
-	local session = store:StartSessionAsync(tostring(player.UserId), {
-		Cancel = function()
-			return player.Parent ~= Players
-		end,
-	})
-	if session == nil then
-		-- Data stores are unreachable, the server is closing, or the player left while waiting.
-		log("DataLoadFailed", { player = player.UserId })
-		return remove(player, "Your save could not be loaded. Nothing was changed. Please rejoin.")
+-- Everything after the session starts. Split out so `load` can end the session if it throws.
+-- A damaged PlayStats record is repaired before the save is checked (it is only a counter), so it
+-- never shuts a player out. A number that is not finite counts as damaged: it could never be saved.
+local function counter(value: unknown): number
+	if
+		typeof(value) == "number"
+		and value == value
+		and value ~= math.huge
+		and value ~= -math.huge
+	then
+		return value
 	end
+	return 0
+end
 
+local function repairStats(data: Profile.Profile)
+	local stats: any = data.PlayStats
+	if typeof(stats) ~= "table" then
+		data.PlayStats = { firstJoin = 0, playSeconds = 0, sessions = 0 }
+		return
+	end
+	stats.firstJoin = counter(stats.firstJoin)
+	stats.playSeconds = counter(stats.playSeconds)
+	stats.sessions = counter(stats.sessions)
+end
+
+local function prepare(player: Player, session: any)
 	-- Upgrade first, on a copy; only then fill in fields that are new to the template.
 	-- Kept so a refused save is written back exactly as it was found.
 	local original = session.Data
@@ -120,6 +173,7 @@ local function load(player: Player)
 	session.Data = upgraded
 	session:AddUserId(player.UserId)
 	session:Reconcile()
+	repairStats(session.Data)
 
 	local problems = Profile.validate(session.Data)
 	for _, found in problems do
@@ -154,10 +208,11 @@ local function load(player: Player)
 		session:EndSession()
 		return
 	end
-	if session.Data.PlayStats.firstJoin == 0 then
-		session.Data.PlayStats.firstJoin = os.time()
+	local stats = session.Data.PlayStats
+	if stats.firstJoin == 0 then
+		stats.firstJoin = os.time()
 	end
-	session.Data.PlayStats.sessions += 1
+	stats.sessions += 1
 	sessions[player] = session
 	log("DataLoaded", {
 		player = player.UserId,
@@ -166,12 +221,47 @@ local function load(player: Player)
 	})
 end
 
+local function load(player: Player)
+	local session = store:StartSessionAsync(tostring(player.UserId), {
+		Cancel = function()
+			return player.Parent ~= Players
+		end,
+	})
+	if session == nil then
+		-- Data stores are unreachable, the server is closing, or the player left while waiting.
+		log("DataLoadFailed", { player = player.UserId })
+		return remove(player, "Your save could not be loaded. Nothing was changed. Please rejoin.")
+	end
+	local original = session.Data
+	local ok, problem = pcall(function()
+		prepare(player, session)
+	end)
+	if not ok then
+		-- Anything that throws after the session started must not leave the lock held with the
+		-- player playing on no data: put the record back as found, release the lock, remove them.
+		log("DataLoadFailed", { player = player.UserId, problem = tostring(problem) })
+		sessions[player] = nil
+		session.Data = original
+		session:EndSession()
+		remove(player, "Your save could not be loaded. Nothing was changed. Please rejoin.")
+	end
+end
+
 -- Starts the service. `onLoaded` runs once a player's data is ready. Returns a function that
--- stops listening (sessions are still ended when their players leave).
-function DataService.start(logger: Log, onLoaded: ((player: Player) -> ())?)
+-- stops new joins (sessions are still ended when their players leave).
+function DataService.start(logger: Log, onLoaded: ((player: Player) -> ())?): () -> ()
 	log = logger
 	local function joined(player: Player)
-		load(player)
+		-- StartSessionAsync itself can throw; the player must not stay in the game unloaded.
+		local ok, problem = pcall(function()
+			load(player)
+		end)
+		if not ok then
+			log("DataLoadFailed", { player = player.UserId, problem = tostring(problem) })
+			sessions[player] = nil
+			remove(player, "Your save could not be loaded. Nothing was changed. Please rejoin.")
+			return
+		end
 		if onLoaded and DataService.get(player) then
 			onLoaded(player)
 		end
@@ -179,14 +269,21 @@ function DataService.start(logger: Log, onLoaded: ((player: Player) -> ())?)
 	for _, player in Players:GetPlayers() do
 		task.spawn(joined, player)
 	end
-	Players.PlayerAdded:Connect(joined)
+	local added = Players.PlayerAdded:Connect(joined)
 	Players.PlayerRemoving:Connect(function(player)
 		local session = sessions[player]
 		sessions[player] = nil
+		lastSaved[player] = nil
+		saveWaiting[player] = nil
 		if session ~= nil then
 			session:EndSession()
 		end
 	end)
+	-- Stopping only stops new joins: players who leave afterwards must still have their sessions
+	-- ended, so `removing` stays connected (exploit review, 23 November 2026).
+	return function()
+		added:Disconnect()
+	end
 end
 
 return DataService

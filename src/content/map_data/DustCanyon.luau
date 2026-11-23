@@ -302,6 +302,10 @@ local DustCanyon: WorldTypes.MapSheet = {
 		dc_tavish = p(699, -106.5),
 		-- The stretch middle the rival's stand belongs to.
 		sunbaked_rim = p(370, -68),
+		-- The stretch middle is where "The mesa that walks" is sighted. It sits 25 studs east of
+		-- Hesper (the surveyor with the brass scope who points it out), so the line fires as the
+		-- player comes up to her, never on top of her.
+		spire_garden = p(575, -100),
 	},
 
 	-- The rival stands on the rim with the gorge behind him; Isolde Karrow stands in the gate.
@@ -318,6 +322,31 @@ local DustCanyon: WorldTypes.MapSheet = {
 		dc_tavish = 270,
 		rival_canyon = 270,
 		champion_karrow = 270,
+	},
+
+	-- Stretches closed until the story opens them (World.holdAt; Greenwood's River Road is the
+	-- model). The Mesa Road waits for the mentor's letter (the `mentors_letter` beat opens
+	-- `canyon_routes`), so a new arrival meets the Dry Wash's level 13 to 16 creatures first, not
+	-- the rim's and the garden's level 17 to 21 ones. The closed area starts past the town's arch
+	-- and covers the road, the lair spur and the Stair Gate's approach. The bar past the gate is
+	-- held until the Cairn Badge (`badge_2`), so the road on cannot be walked without it.
+	holds = {
+		{
+			id = "mesa_road",
+			feature = "canyon_routes",
+			from = p(165, -450),
+			to = p(780, 200),
+			back = p(120, 30),
+			line = "The Mesa Road is too steep for now. Finish your first tasks around Kilnrest and it will open.",
+		},
+		{
+			id = "sealed_road",
+			feature = "badge_2",
+			from = p(790, -450),
+			to = p(900, 200),
+			back = p(745, -100),
+			line = "The road on is shut to all but badge holders. Win the Cairn Badge at the Stair Gate first.",
+		},
 	},
 
 	-- Where players arrive from Greenwood, through the Westcut, facing the Trading Post. Only the

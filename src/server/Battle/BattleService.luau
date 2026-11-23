@@ -34,7 +34,7 @@ export type ResolveTarget = (
 	targetName: string?
 ) -> (Opponent?, string?)
 -- The player's team and level cap, or nil if their data is not loaded.
-export type PlayerTeam = (player: Player) -> ({ Types.Creature }?, number?)
+export type PlayerTeam = (player: Player) -> ({ Types.Creature }?, number?, string?)
 export type OnFinished = (
 	player: Player,
 	session: BattleSession.Session,
@@ -196,9 +196,9 @@ function BattleService.start(
 		if sessions[player] or elsewhere(player) then
 			return drop("You are already in a battle")
 		end
-		local creatures, cap = playerTeam(player)
+		local creatures, cap, noTeam = playerTeam(player)
 		if not creatures or not cap then
-			return drop("Your data is not loaded")
+			return drop(noTeam or "Your data is not loaded")
 		end
 		nextBattleId = (nextBattleId + 1) % 4294967295
 		local ok, session, problem = pcall(function(): (BattleSession.Session?, string?)

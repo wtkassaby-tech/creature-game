@@ -66,14 +66,6 @@ function BreedingService.new(
 	}, BreedingService)
 end
 
-local function countCreatures(data: Profile.Profile): number
-	local count = 0
-	for _ in data.Creatures do
-		count += 1
-	end
-	return count
-end
-
 -- Handles a breed request. Returns true and the egg's hatch time, or false and a reason for
 -- the screen. Nothing in this function pauses, so no other request can run in the middle of it.
 function BreedingService.requestBreed(
@@ -199,7 +191,8 @@ function BreedingService.collectHatched(self: BreedingService, player: Player): 
 		return hatched
 	end
 	local now = os.time()
-	local room = data.StableCapacity - countCreatures(data)
+	-- Grants.room also counts the places held by gem catches waiting for their serial number.
+	local room = Grants.room(data)
 	local index = 1
 	while index <= #data.Eggs and room > 0 do
 		local egg = data.Eggs[index]

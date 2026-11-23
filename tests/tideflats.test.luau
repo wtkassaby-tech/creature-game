@@ -716,7 +716,8 @@ end
 
 -- Play the line through.
 local done: { [string]: boolean } = {}
-local flags: World.Flags = { tide_bait = true }
+-- The Breakwater Road quests wait for the mentor's note, which opens the road they walk.
+local flags: World.Flags = { tide_bait = true, mentors_note = true }
 local order: { string } = {}
 local lastQuest: WorldTypes.Quest? = nil
 local stuck = false

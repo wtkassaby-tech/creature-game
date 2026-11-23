@@ -211,6 +211,7 @@ local lair: WorldTypes.Lair = {
 	spurLength = 250,
 	arenaSize = 150,
 	giant = "greenwood_hollowbough",
+	giantMarker = "giant_marker", -- the story beat that wakes it
 	supplyStall = "Hollow Stall, at the start of the spur: tonics and Giant Horns",
 	shortcutToHub = true,
 }

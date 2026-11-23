@@ -282,6 +282,9 @@ local TideFlats: WorldTypes.MapSheet = {
 		tf_ludo = p(632, 160),
 		-- The stretch middle the champion's stand belongs to.
 		mudflat_boardwalk = p(335, 183),
+		-- The stretch middle is where "The wreck that walks" is sighted, 25 studs east of Isaura (the
+		-- signal-lamp keeper who points it out): the line fires as the player comes up to her.
+		shipwreck_reach = p(486, 190),
 		tideward_steps = p(606, 178),
 	},
 
@@ -299,6 +302,40 @@ local TideFlats: WorldTypes.MapSheet = {
 		tf_ludo = 250,
 		champion_marr = 270,
 		rival_breakwater = 270,
+	},
+
+	-- Stretches closed until the story opens them (World.holdAt; Greenwood's River Road is the
+	-- model). The Breakwater Road waits for the mentor's note (the `mentors_note` beat opens
+	-- `tide_routes`), so a new arrival meets Strandline Path's creatures first, not the boardwalk's
+	-- and the wreck's. It is closed from the end of the causeway on (Orrin and the causeway stay
+	-- open), and covers the lair spur and the gate's approach. Two bars are held until a badge:
+	-- the road on past this gate (`badge_3`), and the Dune Road from Dust Canyon (`badge_2`), whose
+	-- way back is on Dust Canyon's side, at the foot of the Stair Gate's approach.
+	holds = {
+		{
+			id = "breakwater_road",
+			feature = "tide_routes",
+			from = p(262, -60),
+			to = p(755, 560),
+			back = p(190, 60),
+			line = "The Breakwater Road is not for you yet. Finish your first tasks around Saltwick and it will open.",
+		},
+		{
+			id = "sealed_road",
+			feature = "badge_3",
+			from = p(760, -200),
+			to = p(900, 300),
+			back = p(700, 110),
+			line = "The road on is shut to all but badge holders. Win the Breaker Badge at the gate first.",
+		},
+		{
+			id = "dune_road",
+			feature = "badge_2",
+			from = p(-290, -300),
+			to = p(-150, 120),
+			back = p(-334, 0),
+			line = "You need the Cairn Badge before you can go on to Saltwick. Win it at the Stair Gate.",
+		},
 	},
 
 	-- Where players arrive from Dust Canyon, over the Dune Road, facing the Chandlery. Only the

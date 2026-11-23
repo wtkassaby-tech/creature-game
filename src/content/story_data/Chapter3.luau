@@ -55,11 +55,11 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Sign",
-				text = "Saltwick. Tide tables at the quay. The causeway floods at dusk.",
+				text = "Saltwick. Tackle and bait at the Chandlery. The Breakwater Road runs east.",
 			},
 			{
 				speaker = "Odalys",
-				text = "A Cairn Badge! Welcome to Saltwick. Mind the tide, it is faster than it looks.",
+				text = "A Cairn Badge! Welcome to Saltwick. The shore hides more than it shows.",
 			},
 		},
 	},
@@ -69,7 +69,7 @@ local beats: { WorldTypes.Beat } = {
 		minuteFrom = 142,
 		minuteTo = 147,
 		trigger = { kind = "Talk", target = "odalys_tarn", requires = { "tide_arrival" } },
-		unlocks = { "bait", "tide_quest_line", "tide_routes" },
+		unlocks = { "bait", "tide_quest_line" },
 		grants = {},
 		lines = {
 			{
@@ -82,7 +82,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Odalys",
-				text = "Something always steps out, so pick your spot well. The tide counts your baits.",
+				text = "Something always steps out, so pick your spot well. The shore gives only so much each day.",
 			},
 		},
 	},
@@ -97,7 +97,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Nell",
-				text = "Quick feet! Glissots slip away over wet sand, so land your hits early.",
+				text = "Glissots slip away over wet sand, so land your hits early and keep your feet.",
 			},
 		},
 	},
@@ -111,8 +111,8 @@ local beats: { WorldTypes.Beat } = {
 		grants = {},
 		lines = {
 			{
-				speaker = "Odalys",
-				text = "A fine catch! If one ever glints amber, it is gem-tier. Keep it safe.",
+				speaker = "You",
+				text = "A fine catch! If one ever glints amber, it is a gem-tier. I will keep it safe.",
 			},
 		},
 	},
@@ -122,7 +122,7 @@ local beats: { WorldTypes.Beat } = {
 		minuteFrom = 154,
 		minuteTo = 162,
 		trigger = { kind = "Talk", target = "bastian_wake", requires = { "bait_catch" } },
-		unlocks = {},
+		unlocks = { "tide_routes" },
 		grants = parcel,
 		lines = {
 			{
@@ -150,7 +150,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Marr",
-				text = "A good strike, and a fair one. Folk say the old wreck stood up and walked.",
+				text = "Folk say the old wreck stood up and walked.",
 			},
 			{
 				speaker = "Marr",
@@ -164,15 +164,16 @@ local beats: { WorldTypes.Beat } = {
 		minuteFrom = 170,
 		minuteTo = 180,
 		trigger = { kind = "Sight", target = "shipwreck_reach", requires = { "tide_champion" } },
+		lookAt = "tide_flats_lair",
 		unlocks = { "tide_giant_marker" },
 		grants = {},
 		lines = {
 			{
-				speaker = "Sorrel",
+				speaker = "Isaura",
 				text = "That wreck is moving! Carrackon, the hermit of the bay, is wearing its ship.",
 			},
 			{
-				speaker = "Sorrel",
+				speaker = "Isaura",
 				text = "Its lair is off the Breakwater Road. Its big waves fear Leaf and Toxic types.",
 			},
 		},
@@ -218,8 +219,8 @@ local beats: { WorldTypes.Beat } = {
 				text = "Fine. The badge is yours. I am going on into the Mire, and the glint comes along.",
 			},
 			{
-				speaker = "Odalys",
-				text = "Gone like the tide. Here, a friend from Saltwick to see you on your way.",
+				speaker = "You",
+				text = "Gone like the tide. A friend from Saltwick walks with me now.",
 			},
 		},
 	},
@@ -238,7 +239,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{ speaker = "Sign", text = "The Mire road. Shut to all but badge holders." },
 			{
-				speaker = "Bastian",
+				speaker = "Sign",
 				text = "Go slow. Thick air, slow water and lights that are not lanterns.",
 			},
 		},

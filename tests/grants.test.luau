@@ -382,6 +382,20 @@ do
 		Grants.room(p) == 0 and Grants.capture(p, third).outcome == "NoRoom" and #p.Pending == 2
 	)
 	check("an ordinary catch is refused too", Grants.capture(p, creature()).outcome == "NoRoom")
+
+	-- A giant waiting for its number holds its place the same way (exploit review, 23 November).
+	local g = fresh(1)
+	Grants.startGiant(g, "hollowbough")
+	check(
+		"a waiting giant holds the last place, so a wild catch is refused before the throw",
+		Grants.room(g) == 0 and Grants.capture(g, creature()).outcome == "NoRoom"
+	)
+	local big = creature("Burlhorn")
+	big.isGiant, big.bound, big.serial = true, true, 3
+	check(
+		"the giant then takes the place it held",
+		Grants.finishGiant(g, "hollowbough", big).outcome == "Granted" and Grants.room(g) == 0
+	)
 	Grants.keepSerial(p, "Gem", first.id, 1)
 	Grants.keepSerial(p, "Gem", second.id, 2)
 	check(

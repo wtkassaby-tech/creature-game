@@ -23,6 +23,8 @@ local RoundTrip = {}
 
 local readings: { [Player]: { number } } = {}
 local waiting: { [Player]: Waiting } = {}
+local MIN_SECONDS_BETWEEN_PONGS = 0.2
+local lastPong: { [Player]: number } = {}
 
 local function record(player: Player, ms: number)
 	local list = readings[player]
@@ -38,7 +40,12 @@ end
 
 -- The round trip to trust for this player now, in milliseconds.
 function RoundTrip.trustedMs(player: Player): number
-	return Lasso.trustedRoundTripMs(readings[player] or {})
+	-- The engine's own ping figure (seconds) caps the readings the client could have delayed.
+	local ok, seconds = pcall(function()
+		return player:GetNetworkPing()
+	end)
+	local engineMs: number? = if ok and typeof(seconds) == "number" then seconds * 1000 else nil
+	return Lasso.trustedRoundTripMs(readings[player] or {}, engineMs)
 end
 
 -- Starts pinging every player for whom `shouldPing` is true. Returns a function that stops it.
@@ -47,6 +54,12 @@ function RoundTrip.start(shouldPing: (player: Player) -> boolean): () -> ()
 	local running = true
 
 	local stopPong = Net.Pong.On(function(player, value)
+		-- Rate limit (CLAUDE.md rule 5): only one reply is ever expected per ping.
+		local nowClock = os.clock()
+		if nowClock - (lastPong[player] or -math.huge) < MIN_SECONDS_BETWEEN_PONGS then
+			return
+		end
+		lastPong[player] = nowClock
 		local pending = waiting[player]
 		if not pending or pending.nonce ~= value.Nonce then
 			return -- an old, repeated or made-up reply
@@ -77,6 +90,7 @@ function RoundTrip.start(shouldPing: (player: Player) -> boolean): () -> ()
 	local leaving = Players.PlayerRemoving:Connect(function(player)
 		readings[player] = nil
 		waiting[player] = nil
+		lastPong[player] = nil
 	end)
 
 	return function()

@@ -13,9 +13,9 @@ local Rewards = require("./Rewards")
 local Rng = require("./Rng")
 local Species = require("../content/Species")
 local StoryProgress = require("./StoryProgress")
+local StoryStand = require("./StoryStand")
 local Tamers = require("../content/Tamers")
 local Types = require("./Types")
-local World = require("./World")
 local WorldTypes = require("./WorldTypes")
 local Xp = require("./Xp")
 
@@ -64,18 +64,20 @@ function Trainers.resolve(
 		},
 			nil
 	end
-	local beat = World.nextBeat(chapter, profile.Story.flags)
-	if beat == nil or beat.trigger.kind ~= "Win" or beat.trigger.target ~= id then
-		return nil, "That battle is not available"
-	end
-	-- Once won it is over, even if its beat has not finished yet (the win is on record and the
-	-- story catches up by itself), so a story battle can never be replayed for XP.
-	if Rewards.hasBeaten(profile, id) then
-		return nil, "That battle is not available"
-	end
 	local battle = Tamers.story[id]
 	if not battle then
 		return nil, "That battle is not available"
+	end
+	-- A story battle is open only while it is the story's next step, and only once. When it is
+	-- not, say why: the person is standing there in the world, and "not available" tells nobody
+	-- what to do. Once won it is over, even if its beat has not finished yet (the win is on
+	-- record and the story catches up by itself), so it can never be replayed for XP.
+	local status = StoryStand.status(chapter, profile.Story.flags, battle)
+	local beaten = Rewards.hasBeaten(profile, id)
+	if status == "None" then
+		return nil, "That battle is not available"
+	elseif beaten or status ~= "Now" then
+		return nil, StoryStand.refusal(status, battle, beaten)
 	end
 	local team = battle.team
 	if battle.teams then

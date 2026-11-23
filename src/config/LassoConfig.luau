@@ -79,7 +79,20 @@ LassoConfig.MIN_TOTAL_SPEED = 0.4
 -- the smallest reading: a player can delay a reply but cannot make one arrive early.
 -- With fewer readings than this the allowance is the default below.
 LassoConfig.ROUND_TRIP_MIN_SAMPLES = 3
-LassoConfig.ROUND_TRIP_DEFAULT_MS = 120
+-- Used only when there are too few readings AND the engine's own ping is unavailable: the generous
+-- end (the cap), so an honest slow connection is not judged Invalid before readings exist. It
+-- allows the widest claim window but never slows the marker (the assist starts above the cap).
+LassoConfig.ROUND_TRIP_DEFAULT_MS = LassoConfig.ROUND_TRIP_CAP_MS
+-- The trusted round trip is never above the engine's own measurement (Player:GetNetworkPing, which
+-- the client cannot delay without lagging all its traffic) plus this slack, so holding back Pong
+-- replies cannot buy a slower marker or a wider claim window.
+LassoConfig.ROUND_TRIP_ENGINE_MARGIN_MS = 40
+-- A sweep slowed for a slow connection only stays fair while the connection really is slow. Each
+-- tap of a slowed sweep must arrive at least this share of the capped round trip behind the
+-- server's clock, or the throw is Invalid: a lag switch turned off after the throw would
+-- otherwise keep the slow marker with quick taps (exploit review, 23 November 2026). An honest
+-- slow connection's taps lag about a full round trip, well past this.
+LassoConfig.ASSIST_MIN_LAG_SHARE = 0.5
 
 -- Timing audit: flag an account when this share of its last SAMPLES throws landed within TINY_MS
 -- of the zone centre. A human with a 60 ms spread lands about 13% of throws that close.

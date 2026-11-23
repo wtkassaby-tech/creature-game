@@ -102,12 +102,15 @@ end
 type External = {
 	throwId: number,
 	zones: number,
+	startsMs: { number }, -- when each loop starts sweeping
 	startedAt: number,
 	claims: { number },
 	arrivals: { number },
 	onDone: (claims: { number }, arrivals: { number }, throwId: number) -> (),
 }
 local external: { [Player]: External } = {}
+local MIN_SECONDS_BETWEEN_TAPS = 0.04 -- at most 25 taps a second per player
+local lastTap: { [Player]: number } = {}
 
 -- Supplied by the purchase service: true while PolicyService says this player may not be sold paid
 -- random items (or has not answered yet). The Lasso Pass only counts when this is false.
@@ -168,9 +171,14 @@ function CaptureService.play(
 	end
 	nextThrowId = (nextThrowId + 1) % 4294967295
 	local throwId = nextThrowId
+	local starts: { number } = {}
+	for _, zone in pattern.zones do
+		table.insert(starts, zone.startMs)
+	end
 	external[player] = {
 		throwId = throwId,
 		zones = #pattern.zones,
+		startsMs = starts,
 		startedAt = os.clock(),
 		claims = {},
 		arrivals = {},
@@ -222,6 +230,8 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 		)
 		if not result then
 			log("LassoUnjudged", { player = player.UserId, problem = problem })
+			-- Tell the device the throw is over, or it stays on "Thrown..." until the next battle.
+			BattleService.refuse(player, "That throw could not be judged")
 			return
 		end
 		local hits = 0
@@ -334,9 +344,20 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 	end)
 
 	local stopTap = Net.LassoTap.On(function(player, value)
+		-- Rate limit (CLAUDE.md rule 5): taps are seconds apart in play; this only stops floods.
+		local nowClock = os.clock()
+		if nowClock - (lastTap[player] or -math.huge) < MIN_SECONDS_BETWEEN_TAPS then
+			return
+		end
+		lastTap[player] = nowClock
 		local other = external[player]
 		if other and other.throwId == value.ThrowId then
-			if value.Zone == #other.claims + 1 then
+			local starts = other.startsMs[value.Zone]
+			if
+				value.Zone == #other.claims + 1
+				and starts ~= nil
+				and Lasso.sweepStarted(starts, value.ClaimMs)
+			then
 				table.insert(other.claims, value.ClaimMs)
 				table.insert(other.arrivals, (os.clock() - other.startedAt) * 1000)
 				if #other.claims >= other.zones then
@@ -351,6 +372,11 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 		end
 		-- Taps are taken in order, one per zone; a repeat or a skipped zone is ignored.
 		if value.Zone ~= #current.claims + 1 then
+			return
+		end
+		-- A tap before its loop has started sweeping is dropped, not stored (bug hunt: capture 1).
+		local zone = current.throw.pattern.zones[value.Zone]
+		if zone == nil or not Lasso.sweepStarted(zone.startMs, value.ClaimMs) then
 			return
 		end
 		table.insert(current.claims, value.ClaimMs)
@@ -376,6 +402,7 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 		external[player] = nil
 		misses[player] = nil
 		lastThrow[player] = nil
+		lastTap[player] = nil
 	end)
 
 	return function()

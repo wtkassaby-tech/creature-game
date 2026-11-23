@@ -33,6 +33,8 @@ export type Hooks = {
 	isReady: (player: Player) -> boolean, -- data loaded and not in a battle
 	mayEnter: (player: Player, biomeNumber: number) -> boolean,
 	position: (player: Player) -> Layout.Point?, -- the server's reading of the character
+	-- True when the point is inside a stretch the story has not opened for this player.
+	isHeld: (player: Player, point: Layout.Point) -> boolean,
 	biomeMap: (biomeNumber: number) -> Layout.Map,
 	biomes: () -> { WorldTypes.Biome },
 	changed: (player: Player) -> (),
@@ -184,6 +186,10 @@ local function search(player: Player, findId: string)
 	if not at or not root or not point then
 		return refused("TooFar", "no position")
 	end
+	-- A find inside a stretch the story holds is shut, wherever the player claims to stand.
+	if hooks.isHeld(player, point) or hooks.isHeld(player, at) then
+		return refused("Shut", "held by the story")
+	end
 	local trail = trailOf(player)
 	FindTrail.record(trail, now, at.x, at.z)
 	local distance = Layout.distance(at, point)
@@ -317,14 +323,11 @@ function FindService.start(given: Hooks): () -> ()
 
 	-- A respawn moves the character by the game's own hand: forget the trail, so an honest
 	-- player is not refused as a "jump" for the next few seconds (review, 23 Nov 2026).
-	local respawns: { RBXScriptConnection } = {}
+	local respawns: { [Player]: RBXScriptConnection } = {}
 	local function watch(player: Player)
-		table.insert(
-			respawns,
-			player.CharacterAdded:Connect(function()
-				FindService.resetTrail(player)
-			end)
-		)
+		respawns[player] = player.CharacterAdded:Connect(function()
+			FindService.resetTrail(player)
+		end)
 	end
 	for _, player in Players:GetPlayers() do
 		watch(player)
@@ -335,6 +338,11 @@ function FindService.start(given: Hooks): () -> ()
 		trails[player] = nil
 		lastSearch[player] = nil
 		farRefusals[player] = nil
+		local watching = respawns[player]
+		if watching then
+			watching:Disconnect()
+			respawns[player] = nil
+		end
 	end)
 	return function()
 		running = false

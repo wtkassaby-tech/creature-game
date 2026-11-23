@@ -55,7 +55,7 @@ local quests: { WorldTypes.Quest } = {
 		optional = false,
 		giver = { name = "Fenwick Dray", place = "The Sundial Waystation" },
 		requires = { "dc_seep_friend" },
-		requiresFlags = {},
+		requiresFlags = { "mentors_letter" },
 		objective = { kind = "BeatTamer", tamer = "dc_hesper" },
 		goal = "Beat Hesper Dunnock on Route B",
 		offer = "A surveyor on the Mesa Road keeps moving my markers. Beat her and I will say thanks.",

@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local Aura = require(script.Parent.Aura)
 local CreatureModels = require(ReplicatedStorage.content.CreatureModels)
 local Gestures = require(ReplicatedStorage.shared.Gestures)
 local Motion = require(ReplicatedStorage.shared.Motion)
@@ -60,6 +61,7 @@ type Live = {
 	ending: boolean, -- a `keep` motion has begun: nothing else moves it now
 	inWorld: boolean, -- false for one shown inside a screen, which is always near enough
 	body: MeshPart?, -- the painted model, once it has loaded
+	aura: Aura.Handle?, -- a mythic's or giant's glow and hover, once its model has loaded
 	baseSize: Vector3,
 	turn: number,
 	act: Act?,
@@ -257,9 +259,11 @@ local function render(toy: Live, anim: number)
 	-- The volume stays the same unless the motion sets its own width (a puff, a swell).
 	local wide = breathX * (pose.wide or 1 / math.sqrt(squash)) * held
 
+	local aura = toy.aura
 	local pivot = toy.home
 			* CFrame.new(pose.side, pose.up, -pose.fwd)
-			* CFrame.Angles(0, pose.yaw + sway, 0)
+			* CFrame.new(0, if aura then aura.lift else 0, 0)
+			* CFrame.Angles(0, pose.yaw + sway + (if aura then aura.yaw else 0), 0)
 			* CFrame.Angles(pose.pitch, 0, 0)
 			* CFrame.Angles(0, 0, pose.roll)
 		+ toy.offset
@@ -440,6 +444,7 @@ function ToyBody.new(
 		ending = false,
 		inWorld = parent:IsDescendantOf(Workspace),
 		body = nil,
+		aura = nil,
 		baseSize = Vector3.one,
 		turn = 0,
 		act = nil,
@@ -506,6 +511,11 @@ function ToyBody.new(
 			toy.body = made
 			toy.baseSize = made.Size
 			toy.turn = wanted.turn or 0
+			-- A mythic or giant wears its aura (in the world only: a viewport draws no particles).
+			local preset = Aura.presetFor(species)
+			if preset and toy.inWorld then
+				toy.aura = Aura.apply(made, preset, element)
+			end
 			render(toy, animClock)
 			paint(toy)
 		end)

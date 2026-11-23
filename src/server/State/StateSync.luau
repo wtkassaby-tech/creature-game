@@ -30,7 +30,13 @@ function StateSync.start(getData: (player: Player) -> Profile.Profile?): () -> (
 				dirty[player] = nil
 				local profile = getData(player)
 				if profile and player.Parent == Players then
-					Net.PlayerState.Fire(player, Snapshot.build(profile, os.time()))
+					-- One player's damaged record must never stop updates for everyone else.
+					local ok, problem = pcall(function()
+						Net.PlayerState.Fire(player, Snapshot.build(profile, os.time()))
+					end)
+					if not ok then
+						warn(`StateSyncFailed for {player.UserId}: {tostring(problem)}`)
+					end
 				end
 			end
 		end

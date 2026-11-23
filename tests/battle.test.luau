@@ -313,6 +313,21 @@ do
 	TypeChart.STRONG_MULTIPLIER, TypeChart.WEAK_MULTIPLIER = strong, weak
 end
 
+print("\n== A replacement after a faint starts with an empty tempo meter (bug hunt: battle 3) ==")
+do
+	local a, b = Battle.fighter(pure("Mossback", "ta")), Battle.fighter(pure("Dartlet", "tb"))
+	local foe = Battle.fighter(pure("Brindle", "tf"))
+	local state = Battle.new({ a, b }, { foe }, 4, true)
+	b.tempo = 0.9 -- waiting on the bench with a charged meter
+	a.hp = 1
+	Battle.step(state, { kind = "Pass" }, Battle.chooseAction(state, 2))
+	check(
+		"the first creature fell and the second came in",
+		a.hp == 0 and state.sides[1].active == 2
+	)
+	check("the one coming in starts at zero tempo", b.tempo == 0)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("battle checks failed")

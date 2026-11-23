@@ -389,6 +389,8 @@ function Battle.step(state: State, actionA: Action, actionB: Action)
 			local nextIndex = firstAlive(state.sides[side])
 			if nextIndex then
 				state.sides[side].active = nextIndex
+				-- Coming in resets the meter, like a chosen switch.
+				state.sides[side].team[nextIndex].tempo = 0
 			else
 				out[side] = true
 			end

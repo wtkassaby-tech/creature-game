@@ -16,14 +16,17 @@ local ClientState = require(script.Parent.Parent.State.ClientState)
 local CreatureCard = require(script.Parent.CreatureCard)
 local DailyRows = require(script.Parent.DailyRows)
 local DetailPanel = require(script.Parent.DetailPanel)
+local EggRows = require(script.Parent.EggRows)
 local FriendsStrip = require(script.Parent.FriendsStrip)
 local HeaderChips = require(script.Parent.HeaderChips)
 local HudStrip = require(script.Parent.Parent.UI.HudStrip)
 local Icons = require(script.Parent.Parent.UI.Icons)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
+local RoomStrip = require(script.Parent.RoomStrip)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
+local StoreFlags = require(script.Parent.Parent.Shop.StoreFlags)
 local Tracker = require(ReplicatedStorage.shared.Tracker)
 local TweenService = game:GetService("TweenService")
 
@@ -38,11 +41,13 @@ local function clock(seconds: number): string
 	return string.format("%d:%02d", left // 60, left % 60)
 end
 
-function CreaturesView.start(playerGui: Instance)
+-- `openShop` opens the shop screen on a tab (the egg card sends a player short of Gems there).
+function CreaturesView.start(playerGui: Instance, openShop: (tab: "Shop" | "Gems" | "Passes") -> ())
 	-- The strip along the top right is shared with the Journal button (FindsView).
 	local strip = HudStrip.get(playerGui).strip
 	local coinsLabel = HudStrip.currency(strip, Icons.coin, 1)
 	local prismLabel = HudStrip.currency(strip, Icons.prism, 2)
+	local gemsLabel = HudStrip.currency(strip, Icons.gem, 3)
 	-- Notices sit on their own layer above every screen: on the Hud's layer the Creatures panel
 	-- covered them ("Not enough coins" was half hidden in the longer Studio run).
 	local notices = Kit.screen(playerGui, "Notices", 50, true)
@@ -146,6 +151,20 @@ function CreaturesView.start(playerGui: Instance)
 	stack.Padding = UDim.new(0, 6)
 	stack.SortOrder = Enum.SortOrder.LayoutOrder
 	stack.Parent = list
+	-- A price arriving from Roblox redraws the strip; it is filled in just below.
+	local redrawRoom: () -> () = function() end
+	local roomStrip = RoomStrip.new(list, -2, playerGui, function()
+		redrawRoom()
+	end)
+	redrawRoom = function()
+		local current = ClientState.get()
+		if current and gui.Enabled then
+			roomStrip.update(current)
+		end
+	end
+	local eggs = EggRows.new(list, -1, playerGui, function()
+		openShop("Passes")
+	end)
 	local friends = FriendsStrip.new(list, 0)
 	local daily = DailyRows.new(list, 1)
 	local gridHolder = Instance.new("Frame")
@@ -329,11 +348,14 @@ function CreaturesView.start(playerGui: Instance)
 		end
 		coinsLabel.Text = tostring(state.Coins)
 		prismLabel.Text = tostring(math.floor(state.Candy.Prism))
+		gemsLabel.Text = tostring(state.Gems)
 		updatePulse()
 		if not gui.Enabled then
 			return
 		end
 		header.update(state)
+		roomStrip.update(state)
+		eggs.update(state)
 		friends.update(state)
 		daily.update(state.Daily)
 		cardSet.sync(state, breed.has)
@@ -383,9 +405,21 @@ function CreaturesView.start(playerGui: Instance)
 		updatePulse()
 		rebuild()
 	end)
+	-- A battle the player did not start (long-grass ambush, a giant) must not begin hidden under
+	-- this screen, nor let taps fall through to its buttons (as ShopView does).
+	local function closeForBattle()
+		confirmRelease = nil
+		closing = false
+		gui.Enabled = false
+	end
+	Bus.listen(Net.BattleStarted, closeForBattle)
+	Bus.listen(Net.GiantStarted, closeForBattle)
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
 	layout()
 
+	StoreFlags.onChanged(function()
+		rebuild()
+	end)
 	ClientState.onChanged(function()
 		rebuild()
 	end)
@@ -424,6 +458,7 @@ function CreaturesView.start(playerGui: Instance)
 				local state = ClientState.get()
 				if state and #state.Eggs > 0 then
 					header.update(state)
+					eggs.update(state)
 				end
 			end
 		end

@@ -194,13 +194,24 @@ end
 -- Moves a player's character to `position`. The server is asked to stream the ground around the
 -- destination first (RequestStreamAroundAsync yields, so it has a timeout and runs in a pcall; a
 -- failure only costs a short pause on arrival).
-local function moveTo(player: Player, character: Model, position: Vector3)
+-- Set by `start`: true while the player is free to be moved (data loaded, not in a battle).
+local mayMove: (player: Player) -> boolean = function(_player)
+	return true
+end
+
+local function moveTo(player: Player, character: Model, position: Vector3): boolean
+	local wasFree = mayMove(player)
 	pcall(function()
 		player:RequestStreamAroundAsync(position, STREAM_WAIT_SECONDS)
 	end)
-	if character.Parent then
+	-- The wait above yields: a battle may have opened meanwhile, and a move must never land in
+	-- the middle of one (bug hunt: world 4).
+	-- (A move made on purpose after a battle, when the player was not free to start with, goes on.)
+	if character.Parent and (not wasFree or mayMove(player)) then
 		character:PivotTo(CFrame.new(position))
+		return true
 	end
+	return false
 end
 
 -- Puts a player back at the foot of a road the story has not opened, with the reason. True if
@@ -278,9 +289,10 @@ function WorldService.sendTo(player: Player, placeId: string)
 		local flat = Vector3.new(place.x, 0, place.z)
 			+ (if toTown.Magnitude > 1 then toTown.Unit * 6 else Vector3.new(0, 0, 6))
 		local at = Vector3.new(flat.X, groundHeight(flat.X, flat.Z) + LAND_ABOVE_GROUND, flat.Z)
-		moveTo(player, character, at)
-		lastAt[player] = nil -- do not count the jump as walking
-		onMoved(player)
+		if moveTo(player, character, at) then
+			lastAt[player] = nil -- do not count the jump as walking
+			onMoved(player)
+		end
 	end
 end
 
@@ -292,6 +304,25 @@ function WorldService.remove(player: Player, spawnId: number)
 		Encounters.remove(found, spawnId)
 		send(player)
 	end
+end
+
+-- The line to show if the player's own position, or the named place, is inside a stretch the story
+-- has not opened (else nil). Every battle start checks this, so the hold does not depend on the
+-- 1 s tick that sends a player back.
+function WorldService.heldReason(player: Player, placeId: string?): string?
+	local at = WorldService.position(player)
+	local held = if at then holdAt(player, at) else nil
+	if held then
+		return held.line
+	end
+	local place = if placeId then map.places[placeId] else nil
+	held = if place then holdAt(player, { x = place.x, z = place.z }) else nil
+	return if held then held.line else nil
+end
+
+-- Is this point inside a stretch the story has not opened for the player?
+function WorldService.isHeldAt(player: Player, point: Layout.Point): boolean
+	return holdAt(player, point) ~= nil
 end
 
 -- One of the player's wild creatures by id, or nil.
@@ -324,6 +355,10 @@ function WorldService.engage(player: Player, spawnId: unknown): (Encounters.Spaw
 	if held then
 		return nil, held.line
 	end
+	local standing = holdAt(player, at)
+	if standing then
+		return nil, standing.line
+	end
 	local spawn, why = Encounters.engage(book(player), spawnId, at, now)
 	if spawn then
 		send(player)
@@ -348,6 +383,7 @@ function WorldService.finish(
 end
 
 function WorldService.start(hooks: Hooks): () -> ()
+	mayMove = hooks.isReady
 	for _, biome in Biomes do
 		table.insert(biomes, biome)
 	end
@@ -403,7 +439,10 @@ function WorldService.start(hooks: Hooks): () -> ()
 											at,
 											os.clock(),
 											seed(),
-											newId
+											newId,
+											function(point)
+												return holdAt(player, point) ~= nil
+											end
 										)
 									then
 										changed = true

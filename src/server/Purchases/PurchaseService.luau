@@ -329,6 +329,15 @@ local function tooFast(last: { [Player]: number }, player: Player, seconds: numb
 end
 
 function PurchaseService.start(hooks: Hooks)
+	-- A switch flipped while players are connected must reach their screens (the shop, Gem lassos
+	-- and the Lasso Pass read these flags), not only players who join later.
+	LiveConfigService.onChanged(function(key)
+		if key == "purchases_open" or key == "chance_display" or key == "shop_open" then
+			for _, player in Players:GetPlayers() do
+				sendFlags(player, hooks)
+			end
+		end
+	end)
 	-- The one receipt handler (Roblox allows only one, set from one server script).
 	MarketplaceService.ProcessReceipt = function(info)
 		return processReceipt(info :: any, hooks)

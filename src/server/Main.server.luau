@@ -17,6 +17,7 @@ local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Shop = require(ReplicatedStorage.shared.Shop)
 local StoryProgress = require(ReplicatedStorage.shared.StoryProgress)
+local Team = require(ReplicatedStorage.shared.Team)
 local Types = require(ReplicatedStorage.shared.Types)
 local World = require(ReplicatedStorage.shared.World)
 
@@ -138,7 +139,13 @@ WorldService.start({
 		end
 		for _, id in profile.Team do
 			local creature = profile.Creatures[id]
-			if creature and not Health.isFainted(creature) then
+			-- The same rule the battle itself applies (BattleFlow.team), or the ambush would be
+			-- offered and then refused every few seconds.
+			if
+				creature
+				and not Health.isFainted(creature)
+				and Team.mayBattle(profile, creature)
+			then
 				return true
 			end
 		end
@@ -160,6 +167,7 @@ FindService.start({
 	end,
 	mayEnter = WorldService.mayEnter,
 	position = WorldService.position,
+	isHeld = WorldService.isHeldAt,
 	biomeMap = WorldService.biomeMap,
 	biomes = WorldService.biomes,
 	changed = StateSync.changed,
@@ -249,12 +257,13 @@ GiantService.start({
 		return BattleService.session(player) ~= nil
 	end,
 	mayEnter = WorldService.mayEnter,
-	isOpen = function(profile)
-		return isUnlocked(profile, "giant_marker")
-	end,
+	-- Each biome's giant wakes at its own chapter's sighting (the lair's `giantMarker`), never at
+	-- Chapter 1's: a giant 11 levels above a player who has only just arrived stays asleep.
+	isOpen = isUnlocked,
 	biome = WorldService.biomeOf,
 	map = WorldService.map,
 	position = WorldService.position,
+	heldReason = WorldService.heldReason,
 	refuse = BattleService.refuse,
 	changed = StateSync.changed,
 	onWon = function(player, battleId, giantId, paid)
@@ -335,6 +344,7 @@ Net.RequestBreed.On(function(player, value)
 	StateSync.changed(player)
 	if ok then
 		DailyService.record(player, "Breed")
+		DataService.saveSoon(player)
 	end
 	Net.BreedResult.Fire(player, {
 		Ok = ok,
@@ -349,14 +359,24 @@ task.spawn(function()
 		for _, player in Players:GetPlayers() do
 			-- One player's damaged save must never stop hatching for everyone else.
 			local ok, problem = pcall(function()
-				local hatched = breeding:collectHatched(player)
+				-- Nothing takes a stable place while the player is in a battle or a giant capture
+				-- (a throw in the air was checked for room when it was thrown; a hit must not then
+				-- be refused). The egg simply hatches on the first check after the fight.
+				local fighting = BattleService.session(player) ~= nil or GiantService.active(player)
+				local hatched: { Types.Creature } = {}
+				if not fighting then
+					hatched = breeding:collectHatched(player)
+				end
 				local profile = DataService.get(player)
 				if profile then
 					-- Time played, for the first-session numbers (how far players get, how fast).
 					profile.PlayStats.playSeconds += HATCH_CHECK_SECONDS
-					claimWaiting(player, profile) -- a freed pen may take a waiting gift egg
+					if not fighting then
+						claimWaiting(player, profile) -- a freed pen may take a waiting gift egg
+					end
 				end
 				if #hatched > 0 then
+					DataService.saveSoon(player) -- a hatch is worth saving soon (bug hunt: breeding 4)
 					local ids = {}
 					for index, creature in hatched do
 						if index > 8 then
