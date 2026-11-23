@@ -11,6 +11,7 @@
 
 local BreedConfig = require("../config/BreedConfig")
 local Economy = require("./Economy")
+local FindIds = require("./FindIds")
 local ProfileConfig = require("../config/ProfileConfig")
 local Species = require("../content/Species")
 local TypeChart = require("./TypeChart")
@@ -36,6 +37,17 @@ export type Daily = {
 	-- (Economy.catchCandy, Economy.releaseCandy). Saved, so leaving and rejoining cannot reset it.
 	catches: Types.ByElement<number>,
 	releases: Types.ByElement<number>,
+	-- Renewable finds used today (approval pack 7): gathering spots and sighting spots by find id,
+	-- plus the materials gathered today under FindsConfig.GATHERED_KEY. Cleared by Grants.rollDay
+	-- with the other counters, by the server's date only.
+	finds: { [string]: number },
+}
+
+-- One-time finds already claimed (approval pack 7): caches opened, notes read, cairns built and
+-- journal sets paid, by find id. A key is only ever added, never removed or reset, and it is set in
+-- the same step that grants the items. Find ids are permanent (tests/finds.test.luau pins them).
+export type Finds = {
+	once: { [string]: boolean },
 }
 
 -- Something the player has earned but not yet received: a one-time gift waiting for room in the
@@ -76,6 +88,7 @@ export type Profile = {
 	Purchases: { passes: { [string]: boolean }, receiptIds: { string } },
 	Settings: Settings,
 	PlayStats: { firstJoin: number, playSeconds: number, sessions: number },
+	Finds: Finds,
 }
 
 -- A migration upgrades saved data from version N to N + 1, in place.
@@ -85,10 +98,24 @@ local Profile = {}
 
 Profile.CURRENT_VERSION = ProfileConfig.SCHEMA_VERSION
 
--- MIGRATIONS[n] upgrades a save from version n to n + 1. Version 1 is the first, so this is empty.
+-- MIGRATIONS[n] upgrades a save from version n to n + 1.
 -- Every entry added here ships with a test in tests/profile.test.luau.
 local MIGRATIONS: { [number]: Migration } = {}
 Profile.MIGRATIONS = MIGRATIONS
+
+-- Version 1 to 2 (approval pack 7, finds): the claimed one-time finds and today's renewable ones.
+-- Nothing is back-filled: every existing player starts with no finds claimed. Adds only the two
+-- fields and touches nothing else; runs on a copy like every migration.
+MIGRATIONS[1] = function(data: any)
+	if typeof(data.Finds) ~= "table" then
+		data.Finds = { once = {} }
+	elseif typeof(data.Finds.once) ~= "table" then
+		data.Finds.once = {}
+	end
+	if typeof(data.Daily) == "table" and typeof(data.Daily.finds) ~= "table" then
+		data.Daily.finds = {}
+	end
+end
 
 -- A brand-new player's data. Returns a fresh table every call, so two players never share one.
 function Profile.template(): Profile
@@ -120,7 +147,9 @@ function Profile.template(): Profile
 			claimed = {},
 			catches = Economy.zeroByElement(),
 			releases = Economy.zeroByElement(),
+			finds = {},
 		},
+		Finds = { once = {} },
 		Index = { seen = {}, owned = {} },
 		Purchases = { passes = {}, receiptIds = {} },
 		Settings = {
@@ -501,6 +530,33 @@ local function validateUnsafe(profile: Profile): { string }
 		for quest, done in profile.Quests.done do
 			if done ~= true then
 				table.insert(problems, `quest {quest} has a bad done mark`)
+			end
+		end
+	end
+
+	-- Finds: a claimed key is true and names a known one-time find or journal set; today's counts
+	-- are whole numbers up to that spot's daily limit. An unknown id is reported, never deleted.
+	if typeof(profile.Finds) ~= "table" or typeof(profile.Finds.once) ~= "table" then
+		table.insert(problems, "unreadable: finds are missing")
+	else
+		for id, claimed in profile.Finds.once do
+			if claimed ~= true then
+				table.insert(problems, `find {id} has a bad claimed mark`)
+			end
+			if typeof(id) ~= "string" or not FindIds.isOnceId(id) then
+				table.insert(problems, `find {tostring(id)} is not a known one-time find`)
+			end
+		end
+	end
+	if typeof(profile.Daily.finds) ~= "table" then
+		table.insert(problems, "unreadable: today's finds are missing")
+	else
+		for key, used in profile.Daily.finds do
+			local limit = if typeof(key) == "string" then FindIds.dailyLimit(key) else nil
+			if limit == nil then
+				table.insert(problems, `daily find {tostring(key)} is not a known renewable find`)
+			elseif not isWholeNumber(used) or used < 0 or used > limit then
+				table.insert(problems, `daily find {key} has a bad count`)
 			end
 		end
 	end

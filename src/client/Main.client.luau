@@ -15,6 +15,7 @@ local BattleView = require(script.Parent.BattleView.BattleView)
 local CameraLimits = require(script.Parent.World.CameraLimits)
 local ClientState = require(script.Parent.State.ClientState)
 local CreaturesView = require(script.Parent.Creatures.CreaturesView)
+local FindsView = require(script.Parent.World.FindsView)
 local GiantView = require(script.Parent.GiantView.GiantView)
 local ShopView = require(script.Parent.Shop.ShopView)
 local StoryView = require(script.Parent.Story.StoryView)
@@ -37,6 +38,7 @@ WorldView.start(shop.open)
 BattleView.start(playerGui)
 GiantView.start(playerGui)
 CreaturesView.start(playerGui)
+FindsView.start(playerGui)
 StoryView.start(playerGui)
 Ambience.start(playerGui)
 Climate.start()
@@ -46,7 +48,7 @@ CameraLimits.start()
 -- tapped: standing beside the rival, the "Battle" prompt sat right over the battle's Continue
 -- button (seen in the phone-sized Studio run), and E could start something behind a screen.
 local COVERING_SCREENS: { string } =
-	{ "Battle", "Giant", "Shop", "Creatures", "Dialogue", "StarterPick" }
+	{ "Battle", "Giant", "Shop", "Creatures", "Dialogue", "StarterPick", "Journal" }
 local function refreshPrompts()
 	local covered = false
 	for _, name in COVERING_SCREENS do

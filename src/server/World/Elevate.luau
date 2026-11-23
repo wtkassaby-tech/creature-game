@@ -49,7 +49,16 @@ function Elevate.apply(
 		return 0, across
 	end
 	for _, thing in parent:GetDescendants() do
-		if not thing:IsA("BasePart") or thing.Name == "Ground" then
+		-- The ground, and the sheet's flats (the sea, a sandbar, a mudflat), lie at the foot of
+		-- every tier: lifted by the height at their middle they stuck out over a terrace's
+		-- edge (Tide Flats, Studio, 23 November 2026). Left low, any part under a tier is
+		-- simply hidden inside its block.
+		if
+			not thing:IsA("BasePart")
+			or thing.Name == "Ground"
+			or thing.Name == "Flat"
+			or thing.Name == "WaterFlat"
+		then
 			continue
 		end
 		local inSkipped = false

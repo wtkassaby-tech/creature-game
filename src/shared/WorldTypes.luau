@@ -276,7 +276,7 @@ export type EdgeStyle =
 export type DressEdge = { left: EdgeStyle, right: EdgeStyle }
 -- A wall, cliff, dune ridge or sea wall that is not a corridor edge: the town's edge, a gorge wall.
 -- "Earth" is a grassy bank, "Cliff" painted rock.
-export type TierFace = "Earth" | "Cliff"
+export type TierFace = "Earth" | "Cliff" | "SeaCliff" -- SeaCliff: grey sea rock (Tide Flats)
 export type TierLook = { top: Colour, face: TierFace }
 export type DressWall = { points: { SheetPoint }, style: EdgeStyle, tall: number? }
 -- A flat axis-aligned rectangle of colour laid on the ground: the sea, a mudflat, a gorge floor.
@@ -372,6 +372,8 @@ export type DressingSheet = {
 	-- The style of each corridor's two edges, by area id and lair id; a stretch left out keeps
 	-- hedges.
 	edges: { [string]: DressEdge }?,
+	-- The edge round each room (pocket, field, dead end) of the sheet: Hedge if not given.
+	roomEdge: EdgeStyle?,
 	buildings: { [string]: { width: number, depth: number, tall: number } }, -- hub buildings
 	houses: { DressHouse }, -- cottages with no keeper (the gatehouse hamlet)
 	people: { DressPerson }, -- villagers with nothing to say yet
@@ -475,13 +477,22 @@ export type SideArea = {
 	opens: { badges: number?, flag: string? }?,
 	offers: { string },
 }
+-- One far-off impostor (docs/plans/13_WORLD_DESIGN.md sections 3c and 10). `model` is a painted
+-- model's name (PropModels) or a plain form: "Lump" (a dome rising `size[2]` above `base`) or
+-- "Puff" (a whole oval cloud whose underside is at `base`). `size` is { width, height, depth } in
+-- studs before `scale`; width runs across the facing, depth along it. `faces` is a yaw in degrees
+-- clockwise from north. `colour` is { r, g, b }; the builder tints it toward the haze by the
+-- layer's own amount, so far pieces fade like distant hills.
 export type FarScenery = {
 	id: string,
+	layer: string,
 	model: string,
 	at: WorldPoint,
 	base: number,
 	scale: number,
 	faces: number,
+	size: { number },
+	colour: { number },
 }
 export type Shortcut = { id: string, from: string, to: string, oneWayUntil: string? }
 
@@ -571,6 +582,43 @@ export type Quest = {
 	offer: string, -- said when the quest is offered
 	done: string, -- said when it is handed in
 	rewards: { Reward },
+}
+
+-- Finds -------------------------------------------------------------------------------------
+
+-- Things to find in side areas and dead ends (docs/plans/14_FINDS_AND_REWARDS.md, approved 23
+-- November 2026). A Cache is one-time; a Gather spot gives its biome's material once a day; a
+-- Sighting is the first stir of a rustle spot each day; a Cairn is one-time and gives a keepsake;
+-- a Note is a page of the journal. Find ids are permanent: never renamed, reused or removed.
+export type FindKind = "Cache" | "Gather" | "Sighting" | "Cairn" | "Note"
+-- A cosmetic object shown on the journal's shelf: owned when its cairn or set is claimed.
+export type Keepsake = { id: string, name: string }
+export type Find = {
+	id: string,
+	biome: number,
+	kind: FindKind,
+	name: string,
+	-- Where it is: `at` is hub-relative like a map sheet's points; `route`, `along` and `side` are a
+	-- point down a route (side: studs to its left, negative to the right). A Sighting has neither
+	-- (it is the rustle spot `spot`), and a find whose place is not built yet has neither.
+	at: SheetPoint?,
+	route: string?,
+	along: number?,
+	side: number?,
+	spot: string?, -- Sighting: the rustle spot's id
+	rewards: { Reward }, -- Item and Material only; nothing here may pay coins, creatures or Gems
+	keepsake: Keepsake?, -- Cairn only
+	text: { string }?, -- Note only: what the page says
+	hidden: boolean?, -- found through a gap or behind something; the device shows no hint
+	pending: string?, -- why it cannot be reached yet (its place is not in the map); the server treats it as shut
+}
+-- Every note of one biome read gives a keepsake and Prism Candy, once.
+export type JournalSet = {
+	id: string,
+	biome: number,
+	name: string,
+	notes: { string }, -- find ids of kind Note
+	keepsake: Keepsake,
 }
 
 -- Story -------------------------------------------------------------------------------------

@@ -61,10 +61,11 @@ local function add(
 	at: Layout.Point,
 	seed: number,
 	newId: () -> string,
-	rarity: Types.Rarity?
+	rarity: Types.Rarity?,
+	tier: Types.Rarity?
 ): Spawn
 	local options: World.PickOptions = if spot
-		then { spot = spot, rarity = rarity }
+		then { spot = spot, rarity = rarity, tier = tier }
 		else { area = area, rarity = rarity }
 	local pick = World.pickWild(route, seed, options, newId())
 	local spawn: Spawn = {
@@ -204,6 +205,13 @@ function Encounters.tick(
 	return changed
 end
 
+-- A sighting (approval pack 7): the first stir of the day at a marked rustle spot draws only from
+-- the spot's Uncommon rows, with `gemChance` the chance of a gem-tier one instead (the normal wild
+-- chance, EconomyConfig.GEM_WILD_SHARE, from the biome where gem tiers begin; 0 before). The
+-- caller (the finds service) decides whether the spot is free today and counts its use in the
+-- same step that the creature steps out. A spot with no Uncommon row draws as an ordinary stir.
+export type Sighting = { gemChance: number }
+
 -- Stirs a rustle spot: a creature from the spot's own table steps out. `spotId` comes from the
 -- device; the player must be standing at the spot, and each spot rests between stirs.
 function Encounters.rustle(
@@ -214,7 +222,8 @@ function Encounters.rustle(
 	player: Layout.Point,
 	now: number,
 	seed: number,
-	newId: () -> string
+	newId: () -> string,
+	sighting: Sighting?
 ): (Spawn?, string?)
 	if typeof(spotId) ~= "string" then
 		return nil, "Bad request"
@@ -233,6 +242,20 @@ function Encounters.rustle(
 					return nil, "Nothing stirs yet"
 				end
 				book.rustledAt[spot.id] = now
+				local drawSeed = seed
+				local rarity: Types.Rarity? = nil
+				local tier: Types.Rarity? = nil
+				if
+					sighting
+					and #World.candidates(route, { spot = spot.id, tier = "Uncommon" }) > 0
+				then
+					local rng = Rng.new(seed)
+					tier = "Uncommon"
+					if Rng.chance(rng, sighting.gemChance) then
+						rarity = "Gem"
+					end
+					drawSeed = Rng.int(rng, 1, 2147483646)
+				end
 				return add(
 					book,
 					biome.number,
@@ -240,8 +263,10 @@ function Encounters.rustle(
 					spot.area,
 					spot.id,
 					map.places[spot.id],
-					seed,
-					newId
+					drawSeed,
+					newId,
+					rarity,
+					tier
 				),
 					nil
 			end

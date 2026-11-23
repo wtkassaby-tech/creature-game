@@ -2,6 +2,19 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 23 November 2026: finds and rewards, approval pack 7 (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Finds.luau`, `FindIds.luau`, `FindTrail.luau`, `src/server/Finds/FindService.luau`, `src/client/World/FindsView.luau`, the content and config, `Profile.luau` (schema 1 to 2, migration, soundness checks), `Grants.luau`, `Net.blink`, `WorldService.luau` (sightings) and the tests.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The character's position comes from the player's device, so an exploiter can teleport to a cache, wait out the 5-second trail and search: time and reach, never extra rewards (caps and one-time flags hold) | Medium | Accepted, as the plan expected; the far-refusal alarm stays. Revisit if logs show it |
+| 2 | A journal set was flagged before its Prism was paid; a refused payment would lose the Prism for good | Low | The Prism is worked out before anything changes; if it cannot be paid the whole claim is refused |
+| 3 | A respawn moved the character without resetting the trail, so honest searches were refused as a "jump" for about 5 seconds | Low | The trail resets on every respawn |
+| 4 | Gaps in logging: searches dropped while not loaded or busy; sightings without a seed; the day roll reached from more places pays daily tasks without a log line | Low | Dropped searches are now logged; sightings log the creature id, species and rarity (spawns keep no seed); the day-roll logging gap existed before and is listed for the daily-tasks owner |
+
+Found sound: no find can be claimed twice (check and change in one step, flags saved with the items, session lock); daily caps only move forward; only the find id is read from the device; rate limits before any read; sightings only spawn at the normal gem chance and catching is unchanged; the migration runs on a copy, twice safely, and refuses newer saves; no find pays coins, creatures or Gems; nothing granted is tradeable; no Robux product touches finds.
+
 ## 23 November 2026: the wild lasso as skill plus chance (branch fix/studio-first-run)
 
 Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Lasso.luau` (`tapChance`, `catchChance`), `src/shared/Capture.luau` (`finish` rolls before `Grants.capture`), `src/server/Capture/CaptureService.luau`, `src/config/LassoConfig.luau`, and the tests.

@@ -12,7 +12,14 @@ local WorldTypes = require("./WorldTypes")
 -- `area` limits the draw to one stretch of the route; `spot` draws from a rustle spot instead of
 -- the open table. With neither, the whole open table of the route is used.
 -- `rarity` overrides the drawn row's tier (bait can bring out a gem-tier creature).
-export type PickOptions = { area: string?, spot: string?, rarity: Types.Rarity? }
+-- `tier` limits the draw to the rows whose own tier is exactly this (a sighting draws only the
+-- spot's Uncommon rows).
+export type PickOptions = {
+	area: string?,
+	spot: string?,
+	rarity: Types.Rarity?,
+	tier: Types.Rarity?,
+}
 export type WildPick = {
 	creature: Types.Creature,
 	entry: WorldTypes.SpawnEntry,
@@ -40,6 +47,7 @@ World.REWARD_KINDS = REWARD_KINDS
 function World.candidates(route: WorldTypes.Route, options: PickOptions?): { WorldTypes.SpawnEntry }
 	local area = if options then options.area else nil
 	local spot = if options then options.spot else nil
+	local tier = if options then options.tier else nil
 	local rows: { WorldTypes.SpawnEntry } = {}
 	for _, entry in route.spawns do
 		local include: boolean
@@ -47,6 +55,9 @@ function World.candidates(route: WorldTypes.Route, options: PickOptions?): { Wor
 			include = entry.spot == spot
 		else
 			include = entry.spot == nil and (area == nil or entry.area == area)
+		end
+		if include and tier ~= nil then
+			include = (entry.rarity or Species[entry.species].baseRarity) == tier
 		end
 		if include then
 			table.insert(rows, entry)

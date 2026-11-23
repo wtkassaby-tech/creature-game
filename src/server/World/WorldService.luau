@@ -37,6 +37,12 @@ export type Hooks = {
 	baitProblem: (player: Player) -> string?, -- why they cannot use a bait now, or nil
 	spendBait: (player: Player) -> (),
 	canBeAmbushed: (player: Player) -> boolean, -- wild battles are open and someone can fight
+	-- Finds (plan 14): the sighting rule for a rustle spot if its first stir today is still
+	-- free, and the call made in the same step that its creature steps out.
+	sightingFor: (player: Player, spotId: string) -> Encounters.Sighting?,
+	sighted: (player: Player, spotId: string, spawn: Encounters.Spawn) -> (),
+	-- The server moved the character itself (a Waystation, a healer): not a walk.
+	moved: (player: Player) -> (),
 }
 
 local WorldService = {}
@@ -59,6 +65,7 @@ local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function
 	return true
 end
 local lastAt: { [Player]: Layout.Point } = {}
+local onMoved: (player: Player) -> () = function(_player: Player) end
 local random = Random.new()
 
 local function newId(): string
@@ -75,6 +82,11 @@ end
 
 function WorldService.biomes(): { WorldTypes.Biome }
 	return biomes
+end
+
+-- One biome's own map (its hub and routes), by biome number; the first biome's if unknown.
+function WorldService.biomeMap(number: number): Layout.Map
+	return world.maps[number] or world.maps[1]
 end
 
 local function biomeNumbered(number: number?): WorldTypes.Biome
@@ -185,6 +197,7 @@ function WorldService.sendTo(player: Player, placeId: string)
 		at += if toTown.Magnitude > 1 then toTown.Unit * 6 else Vector3.new(0, 0, 6)
 		character:PivotTo(CFrame.new(at))
 		lastAt[player] = nil -- do not count the jump as walking
+		onMoved(player)
 	end
 end
 
@@ -254,6 +267,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 	map = world.map
 	TestMap.build(biomes, world)
 	engageAllowed = hooks.mayEnter
+	onMoved = hooks.moved
 
 	local running = true
 	task.spawn(function()
@@ -339,6 +353,9 @@ function WorldService.start(hooks: Hooks): () -> ()
 		for _, biome in biomes do
 			if not spawn and world.biomeOfPlace[value.SpotId] == biome.number then
 				if hooks.mayEnter(player, biome.number) then
+					-- The first stir of the day at a sighting spot draws a rarer creature; its use is
+					-- counted in the same step that the creature steps out.
+					local sighting = hooks.sightingFor(player, value.SpotId)
 					spawn, why = Encounters.rustle(
 						book(player),
 						biome,
@@ -347,8 +364,12 @@ function WorldService.start(hooks: Hooks): () -> ()
 						at,
 						now,
 						seed(),
-						newId
+						newId,
+						sighting
 					)
+					if spawn and sighting then
+						hooks.sighted(player, value.SpotId, spawn)
+					end
 				else
 					why = "You have not earned your way here yet"
 				end

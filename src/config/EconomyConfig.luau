@@ -43,6 +43,7 @@ export type CandySource =
 	| "GateFirstClear"
 	| "QuestLine"
 	| "RankedSeason"
+	| "JournalSet"
 -- How a flow is limited. Every source of coins or candy must have one of the first five.
 --   Diminishing: pays less each repeat within a day, then nothing.
 --   Daily / Weekly: a fixed number of paid claims per day or week.
@@ -386,6 +387,9 @@ EconomyConfig.CANDY = {
 	QuestLine = { perClaim = 0, cap = 1, limit = "Once" },
 	-- Ranked season prizes by final league, once per season (PvP arrives later).
 	RankedSeason = { perClaim = 10, cap = 1, limit = "Once" },
+	-- A finished journal set (approval pack 7, plan 14): every note of one biome read. Once per
+	-- set, so 6 Prism in all across the launch biomes. Paid by src/shared/Finds.
+	JournalSet = { perClaim = 2, cap = 1, limit = "Once" },
 } :: {
 	MentorLesson: CandyDef,
 	DailyTask: CandyDef,
@@ -396,6 +400,7 @@ EconomyConfig.CANDY = {
 	GateFirstClear: CandyDef,
 	QuestLine: CandyDef,
 	RankedSeason: CandyDef,
+	JournalSet: CandyDef,
 }
 local CANDY_SOURCES: { CandySource } = {
 	"MentorLesson",
@@ -407,6 +412,7 @@ local CANDY_SOURCES: { CandySource } = {
 	"GateFirstClear",
 	"QuestLine",
 	"RankedSeason",
+	"JournalSet",
 }
 EconomyConfig.CANDY_SOURCES = CANDY_SOURCES
 -- Prism Candy per quest line by biome (later biomes use the last entry).
@@ -498,6 +504,7 @@ EconomyConfig.FLOWS = {
 	},
 	CandyQuest = { currency = "Prism", limit = "Once", note = "QuestLine" },
 	CandyRanked = { currency = "Prism", limit = "Once", note = "RankedSeason, once per season" },
+	CandyJournal = { currency = "Prism", limit = "Once", note = "JournalSet, once per biome" },
 	-- Candy sink: one type at a time, typed candy first, then Prism for any shortfall
 	BreedCandy = { currency = "Candy", limit = "Sink", note = "BreedConfig.CANDY_COST, per parent" },
 } :: { [string]: Flow }

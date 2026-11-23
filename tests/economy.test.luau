@@ -13,10 +13,12 @@ local BreedConfig = require("../src/config/BreedConfig")
 local Breeding = require("../src/shared/Breeding")
 local Economy = require("../src/shared/Economy")
 local EconomyConfig = require("../src/config/EconomyConfig")
+local FindsRegistry = require("../src/content/Finds")
 local Rng = require("../src/shared/Rng")
 local Species = require("../src/content/Species")
 local TypeChart = require("../src/shared/TypeChart")
 local Types = require("../src/shared/Types")
+local WorldTypes = require("../src/shared/WorldTypes")
 local Placeholders = require("./fixtures/Placeholders")
 
 Placeholders.install()
@@ -468,6 +470,14 @@ local ASSUME = {
 	-- The catch-and-release farming hour: every wild battle gets a lasso attempt, every catch is
 	-- released at once.
 	RELEASE_MIN = 0.1,
+	-- Finds in side areas (approval pack 7, plan 14). Every find in the data is used, built or not,
+	-- so the bands hold in the final state, with Gull Cove open. Set FINDS to false to rerun the
+	-- numbers from before finds.
+	FINDS = true,
+	FIND_MIN = 1.5, -- a renewable find: the walk to it, back, and the hold
+	FIND_ONCE_MIN = 1, -- a one-time find met on the way through a biome
+	FIND_BACK_MIN = 1, -- extra minutes to walk back to an earlier biome's spots
+	SIGHTING_LASSO = 0.8, -- share of sightings that get a lasso: a rare creature is worth catching
 }
 
 type Profile = {
@@ -488,6 +498,11 @@ type Profile = {
 	releaseCatchShare: number, -- share of caught commons released at once, after the story
 	optionalSpend: boolean, -- buys stable expansions and charms when rich
 	starter: Element, -- the starter's type; it is one parent of the first breeding pair
+	-- Finds: the share of a biome's one-time finds claimed on the way through it, and how many
+	-- gathering spots and sightings are visited on a day with a badge (the rest are skipped).
+	explore: number,
+	gatherSpots: number,
+	sightings: number,
 }
 
 local PROFILES: { Profile } = {
@@ -509,6 +524,9 @@ local PROFILES: { Profile } = {
 		releaseCatchShare = 0.3,
 		optionalSpend = true,
 		starter = "Leaf",
+		explore = 0.5,
+		gatherSpots = 2,
+		sightings = 0,
 	},
 	{
 		name = "regular",
@@ -528,6 +546,9 @@ local PROFILES: { Profile } = {
 		releaseCatchShare = 0.5,
 		optionalSpend = true,
 		starter = "Leaf",
+		explore = 0.85,
+		gatherSpots = 4,
+		sightings = 1,
 	},
 	{
 		name = "heavy",
@@ -547,6 +568,9 @@ local PROFILES: { Profile } = {
 		releaseCatchShare = 0.6,
 		optionalSpend = true,
 		starter = "Leaf",
+		explore = 1,
+		gatherSpots = 99,
+		sightings = 99,
 	},
 }
 
@@ -580,6 +604,9 @@ type Sim = {
 	lassos: { Basic: number, Braided: number, Gilded: number },
 	field: { Tonic: number, GreatTonic: number, Revive: number },
 	mats: { Fernfluff: number, CanyonGrit: number, BrineShell: number },
+	freeBait: number, -- Tide Bait found (Gull Cove's crevice), used before any is made or bought
+	findBiomes: { boolean }, -- biomes whose one-time finds have been collected
+	findCreated: number, -- coins the sightings' wild wins created
 	biome: number, -- story biome; 4 after Tide Flats
 	wildsDone: number,
 	tamersDone: number,
@@ -930,6 +957,125 @@ local function wildBattle(sim: Sim, biome: number, level: number, lassoShare: nu
 	end
 end
 
+-- Time spent walking to a find. It uses up the player's session, but it is left out of the minutes
+-- a biome's income per minute is measured over (the breed cost and giant-prep bands are about what
+-- battling earns; finds pay items and materials, and sightings count as the wild wins they are).
+local function findTime(sim: Sim, minutes: number)
+	advance(sim, minutes)
+	sim.biomeMinutes[furthest(sim)] -= minutes
+end
+
+-- What a find hands over, in the simulation's own stores.
+local function applyFindRewards(sim: Sim, find: WorldTypes.Find)
+	for _, reward in find.rewards do
+		if reward.kind == "Material" then
+			local material = reward.material
+			if material ~= "Reedpith" then
+				sim.mats[material] += reward.count
+			end
+		elseif reward.kind == "Item" then
+			local item = reward.item
+			if item == "Basic" or item == "Braided" or item == "Gilded" then
+				sim.lassos[item] += reward.count
+			elseif item == "Tonic" or item == "GreatTonic" or item == "Revive" then
+				sim.field[item] += reward.count
+			elseif item == "Bait" then
+				sim.freeBait += reward.count
+			end
+		end
+	end
+end
+
+-- A sighting: the first stir of the day at a marked rustle spot brings out an Uncommon, an
+-- ordinary wild win (the normal daily falloff, none of its kind fought yet) and, mostly, a catch.
+local function sighting(sim: Sim, biome: number)
+	advance(sim, ASSUME.WILD_MIN)
+	findTime(sim, ASSUME.FIND_MIN)
+	local element: Element = randomElement(sim, biome)
+	local before = sim.totalCreated
+	flow(
+		sim,
+		"WildWin",
+		Economy.battleCoins("Wild", biome, EconomyConfig.LEVEL_BANDS[biome].max, 0, false)
+	)
+	sim.findCreated += sim.totalCreated - before
+	sim.wildWinsToday += 1
+	if biome >= 2 and Rng.chance(sim.rng, ASSUME.GEM_SPAWN) then
+		if throwLasso(sim, sim.p.gemLasso) then
+			sim.gems += 1
+			catchCandy(sim, "Gem", element)
+			addCreature(sim)
+			makeGemPair(sim, biome, element)
+		end
+	elseif Rng.chance(sim.rng, ASSUME.SIGHTING_LASSO) then
+		if throwLasso(sim, "Basic") then
+			catchCandy(sim, "Uncommon", element)
+			keepOrRelease(sim, biome, element)
+		end
+	end
+end
+
+-- The one-time finds of a biome (caches, notes, the cairn), claimed on the way through it, and the
+-- journal set's Prism if every note was read.
+local function onceFinds(sim: Sim, biome: number)
+	local read: { [string]: boolean } = {}
+	for _, find in FindsRegistry.list do
+		local once = find.kind == "Cache" or find.kind == "Cairn" or find.kind == "Note"
+		if find.biome == biome and once and Rng.chance(sim.rng, sim.p.explore) then
+			findTime(sim, ASSUME.FIND_ONCE_MIN)
+			applyFindRewards(sim, find)
+			read[find.id] = true
+		end
+	end
+	for _, set in FindsRegistry.sets do
+		if set.biome == biome then
+			local all = true
+			for _, id in set.notes do
+				all = all and read[id] == true
+			end
+			if all then
+				flow(sim, "CandyJournal", Economy.candyFor("JournalSet", 0))
+			end
+		end
+	end
+end
+
+-- A day's round of renewable finds, once a badge is held: the current biome's spots first, then
+-- earlier ones (a Waystation hop back). During the story a player stays in the biome they are
+-- clearing, so only its spots are visited; after it, up to the profile's number. Gathering gives
+-- its biome's material; a sighting is a wild win.
+local function dailyFinds(sim: Sim)
+	local top = math.min(sim.biome, 3)
+	local gathers: { WorldTypes.Find } = {}
+	local sights: { WorldTypes.Find } = {}
+	local lowest = if sim.biome <= 3 then top else 1
+	for biome = top, lowest, -1 do
+		for _, find in FindsRegistry.list do
+			if find.biome == biome and find.kind == "Gather" then
+				table.insert(gathers, find)
+			elseif find.biome == biome and find.kind == "Sighting" then
+				table.insert(sights, find)
+			end
+		end
+	end
+	for index, find in gathers do
+		if index > sim.p.gatherSpots or timeLeft(sim) < ASSUME.FIND_MIN + 1 then
+			break
+		end
+		findTime(sim, ASSUME.FIND_MIN + (if find.biome < top then ASSUME.FIND_BACK_MIN else 0))
+		applyFindRewards(sim, find)
+	end
+	for index, find in sights do
+		if index > sim.p.sightings or timeLeft(sim) < ASSUME.WILD_MIN + ASSUME.FIND_MIN + 1 then
+			break
+		end
+		if find.biome < top then
+			findTime(sim, ASSUME.FIND_BACK_MIN)
+		end
+		sighting(sim, find.biome)
+	end
+end
+
 local function claimTasks(sim: Sim)
 	if not Economy.dailyTasksOpen(sim.biome - 1) then
 		return
@@ -1240,6 +1386,10 @@ local function storyStep(sim: Sim)
 	local b = sim.biome
 	local band = EconomyConfig.LEVEL_BANDS[b]
 	local tamers = ASSUME.TAMERS[b]
+	if ASSUME.FINDS and not sim.findBiomes[b] and sim.wildsDone >= ASSUME.STORY_WILDS[b] / 2 then
+		sim.findBiomes[b] = true
+		onceFinds(sim, b)
+	end
 	local progress = (sim.wildsDone + sim.tamersDone * 3) / (ASSUME.STORY_WILDS[b] + tamers * 3)
 	local level = band.min + math.floor(progress * (band.max - band.min))
 	if sim.tamersDone < tamers then
@@ -1357,7 +1507,10 @@ local function postGameSession(sim: Sim)
 		end
 		local recipe = EconomyConfig.RECIPES.Bait
 		local ok = false
-		if sim.mats.BrineShell >= recipe.count and spend(sim, "Craft", recipe.coins, false) then
+		if sim.freeBait > 0 then
+			sim.freeBait -= 1
+			ok = true
+		elseif sim.mats.BrineShell >= recipe.count and spend(sim, "Craft", recipe.coins, false) then
 			sim.mats.BrineShell -= recipe.count
 			ok = true
 		elseif sim.bal.coins >= Economy.itemPrice("Bait", 3) + reserve(sim) then
@@ -1396,6 +1549,9 @@ local function newSim(profile: Profile, seed: number): Sim
 		lassos = { Basic = EconomyConfig.STARTER_ITEMS.Basic, Braided = 0, Gilded = 0 },
 		field = { Tonic = EconomyConfig.STARTER_ITEMS.Tonic, GreatTonic = 0, Revive = 0 },
 		mats = { Fernfluff = 0, CanyonGrit = 0, BrineShell = 0 },
+		freeBait = 0,
+		findBiomes = { false, false, false },
+		findCreated = 0,
 		biome = 1,
 		wildsDone = 0,
 		tamersDone = 0,
@@ -1492,6 +1648,9 @@ local function runDay(sim: Sim, day: number)
 	sim.hardClaimed = { false, false, false }
 	sim.clock = (day - 1) * 1440 + 18 * 60
 	sim.sessionEnd = sim.clock + sim.p.minutes
+	if ASSUME.FINDS and sim.biome >= 2 then
+		dailyFinds(sim)
+	end
 	while timeLeft(sim) > 0 do
 		if sim.biome <= 3 then
 			storyStep(sim)
@@ -1557,6 +1716,8 @@ local function summarise(sim: Sim, days: number): Summary
 	local v: { [string]: number } = {}
 	local twoHour = sim.twoHour or { created = sim.totalCreated, removed = sim.totalRemoved }
 	v.twoHourRatio = twoHour.removed / math.max(1, twoHour.created)
+	v.twoHourCreated = twoHour.created
+	v.twoHourRemoved = twoHour.removed
 	local gwDay = if sim.biomeClearDay[1] > 0 then sim.biomeClearDay[1] else days
 	v.postGreenwoodRatio = ratioOf(log, gwDay + 1, days)
 	for w = 1, 4 do
@@ -1720,6 +1881,17 @@ local function printTables(results: { [string]: { Summary } }, days: number)
 			)
 		)
 	end
+
+	print("  coins created / removed in the first two hours (mean): casual | regular | heavy")
+	local twoHours: { string } = {}
+	for _, profile in PROFILES do
+		local r = results[profile.name]
+		table.insert(
+			twoHours,
+			string.format("%.0f / %.0f", mean(r, "twoHourCreated"), mean(r, "twoHourRemoved"))
+		)
+	end
+	print("  " .. table.concat(twoHours, " | "))
 
 	print("\n  B. Progress and breeding")
 	print(
@@ -2270,6 +2442,98 @@ check(
 	held >= 2 and held <= 7,
 	string.format("%.1f days", held)
 )
+
+-- Finds in side areas (approval pack 7, plan 14, build step 4). The simulation above has every
+-- find in the data in it, built or not, so these hold in the final state.
+print("\n== Finds ==")
+do
+	local gather, sightings, once = 0, 0, 0
+	local gatherCoins = 0.0
+	local sightingCoins = 0
+	local roundMinutes = 0.0
+	local onceValue = 0.0
+	for _, find in FindsRegistry.list do
+		if find.kind == "Gather" then
+			gather += 1
+			roundMinutes += ASSUME.FIND_MIN + ASSUME.FIND_BACK_MIN
+			for _, reward in find.rewards do
+				if reward.kind == "Material" and reward.material ~= "Reedpith" then
+					gatherCoins += reward.count * Economy.materialValue(reward.material)
+				end
+			end
+		elseif find.kind == "Sighting" then
+			sightings += 1
+			roundMinutes += ASSUME.WILD_MIN + ASSUME.FIND_MIN + ASSUME.FIND_BACK_MIN
+			sightingCoins += Economy.battleCoins(
+				"Wild",
+				find.biome,
+				EconomyConfig.LEVEL_BANDS[find.biome].max,
+				0,
+				false
+			)
+		else
+			once += 1
+			for _, reward in find.rewards do
+				if reward.kind == "Material" and reward.material ~= "Reedpith" then
+					onceValue += reward.count * Economy.materialValue(reward.material)
+				elseif reward.kind == "Item" then
+					onceValue += Economy.itemPrice(reward.item, 1)
+				end
+			end
+		end
+	end
+	local prism = 0
+	for _ in FindsRegistry.sets do
+		prism += Economy.candyFor("JournalSet", 0)
+	end
+	print(
+		string.format(
+			"  %d gathering spots, %d sightings, %d one-time finds: a full daily round is %.0f minutes and pays %.0f coins of materials and %d coins of wild wins; one-time finds are worth about %.0f coins once, plus %d Prism",
+			gather,
+			sightings,
+			once,
+			roundMinutes,
+			gatherCoins,
+			sightingCoins,
+			onceValue,
+			prism
+		)
+	)
+	local heavy = results.heavy
+	local perMinute = mean(heavy, "steadyIncome") / PROFILES[3].minutes
+	local roundValue = gatherCoins + sightingCoins
+	check(
+		"a full daily round of every gathering spot and sighting pays less than a quarter of the same minutes of battling",
+		roundValue < 0.25 * roundMinutes * perMinute,
+		string.format(
+			"%.0f coins in %.0f minutes against %.0f coins a minute",
+			roundValue,
+			roundMinutes,
+			perMinute
+		)
+	)
+	check("journal sets pay 2 Prism each, 6 in all, once", prism == 6)
+	local ledger = EconomyConfig.FLOWS.CandyJournal
+	check(
+		"the journal's Prism is a once-only ledger flow",
+		ledger ~= nil
+			and ledger.currency == "Prism"
+			and ledger.limit == "Once"
+			and Economy.candyFor("JournalSet", EconomyConfig.CANDY.JournalSet.cap) == 0
+	)
+	-- Finds are never a way to make coins: the only coins in them are a sighting's ordinary wild
+	-- win, and no one-time find or gathering spot pays any (tests/finds.test checks the data).
+	local noCoins = true
+	for _, find in FindsRegistry.list do
+		for _, reward in find.rewards do
+			if reward.kind ~= "Item" and reward.kind ~= "Material" then
+				noCoins = false
+			end
+		end
+	end
+	check("no find pays coins, Prism, creatures or Gems directly", noCoins)
+	check("the simulation ran with finds on", ASSUME.FINDS)
+end
 
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then

@@ -57,6 +57,7 @@ local function house(
 end
 
 local DustCanyonDressing: WorldTypes.DressingSheet = {
+	roomEdge = "Boulders", -- pockets and dead ends are ringed with boulders, not hedges
 	fieldGround = { 214, 172, 124 },
 	ground = {
 		{ area = "pebble_wash", colour = { 214, 204, 182 } },
@@ -164,9 +165,9 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		},
 		{ at = p(118, -140), faces = 0, lines = { "Mesa winch track. Shut." } },
 		{ at = p(0, -192), faces = 64, lines = { "Dry grass:", "wild creatures hide here" } },
-		{ at = p(458, -98), faces = 13, lines = { "Mesalith's Shelf · Shelf Stall" } },
-		{ at = p(650, -122), faces = 90, lines = { "The Stair Gate", "badge challenge" } },
-		{ at = p(134, -526), faces = 29, lines = { "Rope bridge down.", "No way across." } },
+		{ at = p(464, -77), faces = 13, lines = { "Mesalith's Shelf · Shelf Stall" } },
+		{ at = p(666, -115), faces = 90, lines = { "The Stair Gate", "badge challenge" } },
+		{ at = p(128, -538), faces = 29, lines = { "Rope bridge down.", "No way across." } },
 		-- In the Westcut, seen coming from Greenwood.
 		{ at = p(-200, -14), faces = 90, lines = { "Kilnrest →" } },
 	},
@@ -189,8 +190,8 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		p(31, -142),
 		p(142, 29),
 		p(142, 51),
-		p(728, -114),
-		p(760, -86),
+		p(728, -108),
+		p(760, -92),
 	},
 	-- Clay planters by the doors and round the square.
 	beds = {
@@ -254,17 +255,17 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 	-- The town's edge is its cliff walls.
 	hedges = {},
 	walls = {
-		wall({ p(-150, -20), p(-150, -150), p(6, -150) }, "Cliff", 30), -- north cliff, west
-		wall({ p(34, -150), p(124, -150) }, "Cliff", 30), -- north cliff, middle
-		wall({ p(136, -150), p(150, -150), p(150, 26) }, "Cliff", 30), -- north cliff, east
-		wall({ p(150, 54), p(150, 150), p(-150, 150), p(-150, 20) }, "Cliff", 30), -- south cliff
+		wall({ p(-150, -20), p(-150, -150), p(11, -150) }, "Cliff", 30), -- north cliff, west
+		wall({ p(29, -150), p(124, -150) }, "Cliff", 30), -- north cliff, middle
+		wall({ p(136, -150), p(150, -150), p(150, 31) }, "Cliff", 30), -- north cliff, east
+		wall({ p(150, 49), p(150, 150), p(-150, 150), p(-150, 20) }, "Cliff", 30), -- south cliff
 		wall({ p(-236, -20), p(-150, -20) }, "Cliff", 34), -- the Westcut, north
 		wall({ p(-236, 20), p(-150, 20) }, "Cliff", 34), -- the Westcut, south
 		wall({ p(250, 80), p(420, 92), p(560, 74) }, "Cliff", 34), -- the gorge's far wall
 		wall({ p(96, -604), p(190, -568) }, "Cliff", 26), -- the dry fall's far side
 		-- The two lips of the Echo Notch, standing out from the rim's north cliff.
-		wall({ p(294.3, -84.2), p(288.4, -99.1) }, "Cliff", 24),
-		wall({ p(325.2, -92), p(325.2, -110) }, "Cliff", 24),
+		wall({ p(352, -84), p(350, -108) }, "Cliff", 24),
+		wall({ p(392, -84), p(394, -108) }, "Cliff", 24),
 		-- The buttresses that pinch the stair road at Tavish.
 		wall({ p(690, -150), p(690, -122), p(710, -122), p(710, -150) }, "Boulders", 10),
 		wall({ p(690, -50), p(690, -78), p(710, -78), p(710, -50) }, "Boulders", 10),
@@ -310,6 +311,9 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		{ model = "Boulders", at = p(136, 128), faces = 300, tall = 9, solid = true },
 		{ model = "Boulders", at = p(-30, -132), faces = 160, tall = 7, solid = true },
 		{ model = "RockSpire", at = p(60, -128), faces = 0, tall = 26, solid = true },
+		-- The spires that split the Spire Garden: a bare way round on the far side.
+		{ model = "RockSpire", at = p(532, -122), faces = 0, tall = 26, solid = true },
+		{ model = "RockSpire", at = p(560, -122), faces = 90, tall = 24, solid = true },
 		{ model = "Bench", at = p(-36, 10), faces = 0, tall = 3.8 },
 		{ model = "Bench", at = p(36, -14), faces = 270, tall = 3.8 },
 	},
@@ -321,8 +325,7 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 	},
 
 	clearings = {
-		{ at = p(575.5, -314.8), radius = 85, ring = true }, -- the shelf round the arena
-		{ at = p(408, -100), radius = 26, ring = false }, -- the wind hollow round the rim grass
+		{ at = p(576, -319), radius = 85, ring = true }, -- the shelf round the arena
 	},
 	caps = {
 		dust_canyon_route_a = 21, -- the rope bridge fills the middle
@@ -360,6 +363,26 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 	coop = p(100, 50),
 	patch = { from = p(-108, 12), to = p(-96, 22) },
 
+	-- How each tier looks: red rock under every level, one top colour for the tiers that touch at
+	-- a height, so no seam shows.
+	tierLooks = {
+		flats_mesa = { top = { 226, 196, 140 }, face = "Cliff" },
+		arroyo_shelf = { top = { 226, 196, 140 }, face = "Cliff" },
+		arroyo_rise = { top = { 196, 140, 100 }, face = "Cliff" },
+		arroyo_end = { top = { 196, 140, 100 }, face = "Cliff" },
+		arroyo_hollow = { top = { 196, 140, 100 }, face = "Cliff" },
+		cairn_tier = { top = { 196, 140, 100 }, face = "Cliff" },
+		steps_a = { top = { 190, 110, 84 }, face = "Cliff" },
+		steps_b = { top = { 196, 120, 90 }, face = "Cliff" },
+		rim_mesa = { top = { 214, 150, 104 }, face = "Cliff" },
+		spur_mesa = { top = { 214, 150, 104 }, face = "Cliff" },
+		garden_tier = { top = { 214, 150, 104 }, face = "Cliff" },
+		gate_terrace = { top = { 200, 184, 160 }, face = "Cliff" },
+		rim_shelf_a = { top = { 206, 140, 100 }, face = "Cliff" },
+		rim_shelf_b = { top = { 198, 128, 92 }, face = "Cliff" },
+		lair_shelf = { top = { 206, 160, 120 }, face = "Cliff" },
+	},
+
 	-- Spires and mesas close in everything past the edges (docs/plans/12_MAP_STRUCTURE.md, step 1).
 	fill = { style = "Rock", band = 80, floor = { 170, 118, 84 } },
 
@@ -391,9 +414,9 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 				light = { range = 26, brightness = 1.3, colour = { 255, 140, 60 } },
 			},
 			-- Dust motes in the light: over the wash, the flats, the steps and the town.
-			{ kind = "Dust", at = p(42, -212), height = 5, area = { 100, 80, 8 } },
-			{ kind = "Dust", at = p(0, -377), height = 5, area = { 100, 80, 8 } },
-			{ kind = "Dust", at = p(186, 62), height = 5, area = { 90, 80, 8 } },
+			{ kind = "Dust", at = p(44, -212), height = 5, area = { 100, 80, 8 } },
+			{ kind = "Dust", at = p(-6, -352), height = 5, area = { 100, 80, 8 } },
+			{ kind = "Dust", at = p(188, 84), height = 5, area = { 90, 80, 8 } },
 			{ kind = "Dust", at = p(-20, 30), height = 5, area = { 110, 90, 8 } },
 		},
 	},

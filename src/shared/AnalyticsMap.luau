@@ -157,6 +157,15 @@ function AnalyticsMap.translate(event: string, fields: Fields): { Call }
 	elseif event == "Capture" then
 		money(calls, "Source", "Candy", fields.candy, "Gameplay", "Capture")
 		count(calls, "Capture")
+	elseif event == "FindClaimed" then
+		-- Prism from a finished journal set is the only currency a find pays; items and
+		-- materials are not currencies and are in the log line itself.
+		money(calls, "Source", "Prism", fields.prism, "Gameplay", "Find")
+		count(calls, "FindClaimed")
+	elseif event == "FindGathered" then
+		count(calls, "FindGathered")
+	elseif event == "FindSighted" then
+		count(calls, "FindSighted")
 	elseif event == "Hatch" then
 		count(calls, "Hatch")
 	elseif event == "QuestDone" then

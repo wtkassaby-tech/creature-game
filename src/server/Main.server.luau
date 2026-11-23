@@ -27,6 +27,7 @@ local BreedingService = require(script.Parent.Breeding.BreedingService)
 local CaptureService = require(script.Parent.Capture.CaptureService)
 local DailyService = require(script.Parent.Daily.DailyService)
 local DataService = require(script.Parent.Data.DataService)
+local FindService = require(script.Parent.Finds.FindService)
 local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
 local LiveConfigService = require(script.Parent.LiveConfig.LiveConfigService)
@@ -138,6 +139,26 @@ WorldService.start({
 		return false
 	end,
 	onAmbush = BattleFlow.ambush,
+	sightingFor = FindService.sightingFor,
+	sighted = FindService.sighted,
+	moved = FindService.resetTrail,
+})
+
+-- Finds in side areas and dead ends (approval pack 7): caches, gathering spots, notes, cairns.
+FindService.start({
+	getData = DataService.get,
+	isReady = function(player)
+		return DataService.get(player) ~= nil
+			and BattleService.session(player) == nil
+			and not GiantService.active(player)
+	end,
+	mayEnter = WorldService.mayEnter,
+	position = WorldService.position,
+	biomeMap = WorldService.biomeMap,
+	biomes = WorldService.biomes,
+	changed = StateSync.changed,
+	save = DataService.saveSoon,
+	log = log,
 })
 
 StoryService.start({

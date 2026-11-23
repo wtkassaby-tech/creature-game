@@ -389,6 +389,10 @@ event PlayerState {
 		-- Today's daily tasks (empty until the first badge).
 		Daily: DailyView[0..12],
 		Waiting: u8,
+		-- Finds (plan 14), display only: one-time finds claimed (caches, notes, cairns, journal
+		-- sets) and renewable spots used today (gathering and sighting spots).
+		Finds: string(1..40)[0..400],
+		FindsToday: string(1..40)[0..64],
 	},
 }
 
@@ -418,6 +422,38 @@ event Rustle {
 	Type: Reliable,
 	Call: SingleAsync,
 	Data: struct { SpotId: string(1..40) },
+}
+
+-- Finds in side areas and dead ends (plan 14). The device names the find it is holding a prompt
+-- on: a cache, a gathering spot, a note or a cairn. The server checks everything else (the id,
+-- the biome and badge, where the character is, how long it has been there, the limits and the
+-- carry room) and the answer comes back as SearchResult. Sightings use Rustle.
+event Search {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { FindId: string(1..40) },
+}
+
+enum FindOutcome = { Found, Gathered, Read, Built, AlreadyFound, Resting, TooFar, Shut, Full }
+struct FindGain {
+	Item: string(1..40),
+	Count: u16,
+}
+
+-- Server -> device: how a search went and what it gave.
+event SearchResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		FindId: string(1..40),
+		Outcome: FindOutcome,
+		Gains: FindGain[0..8],
+		Prism: u8,
+		-- This note finished the biome's journal set.
+		SetDone: boolean,
+	},
 }
 
 -- Quests. The device names a quest; the server checks it is open to the player and that their

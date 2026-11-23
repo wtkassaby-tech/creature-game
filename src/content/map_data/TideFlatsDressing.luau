@@ -68,6 +68,7 @@ local function house(
 end
 
 local TideFlatsDressing: WorldTypes.DressingSheet = {
+	roomEdge = "Rocks", -- pockets by the sea are ringed with sea rocks
 	fieldGround = { 238, 224, 184 },
 	ground = {
 		{ area = "wrack_beach", colour = { 226, 210, 168 } },
@@ -177,10 +178,10 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			faces = 84,
 			lines = { "Route B · Breakwater Road →", "↓ The Quay · Lamp Tower" },
 		},
-		{ at = p(-100, 196), faces = 285, lines = { "Dune grass:", "wild creatures hide here" } },
+		{ at = p(-142, 200), faces = 285, lines = { "Dune grass:", "wild creatures hide here" } },
 		{ at = p(486, 168), faces = 143, lines = { "Carrackon's Wreck · Wreck Stall" } },
 		{
-			at = p(548, 222),
+			at = p(532, 212),
 			faces = 315,
 			lines = { "Ferry to Saltwick:", "not while the wreck is awake" },
 		},
@@ -255,11 +256,11 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 	-- The town's edge is its dunes and sea walls.
 	hedges = {},
 	walls = {
-		wall({ p(-150, -20), p(-150, -150), p(150, -150), p(150, 6) }, "Dunes", 8), -- north dunes
-		wall({ p(-150, 20), p(-150, 150), p(-124, 150) }, "Dunes", 8), -- west dunes
-		wall({ p(-96, 150), p(-30, 150) }, "Dunes", 8), -- south dunes
+		wall({ p(-150, -20), p(-150, -150), p(150, -150), p(150, 11) }, "Dunes", 8), -- north dunes
+		wall({ p(-150, 20), p(-150, 150), p(-119, 150) }, "Dunes", 8), -- west dunes
+		wall({ p(-101, 150), p(-30, 150) }, "Dunes", 8), -- south dunes
 		wall({ p(-30, 150), p(20, 150) }, "SeaWall", 6), -- harbour wall, west
-		wall({ p(70, 150), p(150, 150), p(150, 34) }, "SeaWall", 6), -- harbour wall, east
+		wall({ p(70, 150), p(150, 150), p(150, 31) }, "SeaWall", 6), -- harbour wall, east
 		wall({ p(100, 150), p(100, 80) }, "SeaWall", 6), -- the mole's wall
 		wall({ p(-236, -20), p(-150, -20) }, "Dunes", 10), -- the Dune Road, north
 		wall({ p(-236, 20), p(-150, 20) }, "Dunes", 10), -- the Dune Road, south
@@ -267,7 +268,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		wall({ p(533.9, 129.4), p(525.3, 155), p(553.8, 163.6), p(562.4, 138) }, "SeaCliff", 24),
 	},
 	edges = {
-		wrack_beach = edge("Rope", "Dunes"),
+		wrack_beach = edge("Rope", "SeaCliff"),
 		rockpool_shelf = edge("Rocks", "Rocks"),
 		kelp_shallows = edge("Rope", "Rope"),
 		sandbar_causeway = edge("Rope", "Rocks"),
@@ -323,7 +324,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 	},
 
 	clearings = {
-		{ at = p(693.6, 385.7), radius = 90, ring = true }, -- the cove round the arena
+		{ at = p(691.84, 383), radius = 90, ring = true }, -- the cove round the arena
 	},
 	caps = {
 		tide_flats_route_a = 21, -- the broken bridge fills the middle
@@ -365,6 +366,16 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 	brambles = {}, -- no shut path: the ferry sign does that job
 	-- Egg nests in seaweed behind the Brood Shallows.
 	coop = p(-4, -104),
+
+	-- How each tier looks: sand-brown banks (the shelf's top is black rock), one top colour for
+	-- tiers that touch at one height so no seam shows.
+	tierLooks = {
+		rock_shelf = { top = { 96, 98, 106 }, face = "SeaCliff" },
+		rock_shelf_w = { top = { 96, 98, 106 }, face = "SeaCliff" },
+		rock_terrace = { top = { 84, 86, 94 }, face = "SeaCliff" },
+		wreck_dune = { top = { 232, 218, 172 }, face = "Earth" },
+		breakwater = { top = { 176, 186, 168 }, face = "SeaCliff" },
+	},
 
 	-- Sand banks close in the land past the edges; the sea is walled by Barriers (plan 12, step 1).
 	fill = { style = "Dune", band = 80, floor = { 210, 192, 144 } },

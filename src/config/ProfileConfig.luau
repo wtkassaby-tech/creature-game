@@ -19,7 +19,9 @@ ProfileConfig.LIVE_SERIAL_STORE_NAME = "Serials_Live"
 ProfileConfig.STUDIO_USES_REAL_STORE = false
 
 -- Bump this whenever the saved shape changes, and add a migration in src/shared/Profile.luau.
-ProfileConfig.SCHEMA_VERSION = 1
+-- 2: finds (approval pack 7) added Profile.Finds and Daily.finds. Approval pack 6 (move imprint)
+-- also bumps the version: whichever is built second takes the next number, with its own migration.
+ProfileConfig.SCHEMA_VERSION = 2
 
 ProfileConfig.STARTING_COINS = 0
 ProfileConfig.STARTING_PENS = 1 -- eggs that can incubate at once

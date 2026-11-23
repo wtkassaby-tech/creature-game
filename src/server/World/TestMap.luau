@@ -31,6 +31,7 @@ local CorridorGround = require(script.Parent.CorridorGround)
 local Corridors = require(script.Parent.Corridors)
 local Dressing = require(script.Parent.Dressing)
 local Elevate = require(script.Parent.Elevate)
+local FarScenery = require(script.Parent.FarScenery)
 local Fill = require(script.Parent.Fill)
 local Grass = require(script.Parent.Grass)
 local Lair = require(script.Parent.Lair)
@@ -470,6 +471,7 @@ function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
 			buildBiome(folder, biome, map, index == 1, clip, links)
 		end
 	end
+	FarScenery.build(folder) -- the Crown, ranges and sea islands that frame the world
 end
 
 return TestMap

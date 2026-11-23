@@ -209,6 +209,10 @@ local Greenwood: WorldTypes.MapSheet = {
 		{ id = "clover_south", shape = strip(-345, 86, -318, 92, 25) },
 		{ id = "picnic_connector", shape = box(-295, 70, -285, 100) },
 		{ id = "picnic_hollow", shape = disc(-290, 112, 14) },
+		-- The apple nook (plan 14): a small hollow behind the meadow's south-west wall, reached by a
+		-- narrow hidden gap with nothing pointing to it.
+		{ id = "apple_gap", shape = strip(-371.6, 42.6, -388.5, 59.5, 3) },
+		{ id = "apple_nook", shape = disc(-395.6, 66.6, 16) },
 		{ id = "terrace_brink", shape = box(-322, -12, -272, 7) },
 		{ id = "brook_glade", shape = disc(-358, -48, 22) },
 		{ id = "reed_nook", shape = disc(-300, -42, 14) },

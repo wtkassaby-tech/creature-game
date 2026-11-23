@@ -137,6 +137,7 @@ function Tiers.build(
 
 	local cliff = Props.model("CliffWall")
 	local earth = Props.model("EarthBank")
+	local seaCliff = Props.model("SeaCliff")
 	for _, run in Ground.edges(ground, 3) do
 		local points: { Vector3 } = {}
 		for _, point in run.points do
@@ -184,7 +185,11 @@ function Tiers.build(
 				end
 			end
 		end
-		if faceOf[run.tier] == "Cliff" and cliff and out.Magnitude > 0.5 then
+		local rock = if faceOf[run.tier] == "Cliff"
+			then cliff
+			elseif faceOf[run.tier] == "SeaCliff" then seaCliff
+			else nil
+		if rock and out.Magnitude > 0.5 then
 			local tall = run.high - run.low
 			for _, piece in Fences.pieces(Props.resample(points, 1)) do
 				local middle = (piece[1] + piece[2]) / 2
@@ -193,7 +198,7 @@ function Tiers.build(
 					-- The model's front faces `along` turned a quarter: out of the high ground.
 					local made = Props.span(
 						folder,
-						cliff,
+						rock,
 						middle + out.Unit * ENDS,
 						Vector3.new(-out.Z, 0, out.X),
 						length,

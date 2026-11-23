@@ -7,6 +7,7 @@ local Biomes = require("../src/content/Biomes")
 local Chapter1 = require("../src/content/story_data/Chapter1")
 local Chapter2 = require("../src/content/story_data/Chapter2")
 local Chapter3 = require("../src/content/story_data/Chapter3")
+local FindsRegistry = require("../src/content/Finds")
 local Giants = require("../src/content/Giants")
 local Quests = require("../src/content/Quests")
 local ReleaseConfig = require("../src/config/ReleaseConfig")
@@ -126,6 +127,31 @@ do
 		"no open place offers a creature from a closed biome",
 		#leaks == 0,
 		table.concat(leaks, "; ")
+	)
+end
+
+-- No find in a closed biome is exposed: a later biome's finds are not in the registry, so they cannot
+-- be searched for, reached or saved before the biome opens (plan 14, build step 10).
+do
+	local leaks: { string } = {}
+	for _, find in FindsRegistry.list do
+		if find.biome > OPEN then
+			table.insert(leaks, find.id)
+		end
+	end
+	for _, set in FindsRegistry.sets do
+		if set.biome > OPEN then
+			table.insert(leaks, set.id)
+		end
+	end
+	check(
+		"no find or journal set of a closed biome is listed",
+		#leaks == 0,
+		table.concat(leaks, "; ")
+	)
+	check(
+		"the open biomes' finds are listed",
+		#FindsRegistry.list > 0 and #FindsRegistry.sets == OPEN
 	)
 end
 

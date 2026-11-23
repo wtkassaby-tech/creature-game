@@ -55,6 +55,23 @@ local function mass(
 	tall: number,
 	pick: number
 )
+	-- Painted where the model loads (a block of canyon cliff, a dune with marram), so the
+	-- fill never reads as plain drums and domes from a terrace or the camera's height.
+	local painted = if style == "Rock"
+		then Props.model("CliffWall")
+		elseif style == "Dune" then Props.model("SandDune")
+		else nil
+	if painted then
+		local facing = facingOf(second(pick))
+		if style == "Rock" then
+			quiet(Props.span(parent, painted, foot, facing, across, across * 0.7, tall))
+		else
+			-- Dunes stay low and broad: they frame the sea, they do not wall it off.
+			local low = math.min(tall, across * 0.45)
+			quiet(Props.span(parent, painted, foot, facing, across * 1.3, across, low))
+		end
+		return
+	end
 	if style == "Rock" then
 		local made = Shapes.cylinder(parent, foot, across, tall, colourOf(ROCK, pick))
 		quiet(made)
@@ -86,12 +103,21 @@ local function edge(
 			quiet(Props.stand(parent, painted, foot, tall, facing))
 			return
 		end
-	elseif style == "Rock" then
-		local parts = Shapes.prop(parent, "RockSpire", foot, tall, facing)
+	elseif style == "Rock" and pick < 0.4 then
+		-- Spires only now and then, mixed into blocks of cliff and boulders: a row of nothing
+		-- but spires read as a line of traffic cones (Studio, 23 November 2026).
+		local spireTall = tall * (0.75 + second(pick) * 0.45)
+		local parts = Shapes.prop(parent, "RockSpire", foot, spireTall, facing)
 		if parts then
 			for _, part in parts do
 				quiet(part)
 			end
+			return
+		end
+	elseif style == "Rock" and pick < 0.65 then
+		local boulders = Props.model("Boulders")
+		if boulders then
+			quiet(Props.stand(parent, boulders, foot, tall * 0.55, facing))
 			return
 		end
 	end

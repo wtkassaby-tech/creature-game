@@ -332,6 +332,28 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://78248099068134",
 		size = { 6.82, 8, 8.01 },
 	},
+	-- Far scenery and fill (plan 13 step 3, 23 November 2026): a snow-capped peak for the Crown
+	-- and the north, a wooded hill for the highlands, a cloud for the halo, a dune with marram.
+	SnowPeak = {
+		mesh = "rbxassetid://108310861437157",
+		texture = "rbxassetid://122914862632913",
+		size = { 29.99, 19.89, 30 },
+	},
+	WoodedHill = {
+		mesh = "rbxassetid://139407037486835",
+		texture = "rbxassetid://96266392767644",
+		size = { 40.2, 14.55, 40 },
+	},
+	Cloud = {
+		mesh = "rbxassetid://74547756459832",
+		texture = "rbxassetid://115762689237166",
+		size = { 28.97, 17.01, 30 },
+	},
+	SandDune = {
+		mesh = "rbxassetid://103573813488604",
+		texture = "rbxassetid://93564260008841",
+		size = { 16.64, 12, 16.69 },
+	},
 }
 
 return PropModels

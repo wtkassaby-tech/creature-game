@@ -394,7 +394,9 @@ function Corridors.edges(
 			end
 		end
 		for _, piece in runs do
-			Edges.run(folder, piece, "Hedge", waters, pick, { outward = 1 })
+			-- The biome's own room edge: hedges in Greenwood, boulders in the canyon, rocks
+			-- by the sea (rooms in the desert were ringed with green hedges before).
+			Edges.run(folder, piece, dressing.roomEdge or "Hedge", waters, pick, { outward = 1 })
 		end
 	end
 

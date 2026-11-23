@@ -288,6 +288,28 @@ One guess changed at a time (40 seeds each):
 - **How often players breed** moves candy, not coins: other sinks absorb the coins. Lasso misses barely matter because lassos are cheap. Gem spawn rates and giant difficulty move candy use, not the coin ratio.
 - **The first-two-hours ratio** depends mostly on pens and hatch time, not prices.
 
+## 7b. Finds in side areas (approval pack 7, rerun 23 November 2026)
+
+`tests/economy.test.luau` now has the finds in it (`ASSUME.FINDS`; set it false to get the numbers from before). Every find in `src/content/finds_data` is used, built or not, so the bands hold in the final state with Gull Cove open. The simulated players: each claims a share of a biome's one-time finds as they pass its story's halfway point (casual 50%, regular 85%, heavy all; 1 minute each); each day with a badge they visit gathering spots, current biome first (casual 2, regular 4, heavy all; 1.5 minutes, plus 1 for a Waystation hop back) and sightings (casual 0, regular 1, heavy all; a wild win with a lasso on 80%). Walking to a find uses the session but is left out of a biome's income per minute, so the breed-cost and giant-prep bands still measure battling.
+
+| Target (30 seeds) | Before | With finds |
+| --- | --- | --- |
+| Coins removed, first two hours (57 to 73%) | 70 / 64 / 59 | 70 / 65 / 60 |
+| Coins removed after Greenwood (80 to 95%) | 88 / 90 / 87 | 89 / 89 / 88 |
+| Coins removed after the story (casual / regular / heavy) | 88 / 91 / 89 | 88 / 90 / 89 |
+| Regular holds 2 to 7 days of income after week 1 | 2.3 | 2.1 |
+| Regular income a day after the story | 28,100 | 20,800 |
+| Farming hour against a normal hour (at most 1.5 x) | 1.00 to 1.40 | 1.07 to 1.36 |
+| Prism a day after the story, regular / heavy | 5.9 / 8.1 | 5.1 / 8.1 |
+
+What the rerun found, against the pack's estimates:
+
+- **The cost of finds is time, not payout.** A full daily round (6 gathering spots, 3 sightings) takes about 25 minutes and pays 293 coins of materials and 663 of wild wins, about 960 coins: under a quarter of the same minutes of battling (419 coins a minute for the heavy player). One-time finds are worth about 1,730 coins and 6 Prism, once. These match the pack (960 and 1,820).
+- **Time lost to finds is what moves the bands.** A regular player who takes 5 spots a day spends about 13 of 45 minutes on them and holds 1.8 to 2.0 days of income (at or below the 2 floor); at 4 spots it is 2.1. A regular player's income after the story falls by a quarter at 4 spots and one sighting, and they breed 2.0 times a day instead of 3.3. Players who do more of the round than the simulated regular will have less coin and candy from battling. Finds are a reason to walk, not an income, but this is the number to watch in the first playtest (item 3 of section 8).
+- **The heavy player's first two hours stay at 60%** (the floor is 57), so the pack's fallback (the picnic basket's Rally Root becomes a keepsake) was not needed. With one-time finds taking 2 minutes each it fell to 49%, because the extra minutes pushed the giant and the gate out of the first two hours: the walk to a one-time find on the way through is modelled at 1 minute.
+- **The pack counted 7 gathering spots; its tables list 6** (Greenwood 2, Dust Canyon 2, Tide Flats 2 with Gull Cove's midden). The most anyone can gather in a day is 12 materials, not 14.
+- **Sightings** take the normal gem chance (0.6% from Dust Canyon on, none in Greenwood, which has no gem rows): no change to the farming-hour ratio beyond 1.07 to 1.36.
+
 ## 8. Five numbers to watch in the first playtest
 
 1. **Minutes per wild battle, including finding the creature**, and wild battles per hour of play. Every coin result scales with it (section 7).

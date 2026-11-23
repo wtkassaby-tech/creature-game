@@ -152,6 +152,147 @@ do
 end
 
 ------------------------------------------------------------------------------------------------
+print("\n== Migration 1 to 2: finds (approval pack 7) ==")
+do
+	check(
+		"the schema is at version 2",
+		Profile.CURRENT_VERSION == 2 and Profile.MIGRATIONS[1] ~= nil
+	)
+
+	-- A version-1 save as it was before finds: the current sample with the new fields taken away.
+	local function version1(): any
+		local old: any = sample()
+		old.SchemaVersion = 1
+		old.Finds = nil
+		old.Daily.finds = nil
+		return old
+	end
+	local old = version1()
+	local migrated, why = Profile.migrate(old)
+	check("a version 1 save is upgraded", migrated ~= nil, why)
+	local upgraded: any = migrated
+	check(
+		"it gains the two new fields, empty, and the new version",
+		upgraded ~= nil
+			and upgraded.SchemaVersion == 2
+			and typeof(upgraded.Finds) == "table"
+			and next(upgraded.Finds.once) == nil
+			and typeof(upgraded.Daily.finds) == "table"
+			and next(upgraded.Daily.finds) == nil
+	)
+	check(
+		"nothing else changes: coins, candy, creatures, team, eggs and daily counts are as they were",
+		upgraded ~= nil
+			and upgraded.Coins == 2000
+			and upgraded.Candy.prism == 2
+			and upgraded.Candy.typed.Leaf == 4
+			and upgraded.Items.BasicLasso == 3
+			and #upgraded.Eggs == 1
+			and #upgraded.Team == 2
+			and upgraded.Creatures.a ~= nil
+			and upgraded.Daily.wildWins ~= nil
+			and upgraded.Daily.catches.Leaf == 0
+			and upgraded.Pens == Profile.template().Pens
+	)
+	check(
+		"the upgraded save is sound",
+		upgraded ~= nil and #Profile.validate(upgraded :: Profile.Profile) == 0
+	)
+	check(
+		"the original is untouched (the migration ran on a copy)",
+		old.SchemaVersion == 1 and old.Finds == nil and old.Daily.finds == nil
+	)
+
+	-- A save that somehow has part of it already: nothing is overwritten.
+	local half = version1()
+	half.Finds = { once = { gw_cairn = true } }
+	local keep: any = Profile.migrate(half)
+	check(
+		"a find already claimed survives the upgrade",
+		keep ~= nil and keep.Finds.once.gw_cairn == true
+	)
+	local noOnce = version1()
+	noOnce.Finds = {}
+	local fixed: any = Profile.migrate(noOnce)
+	check(
+		"a Finds record with no list gets one",
+		fixed ~= nil and typeof(fixed.Finds.once) == "table"
+	)
+
+	-- A save too broken to migrate is refused, never let in on blank data.
+	local broken = version1()
+	broken.Daily = 7
+	local refused = Profile.migrate(broken)
+	check(
+		"a save whose Daily is nonsense is never half-migrated",
+		(refused == nil and broken.SchemaVersion == 1)
+			or (refused ~= nil and #Profile.validate(refused) > 0)
+	)
+	local blank = Profile.template()
+	check(
+		"a new player starts with nothing found",
+		next(blank.Finds.once) == nil and next(blank.Daily.finds) == nil
+	)
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== Finds in a save are checked ==")
+do
+	local p = sample()
+	p.Finds.once.gw_cairn = true
+	p.Finds.once.gw_journal = true
+	p.Daily.finds.gw_gather_fern = 1
+	p.Daily.finds["~gathered"] = 14
+	check("claimed finds and today's counts are allowed", #Profile.validate(p) == 0)
+
+	p = sample();
+	(p.Finds.once :: any).gw_cairn = false
+	check("a claimed mark that is not true", has(Profile.validate(p), "bad claimed mark"))
+
+	p = sample()
+	p.Finds.once.made_up_find = true
+	check("an unknown find id is reported", has(Profile.validate(p), "not a known one-time find"))
+
+	p = sample()
+	p.Finds.once.gw_gather_fern = true
+	check(
+		"a renewable spot is never a one-time flag",
+		has(Profile.validate(p), "not a known one-time find")
+	)
+
+	p = sample()
+	p.Daily.finds.gw_gather_fern = 2
+	check("a daily count over the spot's limit", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds.gw_gather_fern = -1
+	check("a negative daily count", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds.gw_gather_fern = 0.5
+	check("a fractional daily count", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds["~gathered"] = 31
+	check("more gathered than the daily ceiling", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds.gw_cairn = 1
+	check(
+		"a daily count for a one-time find",
+		has(Profile.validate(p), "not a known renewable find")
+	)
+
+	p = sample();
+	(p :: any).Finds = nil
+	check("missing finds are reported as unreadable", has(Profile.validate(p), "unreadable"))
+
+	p = sample()
+	p.Finds.once.gw_cairn = true
+	check("finds can be stored", (Profile.isStorable(p)))
+end
+
+------------------------------------------------------------------------------------------------
 print("\n== Purchases are granted once ==")
 do
 	local profile = Profile.template()

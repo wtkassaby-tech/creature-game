@@ -69,10 +69,14 @@ export type State = {
 	QuestsDone: { string },
 	Daily: { DailyView },
 	Waiting: number,
+	Finds: { string }, -- one-time finds claimed, by id
+	FindsToday: { string }, -- renewable spots used today, by id
 }
 
 local MAX_CREATURES = 400
 local MAX_FLAGS = 200
+local MAX_FINDS = 400
+local MAX_FINDS_TODAY = 64
 local GRANT_FLAG_PREFIX = "grant:"
 
 local Snapshot = {}
@@ -194,6 +198,25 @@ function Snapshot.build(profile: Profile.Profile, unixTime: number?): State
 		table.insert(team, id)
 	end
 
+	-- Finds: the one-time ones claimed, and the renewable spots used today (only if the record's
+	-- day is today's, so a stale day shows every spot as ready, as it will be on the next claim).
+	local found: { string } = {}
+	for id, claimed in profile.Finds.once do
+		if claimed and #found < MAX_FINDS and #id >= 1 and #id <= 40 then
+			table.insert(found, id)
+		end
+	end
+	table.sort(found)
+	local today: { string } = {}
+	if unixTime == nil or profile.Daily.day == math.floor(unixTime / 86400) then
+		for id, used in profile.Daily.finds do
+			if used > 0 and #today < MAX_FINDS_TODAY and #id >= 1 and #id <= 40 then
+				table.insert(today, id)
+			end
+		end
+	end
+	table.sort(today)
+
 	local typed = profile.Candy.typed
 	return {
 		Coins = whole(profile.Coins, 4294967295),
@@ -225,6 +248,8 @@ function Snapshot.build(profile: Profile.Profile, unixTime: number?): State
 		QuestsDone = questsDone,
 		Daily = daily,
 		Waiting = whole(#profile.Pending, 255),
+		Finds = found,
+		FindsToday = today,
 	}
 end
 

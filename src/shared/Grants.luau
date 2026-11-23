@@ -88,6 +88,7 @@ function Grants.rollDay(profile: Profile, unixTime: number)
 		profile.Daily.claimed = {}
 		profile.Daily.catches = Economy.zeroByElement()
 		profile.Daily.releases = Economy.zeroByElement()
+		profile.Daily.finds = {} -- gathering and sighting spots renew with the day
 	end
 end
 
