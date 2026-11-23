@@ -20,6 +20,8 @@ local rgb = Props.rgb
 local FOREST: { Color3 } = { rgb(46, 98, 52), rgb(54, 112, 58), rgb(64, 124, 64) }
 local ROCK: { Color3 } = { rgb(184, 100, 72), rgb(208, 140, 98), rgb(222, 164, 118) }
 local DUNE: { Color3 } = { rgb(224, 204, 154), rgb(236, 218, 170), rgb(212, 190, 138) }
+-- The swamp's dark mossy mounds: murky greens and brown-greens.
+local SWAMP: { Color3 } = { rgb(54, 76, 52), rgb(64, 88, 56), rgb(74, 82, 54) }
 
 -- How many parts a build made, by layer.
 export type Counts = { rows: number, masses: number, blocks: number }
@@ -77,7 +79,7 @@ local function mass(
 		local made = Shapes.cylinder(parent, foot, across, tall, colourOf(ROCK, pick))
 		quiet(made)
 	else
-		local palette = if style == "Forest" then FOREST else DUNE
+		local palette = if style == "Forest" then FOREST elseif style == "Swamp" then SWAMP else DUNE
 		-- Centred a little low, so the bottom of the dome is buried and meets the ground wide.
 		local made = Props.lump(
 			parent,
@@ -100,6 +102,13 @@ local function edge(
 	local facing = facingOf(second(pick))
 	if style == "Forest" then
 		local painted = Props.model(if pick < 0.62 then "Tree" else "Pine")
+		if painted then
+			quiet(Props.stand(parent, painted, foot, tall, facing))
+			return
+		end
+	elseif style == "Swamp" then
+		-- Mangrove and bald cypress in the edge rows, mossy mounds where the model is missing.
+		local painted = Props.model(if pick < 0.55 then "Mangrove" else "Cypress")
 		if painted then
 			quiet(Props.stand(parent, painted, foot, tall, facing))
 			return

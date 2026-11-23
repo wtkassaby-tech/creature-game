@@ -88,6 +88,7 @@ WorldConfig.FILL_TALL = {
 	Forest = { row = { 30, 38 }, mass = { 26, 32 }, block = { 24, 32 } },
 	Rock = { row = { 30, 42 }, mass = { 24, 34 }, block = { 22, 34 } },
 	Dune = { row = { 16, 22 }, mass = { 18, 24 }, block = { 18, 26 } },
+	Swamp = { row = { 24, 32 }, mass = { 14, 20 }, block = { 16, 24 } },
 } :: { [string]: { [string]: { number } } }
 
 return WorldConfig

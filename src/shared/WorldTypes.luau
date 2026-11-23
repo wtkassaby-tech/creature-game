@@ -329,9 +329,9 @@ export type Ambience = {
 }
 
 -- The solid ground beyond a biome's edges (docs/plans/12_MAP_STRUCTURE.md section 10, step 1):
--- "Forest" is walls of tall trees, "Rock" is spires and mesas, "Dune" is sand banks. `band` is how
+-- "Forest" is walls of tall trees, "Rock" is spires and mesas, "Dune" is sand banks, "Swamp" is mangrove and cypress over mossy mounds. `band` is how
 -- far past the edge it reaches, and `floor` is the colour of the open ground glimpsed through it.
-export type FillStyle = "Forest" | "Rock" | "Dune"
+export type FillStyle = "Forest" | "Rock" | "Dune" | "Swamp"
 export type DressFill = { style: FillStyle, band: number, floor: Colour }
 
 -- Every field marked "left out" is optional: a biome without that feature leaves it out and the
@@ -388,7 +388,7 @@ export type DressingSheet = {
 	-- `model` left out: Gatehouse; `banner` left out: "Acorn Badge".
 	gatehouse: { at: SheetPoint, faces: number, model: string?, banner: string? },
 	bar: { at: SheetPoint, width: number },
-	ancientTree: { at: SheetPoint, tall: number }?,
+	ancientTree: { at: SheetPoint, tall: number, model: string? }?, -- model: AncientTree if not given
 	landmark: DressLandmark?,
 	grassLooks: { [string]: GrassLook }?, -- by area id; left out, GrassTuft on (78, 128, 58)
 	stall: { side: number }, -- which side of the spur the stall's counter stands

@@ -180,7 +180,7 @@ local Mire: WorldTypes.MapSheet = {
 		-- duckboards, the Bell Loft up on its own deck to the north-west.
 		quill_sundries = { at = p(56, -30), faces = 270, door = p(40, -30), model = "Chandlery" },
 		clearwater_spring = { at = p(-70, -26), faces = 90, door = p(-54, -26), model = "Healer" },
-		reed_nursery = { at = p(-88, 30), faces = 90, door = p(-72, 30), model = "NetLoft" },
+		reed_nursery = { at = p(-88, 30), faces = 90, door = p(-72, 30), model = "ReedHut" },
 		mooring_post = { at = p(-14, -70), faces = 180, door = p(-14, -54), model = "NoticeBoard" },
 		punt_landing = { at = p(-76, 84), faces = 90, door = p(-60, 84), model = "Waystation" },
 		-- A round of boards and a rope rail round the cypress knees; no painted model.

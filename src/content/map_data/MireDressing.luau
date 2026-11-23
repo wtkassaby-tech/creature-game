@@ -7,9 +7,10 @@
 -- from docs/plans/15_MIRE_MAP.md section 3. The server's position checks never read this file: it
 -- only dresses the test map (src/server/World).
 --
--- Painted models still to come (docs/plans/15_MIRE_MAP.md section 5) stand in with the nearest
--- model that exists: the Tide Flats stilt houses, net lofts and lamp tower for the reed huts, the
--- reed nursery and the bell tower, a Tree for mangrove and cypress, Kelp for lily pads.
+-- The swamp's own models (ReedHut, Mangrove, Cypress, BellTower, LilyPads, Cattails) dress the
+-- huts, the Bell Cypress, the Sunken Bell and the water's edge. The healer, the shop, the
+-- waystation and the Bell Loft keep their familiar buildings; the Heron Causeway's reeds are
+-- a prop row below. The fill is a Swamp (mangrove and cypress over dark mossy mounds).
 
 local WorldTypes = require("../../shared/WorldTypes")
 
@@ -69,19 +70,136 @@ end
 local CAUSEWAY: { WorldTypes.SheetPoint } =
 	{ p(-234, 480), p(-150, 440), p(-110, 340), p(-60, 250), p(-20, 190), p(0, 150) }
 
+-- Lily pads and cattails along a line of points: one every `step` studs, `offset` to the left
+-- (negative: right) of the line, alternating sides when `both`. Anything inside a `keep`-clear
+-- disc {x, z, radius} is left out, so pockets, shelves and forks stay open. Looks only.
+type Clear = { number }
+local function dressAlong(
+	points: { WorldTypes.SheetPoint },
+	step: number,
+	offset: number,
+	model: string,
+	tall: number,
+	skip: { Clear },
+	made: { WorldTypes.DressProp }
+)
+	local count = 0
+	local walked = 0
+	local nextAt = step
+	for index = 1, #points - 1 do
+		local a, b = points[index], points[index + 1]
+		local dx, dz = b.x - a.x, b.z - a.z
+		local length = math.sqrt(dx * dx + dz * dz)
+		local nx, nz = -dz / length, dx / length
+		while nextAt - walked <= length do
+			local at = nextAt - walked
+			count += 1
+			local side = if count % 2 == 0 then 1 else -1
+			local reach = offset + (count % 3) * 2
+			local x = a.x + dx * at / length + nx * reach * side
+			local z = a.z + dz * at / length + nz * reach * side
+			local clear = true
+			for _, area in skip do
+				if (x - area[1]) ^ 2 + (z - area[2]) ^ 2 < area[3] ^ 2 then
+					clear = false
+				end
+			end
+			if clear then
+				table.insert(made, {
+					model = model,
+					at = p(x, z),
+					faces = (count * 67) % 360,
+					tall = tall + (count % 4) * 0.5,
+				})
+			end
+			nextAt += step
+		end
+		walked += length
+	end
+end
+
+-- Scattered lily pads in the open water: {x, z} each.
+local function pads(spots: { { number } }, made: { WorldTypes.DressProp })
+	for index, spot in spots do
+		table.insert(made, {
+			model = "LilyPads",
+			at = p(spot[1], spot[2]),
+			faces = (index * 83) % 360,
+			tall = 2.4 + (index % 3) * 0.3,
+		})
+	end
+end
+
+local DRESSED: { WorldTypes.DressProp } = {}
+-- Along the causeway: cattails out in the estuary, just past its rope rails.
+dressAlong(CAUSEWAY, 34, 15, "Cattails", 6.5, {}, DRESSED)
+-- The lily lanes (Route A, 160 to 330 along): cattails and pads past the rope edge, leaving the
+-- lily pocket, the root shelf, the pool pocket and the mangrove pocket clear.
+local LILY_LANE: { WorldTypes.SheetPoint } = { p(322, 34), p(368, 80), p(350, 142) }
+local LILY_CLEAR: { Clear } =
+	{ { 377, 29, 50 }, { 315, 104, 50 }, { 388, 104, 34 }, { 350, 200, 50 } }
+dressAlong(LILY_LANE, 26, 25, "Cattails", 6.5, LILY_CLEAR, DRESSED)
+dressAlong(LILY_LANE, 22, 21, "LilyPads", 2.4, LILY_CLEAR, DRESSED)
+-- The fogwater reach (Route B, 360 to 540 along): cattails on the open water, off the spur fork
+-- and the pockets.
+local FOG_LANE: { WorldTypes.SheetPoint } = { p(110, -420), p(60, -470), p(-10, -505), p(35, -548) }
+local FOG_CLEAR: { Clear } =
+	{ { 31, -484, 60 }, { -29, -545, 52 }, { 16, -521, 36 }, { 110, -420, 40 } }
+dressAlong(FOG_LANE, 28, 30, "Cattails", 6.5, FOG_CLEAR, DRESSED)
+dressAlong(FOG_LANE, 24, 27, "LilyPads", 2.4, FOG_CLEAR, DRESSED)
+-- Pads on the pools, the black water, the drowned village, the lake and the new fogwater flats.
+pads({
+	{ -128, 100 },
+	{ -116, 114 },
+	{ -134, 114 },
+	{ 36, 66 },
+	{ 46, 76 },
+	{ 120, 300 },
+	{ 170, 340 },
+	{ 215, 290 },
+	{ 255, 375 },
+	{ 300, 320 },
+	{ 100, 385 },
+	{ 190, 400 },
+	{ 380, 440 },
+	{ 470, 480 },
+	{ 520, 300 },
+	{ 500, 400 },
+	{ 590, 450 },
+	{ 560, 335 },
+	{ 230, -300 },
+	{ 280, -360 },
+	{ 240, -430 },
+	{ 310, -480 },
+	{ 270, -290 },
+	{ 220, -500 },
+	{ -300, 300 },
+	{ -260, 400 },
+	{ -330, 520 },
+	{ -80, 420 },
+	{ -200, 250 },
+	{ -180, 330 },
+	{ -170, -560 },
+	{ -130, -590 },
+	{ -190, -530 },
+	{ 340, -90 },
+	{ 410, -70 },
+	{ 440, -110 },
+}, DRESSED)
+
 local MireDressing: WorldTypes.DressingSheet = {
 	roomEdge = "Rope", -- every pocket, dead end and the causeway itself is ringed with a rope rail
-	fieldGround = { 92, 110, 82 },
+	fieldGround = { 84, 94, 64 }, -- murky green-brown
 	ground = {
-		{ area = "reedfringe", colour = { 112, 126, 88 } },
-		{ area = "lily_lanes", colour = { 70, 112, 104 } }, -- still dark water under the pads
-		{ area = "mangrove_tangle", colour = { 104, 98, 72 } }, -- root mud
-		{ area = "peat_cuttings", colour = { 70, 60, 52 } }, -- black peat
-		{ area = "stilt_hamlet", colour = { 104, 96, 78 } },
-		{ area = "fogwater_reach", colour = { 112, 134, 128 } }, -- grey-green fogwater
-		{ area = "sluice_rise", colour = { 128, 110, 82 } }, -- packed peat
+		{ area = "reedfringe", colour = { 98, 108, 68 } },
+		{ area = "lily_lanes", colour = { 56, 96, 84 } }, -- still dark water under the pads
+		{ area = "mangrove_tangle", colour = { 92, 84, 58 } }, -- root mud
+		{ area = "peat_cuttings", colour = { 66, 56, 46 } }, -- black peat
+		{ area = "stilt_hamlet", colour = { 94, 88, 62 } },
+		{ area = "fogwater_reach", colour = { 84, 110, 98 } }, -- green-grey fogwater
+		{ area = "sluice_rise", colour = { 120, 100, 72 } }, -- packed peat
 	},
-	townGround = { 118, 128, 92 },
+	townGround = { 102, 108, 72 },
 	laneColour = { 138, 118, 86 }, -- damp boards and packed mud
 	laneSurfaces = {
 		-- The reedfringe duckboards and the boardwalk of the old hamlet (on stilts).
@@ -122,16 +240,18 @@ local MireDressing: WorldTypes.DressingSheet = {
 	water = {},
 	pools = {
 		{ at = p(-96, -26), radius = 7, colour = { 150, 214, 206 } }, -- the Clearwater Spring
-		{ at = p(-122, 106), radius = 22, colour = { 84, 120, 116 } }, -- the punt pond
-		{ at = p(42, 72), radius = 10, colour = { 70, 104, 100 } },
+		{ at = p(-122, 106), radius = 22, colour = { 58, 92, 76 } }, -- the punt pond
+		{ at = p(42, 72), radius = 10, colour = { 52, 86, 72 } },
 	},
-	-- Drawn in this order; corridor ground paints over them.
+	-- Drawn in this order; corridor ground paints over them. Dark green-teal swamp water.
 	flats = {
-		flat(p(-420, 160), p(60, 620), { 82, 118, 112 }, true), -- the estuary shallows (the causeway)
-		flat(p(60, 260), p(330, 420), { 70, 108, 102 }, true), -- the black water under Route A
-		flat(p(330, 276), p(620, 520), { 62, 100, 98 }, true), -- the drowned village (the Sunken Bell)
-		flat(p(200, -520), p(340, -260), { 78, 116, 112 }, true), -- the lake east of the hamlet
-		flat(p(-200, -330), p(-60, -200), { 88, 76, 60 }, false), -- the old peat bog
+		flat(p(-420, 160), p(60, 620), { 56, 94, 80 }, true), -- the estuary shallows (the causeway)
+		flat(p(60, 260), p(330, 420), { 46, 82, 70 }, true), -- the black water under Route A
+		flat(p(330, 276), p(620, 520), { 40, 74, 66 }, true), -- the drowned village (the Sunken Bell)
+		flat(p(200, -520), p(340, -260), { 52, 90, 78 }, true), -- the lake east of the hamlet
+		flat(p(-200, -330), p(-60, -200), { 78, 68, 52 }, false), -- the old peat bog
+		flat(p(300, -130), p(470, -45), { 50, 88, 76 }, true), -- fog lanes north of the lily lanes
+		flat(p(-220, -610), p(-90, -520), { 50, 86, 74 }, true), -- fogwater west of the reach
 	},
 
 	arches = {
@@ -207,12 +327,6 @@ local MireDressing: WorldTypes.DressingSheet = {
 		tree(-102, -17, "Reeds"),
 		tree(-96, -36, "Reeds"),
 		tree(-88, -18, "Reeds"),
-		-- Lily pads on the punt pond and the village pool.
-		tree(-128, 100, "Kelp", 0.8),
-		tree(-116, 114, "Kelp", 0.8),
-		tree(-134, 114, "Kelp", 0.8),
-		tree(36, 66, "Kelp", 0.8),
-		tree(46, 76, "Kelp", 0.8),
 	},
 	-- Reeds along the inside of the reed fence.
 	rows = {
@@ -255,15 +369,15 @@ local MireDressing: WorldTypes.DressingSheet = {
 		bell_loft = { width = 16, depth = 16, tall = 36 },
 	},
 	houses = {
-		house(-124, -40, 90, "StiltHouse", 18, 18, 24),
-		house(-134, -100, 90, "NetLoft", 20, 16, 20),
-		house(-124, 70, 90, "StiltHouse", 18, 18, 24),
-		house(-30, 112, 0, "StiltHouse", 18, 18, 24),
-		house(60, 100, 270, "StiltHouse", 18, 18, 24),
-		house(112, -44, 270, "StiltHouse", 18, 18, 24),
-		house(116, 70, 300, "NetLoft", 20, 16, 20),
-		house(60, -130, 180, "NetLoft", 20, 16, 20),
-		house(122, -124, 225, "StiltHouse", 18, 18, 24),
+		house(-124, -40, 90, "ReedHut", 16, 16, 24),
+		house(-134, -100, 90, "ReedHut", 16, 16, 22),
+		house(-124, 70, 90, "ReedHut", 16, 16, 24),
+		house(-30, 112, 0, "ReedHut", 16, 16, 24),
+		house(60, 100, 270, "ReedHut", 16, 16, 24),
+		house(112, -44, 270, "ReedHut", 16, 16, 24),
+		house(116, 70, 300, "ReedHut", 16, 16, 22),
+		house(60, -130, 180, "ReedHut", 16, 16, 22),
+		house(122, -124, 225, "ReedHut", 16, 16, 24),
 	},
 	props = {
 		-- Punts tied up on the pond and at the jetty's end.
@@ -293,24 +407,27 @@ local MireDressing: WorldTypes.DressingSheet = {
 	},
 	-- Every stretch is listed, so no plain Tree or Pine appears in the biome by default.
 	corridorTrees = {
+		-- (The fill takes the place of single trees past the edges; these name what a stretch
+		-- would plant if the biome ever had no fill.)
 		reedfringe = { model = "Reeds", scale = 1.4 },
-		lily_lanes = { model = "Kelp", scale = 1.2 },
-		mangrove_tangle = { model = "Tree", scale = 0.9 },
+		lily_lanes = { model = "Cattails", scale = 0.4 },
+		mangrove_tangle = { model = "Mangrove", scale = 0.9 },
 		peat_cuttings = { model = "Reeds", scale = 1 },
-		stilt_hamlet = { model = "Tree", scale = 0.8 },
-		fogwater_reach = { model = "Tree", scale = 1.1 },
-		sluice_rise = { model = "Reeds", scale = 1 },
-		mire_lair = { model = "Tree", scale = 1.2 },
+		stilt_hamlet = { model = "Mangrove", scale = 0.8 },
+		fogwater_reach = { model = "Cypress", scale = 1.1 },
+		sluice_rise = { model = "Cattails", scale = 0.4 },
+		mire_lair = { model = "Cypress", scale = 1.2 },
 	},
-	-- Reeds in every patch, in the colour of each stretch's mud.
+	-- Reeds in every patch, in the colour of each stretch's mud: darker and mossier where the
+	-- water is, drier on the peat.
 	grassLooks = {
 		reedfringe = look("Reeds", REED_GROUND),
-		lily_lanes = look("Kelp", { 54, 96, 90 }),
-		mangrove_tangle = look("Reeds", { 84, 86, 60 }),
-		peat_cuttings = look("Reeds", { 66, 58, 46 }),
-		stilt_hamlet = look("Reeds", { 90, 88, 64 }),
-		fogwater_reach = look("Reeds", { 96, 120, 110 }),
-		sluice_rise = look("Reeds", { 104, 98, 70 }),
+		lily_lanes = look("Reeds", { 44, 84, 72 }),
+		mangrove_tangle = look("Reeds", { 76, 78, 52 }),
+		peat_cuttings = look("Reeds", { 58, 52, 42 }),
+		stilt_hamlet = look("Reeds", { 82, 82, 56 }),
+		fogwater_reach = look("Reeds", { 70, 100, 88 }),
+		sluice_rise = look("Reeds", { 96, 90, 62 }),
 	},
 	gatehouse = {
 		at = p(150, -602),
@@ -321,14 +438,15 @@ local MireDressing: WorldTypes.DressingSheet = {
 	-- Where the sealed road's story beat fires: 13 past the gate, 47 short of its place.
 	bar = { at = p(150, -615), width = 20 },
 	-- The drowned bell tower of the Sunken Bell, standing in the water at the end of the branch.
-	landmark = { at = p(424, 330), model = "LampTower", tall = 44, faces = 0 },
+	landmark = { at = p(424, 330), model = "BellTower", tall = 34, faces = 0 },
 	stall = { side = -1 }, -- the counter stands on the south side of the spur
 	ring = { width = 40, depth = 30, gap = 12, style = "Rope" }, -- the Cypress Ring
 	brambles = {}, -- no shut path: the spur's way home is a sign by the Grove Stall
 	-- Egg nests in reeds behind the Reed Nursery.
 	coop = p(-108, 48),
-	-- The Bell Cypress, huge and old, with the bronze fog bell hung in its branches.
-	ancientTree = { at = p(0, -2), tall = 52 },
+	-- The Bell Cypress, over the middle of Bell Square: the landmark tree drawn with the
+	-- painted Cypress, on an unseen trunk that collides; it also keeps the fill off the square.
+	ancientTree = { at = p(0, -2), tall = 56, model = "Cypress" },
 
 	-- How each tier looks: boarded tops over earth banks, one top colour per tier.
 	tierLooks = {
@@ -340,14 +458,14 @@ local MireDressing: WorldTypes.DressingSheet = {
 	},
 
 	-- Walls of tall trees close in the swamp past the edges; the water is walled by Barriers.
-	fill = { style = "Forest", band = 70, floor = { 62, 84, 66 } },
+	fill = { style = "Swamp", band = 70, floor = { 46, 64, 50 } },
 
 	-- Smoke from the stilt houses, green lantern light, fireflies over the square and the hamlet,
 	-- a glow in the Bell Loft and in the drowned bell, mist on every sheet of water (thickest on
 	-- the fogwater and halfway along the causeway) and a slow glint on every pool.
 	ambience = {
 		chimneys = {
-			StiltHouse = { -0.21, 0.95, 0.14 }, -- the pot at the back left of the roof
+			ReedHut = { 0, 0.92, 0 }, -- a wisp from the thatch's peak
 		},
 		lamps = { range = 22, brightness = 1, colour = { 200, 232, 170 } },
 		glints = true,
@@ -380,5 +498,10 @@ local MireDressing: WorldTypes.DressingSheet = {
 		},
 	},
 }
+
+-- The water's-edge dressing joins the homely props.
+for _, thing in DRESSED do
+	table.insert(MireDressing.props, thing)
+end
 
 return MireDressing

@@ -25,7 +25,7 @@ end
 
 -- The ancient tree over Greenwood's lair: the painted AncientTree on an unseen trunk, or a
 -- great stem under two crowns.
-local function ancient(town: Instance, foot: Vector3, tall: number)
+local function ancient(town: Instance, foot: Vector3, tall: number, model: string?)
 	local trunk = Props.part(
 		town,
 		Vector3.new(14, 40, 14),
@@ -34,7 +34,7 @@ local function ancient(town: Instance, foot: Vector3, tall: number)
 	)
 	trunk.Name = "AncientTrunk"
 	trunk.CanCollide = true
-	local giantTree = Props.model("AncientTree")
+	local giantTree = Props.model(model or "AncientTree")
 	if giantTree then
 		trunk.Transparency = 1
 		Props.stand(town, giantTree, foot, tall, Vector3.new(0, 0, 1))
@@ -243,7 +243,7 @@ function Landmarks.build(parent: Instance, map: Layout.Map, dressing: WorldTypes
 	-- The ancient tree over the lair: seen from town and from the meadow.
 	local ancientTree = dressing.ancientTree
 	if ancientTree then
-		ancient(town, placed(map, ancientTree.at), ancientTree.tall)
+		ancient(town, placed(map, ancientTree.at), ancientTree.tall, ancientTree.model)
 	end
 
 	-- The far landmark (the Redstack, the Old Light): its painted model or plain stand-in, on an
