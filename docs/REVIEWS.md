@@ -2,6 +2,39 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 23 November 2026: purchase foundations (plan 16 steps 1 to 3) and the approved breeding numbers (branch fix/studio-first-run)
+
+Reviewer: two independent exploit reviews, read-only, that did not write the code (a full review, then a re-review of the fixes). Reviewed: `src/server/Purchases/PurchaseService.luau`, `src/shared/Purchases.luau`, `Gems.luau`, `PassEffects.luau`, `Capture.luau`, `Lasso.luau`, `Grants.luau`, `Breeding.luau`, `Profile.luau` (schema 2 to 3), `src/config/PurchaseConfig.luau`, `EconomyConfig.luau`, `BreedConfig.luau`, `LiveConfig.luau`, `src/net/Net.blink`, the Capture, Inventory, Breeding and Data services, and the tests. **Receipts are sound:** each PurchaseId is granted once, written in the same step as the grant, and PurchaseGranted is returned only after the save holds it; two servers are covered by the session lock. The breeding numbers (level share 0.75, faster first eggs) open no exploit.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | Gems bought lassos and Bait with no PolicyService check and no odds shown | High | Gem lassos are refused unless `ArePaidRandomItemsRestricted` is exactly false; Bait is not sold for Gems until a screen shows its outcomes and odds |
+| 2 | The Lasso Pass's flat bonus raised fleeing, serial-numbered catches far more than common ones, against Ayrton's reason for it | Medium | The pass boosts only Common and Uncommon (`LASSO_PASS_RARITIES`), never gem tiers or giants |
+| 3 | A repeated Starter Pack was a cheaper-Gems loop | Medium | A repeat grants the 99-Robux bundle's 100 Gems and nothing once-only |
+| 4 | Nothing marked creatures caught with paid help (matters once trading exists) | Medium | `paidAssist` ("Pass" or "GemLasso") on the creature, set with the catch, inherited by breeding; Gem lassos kept under their own item keys |
+| 5 | Catching with Gem lassos and releasing turned Robux into coins | Medium | A Gem-lasso catch releases for no coins and no materials |
+| 6 | The live catch chance was not shown on the throw | Medium | The lasso panel shows "Catch chance: up to N%" (and when the pass is included); the result line shows the chance rolled; a live switch turns every paid boost off if the display is off |
+| 7 | The chance shown could differ from the chance rolled | Low | The boost is decided once when the throw begins |
+| 8 | Finishing eggs charged Gems with a full stable | Low | Refused before charging, counting eggs already finished |
+| 9 | The shop showed pass owners the wrong expansion price | Low | Fixed in ShopView |
+| 10 | The Field Satchel pass did nothing | Low | Removed from sale until it has an effect |
+| 11 | A refunded or revoked pass kept working; a suspended pass could not be re-bought | Low | Suspended on join when Roblox says it is not owned (room and pens kept); re-buying resumes it |
+| 12 | Policy answers after a player left were kept; Blink limits on pass keys unchecked | Low | Fixed; limits enforced in validate |
+
+Still to do before any product goes live: real product ids after publishing, the shop and Gem UI, a Bait odds screen, and the Creator Hub pass description saying the Lasso Pass has no effect where paid random items are restricted.
+
+## 23 November 2026: the first catch made easier, and early catches counted (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/config/LassoConfig.luau` (FIRST_CATCH_*), `src/shared/Lasso.luau`, `src/shared/Capture.luau`, `src/shared/StoryTriggers.luau` (creditTame), `src/server/Story/StoryService.luau`, `tests/firstcatch.test.luau`, with CaptureService, BattleFlow, Grants, Snapshot and the story data. **No exploit found:** no client value is trusted, every new story flag is written only by server code after a server-judged catch, the wide zone never applies to giants or rarer creatures, nothing is duplicated or moved between accounts, and nothing paid is touched.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | At a chapter boundary, a catch in the old biome credited the next chapter's tame beat (a Greenwood catch after Chapter 1 would finish "A catch in the canyon") | Low | The Tame event now carries the creature's biome, and a catch credits only the chapter of its own biome (`StoryTriggers.creditTame`). Tested at the real boundary |
+| 2 | The Chapter 1 / Chapter 2 test passed without testing the boundary | Low | Added the boundary case after `sealed_path` (a Greenwood catch does not count; a canyon catch does) |
+| 3 | Saves from before the change get one helped catch | Info | `Capture.hasCaught` also counts a finished `third_creature` beat, which only a server-judged catch can finish |
+| 4 | The first-catch flag shared the `tamed:` prefix with beat credits | Info | Renamed to `caught:first` |
+| 5 | The story credit is written after the catch, not in the same change | Info | Nothing of value is lost if it is missed; left as is |
+
 ## 23 November 2026: finds and rewards, approval pack 7 (branch fix/studio-first-run)
 
 Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Finds.luau`, `FindIds.luau`, `FindTrail.luau`, `src/server/Finds/FindService.luau`, `src/client/World/FindsView.luau`, the content and config, `Profile.luau` (schema 1 to 2, migration, soundness checks), `Grants.luau`, `Net.blink`, `WorldService.luau` (sightings) and the tests.
