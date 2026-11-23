@@ -64,7 +64,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Mentor",
-				text = "Ah, you came! Welcome to Thistledown. The kettle is on.",
+				text = "Welcome to Thistledown! The sky flickered over the Crown last night. Odd. Kettle's on.",
 			},
 			{
 				speaker = "Mentor",
@@ -107,10 +107,10 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Rival",
-				text = "I lost?! To a beginner?! Rematch later. Much later. After snacks.",
+				text = "I lost?! To a beginner?! Rematch after snacks. Wait, what is that glint by your boot?",
 			},
-			{ speaker = "Rival", text = "Wait. What is that glint by your boot?" },
 			{ speaker = "Mentor", text = "Only a pebble. Come along. The lasso lesson is next." },
+			{ speaker = "Rival", text = "...Pretty pebble. Finders keepers." },
 		},
 	},
 	{
@@ -151,7 +151,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Mentor",
-				text = "Hurts last out here. Lead with whoever is freshest. Healing in town is free.",
+				text = "Bumps and bruises follow you home. Lead with your freshest. Healing in town is free.",
 			},
 			{
 				speaker = "Mentor",
@@ -170,7 +170,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Pip",
-				text = "Whoa! The hat has never lost before. Weaken them, then throw the rope.",
+				text = "Here is how I do it: weaken them first, then throw the rope. Easy!",
 			},
 		},
 	},
@@ -206,13 +206,16 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Mentor",
-				text = "Watch how two of mine mix their parts. This egg is yours.",
+				text = "Two of mine made this together. Every egg is a little surprise.",
 			},
 			{
 				speaker = "Mentor",
 				text = "Keep it in a pen. Open Creatures to see how it is doing.",
 			},
-			{ speaker = "Mentor", text = "Do not ask what you must be strong for. Just be ready." },
+			{
+				speaker = "Mentor",
+				text = "I once chased a perfect one. Never mind. Just be ready.",
+			},
 		},
 	},
 	{
@@ -266,7 +269,10 @@ local beats: { WorldTypes.Beat } = {
 				speaker = "Rival",
 				text = "I have trained every day since. My team is not what it was.",
 			},
-			{ speaker = "Rival", text = "I do not play around any more. Come on." },
+			{
+				speaker = "Rival",
+				text = "Remember my snack joke? I skipped snacks. I trained. Come on.",
+			},
 		},
 	},
 	{
@@ -304,7 +310,7 @@ local beats: { WorldTypes.Beat } = {
 			{ speaker = "Sign", text = "The Dust Canyon road. Shut to all but badge holders." },
 			{
 				speaker = "Mentor",
-				text = "It opens for you. Go on. I will stay and mend a few things.",
+				text = "The road is yours now. Go on. I will stay and mend a few things.",
 			},
 		},
 	},

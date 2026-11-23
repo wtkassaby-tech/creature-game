@@ -103,7 +103,7 @@ local beats: { WorldTypes.Beat } = {
 		grants = {},
 		lines = {
 			{
-				speaker = "Wren Ashby",
+				speaker = "Tobin Reede",
 				text = "Did you see? My Fenwhisk never got poisoned. Toxic ones just shrug it off.",
 			},
 		},
@@ -138,11 +138,11 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Mentor",
-				text = "They wake the giants and turn creatures to gem. That is why I made you strong.",
+				text = "They wake giants and turn creatures to gem. ...That is why I pushed you to grow strong.",
 			},
 			{
 				speaker = "Mentor",
-				text = "How it opened? Nobody knows. Truly. Take these tonics. Do not go near the grove.",
+				text = "How it opened? No one knows. Truly. Take these tonics. Do not go near the grove.",
 			},
 		},
 	},
@@ -157,7 +157,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Rival",
-				text = "The giant threw me off. The glint said it would obey me. It nearly did.",
+				text = "The giant threw me off. The glint swore it would kneel. It... nearly knelt.",
 			},
 			{
 				speaker = "Rival",
@@ -175,12 +175,12 @@ local beats: { WorldTypes.Beat } = {
 		grants = {},
 		lines = {
 			{
-				speaker = "Lookout",
+				speaker = "Dill",
 				text = "The grove is moving! Sloughback is awake, and fuming. Someone tried to rope it.",
 			},
 			{
-				speaker = "Lookout",
-				text = "Its lair is off Cypress Road. Its great waves give way to sand and frost.",
+				speaker = "Dill",
+				text = "Its lair is off Cypress Road. Sand and Frost types cut through its fog.",
 			},
 		},
 	},
@@ -195,7 +195,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Honora",
-				text = "Nobody passes my sluice with a weak team. Four of yours against four of mine.",
+				text = "My sluice stays shut to a weak team. Four of yours against four of mine.",
 			},
 			{
 				speaker = "Honora",
@@ -203,7 +203,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Honora",
-				text = "A boy with glinting shards poled past at dawn. He did not stop to battle.",
+				text = "Your friend in the torn jacket stole a punt and went round my sluice. Poled it badly.",
 			},
 		},
 	},
@@ -222,11 +222,11 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Honora",
-				text = "Steady, and poison-wise. The Bulrush Badge is yours. The sluice opens.",
+				text = "Poison-wise, and well played. The Bulrush Badge is yours. The sluice is open.",
 			},
 			{
 				speaker = "Vesper",
-				text = "Take this friend from all of Sedgeholm. It breathes a cold mist. You will need it.",
+				text = "A friend from Sedgeholm, for the cold ahead. It breathes a mist. You will need it.",
 			},
 		},
 	},
@@ -246,7 +246,7 @@ local beats: { WorldTypes.Beat } = {
 			{ speaker = "Sign", text = "The Frostline road. Shut to all but badge holders." },
 			{
 				speaker = "Jory",
-				text = "It opens for you. The air turns cold past the sluice. Wrap up, and mind the ice.",
+				text = "The air turns cold past the sluice. Wrap up, and mind the ice.",
 			},
 		},
 	},

@@ -64,7 +64,7 @@ local quests: { WorldTypes.Quest } = {
 	},
 	{
 		id = "dc_wardens_word",
-		name = "The Warden's Word",
+		name = "Tavish's Rope",
 		line = LINE,
 		step = 4,
 		optional = false,

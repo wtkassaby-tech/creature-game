@@ -56,7 +56,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Tamsin",
-				text = "A Greenwood badge? Come in, come in. The canyon is hard on the unready.",
+				text = "A Greenwood badge? Welcome to Kilnrest. The canyon is hard on the unready.",
 			},
 		},
 	},
@@ -162,7 +162,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Scout",
-				text = "That red mesa just stood up! Mesalith. It has been restless since the sky flickered.",
+				text = "That red mesa just stood up! Mesalith. Restless since the sky flickered over the Crown.",
 			},
 			{
 				speaker = "Scout",
@@ -185,7 +185,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Isolde",
-				text = "A boy in a green jacket shoved past me at dawn. His team gleamed like glass.",
+				text = "A boy in a green jacket shoved past me at dawn. His team had a strange amber shine.",
 			},
 		},
 	},
@@ -204,7 +204,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Isolde",
-				text = "Fast, and calm with it. The Cairn Badge is yours. Take this friend from Kilnrest.",
+				text = "A quick climb. The Cairn Badge is yours, and a friend from Kilnrest besides.",
 			},
 			{
 				speaker = "Isolde",
@@ -228,7 +228,7 @@ local beats: { WorldTypes.Beat } = {
 			{ speaker = "Sign", text = "The Tide Flats road. Shut to all but badge holders." },
 			{
 				speaker = "Isolde",
-				text = "It opens for you. The sea air bites, so pack a tonic or two. Go on.",
+				text = "Off you go, then. The sea air bites, so pack a tonic or two.",
 			},
 		},
 	},

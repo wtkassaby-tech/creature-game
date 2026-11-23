@@ -26,6 +26,11 @@ local holding = false
 local alpha = 0
 local target: Vector3? = nil
 local bound = false
+-- The ordinary shot when the look began. The camera is Scriptable for the look and blends from
+-- this saved shot: blending on top of the default camera compounded every frame (its next frame
+-- starts from the blended one), so the turn ran fast and never came back (review, 23 Nov 2026).
+local home: CFrame? = nil
+local homeType: Enum.CameraType? = nil
 
 local function placeOf(id: string): Layout.Point?
 	if not places then
@@ -43,6 +48,14 @@ local function unbind()
 		bound = false
 		RunService:UnbindFromRenderStep(STEP_NAME)
 	end
+	local camera = workspace.CurrentCamera
+	if camera and homeType then
+		if home then
+			camera.CFrame = home
+		end
+		camera.CameraType = homeType
+	end
+	home, homeType = nil, nil
 end
 
 local function step(dt: number)
@@ -67,7 +80,8 @@ local function step(dt: number)
 		+ Vector3.yAxis * CameraConfig.LOOK_RAISE
 		- flat.Unit * CameraConfig.LOOK_BACK
 	local aim = Vector3.new(target.X, CameraConfig.LOOK_AIM_HEIGHT, target.Z)
-	camera.CFrame = camera.CFrame:Lerp(CFrame.lookAt(at, aim), LookEase.smooth(alpha))
+	local from = home or camera.CFrame
+	camera.CFrame = from:Lerp(CFrame.lookAt(at, aim), LookEase.smooth(alpha))
 end
 
 -- Starts turning toward the place. A place that is not on the map does nothing.
@@ -78,6 +92,11 @@ function LookAt.start(placeId: string)
 	end
 	target = Vector3.new(point.x, 0, point.z)
 	holding = true
+	local camera = workspace.CurrentCamera
+	if camera and not home then
+		home, homeType = camera.CFrame, camera.CameraType
+		camera.CameraType = Enum.CameraType.Scriptable
+	end
 	if not bound then
 		bound = true
 		-- One step after the default camera, so this blend sees its result and overrides it.

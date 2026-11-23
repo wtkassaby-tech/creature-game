@@ -65,8 +65,8 @@ local quests: { WorldTypes.Quest } = {
 		requires = { "mr_immune_friend" },
 		requiresFlags = {},
 		objective = { kind = "BeatTamer", tamer = "mr_ysolde" },
-		goal = "Beat Ysolde Greaves on Route B",
-		offer = "Ysolde says the marsh lights are multiplying. Go and settle her nerves.",
+		goal = "Beat Marit Greaves on Route B",
+		offer = "Marit says the marsh lights are multiplying. Go and settle her nerves.",
 		done = "She says you were calm as still water. Take these, and some shells.",
 		rewards = {
 			{ kind = "Item", item = "GreatTonic", count = 2 },

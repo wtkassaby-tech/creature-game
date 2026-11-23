@@ -59,7 +59,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Odalys",
-				text = "A Cairn Badge! Come in, come in. Mind the tide, it is faster than it looks.",
+				text = "A Cairn Badge! Welcome to Saltwick. Mind the tide, it is faster than it looks.",
 			},
 		},
 	},
@@ -131,11 +131,11 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Mentor",
-				text = "The sky flickered over the sea last night. Weather, nothing more. Do not look for it.",
+				text = "The sky flickered over the sea last night. Weather. Truly. Do not look for it.",
 			},
 			{
 				speaker = "Mentor",
-				text = "Two baits are in the parcel. I should have told you more, long ago. At the Mire. Promise.",
+				text = "Two baits enclosed. I owe you the truth. I will bring it to the Mire myself.",
 			},
 		},
 	},
@@ -154,7 +154,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Marr",
-				text = "I thought I had dreamt it. Then the pools started to glint like glass.",
+				text = "I thought I had dreamt it. Then the creatures in the pools started to glint amber.",
 			},
 		},
 	},
@@ -168,12 +168,12 @@ local beats: { WorldTypes.Beat } = {
 		grants = {},
 		lines = {
 			{
-				speaker = "Lookout",
+				speaker = "Sorrel",
 				text = "That wreck is moving! Carrackon, the hermit of the bay, is wearing its ship.",
 			},
 			{
-				speaker = "Lookout",
-				text = "Its lair is off the Breakwater Road. Its big waves fear leaf and poison.",
+				speaker = "Sorrel",
+				text = "Its lair is off the Breakwater Road. Its big waves fear Leaf and Toxic types.",
 			},
 		},
 	},
@@ -219,7 +219,7 @@ local beats: { WorldTypes.Beat } = {
 			},
 			{
 				speaker = "Odalys",
-				text = "Gone like the tide. Here, take this friend from all of Saltwick.",
+				text = "Gone like the tide. Here, a friend from Saltwick to see you on your way.",
 			},
 		},
 	},
@@ -239,7 +239,7 @@ local beats: { WorldTypes.Beat } = {
 			{ speaker = "Sign", text = "The Mire road. Shut to all but badge holders." },
 			{
 				speaker = "Bastian",
-				text = "It opens for you. Thick air, slow water and lights that are not lanterns. Go slow.",
+				text = "Go slow. Thick air, slow water and lights that are not lanterns.",
 			},
 		},
 	},

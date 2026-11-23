@@ -40,6 +40,18 @@ local function places(): { [string]: Place }
 	return found
 end
 
+-- The places never change while the game runs: worked out once, on first use.
+local knownPlaces: { [string]: Place }? = nil
+local function placesOnce(): { [string]: Place }
+	local cached = knownPlaces
+	if cached then
+		return cached
+	end
+	local found = places()
+	knownPlaces = found
+	return found
+end
+
 -- Where a building stands, by the character who keeps it: "marlow_tuppence" -> Tuppence's Shop.
 local function buildingOf(npc: string): string?
 	for _, biome in Biomes do
@@ -92,7 +104,7 @@ end
 function BeatHint.resolve(beat: WorldTypes.Beat): (string, string?)
 	local trigger = beat.trigger
 	local target = trigger.target
-	local known = places()
+	local known = placesOnce()
 	if beat.hint and beat.hint ~= "" then
 		return beat.hint, nil
 	end

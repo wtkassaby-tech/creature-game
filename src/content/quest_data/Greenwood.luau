@@ -57,7 +57,7 @@ local quests: { WorldTypes.Quest } = {
 		requiresFlags = {},
 		objective = { kind = "BeatTamer", tamer = "gw_odette" },
 		goal = "Beat Odette Fenn on Route B",
-		offer = "A birdwatcher on River Road needs a lesson. Prove you can handle the road.",
+		offer = "Odette on River Road says nobody gets past her herons. Prove her wrong?",
 		done = "Word travels fast. You are ready for the old wood.",
 		rewards = { { kind = "Item", item = "GreatTonic", count = 2 } },
 	},
