@@ -9,12 +9,55 @@ local Props = require(script.Parent.Props)
 local Water = {}
 
 local BANK = Props.rgb(150, 130, 100)
+local FOAM = Props.rgb(228, 240, 238) -- the pale line where the water laps the bank
 local ROCK = Props.rgb(178, 172, 160)
 local REED = Props.rgb(96, 130, 70)
-local TOP = 0.25 -- the water's surface, just above the ground and below the lanes
+local BANK_TOP = 0.4 -- the bank's top: under a lane (0.42) and above the water
+local TOP = 0.13 -- the water's surface, sunk about 0.3 below the bank so it reads as cut into it
+local FOAM_TOP = TOP - 0.01 -- the foam lies just under the surface and shows only past its edge
+local FOAM_WIDER = 1.6 -- the foam is this much wider than the water
+local BANK_WIDE = 1.5 -- the bank's strip each side of the foam
+local INNER_DARK = 0.14 -- how much darker the deeper middle is
+local INNER_SHARE = 0.5 -- the deeper middle's share of the width
 
--- A stream along a line of points: slabs with a disc at each joint to hide the seams, a bank
--- strip each side, and flat stones along its edges every 8 to 12 studs.
+-- A strip of bank along each side of a leg of water, standing clear of its edge.
+local function banksAlong(folder: Instance, a: Vector3, b: Vector3, width: number)
+	local run = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+	if run.Magnitude < 0.05 then
+		return
+	end
+	local across = Vector3.new(-run.Z, 0, run.X).Unit
+	local off = (width + FOAM_WIDER) / 2 + BANK_WIDE / 2 - 0.3
+	for _, side in { -1, 1 } do
+		local shift = across * off * side
+		local bank = Props.strip(folder, a + shift, b + shift, BANK_WIDE, 0.3, BANK_TOP, BANK)
+		if bank then
+			bank.CanQuery = false
+			bank.CastShadow = false
+		end
+	end
+end
+
+-- A ring of bank round a round pool: short flat strips along the circle, just past the foam.
+local function bankRing(folder: Instance, centre: Vector3, radius: number)
+	local ringRadius = radius + FOAM_WIDER / 2 + BANK_WIDE / 2 - 0.3
+	local count = math.clamp(math.floor(ringRadius * 1.6), 10, 24)
+	for index = 1, count do
+		local a1 = (index - 1) / count * math.pi * 2
+		local a2 = index / count * math.pi * 2 + 0.05 -- a little overlap: no gaps at the joints
+		local from = centre + Vector3.new(math.cos(a1), 0, math.sin(a1)) * ringRadius
+		local to = centre + Vector3.new(math.cos(a2), 0, math.sin(a2)) * ringRadius
+		local bank = Props.strip(folder, from, to, BANK_WIDE, 0.3, BANK_TOP, BANK)
+		if bank then
+			bank.CanQuery = false
+			bank.CastShadow = false
+		end
+	end
+end
+
+-- A stream along a line of points: slabs with a disc at each joint to hide the seams, a paler
+-- foam line just wider than the water, a darker middle, a bank strip each side raised above
+-- the water, and flat stones along its edges every 8 to 12 studs.
 function Water.stream(
 	parent: Instance,
 	points: { Vector3 },
@@ -25,14 +68,18 @@ function Water.stream(
 	local folder = Instance.new("Folder")
 	folder.Name = "Water"
 	folder.Parent = parent
+	local deep = colour:Lerp(Color3.new(0, 0, 0), INNER_DARK)
 	for index = 1, #points do
 		local at = points[index]
+		Props.disc(folder, at, width + FOAM_WIDER, 0.3, FOAM_TOP, FOAM)
 		Props.disc(folder, at, width, 0.3, TOP, colour)
-		Props.disc(folder, at, width + 3, 0.3, TOP - 0.08, BANK)
+		Props.disc(folder, at, width * INNER_SHARE, 0.3, TOP + 0.01, deep)
 		local after = points[index + 1]
 		if after then
+			Props.strip(folder, at, after, width + FOAM_WIDER, 0.3, FOAM_TOP, FOAM)
 			Props.strip(folder, at, after, width, 0.3, TOP, colour)
-			Props.strip(folder, at, after, width + 3, 0.3, TOP - 0.08, BANK)
+			Props.strip(folder, at, after, width * INNER_SHARE, 0.3, TOP + 0.01, deep)
+			banksAlong(folder, at, after, width)
 		end
 	end
 	local along = 0
@@ -45,13 +92,13 @@ function Water.stream(
 			nextStone = along + pick:NextNumber(8, 12)
 			local run = (b - a).Unit
 			local side = Vector3.new(-run.Z, 0, run.X)
-				* (width / 2 + 0.6)
+				* ((width + FOAM_WIDER) / 2 + 0.8)
 				* (if index % 2 == 0 then 1 else -1)
 			local size = pick:NextNumber(1.6, 3)
 			Props.lump(
 				folder,
 				Vector3.new(size, 0.6, size * 0.8),
-				b + side + Vector3.yAxis * TOP,
+				b + side + Vector3.yAxis * BANK_TOP,
 				ROCK
 			)
 		end
@@ -60,8 +107,17 @@ end
 
 -- A round pool of water (the spring, the heron inlet), with a bank ring.
 function Water.pool(parent: Instance, centre: Vector3, radius: number, colour: Color3)
-	Props.disc(parent, centre, radius * 2, 0.3, TOP + 0.02, colour)
-	Props.disc(parent, centre, radius * 2 + 3, 0.3, TOP - 0.06, BANK)
+	Props.disc(parent, centre, radius * 2 + FOAM_WIDER, 0.3, FOAM_TOP, FOAM)
+	Props.disc(parent, centre, radius * 2, 0.3, TOP, colour)
+	Props.disc(
+		parent,
+		centre,
+		radius * 2 * INNER_SHARE,
+		0.3,
+		TOP + 0.01,
+		colour:Lerp(Color3.new(0, 0, 0), INNER_DARK)
+	)
+	bankRing(parent, centre, radius)
 end
 
 -- A clump of reeds: the painted Reeds, or three thin stems with brown tops.
@@ -110,9 +166,10 @@ function Water.pond(
 	local folder = Instance.new("Folder")
 	folder.Name = "Pond"
 	folder.Parent = parent
+	Props.disc(folder, centre, radius * 2 + FOAM_WIDER, 0.4, FOAM_TOP, FOAM)
 	Props.disc(folder, centre, radius * 2, 0.4, TOP, colour)
-	Props.disc(folder, centre, radius * 2 - 4, 0.4, TOP - 0.05, Props.rgb(70, 140, 180))
-	Props.disc(folder, centre, radius * 2 + 4, 0.3, 0.15, BANK)
+	Props.disc(folder, centre, radius * 2 - 4, 0.4, TOP + 0.01, Props.rgb(70, 140, 180))
+	bankRing(folder, centre, radius)
 	for index = 1, 8 do
 		local angle = index / 8 * math.pi * 2 + 0.3
 		local at = centre + Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + 1.5)

@@ -33,6 +33,18 @@ WorldConfig.EDGE_CLEAR_STUDS = 7
 WorldConfig.WALL_FOOTPRINT_STUDS = 4
 WorldConfig.WALL_HEIGHT_TOLERANCE = 0.3
 
+-- Raising a built part onto its tier (src/shared/TierFit.luau, src/server/World/Elevate.luau).
+-- A part longer than TIER_FIT_LONG whose two ends stand more than TIER_FIT_SPAN apart in height
+-- lies across a tier's edge. Heights within TIER_FIT_TOLERANCE count as one height. All [Default]s.
+WorldConfig.TIER_FIT_LONG = 10 -- studs
+WorldConfig.TIER_FIT_SPAN = 1
+WorldConfig.TIER_FIT_TOLERANCE = 0.3
+WorldConfig.TIER_FIT_STEP = 2 -- studs between the ground heights read over a part's footprint
+WorldConfig.TIER_FIT_CUT_STEP = 0.5 -- studs between the heights read along a strip when it is cut
+WorldConfig.TIER_FIT_MAX_PIECES = 8 -- a strip is cut into at most this many; over a slope it is not cut
+WorldConfig.TIER_FIT_MIN_RADIUS = 1 -- studs: the smallest a disc is trimmed to
+WorldConfig.TIER_FIT_MAX_SHIFT = 24 -- studs: the furthest a filler piece is slid to stand on one height
+
 WorldConfig.GRASS_RADIUS = 20 -- studs: the size of a patch
 WorldConfig.GRASS_SIDE_OFFSET = 40 -- how far to one side of the path a patch lies
 WorldConfig.GRASS_CHANCE = 0.22 -- each second the player is moving inside a patch

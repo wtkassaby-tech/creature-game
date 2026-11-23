@@ -13,6 +13,7 @@ local EdgeTrace = require("../src/shared/EdgeTrace")
 local Ground = require("../src/shared/Ground")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
+local MireDressing = require("../src/content/map_data/MireDressing")
 local PropModels = require("../src/content/PropModels")
 local Tamers = require("../src/content/Tamers")
 local TideFlatsDressing = require("../src/content/map_data/TideFlatsDressing")
@@ -50,9 +51,13 @@ local DRESSINGS: { [string]: WorldTypes.DressingSheet } = {
 	greenwood = GreenwoodDressing,
 	dust_canyon = DustCanyonDressing,
 	tide_flats = TideFlatsDressing,
+	mire = MireDressing,
 }
 
 local ordered: { WorldTypes.Biome } = {}
+-- The Mire is built but not yet open (ReleaseConfig), so it is not in Biomes: add it here.
+local mire: WorldTypes.Biome = require("../src/content/biome_data/Mire")
+Biomes[mire.id] = Biomes[mire.id] or mire
 for _, biome in Biomes do
 	table.insert(ordered, biome)
 end

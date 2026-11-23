@@ -15,11 +15,21 @@
       "server": { "$path": "src/server" },
       "ServerPackages": { "$path": "ServerPackages" }
     },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 128,
+        "StreamingTargetRadius": 512,
+        "StreamOutBehavior": "Opportunistic",
+        "StreamingIntegrityMode": "MinimumRadiusPause"
+      }
+    },
     "Lighting": {
       "$className": "Lighting",
       "$properties": {
         "LightingStyle": "Realistic",
-        "PrioritizeLightingQuality": true
+        "PrioritizeLightingQuality": false
       }
     },
     "StarterPlayer": {

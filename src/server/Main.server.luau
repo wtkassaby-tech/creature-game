@@ -2,7 +2,7 @@
 -- Starts the server and connects its services: saving, the world, battles, catching, breeding
 -- and the story all share the one loaded profile per player from the data service.
 --
--- Still to come: purchases, trading and the Circuit.
+-- Still to come: trading and the Circuit.
 -- Not yet run in Studio.
 
 local HttpService = game:GetService("HttpService")
@@ -31,6 +31,7 @@ local FindService = require(script.Parent.Finds.FindService)
 local GiantService = require(script.Parent.Giants.GiantService)
 local InventoryService = require(script.Parent.Inventory.InventoryService)
 local LiveConfigService = require(script.Parent.LiveConfig.LiveConfigService)
+local PurchaseService = require(script.Parent.Purchases.PurchaseService)
 local QuestService = require(script.Parent.Quests.QuestService)
 local SerialGrants = require(script.Parent.Serials.SerialGrants)
 local SerialService = require(script.Parent.Serials.SerialService)
@@ -202,11 +203,25 @@ AnalyticsFeed.start(function(player: Player, currency: AnalyticsMap.Currency): n
 	return if profile then AnalyticsMap.balance(profile, currency) else nil
 end)
 
+-- Purchases: the receipt handler, pass checks and the policy cache (plan 16).
+local purchaseHooks: PurchaseService.Hooks = {
+	getData = DataService.get,
+	changed = StateSync.changed,
+	save = DataService.saveSoon,
+	waitSaved = DataService.waitSaved,
+	notify = function(player, text)
+		Net.Notice.Fire(player, { Text = string.sub(text, 1, 120) })
+	end,
+	log = log,
+}
+PurchaseService.start(purchaseHooks)
+
 DataService.start(log, function(player: Player)
 	local profile = DataService.get(player)
 	if not profile then
 		return
 	end
+	PurchaseService.onLoaded(player, purchaseHooks)
 	StateSync.changed(player)
 	Grants.rollDay(profile, os.time())
 	claimWaiting(player, profile)
@@ -281,6 +296,7 @@ SerialGrants.start({
 	save = DataService.saveSoon,
 	log = log,
 })
+CaptureService.setPolicy(PurchaseService.paidRandomRestricted) -- the Lasso Pass needs an unrestricted policy
 CaptureService.setAlsoPing(GiantService.active) -- a giant capture needs a fresh reading too
 CaptureService.start(DataService.get, log, function(player)
 	StateSync.changed(player)
@@ -291,6 +307,8 @@ StateSync.start(DataService.get)
 InventoryService.start({
 	getData = DataService.get,
 	changed = StateSync.changed,
+	save = DataService.saveSoon,
+	paidRandomRestricted = PurchaseService.paidRandomRestricted,
 	claimWaiting = claimWaiting,
 	isLocked = isLocked,
 	isUnlocked = isUnlocked,

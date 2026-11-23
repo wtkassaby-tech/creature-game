@@ -37,6 +37,13 @@ function Props.part(parent: Instance, size: Vector3, cframe: CFrame, colour: Col
 	made.TopSurface = Enum.SurfaceType.Smooth
 	made.BottomSurface = Enum.SurfaceType.Smooth
 	made.CanCollide = false
+	made.CanTouch = false -- decoration: nothing listens for Touched
+	-- Thin pieces (ropes, rails, planks, discs, strips) and tiny ones (corks, pebbles, stones)
+	-- add shadow cost and no look. CanQuery is left alone: the battle stage relies on it.
+	local thin = math.min(size.X, size.Y, size.Z)
+	if thin <= 0.5 or math.max(size.X, size.Y, size.Z) < 1.2 then
+		made.CastShadow = false
+	end
 	made.Parent = parent
 	return made
 end

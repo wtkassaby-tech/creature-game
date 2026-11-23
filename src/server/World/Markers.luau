@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Layout = require(ReplicatedStorage.shared.Layout)
+local PersonModel = require(ReplicatedStorage.shared.PersonModel)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
@@ -30,6 +31,7 @@ local function block(
 	local part = Instance.new("Part")
 	part.Name = name
 	part.Anchored = true
+	part.CanTouch = false -- nothing listens for Touched on map blocks
 	part.Size = size
 	part.CFrame = cframe
 	part.Color = colour
@@ -53,6 +55,7 @@ local function label(part: BasePart, text: string)
 	board.AlwaysOnTop = false
 	board.MaxDistance = if big then 150 else 75
 	board.LightInfluence = 0
+	board:AddTag("WorldSign") -- so the device can find signs without walking the Workspace
 	board.Parent = part
 	local plate = Instance.new("Frame")
 	plate.Size = UDim2.fromScale(1, 1)
@@ -146,6 +149,7 @@ local function person(
 	model: string?
 ): Part
 	local body = block(parent, name, Vector3.new(3, 6, 2), at(point, groundAt(point) + 3.4), PERSON)
+	body:AddTag("Person") -- so the device can find people without walking the Workspace
 	-- People with a real name wear it; a keeper known only by an id ("healer_keeper") does not,
 	-- since the building already says what it is. The rival's battle id is left off.
 	local shown = string.gsub(name, "%s*%b()", "")
@@ -157,7 +161,7 @@ local function person(
 		look = Vector3.new(point.x, 0, point.z) + Props.facing(faces) * 10
 	end
 	-- The same name always dresses the same way.
-	local pick = Random.new(#name * 131 + string.byte(name, 1) + string.byte(name, #name))
+	local pick = Random.new(PersonModel.seedFor(name))
 	Dressing.person(body, pick, name, look, model)
 	return body
 end

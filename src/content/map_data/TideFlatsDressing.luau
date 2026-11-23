@@ -69,10 +69,10 @@ end
 
 local TideFlatsDressing: WorldTypes.DressingSheet = {
 	roomEdge = "Rocks", -- pockets by the sea are ringed with sea rocks
-	fieldGround = { 222, 202, 158 }, -- warmer sand: the paler one washed out to white
+	fieldGround = { 200, 182, 142 }, -- warmer sand, 10% darker (23 Nov 2026 map review: it glared)
 	ground = {
 		{ area = "wrack_beach", colour = { 226, 210, 168 } },
-		{ area = "rockpool_shelf", colour = { 84, 84, 92 } }, -- black rock
+		{ area = "rockpool_shelf", colour = { 120, 102, 92 } }, -- warm wet rock (it read as tarmac in grey)
 		{ area = "kelp_shallows", colour = { 120, 196, 196 } }, -- knee-deep water over sand
 		{ area = "sandbar_causeway", colour = { 240, 228, 190 } },
 		{ area = "mudflat_boardwalk", colour = { 140, 132, 120 } }, -- grey mud
@@ -88,7 +88,15 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 			colour = { 110, 96, 70 },
 		},
 	},
-	townGround = { 226, 208, 166 },
+	townGround = { 203, 187, 149 }, -- 10% darker than before
+	-- Soft patches of dry and wet sand (GroundTone).
+	blotches = {
+		colours = { { 216, 200, 158 }, { 192, 174, 136 }, { 178, 164, 132 }, { 208, 190, 146 } },
+		size = { 20, 36 },
+		town = 12,
+		verge = 8,
+		budget = 36,
+	},
 	laneColour = { 236, 224, 196 }, -- packed shell-sand
 	laneSurfaces = {
 		-- The sunken plank path through the shallows, and the boardwalk on stilts over the mud.
@@ -127,6 +135,7 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		rim = 60,
 		colour = { 196, 160, 116 },
 		rimColour = { 150, 116, 84 },
+		look = { kind = "Deck", colour = { 192, 154, 112 }, trim = { 110, 84, 60 } }, -- a plank quay deck
 	},
 
 	water = {},
@@ -318,8 +327,8 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 		house(124, -28, 270, "StiltHouse", 18, 18, 24),
 	},
 	props = {
-		-- The upturned boat at the heart of Net Square.
-		{ model = "Rowboat", at = p(0, -3), faces = 90, tall = 5, solid = true },
+		-- The upturned boat on Net Square's deck, off to one side.
+		{ model = "Rowboat", at = p(-9, -10), faces = 70, tall = 5, solid = true },
 		-- Afloat in the harbour, and the ferry at its jetty.
 		{ model = "Rowboat", at = p(30, 100), faces = 30, tall = 5 },
 		{ model = "Rowboat", at = p(70, 122), faces = 300, tall = 5 },
@@ -398,15 +407,15 @@ local TideFlatsDressing: WorldTypes.DressingSheet = {
 	-- How each tier looks: sand-brown banks (the shelf's top is black rock), one top colour for
 	-- tiers that touch at one height so no seam shows.
 	tierLooks = {
-		rock_shelf = { top = { 96, 98, 106 }, face = "SeaCliff" },
-		rock_shelf_w = { top = { 96, 98, 106 }, face = "SeaCliff" },
-		rock_terrace = { top = { 84, 86, 94 }, face = "SeaCliff" },
-		wreck_dune = { top = { 232, 218, 172 }, face = "Earth" },
+		rock_shelf = { top = { 122, 104, 94 }, face = "SeaCliff" },
+		rock_shelf_w = { top = { 122, 104, 94 }, face = "SeaCliff" },
+		rock_terrace = { top = { 108, 92, 84 }, face = "SeaCliff" },
+		wreck_dune = { top = { 232, 218, 172 }, face = "Sand" },
 		breakwater = { top = { 176, 186, 168 }, face = "SeaCliff" },
 	},
 
 	-- Sand banks close in the land past the edges; the sea is walled by Barriers (plan 12, step 1).
-	fill = { style = "Dune", band = 80, floor = { 210, 192, 144 } },
+	fill = { style = "Dune", band = 80, floor = { 189, 173, 130 } },
 
 	-- Smoke from the chandlery and the stilt houses, warm lamps, the Lamp Tower's and the Old
 	-- Light's glow, spray along the harbour's shore, mist over the water and a slow glint on every

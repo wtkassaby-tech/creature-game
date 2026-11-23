@@ -10,14 +10,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Ground = require(ReplicatedStorage.shared.Ground)
+local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local Props = require(script.Parent.Props)
+local Tiers = require(script.Parent.Tiers)
 
 local Links = {}
 
 local STONE = Props.rgb(204, 198, 180)
 local DIRT = Props.rgb(204, 180, 128)
-local CHEEK = Props.rgb(150, 158, 138)
 local RISER = 1.25 -- studs: the height of one tread
 local CHEEK_STEP = 5 -- studs: the length of one cheek piece
 local CHEEK_VISIBLE = 2.2 -- studs a cheek stands over the slope
@@ -25,6 +26,22 @@ local CHEEK_CORE = 8 -- studs the unseen core stands over the slope: taller than
 
 -- How many parts a build made.
 export type Counts = { slopes: number, treads: number, cheeks: number }
+
+-- The face of the tier at a link's high end (earth where the sheet gives no look for it).
+local function faceAtTop(
+	ground: Ground.Ground,
+	link: Ground.Link,
+	looks: { [string]: WorldTypes.TierLook }?
+): WorldTypes.TierFace
+	local x, z = link.bx, link.bz
+	if link.h0 > link.h1 then
+		x, z = link.ax, link.az
+	end
+	local tier = Ground.tierAt(ground, x, z)
+	local given = if tier and looks then looks[tier.id] else nil
+	local face: WorldTypes.TierFace = if given then given.face else "Earth"
+	return face
+end
 
 local function solid(part: BasePart, name: string)
 	part.Name = name
@@ -36,7 +53,8 @@ end
 function Links.build(
 	parent: Instance,
 	ground: Ground.Ground,
-	models: { stairs: string?, ramp: string? }?
+	models: { stairs: string?, ramp: string? }?,
+	looks: { [string]: WorldTypes.TierLook }?
 ): Counts
 	local stairsModel = if models and models.stairs then models.stairs else "StoneSteps"
 	local rampModel = if models and models.ramp then models.ramp else "EarthRamp"
@@ -53,6 +71,9 @@ function Links.build(
 		local flatTo = Vector3.new(link.bx, link.h1, link.bz)
 		local ahead = Vector3.new(link.ux, 0, link.uz)
 		local colour = if link.kind == "Stairs" then STONE else DIRT
+		-- The cheeks are the colour of the bank the flight climbs into: the wall colour of the tier
+		-- at its high end, from the sheet's tier looks (a cliff tier gives rock, an earth bank earth).
+		local cheekColour = Tiers.sideColour(faceAtTop(ground, link, looks))
 
 		-- The slope: a slab 1.2 thick, its top along the line from the low end to the high.
 		local middle = (flatFrom + flatTo) / 2
@@ -67,7 +88,11 @@ function Links.build(
 
 		-- The painted flight or ramp sits over the slab (which stays as the walking surface,
 		-- unseen): its low end, the model's front, toward the low tier.
-		local painted = Props.model(if link.kind == "Stairs" then stairsModel else rampModel)
+		-- A biome's own model that will not load falls back to the plain stone steps or earth
+		-- ramp, as Props.lamp does, so a flight is never left unpainted.
+		local painted = if link.kind == "Stairs"
+			then Props.model(stairsModel) or Props.model("StoneSteps")
+			else Props.model(rampModel) or Props.model("EarthRamp")
 		if painted then
 			local up = math.abs(rise)
 			local copy = painted:Clone()
@@ -82,7 +107,7 @@ function Links.build(
 			copy.CanCollide = false
 			copy.CanQuery = false
 			copy.CanTouch = false
-			copy.Name = if link.kind == "Stairs" then stairsModel else rampModel
+			copy.Name = painted.Name
 			copy:AddTag("WorldGround")
 			copy.Parent = folder
 			slab.Transparency = 1
@@ -131,7 +156,7 @@ function Links.build(
 						Vector3.new(centre.X, visibleTall / 2, centre.Z),
 						Vector3.new(facing.X, visibleTall / 2, facing.Z)
 					),
-					CHEEK
+					cheekColour
 				)
 				solid(wall, "Cheek")
 				if painted then
@@ -147,7 +172,7 @@ function Links.build(
 						Vector3.new(centre.X, coreTall / 2, centre.Z),
 						Vector3.new(facing.X, coreTall / 2, facing.Z)
 					),
-					CHEEK
+					cheekColour
 				)
 				solid(core, "CheekCore")
 				core.Transparency = 1

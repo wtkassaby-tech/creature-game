@@ -290,8 +290,10 @@ export type EdgeStyle =
 export type DressEdge = { left: EdgeStyle, right: EdgeStyle }
 -- A wall, cliff, dune ridge or sea wall that is not a corridor edge: the town's edge, a gorge wall.
 -- "Earth" is a grassy bank, "Cliff" painted rock.
-export type TierFace = "Earth" | "Cliff" | "SeaCliff" -- SeaCliff: grey sea rock (Tide Flats)
-export type TierLook = { top: Colour, face: TierFace }
+export type TierFace = "Earth" | "Cliff" | "SeaCliff" | "Sand" -- SeaCliff: wet sea rock (Tide Flats); Sand: a plain sandy bank with no facing model
+-- `model` names the painted wall a Cliff or SeaCliff face wears, instead of the default (CliffWall or
+-- SeaCliff), so a biome can pick its own. `side` colours the solid block under the facing.
+export type TierLook = { top: Colour, face: TierFace, model: string?, side: Colour? }
 export type DressWall = { points: { SheetPoint }, style: EdgeStyle, tall: number? }
 -- A flat axis-aligned rectangle of colour laid on the ground: the sea, a mudflat, a gorge floor.
 export type DressFlat = { from: SheetPoint, to: SheetPoint, colour: Colour, water: boolean }
@@ -366,6 +368,19 @@ export type ScatterKind = {
 	colours: { Colour },
 	count: { number }?,
 }
+-- Large soft patches of off-colour on the lawns and verges, so the ground is not one flat colour
+-- (src/shared/GroundTone.luau). `town` patches lie on the town's lawn, `verge` per 400 studs of
+-- route; `size` is the long axis; `budget` caps the patches (each is two flat discs).
+export type BlotchSheet = {
+	colours: { Colour },
+	size: { number },
+	town: number,
+	verge: number,
+	budget: number,
+}
+-- How a town's square is laid over the plain octagon: a plank deck, a walled flagstone yard or
+-- irregular duckboards, with a trim colour for its kerb, posts or walls.
+export type PlazaLook = { kind: "Deck" | "Yard" | "Duckboards", colour: Colour, trim: Colour }
 export type ScatterSheet = {
 	budget: number, -- the most parts the biome's scatter may add; the densities scale down to fit
 	kinds: { ScatterKind },
@@ -384,7 +399,14 @@ export type DressingSheet = {
 	footpaths: { DressLane }, -- mown paths with rustic rails both sides
 	stones: { { from: SheetPoint, to: SheetPoint } }, -- stepping stones
 	-- `colour` and `rimColour` are left out for the usual cobbles.
-	plaza: { at: SheetPoint, size: number, rim: number, colour: Colour?, rimColour: Colour? },
+	plaza: {
+		at: SheetPoint,
+		size: number,
+		rim: number,
+		colour: Colour?,
+		rimColour: Colour?,
+		look: PlazaLook?, -- how the square is laid over the octagon; left out, the plain paving
+	},
 	well: SheetPoint?,
 	water: { DressWater },
 	pools: { { at: SheetPoint, radius: number, colour: Colour } },
@@ -437,6 +459,7 @@ export type DressingSheet = {
 	fill: DressFill?, -- the trees, rock or dunes that close in everything past the edges
 	ambience: Ambience?, -- smoke, lights and drifting motes (src/server/World/Ambience)
 	scatter: ScatterSheet?, -- small ground detail on the lawns and verges (src/server/World/Detail)
+	blotches: BlotchSheet?, -- soft off-colour patches on the lawns and verges (GroundTone)
 	-- The painted models over the stairs and ramps between tiers (PropModels names); left out,
 	-- StoneSteps and EarthRamp. Mossy stone steps looked out of place in red rock.
 	linkModels: { stairs: string?, ramp: string? }?,

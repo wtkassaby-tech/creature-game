@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BattleSession = require(ReplicatedStorage.shared.BattleSession)
 local Biomes = require(ReplicatedStorage.content.Biomes)
 local Encounters = require(ReplicatedStorage.shared.Encounters)
+local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Tamers = require(ReplicatedStorage.content.Tamers)
@@ -27,6 +28,10 @@ local TestMap = require(script.Parent.TestMap)
 local TICK_SECONDS = 1
 local MIN_SECONDS_BETWEEN_RUSTLES = 0.5
 local MIN_SECONDS_BETWEEN_TRAVELS = 2
+local LAND_ABOVE_GROUND = 6 -- studs: a moved character drops onto the ground from here
+local STREAM_WAIT_SECONDS = 2 -- the most a move waits for the ground at its end to stream in
+-- Said whenever a wild battle is asked for before the story has opened them.
+local WILD_NOT_OPEN = "Your mentor has not shown you how yet. Follow the story first"
 
 export type Hooks = {
 	isReady: (player: Player) -> boolean, -- data loaded and not in a battle
@@ -52,6 +57,8 @@ local WorldService = {}
 local biomes: { WorldTypes.Biome } = {} -- every biome, in order
 local world: Layout.World
 local map: Layout.Map -- every biome's places together
+local grounds: { [number]: Ground.Ground } = {} -- each biome's levels, by biome number
+local ticking: { [Player]: boolean } = {} -- players whose world tick is still running
 local books: { [Player]: Encounters.Book } = {}
 -- Rest timers of players who left, by user id, kept for a while (see `book`).
 type Timers = { rustledAt: { [string]: number }, freeAt: { [string]: number }, leftAt: number }
@@ -176,6 +183,26 @@ local function holdAt(player: Player, at: Layout.Point): (WorldTypes.Hold?, Layo
 		hub
 end
 
+-- The height of the ground at a flat point of the world, from the biome's own levels (0 where it
+-- has none), so a moved character lands above the ground, never inside a raised tier.
+local function groundHeight(x: number, z: number): number
+	local number = Layout.biomeAt(world, { x = x, z = z })
+	local levels = if number then grounds[number] else nil
+	return if levels then Ground.heightAt(levels, x, z) else 0
+end
+
+-- Moves a player's character to `position`. The server is asked to stream the ground around the
+-- destination first (RequestStreamAroundAsync yields, so it has a timeout and runs in a pcall; a
+-- failure only costs a short pause on arrival).
+local function moveTo(player: Player, character: Model, position: Vector3)
+	pcall(function()
+		player:RequestStreamAroundAsync(position, STREAM_WAIT_SECONDS)
+	end)
+	if character.Parent then
+		character:PivotTo(CFrame.new(position))
+	end
+end
+
 -- Puts a player back at the foot of a road the story has not opened, with the reason. True if
 -- they were held.
 local function sendBack(player: Player, at: Layout.Point): boolean
@@ -185,7 +212,8 @@ local function sendBack(player: Player, at: Layout.Point): boolean
 	end
 	local character = player.Character
 	if character then
-		character:PivotTo(CFrame.new(hub.x + held.back.x, 6, hub.z + held.back.z))
+		local x, z = hub.x + held.back.x, hub.z + held.back.z
+		moveTo(player, character, Vector3.new(x, groundHeight(x, z) + LAND_ABOVE_GROUND, z))
 	end
 	lastAt[player] = nil
 	onMoved(player)
@@ -211,10 +239,19 @@ local function book(player: Player): Encounters.Book
 	return made
 end
 
+-- The hold the rustle spot or bait spot lies in, if the player has not opened it.
+local function heldSpot(player: Player, spotId: string): WorldTypes.Hold?
+	local place = map.places[spotId]
+	return if place then holdAt(player, { x = place.x, z = place.z }) else nil
+end
+
 local function send(player: Player)
 	local list = {}
+	-- No wild creature is shown before the lasso lesson (the device would walk into them and be
+	-- refused again and again), and none inside a stretch the story has not opened.
+	local wildOpen = isOpen(player, "wild_battles")
 	for _, spawn in book(player).spawns do
-		if not spawn.busy and #list < 32 then
+		if wildOpen and not spawn.busy and #list < 32 and holdAt(player, spawn.at) == nil then
 			table.insert(list, {
 				Id = spawn.id,
 				X = spawn.at.x,
@@ -234,13 +271,14 @@ function WorldService.sendTo(player: Player, placeId: string)
 	if character and place then
 		-- A place's point is where its keeper stands: land a few studs to the town side of it,
 		-- not on the keeper's head (first Studio run).
-		local at = Vector3.new(place.x, 6, place.z)
 		local hub = map.places[WorldService.biomeOfPlace(placeId).hub.id]
 		local toTown = if hub
 			then Vector3.new(hub.x - place.x, 0, hub.z - place.z)
 			else Vector3.zero
-		at += if toTown.Magnitude > 1 then toTown.Unit * 6 else Vector3.new(0, 0, 6)
-		character:PivotTo(CFrame.new(at))
+		local flat = Vector3.new(place.x, 0, place.z)
+			+ (if toTown.Magnitude > 1 then toTown.Unit * 6 else Vector3.new(0, 0, 6))
+		local at = Vector3.new(flat.X, groundHeight(flat.X, flat.Z) + LAND_ABOVE_GROUND, flat.Z)
+		moveTo(player, character, at)
 		lastAt[player] = nil -- do not count the jump as walking
 		onMoved(player)
 	end
@@ -275,11 +313,16 @@ function WorldService.engage(player: Player, spawnId: unknown): (Encounters.Spaw
 	end
 	-- A creature of a biome the player has not earned yet cannot be fought.
 	if not isOpen(player, "wild_battles") then
-		return nil, "Your mentor has not shown you how yet. Follow the story first"
+		return nil, WILD_NOT_OPEN
 	end
 	local wanted = if typeof(spawnId) == "number" then book(player).spawns[spawnId] else nil
 	if wanted and not engageAllowed(player, wanted.biome) then
 		return nil, "You have not earned your way here yet"
+	end
+	-- A creature inside a stretch the story has not opened cannot be fought, however it got there.
+	local held = if wanted then holdAt(player, wanted.at) else nil
+	if held then
+		return nil, held.line
 	end
 	local spawn, why = Encounters.engage(book(player), spawnId, at, now)
 	if spawn then
@@ -314,6 +357,12 @@ function WorldService.start(hooks: Hooks): () -> ()
 	world = Layout.world(biomes, Tamers.locals)
 	map = world.map
 	TestMap.build(biomes, world)
+	for _, biome in biomes do
+		local made = world.maps[biome.number]
+		if made then
+			grounds[biome.number] = Ground.new(biome.map, { x = made.hub.x, z = made.hub.z })
+		end
+	end
 	engageAllowed = hooks.mayEnter
 	isOpen = hooks.isOpen
 	onMoved = hooks.moved
@@ -323,65 +372,86 @@ function WorldService.start(hooks: Hooks): () -> ()
 	task.spawn(function()
 		while running do
 			for _, player in Players:GetPlayers() do
-				-- One player's trouble must never stop the world for everyone else.
-				local ok, problem = pcall(function()
-					local at = WorldService.position(player)
-					if at and hooks.isReady(player) and not sendBack(player, at) then
-						-- Only biomes the player has earned are alive for them.
-						local changed = false
-						local jumped: Encounters.Spawn? = nil
-						local before = lastAt[player]
-						lastAt[player] = at
-						local walking = before ~= nil
-							and Layout.distance(before, at) >= WorldConfig.GRASS_MIN_MOVE
-						local ambush = hooks.canBeAmbushed(player)
-						for _, biome in biomes do
-							if hooks.mayEnter(player, biome.number) then
-								if
-									Encounters.tick(
-										book(player),
-										biome,
-										map,
-										at,
-										os.clock(),
-										seed(),
-										newId
-									)
-								then
-									changed = true
-								end
-								-- Long grass: only the server's own reading of where the player
-								-- is and whether they are walking decides this.
-								if ambush and not jumped then
-									jumped = Encounters.grass(
-										book(player),
-										biome,
-										map,
-										at,
-										walking,
-										os.clock(),
-										seed(),
-										newId
-									)
+				-- Each player's look runs on its own thread (a move waits for the ground to stream in),
+				-- and never twice at once.
+				if ticking[player] then
+					continue
+				end
+				ticking[player] = true
+				task.spawn(function()
+					-- One player's trouble must never stop the world for everyone else.
+					local ok, problem = pcall(function()
+						local at = WorldService.position(player)
+						if at and hooks.isReady(player) and not sendBack(player, at) then
+							-- Only biomes the player has earned are alive for them.
+							local changed = false
+							local jumped: Encounters.Spawn? = nil
+							local before = lastAt[player]
+							lastAt[player] = at
+							local walking = before ~= nil
+								and Layout.distance(before, at) >= WorldConfig.GRASS_MIN_MOVE
+							local ambush = hooks.canBeAmbushed(player)
+							-- Before the lasso lesson nothing wild is made or shown at all.
+							local wildOpen = isOpen(player, "wild_battles")
+							for _, biome in biomes do
+								if wildOpen and hooks.mayEnter(player, biome.number) then
+									if
+										Encounters.tick(
+											book(player),
+											biome,
+											map,
+											at,
+											os.clock(),
+											seed(),
+											newId
+										)
+									then
+										changed = true
+									end
+									-- Long grass: only the server's own reading of where the player
+									-- is and whether they are walking decides this.
+									if ambush and not jumped then
+										jumped = Encounters.grass(
+											book(player),
+											biome,
+											map,
+											at,
+											walking,
+											os.clock(),
+											seed(),
+											newId
+										)
+									end
 								end
 							end
+							-- Nothing stands inside a stretch the story has not opened (River Road waits for
+							-- Marlow's errand), even where a fill near its edge reached over.
+							if wildOpen then
+								for id, spawn in book(player).spawns do
+									if not spawn.busy and holdAt(player, spawn.at) ~= nil then
+										Encounters.remove(book(player), id)
+										changed = true
+									end
+								end
+							end
+							if changed then
+								send(player)
+							end
+							hooks.onAt(player, at)
+							if jumped then
+								hooks.onAmbush(player, jumped)
+							end
+						else
+							-- Not walking the world (in a battle, loading): the next look starts
+							-- fresh, so standing still after a battle never counts as walking.
+							lastAt[player] = nil
 						end
-						if changed then
-							send(player)
-						end
-						hooks.onAt(player, at)
-						if jumped then
-							hooks.onAmbush(player, jumped)
-						end
-					else
-						-- Not walking the world (in a battle, loading): the next look starts
-						-- fresh, so standing still after a battle never counts as walking.
-						lastAt[player] = nil
+					end)
+					if not ok then
+						warn(`[WorldTick] {player.UserId}: {problem}`)
 					end
+					ticking[player] = nil
 				end)
-				if not ok then
-					warn(`[WorldTick] {player.UserId}: {problem}`)
-				end
 			end
 			task.wait(TICK_SECONDS)
 		end
@@ -398,10 +468,11 @@ function WorldService.start(hooks: Hooks): () -> ()
 			return
 		end
 		if not isOpen(player, "wild_battles") then
-			return hooks.refuse(
-				player,
-				"Your mentor has not shown you how yet. Follow the story first"
-			)
+			return hooks.refuse(player, WILD_NOT_OPEN)
+		end
+		local held = heldSpot(player, value.SpotId)
+		if held then
+			return hooks.refuse(player, held.line)
 		end
 		-- The spot may be in any biome the player has earned.
 		local spawn: Encounters.Spawn? = nil
@@ -449,10 +520,11 @@ function WorldService.start(hooks: Hooks): () -> ()
 			return
 		end
 		if not isOpen(player, "wild_battles") then
-			return hooks.refuse(
-				player,
-				"Your mentor has not shown you how yet. Follow the story first"
-			)
+			return hooks.refuse(player, WILD_NOT_OPEN)
+		end
+		local held = heldSpot(player, value.SpotId)
+		if held then
+			return hooks.refuse(player, held.line)
 		end
 		local problem = hooks.baitProblem(player)
 		if problem then
@@ -508,6 +580,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 	local leaving = Players.PlayerRemoving:Connect(function(player)
 		lastEngage[player] = nil
 		lastTravel[player] = nil
+		ticking[player] = nil
 		local left = books[player]
 		if left then
 			timers[player.UserId] =

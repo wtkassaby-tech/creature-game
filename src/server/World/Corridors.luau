@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local EdgeTrace = require(ReplicatedStorage.shared.EdgeTrace)
 local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
+local PropModels = require(ReplicatedStorage.content.PropModels)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local Edges = require(script.Parent.Edges)
@@ -22,6 +23,9 @@ local Shapes = require(script.Parent.Shapes)
 local Corridors = {}
 
 type Corridor = EdgeTrace.Corridor
+
+local TREE_SIZE_VARY = 0.06 -- each tree, hedge bush and fill piece is up to this much bigger or smaller
+local BUSH_TREE_SCALE = 0.32 -- the painted Bush stands 15 to 24 studs at scale 1: this makes a 5 to 8 stud shrub
 
 -- A run of edge in one style, with the outward normal and the distance along at each point.
 type Run = {
@@ -128,12 +132,26 @@ function Corridors.edges(
 	local function keyAt(corridor: Corridor, along: number): string
 		return corridor.areaAt(along) or corridor.id
 	end
+	-- The default woodland mix where a stretch names no tree: oak-like Trees and Pines, with Birch
+	-- and low Bush clumps where those painted models exist, so a route does not repeat one tree.
+	-- Each tree is a touch bigger or smaller (about 6%) from the seeded `pick`, never math.random.
 	local function treeFor(corridor: Corridor, along: number): (string, number)
 		local special = dressing.corridorTrees[keyAt(corridor, along)]
+		local jitter = pick:NextNumber(1 - TREE_SIZE_VARY, 1 + TREE_SIZE_VARY)
 		if special then
-			return special.model, special.scale
+			return special.model, special.scale * jitter
 		end
-		return if pick:NextNumber() < 0.6 then "Tree" else "Pine", 1
+		local roll = pick:NextNumber()
+		if roll < 0.4 then
+			return "Tree", jitter
+		elseif roll < 0.62 then
+			return "Pine", jitter
+		elseif roll < 0.82 and PropModels.Birch then
+			return "Birch", jitter
+		elseif PropModels.Bush then
+			return "Bush", BUSH_TREE_SCALE * jitter -- a clump of shrub, not a 20-stud tree
+		end
+		return "Tree", jitter
 	end
 	local styles = dressing.edges
 	local function styleOf(key: string, side: number): WorldTypes.EdgeStyle
@@ -321,7 +339,8 @@ function Corridors.edges(
 				plant(
 					ring.at + out * (ring.radius + pick:NextNumber(6, 12)),
 					if ringTrees then ringTrees.model elseif k % 3 == 0 then "Pine" else "Tree",
-					if ringTrees then ringTrees.scale else 1.2
+					(if ringTrees then ringTrees.scale else 1.2)
+						* pick:NextNumber(1 - TREE_SIZE_VARY, 1 + TREE_SIZE_VARY)
 				)
 			end
 		end

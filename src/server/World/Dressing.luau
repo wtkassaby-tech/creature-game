@@ -11,6 +11,7 @@
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
+local PersonModel = require(game:GetService("ReplicatedStorage").shared.PersonModel)
 local Props = require(script.Parent.Props)
 local Shapes = require(script.Parent.Shapes)
 
@@ -47,6 +48,26 @@ local ROOFS: { [string]: Color3 } = {
 local BLOOMS: { Color3 } =
 	{ rgb(250, 220, 90), rgb(240, 130, 150), rgb(250, 250, 250), rgb(170, 140, 240) }
 
+-- The one effect of a class under Lighting: the first one found (the client's Climate drives the
+-- first), a new one from `make` if there is none, and every extra destroyed. The saved place
+-- already carries some, and Dressing.mood used to add more at every start, so play had three of
+-- each.
+local function onlyOne(class: string, make: () -> Instance): Instance
+	local found: Instance? = nil
+	for _, child in Lighting:GetChildren() do
+		if child.ClassName == class then
+			if found == nil then
+				found = child
+			else
+				child:Destroy()
+			end
+		end
+	end
+	local one = found or make()
+	one.Parent = Lighting
+	return one
+end
+
 -- Golden late-afternoon light, a little warm haze and drifting clouds (the art direction in
 -- docs/research/games/07_APPEAL.md, section 4).
 function Dressing.mood()
@@ -62,31 +83,35 @@ function Dressing.mood()
 	Lighting.EnvironmentDiffuseScale = 0.6
 	Lighting.EnvironmentSpecularScale = 0.06 -- matte clay: low shine (Studio, 23 Nov)
 
-	local air = Instance.new("Atmosphere")
+	local air = onlyOne("Atmosphere", function()
+		return Instance.new("Atmosphere")
+	end) :: Atmosphere
 	air.Density = 0.3
 	air.Offset = 0.2
 	air.Color = rgb(255, 228, 196)
 	air.Decay = rgb(176, 144, 150)
 	air.Glare = 0.2
 	air.Haze = 0.8
-	air.Parent = Lighting
 
-	local grade = Instance.new("ColorCorrectionEffect")
+	local grade = onlyOne("ColorCorrectionEffect", function()
+		return Instance.new("ColorCorrectionEffect")
+	end) :: ColorCorrectionEffect
 	grade.Saturation = 0.08 -- the painted models are already rich
 	grade.Contrast = 0.1
 	grade.TintColor = rgb(255, 242, 222)
-	grade.Parent = Lighting
 
-	local glow = Instance.new("BloomEffect")
+	local glow = onlyOne("BloomEffect", function()
+		return Instance.new("BloomEffect")
+	end) :: BloomEffect
 	glow.Intensity = 0.3
 	glow.Size = 24
 	glow.Threshold = 1.2
-	glow.Parent = Lighting
 
-	local rays = Instance.new("SunRaysEffect")
+	local rays = onlyOne("SunRaysEffect", function()
+		return Instance.new("SunRaysEffect")
+	end) :: SunRaysEffect
 	rays.Intensity = 0.06
 	rays.Spread = 0.6
-	rays.Parent = Lighting
 
 	local terrain = Workspace:FindFirstChildOfClass("Terrain")
 	if terrain and not terrain:FindFirstChildOfClass("Clouds") then
@@ -224,21 +249,10 @@ function Dressing.noticeOak(trunk: Part, facing: Vector3, pick: Random)
 end
 
 -- Which villager model a person wears, from their name. Tamers out on the routes are one of
--- two, chosen by `pick`, so the same tamer always looks the same.
+-- two, chosen by `pick`, so the same tamer always looks the same. The rule itself is
+-- src/shared/PersonModel, shared with the dialogue faces so the two can never drift apart.
 local function villager(name: string, pick: Random): string
-	local lower = string.lower(name)
-	if string.find(lower, "mentor", 1, true) then
-		return "Mentor"
-	elseif string.find(lower, "rival", 1, true) then
-		return "Rival"
-	elseif string.find(lower, "healer", 1, true) then
-		return "Carer"
-	elseif string.find(lower, "breeder", 1, true) then
-		return "Grandmother"
-	elseif string.find(lower, "tuppence", 1, true) or string.find(lower, "_keeper", 1, true) then
-		return "Shopkeeper"
-	end
-	return if pick:NextNumber() < 0.5 then "Tamer" else "GirlTamer"
+	return PersonModel.villager(name, pick:NextNumber())
 end
 
 -- Gives a plain block of a person a body: a painted villager if there is one for them (or the

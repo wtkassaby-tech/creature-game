@@ -58,7 +58,7 @@ end
 
 local DustCanyonDressing: WorldTypes.DressingSheet = {
 	roomEdge = "Boulders", -- pockets and dead ends are ringed with boulders, not hedges
-	fieldGround = { 202, 154, 106 }, -- a warmer, deeper sand: the paler one washed out to white
+	fieldGround = { 182, 139, 95 }, -- a warmer, deeper sand, 10% darker (23 Nov 2026 map review)
 	ground = {
 		{ area = "pebble_wash", colour = { 214, 204, 182 } },
 		{ area = "tumbleweed_flats", colour = { 226, 196, 140 } },
@@ -68,7 +68,15 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		{ area = "spire_garden", colour = { 206, 160, 120 } },
 		{ area = "stair_approach", colour = { 200, 184, 160 } },
 	},
-	townGround = { 220, 176, 126 },
+	townGround = { 198, 158, 113 }, -- 10% darker than before
+	-- Soft patches of paler and deeper sand (GroundTone).
+	blotches = {
+		colours = { { 210, 170, 122 }, { 184, 142, 100 }, { 174, 130, 92 }, { 216, 180, 134 } },
+		size = { 20, 38 },
+		town = 12,
+		verge = 8,
+		budget = 36,
+	},
 	laneColour = { 232, 206, 160 },
 	laneSurfaces = {
 		-- The Redstone Steps in red flagstone, and the stair road in stone.
@@ -113,8 +121,9 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 		rim = 60,
 		colour = { 200, 112, 82 },
 		rimColour = { 150, 84, 60 },
+		look = { kind = "Yard", colour = { 212, 130, 94 }, trim = { 150, 84, 60 } }, -- a walled kiln yard
 	},
-	well = p(0, 0),
+	well = p(11, -9), -- off-centre: the yard is walled, the well stands in its corner
 
 	water = {},
 	pools = {
@@ -406,7 +415,7 @@ local DustCanyonDressing: WorldTypes.DressingSheet = {
 	},
 
 	-- Spires and mesas close in everything past the edges (docs/plans/12_MAP_STRUCTURE.md, step 1).
-	fill = { style = "Rock", band = 80, floor = { 170, 118, 84 } },
+	fill = { style = "Rock", band = 80, floor = { 153, 106, 76 } },
 
 	-- Smoke from the kiln cottages, warm lamps, the Cradle Kiln's glow and embers, dust motes over
 	-- the wash and the town, a glint on the Seep. The chimney offsets and the kiln's mouth are

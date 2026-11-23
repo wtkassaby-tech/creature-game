@@ -426,7 +426,7 @@ local function buildBiome(
 	-- Raised ground: lift everything laid so far onto its tier, then build the tiers and the
 	-- stairs and ramps between them at their own heights.
 	if dressing and not Ground.isFlat(levels) then
-		local lifted, across = Elevate.apply(world, levels, {})
+		local lifted, across, fitted = Elevate.apply(world, levels, {})
 		local near = Enclosure.index(shapes, 40)
 		local tierCounts = Tiers.build(
 			world,
@@ -436,12 +436,15 @@ local function buildBiome(
 				return Enclosure.indexed(near, x, z) <= 40
 			end
 		)
-		local linkCounts = Links.build(world, levels, dressing.linkModels)
+		local linkCounts = Links.build(world, levels, dressing.linkModels, dressing.tierLooks)
 		print(
 			`[World] {biome.id}: {lifted} parts lifted onto {#levels.tiers} tiers; `
 				.. `{tierCounts.blocks} tier blocks, {tierCounts.faces} wall facings, `
 				.. `{tierCounts.notches} ledge notches; `
-				.. `{linkCounts.slopes} slopes, {linkCounts.treads} treads, {linkCounts.cheeks} cheeks`
+				.. `{linkCounts.slopes} slopes, {linkCounts.treads} treads, {linkCounts.cheeks} cheeks; `
+				.. `fitted across edges: {fitted.cut} strips cut, {fitted.trimmed} discs trimmed, `
+				.. `{fitted.stretched} walls stretched, {fitted.slid} slid, {fitted.sunk} sunk, `
+				.. `{fitted.left} emitters left`
 		)
 		if #across > 0 then
 			warn(`[World] {biome.id}: parts lying across two heights: {table.concat(across, ", ")}`)

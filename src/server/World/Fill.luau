@@ -91,6 +91,11 @@ local function mass(
 	end
 end
 
+-- About 6% either way, from the spot's own pick (so it never repeats a row's one height).
+local function sizeVary(pick: number): number
+	return 0.94 + ((pick * 13.37) % 1) * 0.12
+end
+
 -- One thing in the row at the edge: a painted tree or spire at full height, or a lump.
 local function edge(
 	parent: Instance,
@@ -100,8 +105,12 @@ local function edge(
 	pick: number
 )
 	local facing = facingOf(second(pick))
+	tall *= sizeVary(pick) -- each one a little taller or shorter than its neighbour
 	if style == "Forest" then
-		local painted = Props.model(if pick < 0.62 then "Tree" else "Pine")
+		-- Oak-like Tree, Pine and the paler Birch where it loads, so a wood is not one tree.
+		local painted = Props.model(
+			if pick < 0.45 then "Tree" elseif pick < 0.75 then "Pine" else "Birch"
+		) or Props.model(if pick < 0.62 then "Tree" else "Pine")
 		if painted then
 			quiet(Props.stand(parent, painted, foot, tall, facing))
 			return
@@ -143,7 +152,7 @@ function Fill.build(parent: Instance, style: WorldTypes.FillStyle, plan: Enclosu
 		edge(folder, style, Vector3.new(spot.x, 0, spot.z), spot.tall, spot.pick)
 	end
 	for _, spot in plan.masses do
-		local across = 24 + second(spot.pick) * 8
+		local across = (24 + second(spot.pick) * 8) * sizeVary(spot.pick)
 		mass(folder, style, Vector3.new(spot.x, 0, spot.z), across, spot.tall, spot.pick)
 	end
 	for _, spot in plan.blocks do

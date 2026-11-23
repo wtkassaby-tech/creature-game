@@ -215,6 +215,16 @@ function Ground.tierHeight(g: Ground, x: number, z: number): number
 	return 0
 end
 
+-- The tier under a flat point (the one drawn last where two overlap), if any.
+function Ground.tierAt(g: Ground, x: number, z: number): Tier?
+	for index = #g.tiers, 1, -1 do
+		if Ground.distance(g.tiers[index].shape, x, z) < 0 then
+			return g.tiers[index]
+		end
+	end
+	return nil
+end
+
 -- The stairs or ramp a flat point is on (within `pad` studs of it), if any.
 function Ground.linkAt(g: Ground, x: number, z: number, pad: number?): Link?
 	local extra = pad or 0

@@ -162,8 +162,8 @@ function Fences.hedge(parent: Instance, points: { Vector3 }, waters: { Water })
 		for _, at in Props.resample(run, BUSH_SPACING) do
 			local top = Vector3.new(at.X, 5.4, at.Z)
 			if bush then
-				-- 7 to 8 studs tall, each turned its own way, so the top is an uneven line.
-				local tall = 7 + ((at.X * 7 + at.Z * 3) % 3) * 0.5
+				-- about 7 to 8 studs tall (6% either way), each turned its own way, so the top is an uneven line.
+				local tall = 7.5 * (0.94 + ((at.X * 7 + at.Z * 3) % 12) / 100) -- about 6% either way
 				local foot = Vector3.new(at.X, 0, at.Z)
 				Props.stand(parent, bush, foot, tall, Vector3.new(at.Z % 7 - 3, 0, at.X % 5 - 2))
 			else

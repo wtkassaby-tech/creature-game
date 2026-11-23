@@ -20,6 +20,8 @@ local Tiers = {}
 
 local EARTH = Props.rgb(150, 118, 82)
 local ROCK = Props.rgb(176, 120, 84)
+local SEA_ROCK = Props.rgb(112, 98, 92) -- wet, warm-grey rock: the tide-washed shelves
+local SAND = Props.rgb(222, 204, 160)
 local GRASS = Props.rgb(142, 198, 108)
 local TRODDEN = Props.rgb(214, 190, 138)
 local TOP_THICK = 0.3
@@ -37,23 +39,38 @@ local function solid(part: BasePart, name: string)
 	part:AddTag("WorldGround")
 end
 
-local function look(
-	looks: { [string]: WorldTypes.TierLook }?,
-	tier: Ground.Tier
-): (Color3, WorldTypes.TierFace)
+-- The colour of a tier's walls: bare rock under a cliff face, wet rock under a sea cliff, sand under a
+-- sandbank, earth otherwise. The stairs and ramps
+-- take it for their cheeks, so they read as cut into the same bank (Links.luau).
+function Tiers.sideColour(face: WorldTypes.TierFace): Color3
+	if face == "Cliff" then
+		return ROCK
+	elseif face == "SeaCliff" then
+		return SEA_ROCK
+	elseif face == "Sand" then
+		return SAND
+	end
+	return EARTH
+end
+
+-- A tier's look: its top colour, its face, the colour of the block under the facing (the face's own
+-- unless the sheet names one) and the painted wall it wears (nil: the face's default).
+type Look = { top: Color3, face: WorldTypes.TierFace, side: Color3, model: string? }
+
+local function look(looks: { [string]: WorldTypes.TierLook }?, tier: Ground.Tier): Look
 	local given = if looks then looks[tier.id] else nil
 	if given then
-		return Props.colour(given.top), given.face
+		local side = if given.side then Props.colour(given.side) else Tiers.sideColour(given.face)
+		return { top = Props.colour(given.top), face = given.face, side = side, model = given.model }
 	end
 	local plain: WorldTypes.TierFace = "Earth"
-	return GRASS, plain
+	return { top = GRASS, face = plain, side = EARTH, model = nil }
 end
 
 -- The block and the top of one tier: a box, a disc or a strip of two discs and a bar.
-local function block(parent: Instance, tier: Ground.Tier, top: Color3, face: WorldTypes.TierFace)
+local function block(parent: Instance, tier: Ground.Tier, top: Color3, side: Color3)
 	local s = tier.shape
 	local height = tier.height
-	local side = if face == "Cliff" then ROCK else EARTH
 	local bodyTall = height - TOP_THICK
 	if s.kind == "Box" then
 		local w, d = s.bx - s.ax, s.bz - s.az
@@ -128,16 +145,26 @@ function Tiers.build(
 	folder.Parent = parent
 	local counts: Counts = { blocks = 0, faces = 0, notches = 0 }
 	local faceOf: { [string]: WorldTypes.TierFace } = {}
+	local modelOf: { [string]: string? } = {}
 	for _, tier in ground.tiers do
-		local top: Color3, face: WorldTypes.TierFace = look(looks, tier)
-		faceOf[tier.id] = face
-		block(folder, tier, top, face)
+		local made = look(looks, tier)
+		faceOf[tier.id] = made.face
+		modelOf[tier.id] = made.model
+		block(folder, tier, made.top, made.side)
 		counts.blocks += 1
 	end
 
-	local cliff = Props.model("CliffWall")
 	local earth = Props.model("EarthBank")
-	local seaCliff = Props.model("SeaCliff")
+	-- The painted wall of a Cliff or SeaCliff face: the biome's own model if its look names one.
+	local function wallFor(tier: string): MeshPart?
+		local face = faceOf[tier]
+		if face ~= "Cliff" and face ~= "SeaCliff" then
+			return nil
+		end
+		local named = modelOf[tier]
+		local default = if face == "Cliff" then "CliffWall" else "SeaCliff"
+		return (if named then Props.model(named) else nil) or Props.model(default)
+	end
 	for _, run in Ground.edges(ground, 3) do
 		local points: { Vector3 } = {}
 		for _, point in run.points do
@@ -185,10 +212,7 @@ function Tiers.build(
 				end
 			end
 		end
-		local rock = if faceOf[run.tier] == "Cliff"
-			then cliff
-			elseif faceOf[run.tier] == "SeaCliff" then seaCliff
-			else nil
+		local rock = wallFor(run.tier)
 		if rock and out.Magnitude > 0.5 then
 			local tall = run.high - run.low
 			for _, piece in Fences.pieces(Props.resample(points, 1)) do

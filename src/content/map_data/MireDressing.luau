@@ -200,6 +200,14 @@ local MireDressing: WorldTypes.DressingSheet = {
 		{ area = "sluice_rise", colour = { 120, 100, 72 } }, -- packed peat
 	},
 	townGround = { 102, 108, 72 },
+	-- Soft patches of moss and peat (GroundTone).
+	blotches = {
+		colours = { { 92, 104, 64 }, { 114, 118, 76 }, { 86, 90, 62 }, { 76, 88, 66 } },
+		size = { 16, 30 },
+		town = 12,
+		verge = 8,
+		budget = 30,
+	},
 	laneColour = { 138, 118, 86 }, -- damp boards and packed mud
 	laneSurfaces = {
 		-- The reedfringe duckboards and the boardwalk of the old hamlet (on stilts).
@@ -235,6 +243,7 @@ local MireDressing: WorldTypes.DressingSheet = {
 		rim = 54,
 		colour = { 150, 118, 84 },
 		rimColour = { 104, 80, 58 },
+		look = { kind = "Duckboards", colour = { 148, 116, 80 }, trim = { 92, 70, 50 } }, -- loose duckboards
 	},
 
 	water = {},
@@ -446,7 +455,7 @@ local MireDressing: WorldTypes.DressingSheet = {
 	coop = p(-108, 48),
 	-- The Bell Cypress, over the middle of Bell Square: the landmark tree drawn with the
 	-- painted Cypress, on an unseen trunk that collides; it also keeps the fill off the square.
-	ancientTree = { at = p(0, -2), tall = 56, model = "Cypress" },
+	ancientTree = { at = p(-10, -8), tall = 56, model = "Cypress" },
 
 	-- How each tier looks: boarded tops over earth banks, one top colour per tier.
 	tierLooks = {
@@ -459,6 +468,96 @@ local MireDressing: WorldTypes.DressingSheet = {
 
 	-- Walls of tall trees close in the swamp past the edges; the water is walled by Barriers.
 	fill = { style = "Swamp", band = 70, floor = { 46, 64, 50 } },
+
+	-- Small clay detail on the boards and banks (src/shared/DetailPlan.luau): moss tufts, dark peat
+	-- clods, shallow puddles and lily pads on the lawn and verges; peat crumbs fringe the lanes.
+	-- Puddles and pads are flat lumps (the "Shells" shape), tinted bog-water and leaf green.
+	scatter = {
+		budget = 520,
+		kinds = {
+			{
+				id = "square_moss",
+				shape = "Model",
+				zone = "Town",
+				density = 16,
+				model = "GrassTuft",
+				tall = { 1.3, 1.9 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "square_clods",
+				shape = "Pebbles",
+				zone = "Town",
+				density = 14,
+				count = { 1, 3 },
+				tall = { 0.6, 1.0 },
+				colours = { { 70, 58, 46 }, { 86, 72, 54 }, { 58, 50, 42 } },
+			},
+			{
+				id = "square_puddles",
+				shape = "Shells",
+				zone = "Town",
+				density = 7,
+				count = { 1, 2 },
+				tall = { 2.0, 3.0 },
+				colours = { { 58, 92, 86 }, { 50, 84, 78 }, { 66, 98, 84 } },
+			},
+			{
+				id = "verge_moss",
+				shape = "Model",
+				zone = "Verge",
+				density = 52,
+				model = "GrassTuft",
+				tall = { 1.5, 2.3 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "verge_clods",
+				shape = "Pebbles",
+				zone = "Verge",
+				density = 52,
+				count = { 1, 3 },
+				tall = { 0.6, 1.1 },
+				colours = { { 70, 58, 46 }, { 86, 72, 54 }, { 58, 50, 42 } },
+			},
+			{
+				id = "verge_puddles",
+				shape = "Shells",
+				zone = "Verge",
+				density = 22,
+				count = { 1, 2 },
+				tall = { 2.0, 3.4 },
+				colours = { { 58, 92, 86 }, { 50, 84, 78 }, { 66, 98, 84 } },
+			},
+			{
+				id = "verge_pads",
+				shape = "Shells",
+				zone = "Verge",
+				density = 26,
+				count = { 1, 3 },
+				tall = { 1.2, 2.0 },
+				colours = { { 82, 128, 70 }, { 96, 140, 76 }, { 70, 112, 66 } },
+			},
+			{
+				id = "verge_reeds",
+				shape = "Model",
+				zone = "Verge",
+				density = 8,
+				model = "Reeds",
+				tall = { 2.8, 3.8 },
+				colours = { { 255, 255, 255 } },
+			},
+			{
+				id = "lane_crumbs",
+				shape = "Pebbles",
+				zone = "Edging",
+				density = 90,
+				count = { 1, 3 },
+				tall = { 0.5, 0.9 },
+				colours = { { 86, 72, 54 }, { 70, 60, 48 }, { 104, 90, 66 } },
+			},
+		},
+	},
 
 	-- Smoke from the stilt houses, green lantern light, fireflies over the square and the hamlet,
 	-- a glow in the Bell Loft and in the drowned bell, mist on every sheet of water (thickest on
