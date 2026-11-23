@@ -81,6 +81,7 @@ function BattleStage.new(): Stage
 	local shakePower, shakeEnd = 0, 0
 	local shaking = Random.new() -- which way each frame of a shake jolts; looks only
 	local cameraLoop: RBXScriptConnection? = nil
+	local guard: RBXScriptConnection? = nil -- keeps the camera the battle's while it is open
 	local function stopCamera()
 		if cameraLoop then
 			cameraLoop:Disconnect()
@@ -240,12 +241,37 @@ function BattleStage.new(): Stage
 		return count
 	end
 
+	-- The ground itself under a spot. Treetops, roofs and hedges are looked through: a battle
+	-- in the orchard stood the wild creature on an apple tree's crown (Studio, 23 November
+	-- 2026). Ground is a terrace or stair (tagged), or anything very wide or thin and broad (the
+	-- land, a lane, a plaza), as the world view decides where a creature hides.
 	local function groundAt(position: Vector3, fallback: number, ignore: { Instance }): Vector3
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
-		params.FilterDescendantsInstances = ignore
-		local found = Workspace:Raycast(position + Vector3.yAxis * 30, Vector3.yAxis * -80, params)
-		return Vector3.new(position.X, if found then found.Position.Y else fallback, position.Z)
+		local skipped = table.clone(ignore)
+		for _ = 1, 10 do
+			params.FilterDescendantsInstances = skipped
+			local found =
+				Workspace:Raycast(position + Vector3.yAxis * 30, Vector3.yAxis * -80, params)
+			if not found then
+				break
+			end
+			local hit = found.Instance
+			local size = if hit:IsA("BasePart") then hit.Size else Vector3.new(1000, 1000, 1000)
+			local thinnest = math.min(size.X, size.Y, size.Z)
+			local widest = math.max(size.X, size.Y, size.Z)
+			local middle = size.X + size.Y + size.Z - thinnest - widest
+			if
+				hit:IsA("Terrain")
+				or hit:HasTag("WorldGround")
+				or widest >= 100
+				or (thinnest <= 1.5 and middle >= 8)
+			then
+				return Vector3.new(position.X, found.Position.Y, position.Z)
+			end
+			table.insert(skipped, hit)
+		end
+		return Vector3.new(position.X, fallback, position.Z)
 	end
 
 	local function place(side: number, look: Look)
@@ -267,6 +293,10 @@ function BattleStage.new(): Stage
 	local function close()
 		local had = folder
 		folder = nil
+		if guard then
+			guard:Disconnect()
+			guard = nil
+		end
 		stopCamera()
 		shakeEnd = 0
 		toys = { nil, nil }
@@ -391,6 +421,18 @@ function BattleStage.new(): Stage
 				end
 			end
 			camera.CameraType = Enum.CameraType.Scriptable
+			-- Anything that hands the camera back to the player mid-battle (a respawn, another
+			-- script) would leave the view behind the hidden character, with the player's own
+			-- creature out of frame (seen in Studio, 23 November 2026): take it back at once.
+			guard = camera:GetPropertyChangedSignal("CameraType"):Connect(function()
+				if folder and camera.CameraType ~= Enum.CameraType.Scriptable then
+					camera.CameraType = Enum.CameraType.Scriptable
+					-- Straight to the shot it was heading for (home, or a close-up mid-catch).
+					shotFrom, shotFovFrom = shotTo, shotFovTo
+					shotSeconds, shotStart = 0.05, os.clock()
+					driveCamera()
+				end
+			end)
 			-- The opening shot: high and wide, seeing both creatures, then in behind the player's.
 			local middle = grounds[1]:Lerp(grounds[2], 0.5)
 			local wideEye = middle + sideways * 30 + Vector3.yAxis * 20 - facings[1] * 4
