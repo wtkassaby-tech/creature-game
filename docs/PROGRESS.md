@@ -2,6 +2,30 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (a clearer first fifteen minutes, battle fixes, each town its own look)
+
+**In one line:** after a review of the whole game, agents audited the first fifteen minutes and fixed what they found, hedges no longer lie across terrace edges, every named speaker has a face, battles stand on the ground and keep their camera, and Dust Canyon and Tide Flats got their own stairs, lamps and spires. `lune run check` passes; what was seen in Studio is marked.
+
+| What | Now |
+| --- | --- |
+| **Hints name their target** | The TO DO page says "Beat your rival in Thistledown", "Beat Pip Alder on Clover Lane", "Walk into Clover Meadow", "Talk to Marlow Tuppence at Tuppence's Shop". The mentor now sends you to Marlow. A test checks every Chapter 1 to 3 hint names a real place or person. Seen in Studio (the rival hint) |
+| **Tamers speak in battle** | Their opening words hold the battle box for a moment, and their parting words show before the result card ("Rival: No fair, yours beats mine!"). Seen in Studio (the parting line) |
+| **A look at the old tree** | When the mentor says "See that huge tree in the haze?", the camera turns to the tree for those lines, then back. Not yet seen in Studio |
+| **River Road waits** | Until Marlow's first quest, a player who walks onto River Road is sent back to the arch with a line saying why. Wild battles wait for the lasso lesson. Seen in Studio |
+| **Marlow** | His lines no longer repeat the quest offer, and the tap that starts his story no longer opens the shop on top of it |
+| **Hedges and rocks** | No wall piece lies across a terrace edge, stair or ramp (199 pieces fixed across four biomes); a test checks it. Seen in Studio on two routes |
+| **Faces** | Champions, keepers and route tamers show the face of the person standing in the world |
+| **Battles** | A wild creature no longer stands on a treetop (seen in the orchard); the camera stays behind your creature even if something resets it |
+| **Each town its own look** | Red sandstone stairs and adobe lamp pillars in Kilnrest; barnacled sea-stone stairs and driftwood lamp posts with a ship's lantern in Saltwick (Greenwood's mossy steps and vine lamps looked out of place). The canyon's rock spires wear cream cap rocks instead of dark ones that read as chocolate cakes. Seen in Studio |
+
+**Not checked:** the lasso catch scene on screen. Studio pauses drawing while my tools look, so the scene cannot be watched from here; please look at it when you play. The tree camera. A few long fill pieces (dunes off Tide Flats' edges, some canyon cliff pieces) still lie across two heights, outside the walkable area.
+
+**Waiting for Ayrton (these touch catching, so nothing is built until a yes):**
+1. **A catch made before the egg counts for nothing.** The story only asks for a catch after the egg, so a player who catches early (the signs and coach push them to) is told "tame a creature" with a full team. Either move the first catch earlier (plan 07, package 6), or let the story count a catch already made.
+2. **The story's first catch can fail.** At full health the green is very narrow; a miss costs a rope and gives the creature a free turn. Suggest a softer first story catch (for example a wider green, or a floor on the odds, for that one catch).
+
+**To playtest:** a new game: follow the TO DO page only and see if you ever get lost; watch the tree look on Clover Lane; throw the lasso and judge the scene.
+
 ## 23 November 2026 (terraces, finds, far scenery, the Mire's look, a quality pass)
 
 **In one line:** the terraces got painted stairs, ramps and earth banks; Dust Canyon and Tide Flats were rebuilt on Greenwood's pattern; far scenery (the Crown, highlands, islands) and finds and rewards are in; a player-height audit led to a quality pass; the Mire has its own map and look but stays closed at launch. Most of it was seen in Studio; the notes below say what was not.
