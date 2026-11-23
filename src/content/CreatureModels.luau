@@ -57,9 +57,10 @@ local CreatureModels: { [string]: ModelDef } = {
 		size = { 2.78, 6, 5.7 },
 	},
 	Thatchling = {
-		mesh = "rbxassetid://130507681027192",
-		texture = "rbxassetid://113419826150254",
-		size = { 4.85, 7, 3.3 },
+		-- 23 Nov 2026 redo: haystack-bodied thatch creature with a face (the old one was a palm tree)
+		mesh = "rbxassetid://139410396275314",
+		texture = "rbxassetid://129598052800229",
+		size = { 4.07, 4.44, 4 },
 	},
 	Wadibuck = {
 		mesh = "rbxassetid://131450818451720",
@@ -67,9 +68,10 @@ local CreatureModels: { [string]: ModelDef } = {
 		size = { 3.41, 7, 5.13 },
 	},
 	Spurlet = {
-		mesh = "rbxassetid://77670204494847",
-		texture = "rbxassetid://120064062249068",
-		size = { 3.06, 5, 5.39 },
+		-- 23 Nov 2026 redo: leafy succulent rosette creature with no shell (the old one was close to a famous grass turtle)
+		mesh = "rbxassetid://106649610435296",
+		texture = "rbxassetid://71140872435325",
+		size = { 3.1, 2.78, 2.9 },
 	},
 	Spirecap = {
 		mesh = "rbxassetid://124373840906518",
@@ -77,14 +79,16 @@ local CreatureModels: { [string]: ModelDef } = {
 		size = { 5.66, 6.5, 7 },
 	},
 	Cairnback = {
-		mesh = "rbxassetid://82902934798690",
-		texture = "rbxassetid://100508861737593",
-		size = { 4.95, 6, 6.15 },
+		-- 23 Nov 2026 redo: four-legged stack of trail stones with a sleepy face and a crooked top stone
+		mesh = "rbxassetid://139455715729959",
+		texture = "rbxassetid://127290225338770",
+		size = { 3.28, 5, 3.28 },
 	},
 	Whirlgrit = {
-		mesh = "rbxassetid://132116005977696",
-		texture = "rbxassetid://88773151107356",
-		size = { 4.35, 5.26, 5 },
+		-- 23 Nov 2026 redo: striped spinning-top desert dancer with ribbon arms (the old one wore a sun hat and goggles)
+		mesh = "rbxassetid://115048866390529",
+		texture = "rbxassetid://106320611931314",
+		size = { 4.3, 3.94, 3.2 },
 	},
 	Flintknap = {
 		mesh = "rbxassetid://122638617134798",
@@ -104,19 +108,22 @@ local CreatureModels: { [string]: ModelDef } = {
 		size = { 4, 5.99, 4.94 },
 	},
 	Hullock = {
-		mesh = "rbxassetid://81622553424635",
-		texture = "rbxassetid://117057963405964",
-		size = { 4.5, 5.74, 9.6 },
+		-- 23 Nov 2026 redo: green shore ox nested in an upturned boat hull (the old one looked like a famous block-game cow)
+		mesh = "rbxassetid://123809206086440",
+		texture = "rbxassetid://83841087007573",
+		size = { 4.5, 4.78, 6.22 },
 	},
 	Lanternell = {
-		mesh = "rbxassetid://115453843318026",
-		texture = "rbxassetid://125804188854344",
-		size = { 3.72, 8, 2.74 },
+		-- 23 Nov 2026 redo: teal jelly-headed rock-pool creature on a coral base (the old one was a lighthouse on legs)
+		mesh = "rbxassetid://122569941986148",
+		texture = "rbxassetid://72681631507445",
+		size = { 4.2, 6.8, 4.2 },
 	},
 	Cocklemole = {
-		mesh = "rbxassetid://132241773203326",
-		texture = "rbxassetid://105326939190153",
-		size = { 4.06, 5, 4.05 },
+		-- 23 Nov 2026 redo: beach mole with its own ribbed cockle shell grown on (the old one wore a hard hat)
+		mesh = "rbxassetid://103264314100215",
+		texture = "rbxassetid://70439315755447",
+		size = { 3.19, 5, 3.16 },
 	},
 	Clapshell = {
 		mesh = "rbxassetid://123047837392569",
@@ -135,9 +142,10 @@ local CreatureModels: { [string]: ModelDef } = {
 		size = { 4.5, 4.19, 3.46 },
 	},
 	Moatkeep = {
-		mesh = "rbxassetid://108284213071133",
-		texture = "rbxassetid://90051137718974",
-		size = { 5, 4.05, 3.03 },
+		-- 23 Nov 2026 redo: round sand golem with a bumpy turret crown and rosy cheeks (the old one was a faceless sandcastle)
+		mesh = "rbxassetid://96767009651781",
+		texture = "rbxassetid://116039619309667",
+		size = { 5.04, 6, 3.98 },
 	},
 	Carrackon = {
 		mesh = "rbxassetid://92543915503643",
@@ -146,9 +154,10 @@ local CreatureModels: { [string]: ModelDef } = {
 	},
 	-- Dust Canyon's giant
 	Mesalith = {
-		mesh = "rbxassetid://103954756558850",
-		texture = "rbxassetid://129360628977500",
-		size = { 7.48, 12, 6.82 },
+		-- 23 Nov 2026 redo: wide rock-shelled mesa tortoise giant (the old one was a smiling carrot)
+		mesh = "rbxassetid://104362802661172",
+		texture = "rbxassetid://128657627268515",
+		size = { 9, 9.8, 13.4 },
 	},
 	-- The Mire, and its giant
 	Bogbellow = {
@@ -157,19 +166,22 @@ local CreatureModels: { [string]: ModelDef } = {
 		size = { 4.31, 4.95, 7 },
 	},
 	Fenwhisk = {
-		mesh = "rbxassetid://128116311293978",
-		texture = "rbxassetid://72407552202501",
-		size = { 2.7, 5.5, 3.22 },
+		-- 23 Nov 2026 redo: slinky purple marsh weasel with a cattail tail, floppy ear and cheeky tongue (the old one held a flag)
+		mesh = "rbxassetid://77334223120192",
+		texture = "rbxassetid://121778977250184",
+		size = { 2.32, 3.7, 5.5 },
 	},
 	Keelsnap = {
-		mesh = "rbxassetid://136549620543220",
-		texture = "rbxassetid://103108120391008",
-		size = { 3.82, 4.43, 4.5 },
+		-- 23 Nov 2026 redo: mud-brown hook-beaked snapper with a mossy shell and one tooth (the old one wore boxing gloves)
+		mesh = "rbxassetid://119810185465230",
+		texture = "rbxassetid://111183115780925",
+		size = { 3.63, 4.4, 4.35 },
 	},
 	Lilyshade = {
-		mesh = "rbxassetid://77054853861528",
-		texture = "rbxassetid://93152035154442",
-		size = { 4.49, 6.24, 4.5 },
+		-- 23 Nov 2026 redo: violet marsh sprite hooded by a pink lily bud (the old one was blue with a lily pad)
+		mesh = "rbxassetid://136488364615257",
+		texture = "rbxassetid://119160765700160",
+		size = { 4.5, 5.43, 4.5 },
 	},
 	Mistrel = {
 		mesh = "rbxassetid://75690339947754",

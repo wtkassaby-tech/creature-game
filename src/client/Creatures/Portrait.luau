@@ -30,7 +30,8 @@ function Portrait.new(
 	element: Types.Element,
 	size: UDim2,
 	position: UDim2,
-	silhouette: boolean?
+	silhouette: boolean?,
+	hz: number?
 ): ViewportFrame
 	local window = Instance.new("ViewportFrame")
 	window.Size = size
@@ -42,7 +43,13 @@ function Portrait.new(
 	window.Parent = parent
 
 	local toy = ToyBody.new(window, species, element, 1)
+	-- It only moves while its screen can be seen (checked twice a second); a card in a scrolling
+	-- list is drawn about ten times a second, or at `hz` when the screen asks for that.
+	if hz then
+		toy.rate(hz)
+	end
 	if silhouette then
+		toy.still(true) -- a creature not yet met does not even gesture
 		-- White ambient light and no direct light: a dark part stays exactly its own dark colour.
 		window.Ambient = Color3.new(1, 1, 1)
 		window.LightColor = Color3.new(0, 0, 0)

@@ -6,22 +6,30 @@
 -- The creatures are toy bodies (Creatures/ToyBody) until the part meshes exist.
 -- Everything is made on the player's own device and removed when the battle closes.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local AudioConfig = require(ReplicatedStorage.config.AudioConfig)
+local Cry = require(script.Parent.Parent.Audio.Cry)
+local Gestures = require(ReplicatedStorage.shared.Gestures)
+local Motion = require(ReplicatedStorage.shared.Motion)
+local SpeciesQuirks = require(ReplicatedStorage.content.SpeciesQuirks)
 local ToyBody = require(script.Parent.Parent.Creatures.ToyBody)
-local Types = require(game:GetService("ReplicatedStorage").shared.Types)
+local Types = require(ReplicatedStorage.shared.Types)
 
 local BattleStage = {}
 
 export type Look = { species: string, element: Types.Element, size: number }
 export type Stage = {
-	open: (mine: Look, theirs: Look) -> (),
+	open: (mine: Look, theirs: Look, foe: string?) -> (), -- `foe`: a tamer battle's id
 	swap: (side: number, look: Look) -> (),
 	close: () -> (),
 	point: (side: number) -> Vector2, -- where that creature is on the screen
 	lunge: (side: number) -> (),
+	lungeRelease: number, -- seconds after `lunge` when the dart is half way: when a shot should leave
 	hit: (side: number, big: boolean) -> (),
 	faint: (side: number) -> (),
 	anchor: (side: number) -> Vector3, -- the middle of that creature's body, in the world
@@ -43,7 +51,13 @@ local RIM_COLOUR = Color3.fromRGB(226, 214, 170)
 local FIELD_OF_VIEW = 55
 local WIDE_FIELD_OF_VIEW = 68 -- the opening shot, wide on both creatures
 local INTRO_SECONDS = 0.8
-local SHAKE_SECONDS = 0.28
+local SHAKE_SECONDS = 0.4 -- exp(-12 t) is under 1% by then
+local LUNGE_BACK = 0.6 -- studs it draws back before the dart
+local LUNGE_REACH = 3.5
+local APPEAR_HOP = 1.5 -- studs a creature hops as it steps in
+local OUT_OF_GRASS = -0.8 -- a wild creature starts this far under the ground
+local MODEL_PATIENCE = 0.5 -- seconds a creature stays unseen while its model loads
+local SWAP_ENTRANCE_MAX = 0.5 -- a creature sent in mid-battle takes at most this long to arrive
 
 local function disc(parent: Instance, width: number, colour: Color3, at: Vector3)
 	local made = Instance.new("Part")
@@ -65,7 +79,7 @@ function BattleStage.new(): Stage
 	local toys: { ToyBody.Toy? } = { nil, nil }
 	local grounds: { Vector3 } = { Vector3.zero, Vector3.zero }
 	local facings: { Vector3 } = { Vector3.zAxis, Vector3.zAxis }
-	local busy: { number } = { 0, 0 } -- goes up with each move of a creature, so an old one stops
+	local busy: { number } = { 0, 0 } -- goes up with each creature put on a pad, so an old one stops
 	local hidden: { BillboardGui } = {} -- name signs in the world, put away while the battle shows
 	local sizes: { number } = { 1, 1 } -- how big each creature stands, for where its middle is
 
@@ -77,9 +91,12 @@ function BattleStage.new(): Stage
 	local shotFovFrom, shotFovTo = WIDE_FIELD_OF_VIEW, FIELD_OF_VIEW
 	local homeShot = CFrame.new() -- the settled shot behind the player's creature
 	local ignoreList: { Instance } = {}
-	local squeezes: { number } = { 0, 0 } -- goes up with each squeeze, so an old one stops
-	local shakePower, shakeEnd = 0, 0
-	local shaking = Random.new() -- which way each frame of a shake jolts; looks only
+	local shakePower, shakeStart, shakeEnd = 0, 0, 0
+	local shakeSeed = 0 -- where in the noise this shake's roll is read; looks only
+	local seeds = Random.new()
+	-- The way a blow came, in the world: the camera is pushed along it, so a hit jolts the picture
+	-- toward or away from the viewer rather than at random.
+	local shakeWay = Vector3.zAxis
 	local cameraLoop: RBXScriptConnection? = nil
 	local guard: RBXScriptConnection? = nil -- keeps the camera the battle's while it is open
 	local function stopCamera()
@@ -105,14 +122,17 @@ function BattleStage.new(): Stage
 			camera.FieldOfView = shotFovFrom + (shotFovTo - shotFovFrom) * eased
 			local left = shakeEnd - now
 			if left > 0 then
-				local power = shakePower * (left / SHAKE_SECONDS)
+				-- A damped sine along the hit's direction, a little lift, and a smooth roll.
+				local since = now - shakeStart
+				local push = Motion.shakePush(shakePower, since)
+				local way = frame:VectorToObjectSpace(shakeWay)
+				local roll = math.noise(since * 22, shakeSeed)
+					* shakePower
+					* 2
+					* math.exp(-12 * since)
 				frame = frame
-					* CFrame.new(
-						shaking:NextNumber(-1, 1) * power,
-						shaking:NextNumber(-1, 1) * power,
-						0
-					)
-					* CFrame.Angles(0, 0, math.rad(shaking:NextNumber(-1, 1) * power * 2))
+					* CFrame.new(way * push + Vector3.yAxis * push * 0.3)
+					* CFrame.Angles(0, 0, math.rad(roll))
 			end
 			camera.CFrame = frame
 			if progress >= 1 and left <= 0 then
@@ -130,7 +150,10 @@ function BattleStage.new(): Stage
 			hidden = {}
 			return
 		end
-		for _, thing in Workspace:GetDescendants() do
+		-- The server tags the name signs; searching the whole world is only the fallback.
+		local tagged = CollectionService:GetTagged("WorldSign")
+		local source: { Instance } = if #tagged > 0 then tagged else Workspace:GetDescendants()
+		for _, thing in source do
 			if thing:IsA("BillboardGui") and thing.Enabled then
 				thing.Enabled = false
 				table.insert(hidden, thing)
@@ -168,6 +191,33 @@ function BattleStage.new(): Stage
 			end
 		end
 	end
+	-- The folders under workspace.World whose ground slab lies under any of `spots`.
+	local function biomeFolders(spots: { Vector3 }): { Instance }
+		local world = Workspace:FindFirstChild("World")
+		if not world then
+			return {}
+		end
+		local found: { Instance } = {}
+		for _, child in world:GetChildren() do
+			local slab = child:FindFirstChild("Ground")
+			if slab and slab:IsA("BasePart") then
+				for _, spot in spots do
+					local inside = slab.CFrame:PointToObjectSpace(spot)
+					if
+						math.abs(inside.X) <= slab.Size.X / 2
+						and math.abs(inside.Z) <= slab.Size.Z / 2
+					then
+						table.insert(found, child)
+						break
+					end
+				end
+			end
+		end
+		if #found == 0 then
+			table.insert(found, world)
+		end
+		return found
+	end
 	-- Tall grass is built with CanQuery off, so the search above never finds it, and a battle
 	-- in a patch had both creatures standing waist-deep in blades (seen in Studio). Grass
 	-- within `radius` of a spot is hidden by walking the tuft folders (and the swaying clumps
@@ -186,11 +236,9 @@ function BattleStage.new(): Stage
 		-- built with CanQuery off too, and a battle beside a hedge had the camera inside the
 		-- bushes (Studio, 23 November 2026). Ground, lanes, tiers and slabs (flat, wide or
 		-- tagged WorldGround) always stay.
-		local holders: { Instance } = {}
-		local world = Workspace:FindFirstChild("World")
-		if world then
-			table.insert(holders, world)
-		end
+		-- Only the biome the battle is in (each biome's folder has a Ground slab to test against);
+		-- the whole World if the slab cannot be found.
+		local holders = biomeFolders(spots)
 		local wild = Workspace:FindFirstChild("WildCreatures")
 		if wild then
 			table.insert(holders, wild)
@@ -212,6 +260,93 @@ function BattleStage.new(): Stage
 			end
 		end
 	end
+	-- The people standing in the world (a keeper, a tamer on the route, a story battle's rival)
+	-- are each a plain block, hidden, that carries a ProximityPrompt and wears the painted model
+	-- as children (src/server/World/Markers.luau `person`). The prompt's PromptId is the tamer's
+	-- or battle's id, which is how the person being fought is found.
+	local function personBody(thing: Instance): BasePart?
+		if not thing:IsA("ProximityPrompt") then
+			return nil
+		end
+		local kind = thing:GetAttribute("PromptKind")
+		local parent = thing.Parent
+		if
+			(kind == "Talk" or kind == "Tamer" or kind == "Rival")
+			and parent
+			and parent:IsA("BasePart")
+		then
+			return parent
+		end
+		return nil
+	end
+	-- Every ProximityPrompt that may belong to a person. The server tags each person's body
+	-- "Person" (src/server/World/Markers.luau); searching the whole world is the fallback.
+	local function personPrompts(): { Instance }
+		local list: { Instance } = {}
+		for _, body in CollectionService:GetTagged("Person") do
+			for _, child in body:GetChildren() do
+				if child:IsA("ProximityPrompt") then
+					table.insert(list, child)
+				end
+			end
+		end
+		if #list == 0 then
+			return Workspace:GetDescendants()
+		end
+		return list
+	end
+	local function hidePerson(body: BasePart)
+		for _, piece in { body :: Instance, table.unpack(body:GetDescendants()) } do
+			if piece:IsA("BasePart") then
+				if piece.LocalTransparencyModifier == 0 then
+					piece.LocalTransparencyModifier = 1
+					table.insert(cleared, piece)
+				end
+			elseif piece:IsA("Decal") then
+				piece.LocalTransparencyModifier = 1
+				table.insert(clearedFaces, piece)
+			end
+		end
+	end
+
+	-- A copy of the fought tamer's world model, standing at `spot` and turned to face `toward`.
+	local function standTamer(parent: Instance, body: BasePart, spot: Vector3, toward: Vector3)
+		local copy = body:Clone()
+		for _, piece in copy:GetDescendants() do
+			if piece:IsA("ProximityPrompt") or piece:IsA("BillboardGui") then
+				piece:Destroy()
+			end
+		end
+		local model = Instance.new("Model")
+		model.Name = "Tamer"
+		copy.Parent = model
+		model.PrimaryPart = copy
+		for _, piece in { copy :: Instance, table.unpack(copy:GetDescendants()) } do
+			if piece:IsA("BasePart") then
+				piece.Anchored = true
+				piece.CanCollide = false
+				piece.CanQuery = false
+				piece.CanTouch = false
+				piece.LocalTransparencyModifier = 0
+			end
+		end
+		-- The painted model's own front is what turns to face the creature; the block under it
+		-- is not turned, so the whole is rotated by the difference.
+		local mesh = copy:FindFirstChildWhichIsA("MeshPart", true)
+		local front = (if mesh then mesh else copy).CFrame.LookVector
+		front = Vector3.new(front.X, 0, front.Z)
+		local aim = Vector3.new(toward.X, 0, toward.Z)
+		if front.Magnitude < 0.1 or aim.Magnitude < 0.1 then
+			front, aim = Vector3.zAxis, Vector3.zAxis
+		end
+		local turn = CFrame.lookAt(Vector3.zero, aim) * CFrame.lookAt(Vector3.zero, front):Inverse()
+		local pivot = copy.CFrame
+		local boxCentre, boxSize = model:GetBoundingBox()
+		local lift = pivot.Y - (boxCentre.Y - boxSize.Y / 2)
+		model:PivotTo(CFrame.new(spot + Vector3.yAxis * lift) * turn * (pivot - pivot.Position))
+		model.Parent = parent
+	end
+
 	local function bringBack()
 		for _, piece in cleared do
 			piece.LocalTransparencyModifier = 0
@@ -274,20 +409,51 @@ function BattleStage.new(): Stage
 		return Vector3.new(position.X, fallback, position.Z)
 	end
 
-	local function place(side: number, look: Look)
-		local old = toys[side]
-		if old then
-			old.destroy()
-		end
-		local parent = folder
-		if not parent then
-			return
-		end
-		local toy = ToyBody.new(parent, look.species, look.element, look.size)
-		toy.place(CFrame.lookAt(grounds[side], grounds[side] + facings[side]))
-		toys[side] = toy
-		sizes[side] = look.size
+	-- Puts a creature on a pad. One already there shrinks away first (recalled); the new one
+	-- springs up with a hop (a wild foe out of the grass), once its model has loaded.
+	local function place(side: number, look: Look, opening: boolean)
 		busy[side] += 1
+		local mine = busy[side]
+		local old = toys[side]
+		sizes[side] = look.size
+		local function enter()
+			local parent = folder
+			if busy[side] ~= mine or not parent then
+				return
+			end
+			local toy = ToyBody.new(parent, look.species, look.element, look.size, MODEL_PATIENCE)
+			toy.place(CFrame.lookAt(grounds[side], grounds[side] + facings[side]))
+			-- The species' own entrance; a swap mid-battle plays it faster. A species with none steps
+			-- in with the generic hop.
+			local quirk = SpeciesQuirks[look.species]
+			local shape = if quirk then Gestures.curve(quirk.entrance) else nil
+			if shape then
+				local seconds = if opening
+					then shape.seconds
+					else math.min(shape.seconds, SWAP_ENTRANCE_MAX)
+				toy.act(Gestures.motionCurve(shape), seconds)
+			else
+				local track = Motion.appear(APPEAR_HOP, if side == 2 then OUT_OF_GRASS else 0)
+				toy.act(Motion.curve(track), track.seconds)
+			end
+			local stagger = if opening and side == 2 then AudioConfig.CRY.foeDelay else 0
+			Cry.play(look.species, AudioConfig.CRY.entranceDelay + stagger)
+			toys[side] = toy
+		end
+		if old and folder and not old.gone() then
+			local track = Motion.recall()
+			old.act(Motion.curve(track), track.seconds)
+			task.delay(track.seconds, function()
+				old.destroy()
+				enter()
+			end)
+		else
+			if old then
+				old.destroy()
+			end
+			toys[side] = nil
+			enter()
+		end
 	end
 
 	local function close()
@@ -299,6 +465,8 @@ function BattleStage.new(): Stage
 		end
 		stopCamera()
 		shakeEnd = 0
+		busy[1] += 1
+		busy[2] += 1
 		toys = { nil, nil }
 		if had then
 			had:Destroy()
@@ -312,31 +480,12 @@ function BattleStage.new(): Stage
 		end
 	end
 
-	-- Moves a creature off its spot along a list of offsets, one every `pause` seconds.
-	local function play(side: number, offsets: { Vector3 }, pause: number)
-		local toy = toys[side]
-		if not toy then
-			return
-		end
-		busy[side] += 1
-		local mine = busy[side]
-		task.spawn(function()
-			for _, offset in offsets do
-				if busy[side] ~= mine then
-					return
-				end
-				toy.nudge(offset)
-				task.wait(pause)
-			end
-			if busy[side] == mine then
-				toy.nudge(Vector3.zero)
-			end
-		end)
-	end
-
 	return {
-		open = function(mine: Look, theirs: Look)
+		open = function(mine: Look, theirs: Look, foe: string?)
 			close()
+			-- Ask for both models now, so they are ready by the time the creatures step in.
+			ToyBody.preload(mine.species)
+			ToyBody.preload(theirs.species)
 			local camera = Workspace.CurrentCamera
 			local character = Players.LocalPlayer.Character
 			local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
@@ -386,14 +535,15 @@ function BattleStage.new(): Stage
 			grounds[2] = groundAt(centre + forward * 27 + right * 10, floor, ignore)
 			facings[1] = (grounds[2] - grounds[1]).Unit
 			facings[2] = -facings[1]
+			shakeWay = facings[1]
 			for side = 1, 2 do
 				clearAround(grounds[side], ignore)
 				clearAround(grounds[1]:Lerp(grounds[2], side / 3), ignore) -- and the ground between
 				disc(made, 12, RIM_COLOUR, grounds[side] + Vector3.yAxis * 0.1)
 				disc(made, 11, PATCH_COLOUR, grounds[side] + Vector3.yAxis * 0.16)
 			end
-			place(1, mine)
-			place(2, theirs)
+			place(1, mine, true)
+			place(2, theirs, true)
 			showSigns(false)
 
 			-- Behind and to the right of the player's creature, looking down a little, so it
@@ -405,6 +555,43 @@ function BattleStage.new(): Stage
 			clearAround(eye:Lerp(grounds[1], 0.5) - Vector3.yAxis * 4, ignore)
 			-- Round both creatures, and all along the camera's line of sight to them.
 			local spots = { grounds[1], grounds[2], grounds[1]:Lerp(grounds[2], 0.5) }
+			-- A tamer battle: the tamer stands a few studs behind their creature, a little to
+			-- the camera's side so the creature does not hide them, and looks at the player's.
+			-- The person in the world, and any other standing near the stage, step out of view.
+			local everyone: { Instance } = if foe then personPrompts() else {}
+			local fought: BasePart? = nil
+			if foe then
+				for _, thing in everyone do
+					local body = personBody(thing)
+					local kind = thing:GetAttribute("PromptKind")
+					if
+						body
+						and (kind == "Tamer" or kind == "Rival")
+						and thing:GetAttribute("PromptId") == foe
+					then
+						fought = body
+						break
+					end
+				end
+			end
+			if fought then
+				local behind = grounds[2] - facings[2] * 5 + sideways * 3
+				local spot = groundAt(behind, grounds[2].Y, ignore)
+				standTamer(made, fought, spot, facings[2])
+				clearAround(spot, ignore)
+				table.insert(spots, spot)
+				hidePerson(fought)
+				local nearby = grounds[1]:Lerp(grounds[2], 0.5)
+				for _, thing in everyone do
+					local body = personBody(thing)
+					if body then
+						local flat = body.Position - nearby
+						if Vector3.new(flat.X, 0, flat.Z).Magnitude < 60 then
+							hidePerson(body)
+						end
+					end
+				end
+			end
 			for step = 0, 6 do
 				table.insert(spots, eye:Lerp(target, step / 6))
 			end
@@ -449,7 +636,9 @@ function BattleStage.new(): Stage
 			camera.CFrame = shotFrom
 			driveCamera()
 		end,
-		swap = place,
+		swap = function(side: number, look: Look)
+			place(side, look, false)
+		end,
 		close = close,
 		point = function(side: number): Vector2
 			local camera = Workspace.CurrentCamera
@@ -459,32 +648,36 @@ function BattleStage.new(): Stage
 			local at = camera:WorldToViewportPoint(grounds[side] + Vector3.yAxis * 5)
 			return Vector2.new(at.X, at.Y)
 		end,
-		-- The attacker darts toward the other creature and back.
+		-- The attacker draws back and squashes, darts at the other creature stretched, and settles.
 		lunge = function(side: number)
-			local reach = facings[side] * 3.5
-			play(side, { reach * 0.4, reach * 0.8, reach, reach * 0.6, reach * 0.2 }, 0.03)
+			local toy = toys[side]
+			if toy then
+				local track = Motion.lunge(LUNGE_BACK, LUNGE_REACH)
+				toy.act(Motion.curve(track), track.seconds)
+			end
 		end,
-		-- The creature that was hit flashes white and shakes.
+		lungeRelease = Motion.LUNGE_RELEASE,
+		-- The creature that was hit freezes for an instant (everything does), flashes white, is
+		-- squashed and knocked back, then springs to rights.
 		hit = function(side: number, big: boolean)
 			local toy = toys[side]
 			if not toy then
 				return
 			end
+			ToyBody.hitStop(if big then Motion.HIT_STOP_BIG else Motion.HIT_STOP)
 			toy.flash()
-			local across = facings[side]:Cross(Vector3.yAxis) * (if big then 1.4 else 0.7)
-			local back = -facings[side] * (if big then 1 else 0.5)
-			play(
-				side,
-				{ back + across, back - across, across * 0.6, -across * 0.6, across * 0.3 },
-				0.035
-			)
+			shakeWay = -facings[side]
+			local track = Motion.hit(big)
+			toy.act(Motion.curve(track), track.seconds)
 		end,
-		-- A fainted creature sinks and fades.
+		-- A fainted creature wobbles, topples onto its side, lies a moment, then sinks and fades.
+		-- It is down (0.75 s) about when the next event starts; the sink carries on after.
 		faint = function(side: number)
 			local toy = toys[side]
 			if toy then
-				busy[side] += 1
-				toy.sink()
+				local lift = 0.5 + 0.5 * math.clamp(sizes[side], 0.6, 1.8)
+				local track = Motion.faint(lift)
+				toy.act(Motion.curve(track), track.seconds, true)
 			end
 		end,
 		anchor = function(side: number): Vector3
@@ -524,69 +717,38 @@ function BattleStage.new(): Stage
 			shotSeconds, shotStart = math.max(0.05, seconds), os.clock()
 			driveCamera()
 		end,
-		-- The creature shrinks toward the ground (a model scales about its feet).
+		-- The creature shrinks toward the ground (feet planted), and back.
 		squeeze = function(side: number, scale: number, seconds: number)
 			local toy = toys[side]
-			if not toy then
-				return
+			if toy then
+				toy.hold(math.max(0.05, scale), seconds)
 			end
-			squeezes[side] += 1
-			local mine = squeezes[side]
-			local model = toy.model
-			local from = model:GetScale()
-			task.spawn(function()
-				local began = os.clock()
-				local alpha = 0
-				while alpha < 1 and squeezes[side] == mine and model.Parent do
-					alpha = math.min(1, (os.clock() - began) / math.max(0.03, seconds))
-					local eased = alpha * alpha * (3 - 2 * alpha)
-					model:ScaleTo(math.max(0.05, from + (scale - from) * eased))
-					if alpha < 1 then
-						task.wait()
-					end
-				end
-			end)
 		end,
 		-- Pulled toward the player along the rope, then back, with a wobble across.
 		tug = function(side: number)
-			local toward = facings[side] * 1
-			local across = facings[side]:Cross(Vector3.yAxis) * 0.5
-			play(
-				side,
-				{ toward * 0.5, toward * 0.9, toward * 0.4, across, -across, across * 0.5 },
-				0.045
-			)
+			local toy = toys[side]
+			if toy then
+				local track = Motion.tug()
+				toy.act(Motion.curve(track), track.seconds)
+			end
 		end,
-		-- A hop or two away from the player, then it fades into the ground.
+		-- A few hops away from the player, then it fades into the distance.
 		bound = function(side: number)
 			local toy = toys[side]
 			if not toy then
 				return
 			end
-			squeezes[side] += 1
-			toy.model:ScaleTo(1)
-			busy[side] += 1
-			local mine = busy[side]
-			local away = -facings[side]
-			task.spawn(function()
-				for step = 1, 12 do
-					if busy[side] ~= mine or not toy.model.Parent then
-						return
-					end
-					local hop = math.abs(math.sin(step / 12 * math.pi * 2)) * 2.2
-					toy.nudge(away * step * 0.7 + Vector3.yAxis * hop)
-					task.wait(0.035)
-				end
-				if busy[side] == mine then
-					toy.sink()
-				end
-			end)
+			toy.hold(1, 0.05)
+			local track = Motion.bound()
+			toy.act(Motion.curve(track), track.seconds, true)
 		end,
 		shake = function(power: number)
 			if not folder then
 				return
 			end
-			shakePower, shakeEnd = power, os.clock() + SHAKE_SECONDS
+			shakePower, shakeStart = power, os.clock()
+			shakeEnd = shakeStart + SHAKE_SECONDS
+			shakeSeed = seeds:NextNumber(0, 100)
 			driveCamera()
 		end,
 	}

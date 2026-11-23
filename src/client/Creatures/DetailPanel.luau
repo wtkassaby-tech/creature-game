@@ -13,6 +13,7 @@ local Portrait = require(script.Parent.Portrait)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
 local Species = require(ReplicatedStorage.content.Species)
 local SpeciesBlurbs = require(ReplicatedStorage.content.SpeciesBlurbs)
+local SpeciesQuirks = require(ReplicatedStorage.content.SpeciesQuirks)
 
 local DetailPanel = {}
 
@@ -85,7 +86,7 @@ function DetailPanel.new(parent: Instance, size: UDim2, position: UDim2, handler
 	end
 
 	local picture = row(1, 96)
-	local nameLabel = Kit.label(scroll, "", UDim2.new(1, 0, 0, 26), UDim2.new(), 28)
+	local nameLabel = Kit.title(scroll, "", UDim2.new(1, 0, 0, 26), UDim2.new(), 28)
 	nameLabel.LayoutOrder = 2
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	local facts = row(3, 24)
@@ -104,11 +105,46 @@ function DetailPanel.new(parent: Instance, size: UDim2, position: UDim2, handler
 	blurb.TextWrapped = true
 	blurb.TextYAlignment = Enum.TextYAlignment.Top
 	blurb.TextColor3 = Kit.COLOURS.textDim
+	-- The Journal: the species' two facts and its favourite thing, in the body face. The labels grow
+	-- to fit their words, so nothing is cut off on a phone.
+	local journal = Instance.new("Frame")
+	journal.Size = UDim2.fromScale(1, 0)
+	journal.AutomaticSize = Enum.AutomaticSize.Y
+	journal.BackgroundTransparency = 1
+	journal.LayoutOrder = 6
+	journal.Visible = false
+	journal.Parent = scroll
+	local journalList = Instance.new("UIListLayout")
+	journalList.Padding = UDim.new(0, 3)
+	journalList.SortOrder = Enum.SortOrder.LayoutOrder
+	journalList.Parent = journal
+	local function journalLine(order: number, colour: Color3): TextLabel
+		local made = Instance.new("TextLabel")
+		made.Size = UDim2.fromScale(1, 0)
+		made.AutomaticSize = Enum.AutomaticSize.Y
+		made.BackgroundTransparency = 1
+		made.FontFace = Kit.BODY_FACE
+		made.TextSize = 14
+		made.TextWrapped = true
+		made.TextXAlignment = Enum.TextXAlignment.Left
+		made.TextYAlignment = Enum.TextYAlignment.Top
+		made.TextColor3 = colour
+		made.LayoutOrder = order
+		made.Parent = journal
+		return made
+	end
+	local journalHead = Kit.label(journal, "Journal", UDim2.new(1, 0, 0, 16), UDim2.new(), 14)
+	journalHead.LayoutOrder = 0
+	journalHead.TextColor3 = Kit.COLOURS.accent
+	Kit.pixel(journalHead, 12)
+	local factOne = journalLine(1, Kit.COLOURS.text)
+	local factTwo = journalLine(2, Kit.COLOURS.text)
+	local favourite = journalLine(3, Kit.COLOURS.textDim)
 	local actions = Instance.new("Frame")
 	actions.Size = UDim2.fromScale(1, 0)
 	actions.AutomaticSize = Enum.AutomaticSize.Y
 	actions.BackgroundTransparency = 1
-	actions.LayoutOrder = 6
+	actions.LayoutOrder = 7
 	actions.Parent = scroll
 	local grid = Instance.new("UIGridLayout")
 	grid.CellSize = UDim2.new(0.5, -3, 0, 44) -- finger-sized
@@ -213,6 +249,15 @@ function DetailPanel.new(parent: Instance, size: UDim2, position: UDim2, handler
 				nameLabel.Text = species
 				blurb.Text = SpeciesBlurbs[species] or ""
 				blurb.Visible = blurb.Text ~= ""
+				local quirk = SpeciesQuirks[species]
+				journal.Visible = quirk ~= nil
+				if quirk then
+					factOne.Text = quirk.facts[1] or ""
+					factTwo.Text = quirk.facts[2] or ""
+					factOne.Visible = factOne.Text ~= ""
+					factTwo.Visible = factTwo.Text ~= ""
+					favourite.Text = `Favourite: {quirk.favourite}`
+				end
 			end
 			nameLabel.TextColor3 = CreatureCard.rarityColour(view.Rarity)
 			level.Text = `Lv {view.Level}`

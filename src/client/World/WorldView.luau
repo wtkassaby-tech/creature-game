@@ -6,7 +6,6 @@
 -- player's position itself when it arrives. Nothing here shows a species or a level.
 -- Also turns the world's prompts into requests. Not yet run in Studio.
 
-local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,10 +17,15 @@ local ClientState = require(script.Parent.Parent.State.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Particles = require(script.Parent.Parent.Fx.Particles)
 local Transition = require(script.Parent.Parent.UI.Transition)
+local WorldLife = require(script.Parent.WorldLife)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local Net = require(ReplicatedStorage.net.generated.Client)
+local Motion = require(ReplicatedStorage.shared.Motion)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
+local Cadence = require(ReplicatedStorage.shared.Cadence)
+local AudioConfig = require(ReplicatedStorage.config.AudioConfig)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local World = require(ReplicatedStorage.shared.World)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
@@ -81,30 +85,49 @@ end
 -- A clump of taller blades marks where a creature hides: it is the only thing drawn (no model,
 -- no name, no level), and it sways now and then. A rarer creature also lets motes drift up from
 -- it in its rarity's colour. Nothing here shows what is hiding.
+type Blade = {
+	part: BasePart,
+	foot: Vector3,
+	height: number,
+	width: number,
+	depth: number,
+	turn: number,
+	rustle: Vector3, -- how far this blade leans at the peak of a rustle
+}
 type Hidden = {
 	wild: Wild,
 	root: Part,
 	ground: Vector3,
-	blades: { { part: BasePart, foot: Vector3, height: number, turn: number } },
+	blades: { Blade },
+	born: number, -- the clump grows in over GROW_SECONDS from here
+	grown: number, -- the size it was last drawn at (1 is full)
+	rustleAt: number, -- when the last rustle began
+	leaveAt: number, -- when it began to shrink away, once it is going
 	alive: boolean,
 	fresh: boolean, -- brought out by a rustle spot or bait: steps out as soon as it is seen
 }
 
 local shown: { [number]: Hidden } = {}
+local leaving: { Hidden } = {} -- shrinking away, then destroyed
 local calmUntil: { [number]: number } = {} -- spawn id -> when it may start another encounter
 local pausedUntil = 0 -- no new encounter before this time (one is already under way)
 
 local BLADE_LIGHT = Color3.fromRGB(112, 190, 78)
 local BLADE_DARK = Color3.fromRGB(80, 156, 64)
 
-local function bladeCFrame(
-	blade: { part: BasePart, foot: Vector3, height: number, turn: number },
-	lean: Vector3
-): CFrame
+local GROW_SECONDS = 0.4 -- a clump grows in (BackOut), then
+local SHRINK_SECONDS = 0.3 -- shrinks away when its creature is gone
+local SWAY_RADIANS = math.rad(3) -- the constant sway of the blades
+local SWAY_HZ = 0.7
+local RUSTLE_SECONDS = 0.4 -- out and back
+local GRASS_STEP = 1 / 30 -- the grass is redrawn at about 30 Hz
+
+-- Where a blade stands at a growth (1 is full size) and a lean.
+local function bladeCFrame(blade: Blade, lean: Vector3, grown: number): CFrame
 	return CFrame.new(blade.foot)
 		* CFrame.Angles(0, blade.turn, 0)
 		* CFrame.Angles(lean.X, 0, lean.Z)
-		* CFrame.new(0, blade.height / 2, 0)
+		* CFrame.new(0, blade.height * grown / 2, 0)
 end
 
 local function leafColour(): Color3
@@ -123,8 +146,18 @@ local function draw(parent: Instance, wild: Wild): Hidden
 	root.Transparency = 1
 	root.Size = Vector3.new(4, 0.2, 4)
 	root.Position = ground + Vector3.new(0, 0.2, 0)
-	local hidden: Hidden =
-		{ wild = wild, root = root, ground = ground, blades = {}, alive = true, fresh = wild.Spot }
+	local hidden: Hidden = {
+		wild = wild,
+		root = root,
+		ground = ground,
+		blades = {},
+		born = os.clock(),
+		grown = 0.05,
+		rustleAt = -10,
+		leaveAt = 0,
+		alive = true,
+		fresh = wild.Spot,
+	}
 	local count = if wild.Spot then 0 else 7
 	for index = 1, count do
 		local around = (index / count) * math.pi * 2 + wild.Id
@@ -138,14 +171,17 @@ local function draw(parent: Instance, wild: Wild): Hidden
 		blade.CastShadow = false
 		blade.Material = Enum.Material.SmoothPlastic
 		blade.Color = if index % 2 == 0 then BLADE_LIGHT else BLADE_DARK
-		blade.Size = Vector3.new(0.45, height, 1.2)
-		local record = {
+		blade.Size = Vector3.new(0.45, height, 1.2) * 0.05
+		local record: Blade = {
 			part = blade :: BasePart,
 			foot = ground + Vector3.new(math.cos(around) * reach, 0.1, math.sin(around) * reach),
 			height = height,
+			width = 0.45,
+			depth = 1.2,
 			turn = around * 2,
+			rustle = Vector3.zero,
 		}
-		blade.CFrame = bladeCFrame(record, Vector3.zero)
+		blade.CFrame = bladeCFrame(record, Vector3.zero, 0.05)
 		blade.Parent = root
 		table.insert(hidden.blades, record)
 	end
@@ -168,24 +204,13 @@ local function draw(parent: Instance, wild: Wild): Hidden
 				and (camera.CFrame.Position - ground).Magnitude
 					<= WorldConfig.RUSTLE_SEE_DISTANCE
 			if near and #hidden.blades > 0 then
+				-- The grass loop below leans each blade by this, out and back.
 				local side = pick:NextNumber(-1, 1)
 				for _, blade in hidden.blades do
-					local lean =
+					blade.rustle =
 						Vector3.new(math.rad(12) * side, 0, math.rad(14) * pick:NextNumber(0.4, 1))
-					TweenService
-						:Create(
-							blade.part,
-							TweenInfo.new(
-								0.2,
-								Enum.EasingStyle.Sine,
-								Enum.EasingDirection.Out,
-								0,
-								true
-							),
-							{ CFrame = bladeCFrame(blade, lean) }
-						)
-						:Play()
 				end
+				hidden.rustleAt = os.clock()
 				if pick:NextNumber() < 0.5 then
 					Particles.burst(
 						parent,
@@ -208,6 +233,7 @@ end
 -- creature was, and then the request goes out (the battle wipe is BattleView's, when the server
 -- answers). The player stands still for the beat.
 local function startEncounter(parent: Instance, hidden: Hidden)
+	Sfx.play("spotted") -- the "!" sting
 	local player = Players.LocalPlayer
 	local character = player.Character
 	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
@@ -236,12 +262,29 @@ local function startEncounter(parent: Instance, hidden: Hidden)
 		mark.TextStrokeTransparency = 0
 		mark.Parent = board
 		board.Parent = root
+		-- It springs up past full size, settles, and fades instead of vanishing.
 		TweenService:Create(
 			mark,
-			TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-			{ Size = UDim2.fromScale(1, 1) }
+			TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Size = UDim2.fromScale(1.3, 1.3) }
 		):Play()
-		Debris:AddItem(board, 0.8)
+		task.delay(0.16, function()
+			TweenService:Create(
+				mark,
+				TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ Size = UDim2.fromScale(1, 1) }
+			):Play()
+		end)
+		task.delay(0.62, function()
+			TweenService:Create(
+				mark,
+				TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{ TextTransparency = 1, TextStrokeTransparency = 1 }
+			):Play()
+		end)
+		task.delay(0.8, function()
+			board:Destroy()
+		end)
 	end
 	local at = hidden.ground + Vector3.new(0, 1.5, 0)
 	Particles.burst(parent, at, "leafFlutter", leafColour(), 16, 1.4, 6)
@@ -339,13 +382,129 @@ function WorldView.start(openShop: () -> ())
 		end
 		for id, hidden in shown do
 			if not keep[id] then
+				-- It shrinks away (see the grass loop) instead of popping out.
 				hidden.alive = false
-				hidden.root:Destroy()
+				hidden.leaveAt = os.clock()
+				table.insert(leaving, hidden)
 				shown[id] = nil
 				calmUntil[id] = nil
 			end
 		end
 	end)
+
+	-- The grass: it grows in, sways a little all the time, leans over in a rustle, and shrinks away.
+	-- About 30 times a second; only clumps near the camera are redrawn, the rest keep still.
+	local sinceGrass = 0
+	RunService.Heartbeat:Connect(function(step)
+		sinceGrass += step
+		if sinceGrass < GRASS_STEP then
+			return
+		end
+		sinceGrass = 0
+		local now = os.clock()
+		local camera = workspace.CurrentCamera
+		local eye = if camera then camera.CFrame.Position else Vector3.zero
+		for _, hidden in shown do
+			local age = (now - hidden.born) / GROW_SECONDS
+			local growing = age < 1 or hidden.grown ~= 1
+			local near = (hidden.ground - eye).Magnitude <= WorldConfig.RUSTLE_SEE_DISTANCE
+			if (near or growing) and #hidden.blades > 0 then
+				local grown = if age < 1 then math.max(0.05, Motion.ease("BackOut", age)) else 1
+				local rustling = (now - hidden.rustleAt) / RUSTLE_SECONDS
+				local peak = if rustling >= 0 and rustling < 1
+					then math.sin(math.pi * rustling)
+					else 0
+				for _, blade in hidden.blades do
+					local sway = math.sin(now * math.pi * 2 * SWAY_HZ + blade.turn) * SWAY_RADIANS
+					local lean = Vector3.new(sway * 0.5, 0, sway) + blade.rustle * peak
+					if grown ~= hidden.grown then
+						blade.part.Size = Vector3.new(blade.width, blade.height, blade.depth)
+							* grown
+					end
+					blade.part.CFrame = bladeCFrame(blade, lean, grown)
+				end
+				hidden.grown = grown
+			end
+		end
+		for index = #leaving, 1, -1 do
+			local hidden = leaving[index]
+			local u = (now - hidden.leaveAt) / SHRINK_SECONDS
+			if u >= 1 then
+				hidden.root:Destroy()
+				table.remove(leaving, index)
+			else
+				local grown = math.max(0.02, 1 - Motion.ease("QuadIn", u)) * hidden.grown
+				for _, blade in hidden.blades do
+					blade.part.Size = Vector3.new(blade.width, blade.height, blade.depth) * grown
+					blade.part.CFrame = bladeCFrame(blade, Vector3.zero, grown)
+				end
+			end
+		end
+	end)
+
+	-- Tall grass rustles underfoot. The patches are found once (each is a dark disc beside a folder
+	-- named "<name>_tufts" under the World), then the player's spot is tested against them 4 times
+	-- a second. The sound plays while walking through, never more often than GRASS_GAP.
+	local patches: { { x: number, z: number, radius: number } } = {}
+	local patchesLookedAt = -math.huge
+	local function findPatches()
+		patchesLookedAt = os.clock()
+		local world = workspace:FindFirstChild("World")
+		if not world then
+			return
+		end
+		for _, thing in world:GetDescendants() do
+			if thing:IsA("Folder") and string.sub(thing.Name, -6) == "_tufts" then
+				local disc = if thing.Parent
+					then thing.Parent:FindFirstChild(string.sub(thing.Name, 1, -7))
+					else nil
+				if disc and disc:IsA("BasePart") then
+					table.insert(patches, {
+						x = disc.Position.X,
+						z = disc.Position.Z,
+						radius = math.max(disc.Size.X, disc.Size.Y, disc.Size.Z) / 2,
+					})
+				end
+			end
+		end
+	end
+	local lastRustle = -math.huge
+	local sinceGrassCheck = 0
+	RunService.Heartbeat:Connect(function(step)
+		sinceGrassCheck += step
+		if sinceGrassCheck < 0.25 then
+			return
+		end
+		sinceGrassCheck = 0
+		local character = Players.LocalPlayer.Character
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if not (root and root:IsA("BasePart")) then
+			return
+		end
+		local now = os.clock()
+		if #patches == 0 then
+			if now - patchesLookedAt > 10 then
+				findPatches()
+			end
+			return
+		end
+		if
+			root.AssemblyLinearVelocity.Magnitude < 2
+			or not Cadence.ready(lastRustle, now, AudioConfig.GRASS_GAP)
+		then
+			return
+		end
+		for _, patch in patches do
+			if Cadence.inDisc(root.Position.X, root.Position.Z, patch.x, patch.z, patch.radius) then
+				lastRustle = now
+				Sfx.play("grass")
+				break
+			end
+		end
+	end)
+
+	-- The people standing about breathe, look at you and hop when you come to talk.
+	WorldLife.start()
 
 	-- Walking up to a hidden creature (or having one step out of a rustle spot) starts the
 	-- encounter. The device only asks; the server checks the spawn is the player's own, free,
@@ -433,6 +592,7 @@ function WorldView.start(openShop: () -> ())
 			elseif role == "Healer" then
 				-- A short fade while the team rests; free, and the server checks the player is here.
 				Transition.fade(function()
+					Sfx.play("heal")
 					Net.HealAtHealer.Fire(true)
 				end)
 			end
