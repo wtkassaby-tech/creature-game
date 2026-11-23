@@ -40,7 +40,8 @@ function TestPanel.start(parent: Instance)
 	toggle.Text = "Test"
 	toggle.TextSize = 13
 	toggle.Size = UDim2.fromOffset(48, 24)
-	toggle.Position = UDim2.new(0, 10, 1, -34)
+	toggle.AnchorPoint = Vector2.new(0.5, 0)
+	toggle.Position = UDim2.new(0.5, 0, 0, 4)
 	toggle.ZIndex = 2
 	toggle.Parent = gui
 	toggle.Activated:Connect(function()

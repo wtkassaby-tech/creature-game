@@ -5,6 +5,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Icons = require(script.Parent.Parent.UI.Icons)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Moves = require(ReplicatedStorage.content.Moves)
 local TypeChart = require(ReplicatedStorage.shared.TypeChart)
@@ -17,40 +18,36 @@ export type View = {
 	show: (move: string?, preview: number?, foe: Types.Element?, open: boolean) -> (),
 }
 
+local ICON = 16
+
 function MoveButton.new(parent: Instance, onPick: () -> ()): View
 	local button = Kit.button(parent, "", Kit.COLOURS.accent, onPick)
-	local name = Kit.label(button, "", UDim2.fromScale(1, 0.54), UDim2.new(), 22)
+	local name = Kit.label(button, "", UDim2.fromScale(1, 0.5), UDim2.new(), 22)
 	name.TextXAlignment = Enum.TextXAlignment.Center
 	name.TextStrokeColor3 = Kit.COLOURS.outline
 	name.TextStrokeTransparency = 0.4
-	-- The small print sits on a darker band set into the button: a cream chip naming the
-	-- type, the damage, and STRONG or WEAK.
-	local band = Kit.inset(button, UDim2.fromScale(1, 0.42), UDim2.fromScale(0, 0.58))
-	local chip = Kit.label(band, "", UDim2.new(0.3, 0, 1, -6), UDim2.fromOffset(4, 3), 14)
-	chip.TextXAlignment = Enum.TextXAlignment.Center
-	chip.BackgroundTransparency = 0
-	chip.BackgroundColor3 = Kit.COLOURS.panel
-	local chipCorner = Instance.new("UICorner")
-	chipCorner.CornerRadius = UDim.new(0.5, 0)
-	chipCorner.Parent = chip
-	local info = Kit.label(band, "", UDim2.new(0.34, -8, 1, -4), UDim2.new(0.3, 12, 0, 2), 16)
-	local hint = Kit.label(band, "", UDim2.new(0.36, -8, 1, -4), UDim2.new(0.64, 0, 0, 2), 16)
+	-- The small print sits on a darker band set into the button: the type's icon, the damage,
+	-- and STRONG or WEAK.
+	local band = Kit.inset(button, UDim2.new(1, 0, 0.42, -Kit.LIP), UDim2.fromScale(0, 0.5))
+	local iconHolder = Instance.new("Frame")
+	iconHolder.Size = UDim2.fromOffset(ICON, ICON)
+	iconHolder.Position = UDim2.new(0, 5, 0.5, -ICON / 2)
+	iconHolder.BackgroundTransparency = 1
+	iconHolder.Parent = band
+	local info = Kit.label(band, "", UDim2.new(0.4, 0, 1, -4), UDim2.fromOffset(ICON + 10, 2), 16)
+	local hint = Kit.label(band, "", UDim2.new(0.4, -8, 1, -4), UDim2.new(0.6, 0, 0, 2), 16)
 	hint.TextXAlignment = Enum.TextXAlignment.Right
-	-- On a coloured button the words are white; the hint is set in the pixel face.
+	-- On a coloured button the words are white; the name, damage and hint are in the pixel face.
 	name.TextColor3, info.TextColor3 = Kit.COLOURS.white, Kit.COLOURS.white
 	Kit.pixel(name, 18)
-	Kit.pixel(hint, 13)
+	Kit.pixel(info, 13)
+	Kit.pixel(hint, 12)
+	local shownElement: Types.Element? = nil
 
 	return {
 		button = button,
 		show = function(move: string?, preview: number?, foe: Types.Element?, open: boolean)
 			button.Visible = move ~= nil
-			button.Active = open
-			local faded = if open then 0 else 0.5
-			button.BackgroundTransparency = faded
-			name.TextTransparency, info.TextTransparency, hint.TextTransparency =
-				faded, faded, faded
-			chip.TextTransparency, chip.BackgroundTransparency = faded, faded
 			if not move then
 				return
 			end
@@ -59,10 +56,13 @@ function MoveButton.new(parent: Instance, onPick: () -> ()): View
 			button.BackgroundColor3 = if def
 				then Kit.ELEMENT_COLOURS[def.element]
 				else Kit.COLOURS.accent
-			local damage = if preview then `{preview} dmg` else ""
-			chip.Text = if def then def.element else ""
-			chip.Visible = def ~= nil
-			info.Text = damage
+			if def and def.element ~= shownElement then
+				shownElement = def.element
+				iconHolder:ClearAllChildren()
+				Icons.type(iconHolder, def.element, Kit.ELEMENT_COLOURS[def.element], ICON)
+			end
+			iconHolder.Visible = def ~= nil
+			info.Text = if preview then `{preview} dmg` else ""
 			local factor = if def and foe then TypeChart.multiplier(def.element, foe) else 1
 			if factor > 1 then
 				hint.Text, hint.TextColor3 = "STRONG", Color3.fromRGB(255, 240, 150)
@@ -71,6 +71,16 @@ function MoveButton.new(parent: Instance, onPick: () -> ()): View
 			else
 				hint.Text = ""
 			end
+			-- Not your turn: a solid muted face and dimmed ink, not a see-through button.
+			Kit.setEnabled(button, open)
+			local ink = if open then Kit.COLOURS.white else Kit.COLOURS.mutedInk
+			name.TextColor3, info.TextColor3 = ink, ink
+			name.TextStrokeTransparency = if open then 0.4 else 1
+			if not open then
+				hint.TextColor3 = Kit.COLOURS.mutedInk
+			end
+			band.BackgroundTransparency = if open then 0.55 else 0.8
+			iconHolder.Visible = def ~= nil and open
 		end,
 	}
 end

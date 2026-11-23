@@ -36,7 +36,7 @@ function TitleCard.play(playerGui: Instance, onDone: () -> ())
 	small.TextXAlignment = Enum.TextXAlignment.Center
 	small.TextColor3 = Kit.COLOURS.textDim
 	local word =
-		Kit.label(band, "THISTLEDOWN", UDim2.fromScale(0.9, 0.44), UDim2.fromScale(0.05, 0.3), 56)
+		Kit.title(band, "THISTLEDOWN", UDim2.fromScale(0.9, 0.44), UDim2.fromScale(0.05, 0.3), 56)
 	word.TextXAlignment = Enum.TextXAlignment.Center
 	word.TextScaled = true
 	local limit = Instance.new("UITextSizeConstraint")

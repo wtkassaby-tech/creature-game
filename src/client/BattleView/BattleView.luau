@@ -17,7 +17,6 @@ local MovementLock = require(script.Parent.Parent.UI.MovementLock)
 local BattleFx = require(script.Parent.BattleFx)
 local BattleStage = require(script.Parent.BattleStage)
 local CatchSequence = require(script.Parent.CatchSequence)
-local Portrait = require(script.Parent.Parent.Creatures.Portrait)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Transition = require(script.Parent.Parent.UI.Transition)
 local MoveButton = require(script.Parent.MoveButton)
@@ -85,7 +84,7 @@ local OPENING_SECONDS = 2.6 -- how long a tamer's opening words hold the box bef
 local OUTCOME_KIND: { [number]: ResultPanel.Kind } = { [0] = "Draw", [1] = "Won", [2] = "Lost" }
 
 function BattleView.start(playerGui: Instance)
-	local gui = Kit.screen(playerGui, "Battle", 10)
+	local gui = Kit.screen(playerGui, "Battle", 10, true)
 	-- No walking during a battle: in the first Studio run a long-grass battle followed the
 	-- player all the way back to town.
 	MovementLock.whileOpen(gui)
@@ -110,76 +109,78 @@ function BattleView.start(playerGui: Instance)
 		hurried = true
 	end)
 
-	-- The two creature plates, slim and see-through: name and level, a small chip in the colour
-	-- of the type, the health bar with its numbers under it, and the tempo meter.
+	-- The two creature plates, slim: name and level, a chip for the type (icon and name), the
+	-- health bar with "HP" beside it and, on your own plate, the numbers under it, and the tempo
+	-- meter with its label.
 	type Card = {
 		panel: Frame,
 		name: TextLabel,
-		chip: TextLabel,
+		chip: Frame?,
+		chipElement: Types.Element?,
 		numbers: TextLabel,
 		health: Kit.Bar,
 		tempo: Kit.Bar,
-		species: string?, -- whose cutout is behind the text now
-		cutout: ViewportFrame?,
+		showNumbers: boolean, -- only your own plate shows the exact health
 	}
-	local function card(position: UDim2): Card
-		local panel = Kit.panel(gui, UDim2.new(0.3, 0, 0, 72), position)
-		panel.ClipsDescendants = true -- the cutout behind the text runs off the plate's edge
-		local name = Kit.label(panel, "", UDim2.new(1, -90, 0, 24), UDim2.fromOffset(12, 5), 24)
-		local chip = Kit.label(panel, "", UDim2.fromOffset(66, 18), UDim2.new(1, -76, 0, 8), 13)
-		chip.TextXAlignment = Enum.TextXAlignment.Center
-		chip.TextColor3 = Kit.COLOURS.white
-		chip.BackgroundTransparency = 0
-		local chipCorner = Instance.new("UICorner")
-		chipCorner.CornerRadius = UDim.new(0.5, 0)
-		chipCorner.Parent = chip
-		local tag = Kit.label(panel, "HP", UDim2.fromOffset(24, 12), UDim2.fromOffset(12, 34), 12)
-		tag.TextColor3 = Kit.COLOURS.gold
+	local function card(position: UDim2, showNumbers: boolean): Card
+		local panel = Kit.panel(gui, UDim2.new(0.3, 0, 0, 86), position)
+		local name = Kit.title(panel, "", UDim2.new(1, -20, 0, 22), UDim2.fromOffset(10, 5), 22)
+		local tag = Kit.label(panel, "HP", UDim2.fromOffset(28, 14), UDim2.fromOffset(10, 30), 14)
+		Kit.pixel(tag, 14)
 		local health =
-			Kit.bar(panel, UDim2.new(1, -50, 0, 10), UDim2.fromOffset(38, 35), Kit.COLOURS.good)
-		local tempo =
-			Kit.bar(panel, UDim2.new(0.45, 0, 0, 5), UDim2.fromOffset(12, 56), Kit.COLOURS.tempo)
+			Kit.bar(panel, UDim2.new(1, -52, 0, 12), UDim2.fromOffset(40, 30), Kit.COLOURS.good)
 		local numbers =
-			Kit.label(panel, "", UDim2.new(0.5, -12, 0, 16), UDim2.new(0.5, 0, 0, 50), 14)
+			Kit.label(panel, "", UDim2.new(0.5, -10, 0, 18), UDim2.new(0.5, 0, 0, 46), 16)
+		Kit.pixel(numbers, 16)
 		numbers.TextXAlignment = Enum.TextXAlignment.Right
-		numbers.TextColor3 = Kit.COLOURS.textDim
+		numbers.Visible = showNumbers
+		local tempoTag =
+			Kit.label(panel, "TEMPO", UDim2.fromOffset(44, 10), UDim2.fromOffset(10, 72), 10)
+		Kit.pixel(tempoTag, 10)
+		tempoTag.TextColor3 = Kit.COLOURS.tempo
+		local tempo =
+			Kit.bar(panel, UDim2.new(1, -66, 0, 6), UDim2.fromOffset(58, 74), Kit.COLOURS.tempo)
 		return {
 			panel = panel,
 			name = name,
-			chip = chip,
+			chip = nil,
+			chipElement = nil,
 			numbers = numbers,
 			health = health,
 			tempo = tempo,
-			species = nil,
-			cutout = nil,
+			showNumbers = showNumbers,
 		}
 	end
 	-- 1 = yours (left, beside your creature), 2 = theirs (upper right, beside theirs), matching
 	-- the sides in the model and where the camera puts the two creatures.
-	local cards: { Card } = { card(UDim2.fromScale(0.03, 0.3)), card(UDim2.fromScale(0.67, 0.2)) }
+	local cards: { Card } =
+		{ card(UDim2.fromScale(0.03, 0.28), true), card(UDim2.fromScale(0.67, 0.18), false) }
 	-- The bottom of the screen, as in the old handheld games: a text box that says what is
-	-- happening, with the menu beside it (FIGHT, LASSO, ITEMS, SWITCH, RUN). FIGHT swaps both for
-	-- the four moves.
-	local box = Kit.panel(gui, UDim2.fromScale(0.56, 0.26), UDim2.fromScale(0.02, 0.72))
+	-- happening, with the menu beside it (FIGHT tall on the left, then LASSO, ITEMS, SWITCH and
+	-- RUN in a grid). FIGHT swaps both for the four moves.
+	local box = Kit.panel(gui, UDim2.fromScale(0.46, 0.28), UDim2.fromScale(0.02, 0.7))
 	box.ClipsDescendants = true
-	local boxCutout: ViewportFrame? = nil
-	local boxSpecies: string? = nil
 	local message = Kit.label(box, "", UDim2.new(1, -32, 1, -20), UDim2.fromOffset(16, 10), 22)
 	message.TextWrapped = true
 	message.TextYAlignment = Enum.TextYAlignment.Top
-	Kit.pixel(message, 22)
-	local menu = Kit.panel(gui, UDim2.fromScale(0.38, 0.26), UDim2.fromScale(0.6, 0.72))
+	local menu = Kit.panel(gui, UDim2.fromScale(0.5, 0.28), UDim2.fromScale(0.48, 0.7))
 	local side = Instance.new("Frame")
 	side.Size = UDim2.new(1, -16, 1, -16)
 	side.Position = UDim2.fromOffset(8, 8)
 	side.BackgroundTransparency = 1
 	side.Parent = menu
+	-- FIGHT is the tall cell on the left; the other four sit in a grid beside it.
+	local grid = Instance.new("Frame")
+	grid.Size = UDim2.new(0.62, -4, 1, 0)
+	grid.Position = UDim2.new(0.38, 4, 0, 0)
+	grid.BackgroundTransparency = 1
+	grid.Parent = side
 	local sideGrid = Instance.new("UIGridLayout")
-	sideGrid.CellSize = UDim2.new(0.333, -6, 0.5, -4)
-	sideGrid.CellPadding = UDim2.fromOffset(8, 8)
+	sideGrid.CellSize = UDim2.new(0.5, -4, 0.5, -4)
+	sideGrid.CellPadding = UDim2.fromOffset(Kit.SPACE.normal, Kit.SPACE.normal)
 	sideGrid.SortOrder = Enum.SortOrder.LayoutOrder
-	sideGrid.Parent = side
-	local actions = Kit.panel(gui, UDim2.fromScale(0.96, 0.26), UDim2.fromScale(0.02, 0.72))
+	sideGrid.Parent = grid
+	local actions = Kit.panel(gui, UDim2.fromScale(0.96, 0.28), UDim2.fromScale(0.02, 0.7))
 	actions.Visible = false
 	local moves = Instance.new("Frame")
 	moves.Size = UDim2.new(0.84, -12, 1, -16)
@@ -188,7 +189,7 @@ function BattleView.start(playerGui: Instance)
 	moves.Parent = actions
 	local moveGrid = Instance.new("UIGridLayout")
 	moveGrid.CellSize = UDim2.new(0.5, -4, 0.5, -4)
-	moveGrid.CellPadding = UDim2.fromOffset(8, 8)
+	moveGrid.CellPadding = UDim2.fromOffset(Kit.SPACE.normal, Kit.SPACE.normal)
 	moveGrid.Parent = moves
 	local choosingMove = false -- FIGHT was pressed: the four moves are showing
 
@@ -211,6 +212,8 @@ function BattleView.start(playerGui: Instance)
 
 	local lasso = LassoView.new(gui)
 	local refresh: () -> ()
+	local lassoing = false -- the lasso panel is up: the message box and menu are hidden
+	local setLassoing: (on: boolean) -> ()
 
 	-- The catch scene plays between the lasso result and everything the server sent after it (the
 	-- turn, the rewards, the end card). Those wait here, so nothing shows out of order.
@@ -261,14 +264,14 @@ function BattleView.start(playerGui: Instance)
 			button.Size = UDim2.new(1, 0, 0, 44)
 			button.ZIndex = 6
 		end
-		local close = Kit.button(picker, "Back", Kit.COLOURS.bad, function()
+		local close = Kit.button(picker, "Back", Kit.COLOURS.neutral, function()
 			picker.Visible = false
 		end)
-		close.Size = UDim2.new(1, 0, 0, 40)
+		close.Size = UDim2.new(1, 0, 0, 44)
 		close.ZIndex = 6
 		-- Only as tall as its rows, and sitting just above the bottom panels, so the two
 		-- creatures stay in view behind it.
-		local tall = 16 + #options * 50 + 46
+		local tall = 16 + #options * 50 + 50
 		picker.Size = UDim2.new(0.44, 0, 0, tall)
 		picker.Position = UDim2.new(0.28, 0, 0.68, -tall)
 		picker.Visible = true
@@ -277,6 +280,15 @@ function BattleView.start(playerGui: Instance)
 	local function held(item: string): number
 		local state = ClientState.get()
 		return if state then state.Items[item] or 0 else 0
+	end
+	-- Gem-bought lassos (kept as "<tier>_g") count only where the server says paid random items are
+	-- not restricted; until PurchaseFlags arrives they are hidden.
+	local paidRestricted = true
+	Bus.listen(Net.PurchaseFlags, function(flags)
+		paidRestricted = flags.PaidRandomRestricted
+	end)
+	local function gemHeld(tier: string): number
+		return if paidRestricted then 0 else held(tier .. "_g")
 	end
 
 	local moveButtons: { MoveButton.View } = {}
@@ -298,8 +310,9 @@ function BattleView.start(playerGui: Instance)
 		choosingMove = true
 		refreshMenu()
 	end)
+	fightButton.Size = UDim2.new(0.38, -4, 1, 0)
 	fightButton.LayoutOrder = 1
-	local backButton = Kit.button(actions, "BACK", Kit.COLOURS.panelLight, function()
+	local backButton = Kit.button(actions, "BACK", Kit.COLOURS.neutral, function()
 		choosingMove = false
 		refreshMenu()
 	end)
@@ -327,12 +340,13 @@ function BattleView.start(playerGui: Instance)
 			lassoScale.Scale = 1
 		end
 	end
-	lassoButton = Kit.button(side, "LASSO", Kit.COLOURS.lasso, function()
+	lassoButton = Kit.button(grid, "LASSO", Kit.COLOURS.lasso, function()
 		local options = {}
 		for _, tier in { "Basic", "Braided", "Gilded" } do
-			if held(tier) > 0 then
+			if held(tier) + gemHeld(tier) > 0 then
 				table.insert(options, {
-					text = `{tier} lasso x{held(tier)}`,
+					text = `{tier} lasso x{held(tier) + gemHeld(tier)}`
+						.. (if gemHeld(tier) > 0 then " (Gem lassos mark the catch)" else ""),
 					pick = function()
 						send(function(current)
 							Net.ThrowLasso.Fire({
@@ -355,7 +369,7 @@ function BattleView.start(playerGui: Instance)
 	end)
 	lassoButton.LayoutOrder = 2
 	lassoScale.Parent = lassoButton
-	local itemsButton = Kit.button(side, "ITEMS", Kit.COLOURS.good, function()
+	local itemsButton = Kit.button(grid, "ITEMS", Kit.COLOURS.good, function()
 		local current = model
 		if not current then
 			return
@@ -394,7 +408,7 @@ function BattleView.start(playerGui: Instance)
 		choose(options)
 	end)
 	itemsButton.LayoutOrder = 3
-	local switchButton = Kit.button(side, "SWITCH", Kit.COLOURS.accent, function()
+	local switchButton = Kit.button(grid, "SWITCH", Kit.COLOURS.accent, function()
 		local current = model
 		if not current then
 			return
@@ -420,7 +434,7 @@ function BattleView.start(playerGui: Instance)
 		choose(options)
 	end)
 	switchButton.LayoutOrder = 4
-	local runButton = Kit.button(side, "RUN", Kit.COLOURS.panelLight, function()
+	local runButton = Kit.button(grid, "RUN", Kit.COLOURS.panelLight, function()
 		send(function(current)
 			Net.BattleAction.Fire({
 				BattleId = current.battleId,
@@ -440,14 +454,28 @@ function BattleView.start(playerGui: Instance)
 		model = nil
 	end)
 
-	-- A small switch for battle speed, tucked under the wallet.
+	-- A small ">>" switch for battle speed, tucked above the menu. Gold while fast.
 	local speed: TextButton
-	speed = Kit.button(gui, "Speed: normal", Kit.COLOURS.panelLight, function()
+	speed = Kit.button(gui, ">>", Kit.COLOURS.neutral, function()
 		fast = not fast
-		speed.Text = if fast then "Speed: fast" else "Speed: normal"
+		speed.BackgroundColor3 = if fast then Kit.COLOURS.warn else Kit.COLOURS.neutral
 	end)
-	speed.Size = UDim2.fromOffset(150, 44)
-	speed.Position = UDim2.fromOffset(10, 10) -- top left: the quest tracker is hidden in a battle
+	speed.Size = UDim2.fromOffset(52, 30)
+	speed.AnchorPoint = Vector2.new(1, 1)
+	speed.Position = UDim2.new(0.98, 0, 0.7, -6)
+
+	-- While the lasso panel is up the message box and the menu make way for it.
+	setLassoing = function(on: boolean)
+		lassoing = on
+		speed.Visible = not on
+		if model then
+			refresh()
+		end
+	end
+	runButton.LayoutOrder = 5
+	for _, labelled in { fightButton, lassoButton, itemsButton, switchButton, runButton } do
+		Kit.textSize(labelled, 28)
+	end
 
 	-- The end panel appears once the last turn has been shown; rewards join it when they arrive.
 	local showEnd: (current: Model) -> ()
@@ -499,37 +527,22 @@ function BattleView.start(playerGui: Instance)
 		result.show(kind, current.rewards, caught)
 	end
 
-	-- A flat, faded picture of a creature, set behind the text of a box that is about it.
-	local function cutout(
-		parent: Instance,
-		fighter: Fighter,
-		across: number,
-		fade: number
-	): ViewportFrame
-		local picture = Portrait.new(
-			parent,
-			fighter.name,
-			fighter.element,
-			UDim2.fromOffset(across, across),
-			UDim2.new(1, -across * 0.92, 0.5, -across * 0.5)
-		)
-		picture.ImageTransparency = fade
-		picture.ZIndex = 0 -- behind everything else in the box
-		return picture
-	end
-
 	local function showCard(shown: Card, fighter: Fighter, tempoShare: number)
-		if shown.species ~= fighter.name then
-			local old = shown.cutout
+		shown.name.Text = `{fighter.name}  Lv {fighter.level}`
+		if shown.chipElement ~= fighter.element then
+			local old = shown.chip
 			if old then
 				old:Destroy()
 			end
-			shown.species = fighter.name
-			shown.cutout = cutout(shown.panel, fighter, 130, 0.5)
+			shown.chipElement = fighter.element
+			shown.chip = Kit.typeChip(
+				shown.panel,
+				fighter.element,
+				UDim2.fromOffset(92, 22),
+				UDim2.fromOffset(10, 48),
+				18
+			)
 		end
-		shown.name.Text = `{fighter.name}  Lv {fighter.level}`
-		shown.chip.Text = fighter.element
-		shown.chip.BackgroundColor3 = Kit.ELEMENT_COLOURS[fighter.element]
 		shown.numbers.Text = `{fighter.hp} / {fighter.maxHp}`
 		local share = fighter.hp / math.max(1, fighter.maxHp)
 		shown.health.set(share, Kit.healthColour(share))
@@ -550,13 +563,6 @@ function BattleView.start(playerGui: Instance)
 		local mine, foe = current.sides[1][current.active[1]], current.sides[2][current.active[2]]
 		if mine then
 			showCard(cards[1], mine, current.tempo[1] / 100)
-			if boxSpecies ~= mine.name then
-				if boxCutout then
-					boxCutout:Destroy()
-				end
-				boxSpecies = mine.name
-				boxCutout = cutout(box, mine, 230, 0.6)
-			end
 		end
 		if foe then
 			showCard(cards[2], foe, current.tempo[2] / 100)
@@ -578,18 +584,21 @@ function BattleView.start(playerGui: Instance)
 			button.show(move, current.previews[index], if foe then foe.element else nil, open)
 		end
 		lassoButton.Visible = current.wild
-		-- Three choices against a tamer fill one tall row; five against a wild creature take two.
+		-- Two choices against a tamer fill one tall column each; four against a wild creature
+		-- take the 2 by 2 grid beside FIGHT.
 		sideGrid.CellSize = if current.wild
-			then UDim2.new(0.333, -6, 0.5, -4)
-			else UDim2.new(0.333, -6, 1, 0)
+			then UDim2.new(0.5, -4, 0.5, -4)
+			else UDim2.new(0.5, -4, 1, 0)
 		runButton.Visible = current.wild
 		if not open then
 			choosingMove = false -- a choice was made, or the battle ended
 		end
-		box.Visible = (not current.over or os.clock() < current.holdUntil) and not choosingMove
-		menu.Visible = open and not choosingMove
+		box.Visible = (not current.over or os.clock() < current.holdUntil)
+			and not choosingMove
+			and not lassoing
+		menu.Visible = open and not choosingMove and not lassoing
 		actions.Visible = open and choosingMove
-		-- The coach, when it has something to say, takes the place of "What will X do?". It only
+		-- The coach, when it has something to say, takes the place of "Your move, X.". It only
 		-- shows words; no button is ever hidden or blocked by it.
 		local flags = coachFlags()
 		local line: string? = nil
@@ -599,7 +608,7 @@ function BattleView.start(playerGui: Instance)
 		end
 		-- A tamer's opening words stay up a moment before the prompt or the coach takes the box.
 		if open and not choosingMove and mine and os.clock() >= current.speakUntil then
-			message.Text = line or `What will {mine.name} do?`
+			message.Text = line or `Your move, {mine.name}.`
 		end
 		setPulse(
 			open
@@ -676,12 +685,13 @@ function BattleView.start(playerGui: Instance)
 			end)
 		end
 		message.Text = if value.Kind == "Wild"
-			then `A wild {value.Theirs[1].Torso} appears!`
+			then `Something stirs nearby. It is a {value.Theirs[1].Torso}!`
 			elseif opens then TamerLines.words(opens)
 			else "The battle begins!"
 		picker.Visible = false
 		result.hide()
 		lasso.finish()
+		setLassoing(false)
 		capturing = false
 		catchSequence.clear()
 		local opening = model
@@ -698,7 +708,8 @@ function BattleView.start(playerGui: Instance)
 				staged = { current.active[1], current.active[2] }
 				stage.open(
 					{ species = mine.name, element = mine.element, size = mine.size },
-					{ species = foe.name, element = foe.element, size = foe.size }
+					{ species = foe.name, element = foe.element, size = foe.size },
+					if current.wild then nil else current.foe
 				)
 			end
 			refresh()
@@ -866,21 +877,40 @@ function BattleView.start(playerGui: Instance)
 		end
 		local xp = 0
 		local levels: { ResultPanel.LevelUp } = {}
+		local memberCards: { ResultPanel.MemberCard } = {}
 		for _, member in value.Members do
 			xp = math.max(xp, member.Gained)
-			if member.LevelsGained > 0 then
-				-- Say whose level it is: "Level 6!" alone left the player guessing.
-				local name = "Your creature"
-				for _, fighter in current.sides[1] do
-					if fighter.id == member.Id then
-						name = fighter.name
-					end
+			-- Say whose level it is: "Level 6!" alone left the player guessing.
+			local name = "Your creature"
+			local mine: Fighter? = nil
+			for _, fighter in current.sides[1] do
+				if fighter.id == member.Id then
+					name = fighter.name
+					mine = fighter
 				end
+			end
+			if member.LevelsGained > 0 then
 				table.insert(levels, { name = name, level = member.Level })
 			end
+			if mine then
+				table.insert(memberCards, {
+					name = mine.name,
+					element = mine.element,
+					gained = member.Gained,
+					levelBefore = math.max(1, member.Level - member.LevelsGained),
+					levelAfter = member.Level,
+					xpBefore = member.XpBefore,
+					xpAfter = member.XpAfter,
+				})
+			end
 		end
-		current.rewards =
-			{ coins = value.Coins, xp = xp, material = value.Material, levels = levels }
+		current.rewards = {
+			coins = value.Coins,
+			xp = xp,
+			material = value.Material,
+			levels = levels,
+			members = memberCards,
+		}
 		if #levels > 0 then
 			moveFx.levelUp(1) -- a column of motes rises from the player's creature
 		end
@@ -893,10 +923,12 @@ function BattleView.start(playerGui: Instance)
 		if current and current.battleId == value.BattleId then
 			message.Text = "Swing..."
 			lasso.begin(value)
+			setLassoing(true)
 		end
 	end)
 	Bus.listen(Net.LassoResult, function(value)
 		lasso.finish()
+		setLassoing(false)
 		local current = model
 		if not current or not gui.Enabled then
 			return -- another screen's throw (a giant capture)
@@ -906,10 +938,12 @@ function BattleView.start(playerGui: Instance)
 		if value.Outcome == "Missed" then
 			missed = Coach.missLine(current.foeRarity) or missed
 		end
+		-- The chance this throw was rolled against (wild throws only).
+		local rolled = if value.Chance ~= nil then ` (chance {value.Chance}%)` else ""
 		local line = if value.Outcome == "Caught"
-			then "Caught!"
-			elseif value.Outcome == "Fled" then "It broke free and fled!"
-			else missed
+			then "Caught!" .. rolled
+			elseif value.Outcome == "Fled" then "It broke free and fled!" .. rolled
+			else missed .. rolled
 		if value.Outcome == "Caught" then
 			current.caught = true
 			current.caughtFoe = current.sides[2][current.active[2]]

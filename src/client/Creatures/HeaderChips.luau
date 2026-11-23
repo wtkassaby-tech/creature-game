@@ -55,7 +55,7 @@ function HeaderChips.new(parent: Instance): Header
 	across.SortOrder = Enum.SortOrder.LayoutOrder
 	across.Parent = row
 
-	local title = Kit.label(row, "", UDim2.fromOffset(160, 44), UDim2.new(), 24)
+	local title = Kit.title(row, "", UDim2.fromOffset(160, 44), UDim2.new(), 24)
 	title.LayoutOrder = 0
 	local pens = chip(row, 220, 1, nil)
 	local leaf = chip(row, 70, 2, Kit.ELEMENT_COLOURS.Leaf)

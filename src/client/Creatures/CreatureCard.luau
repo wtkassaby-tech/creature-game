@@ -79,19 +79,7 @@ function CreatureCard.typeTag(
 	size: UDim2,
 	position: UDim2
 ): Frame
-	local tag = Instance.new("Frame")
-	tag.Size = size
-	tag.Position = position
-	tag.BackgroundColor3 = Kit.ELEMENT_COLOURS[element]
-	tag.BorderSizePixel = 0
-	tag.Parent = parent
-	CreatureCard.rounded(tag, 5)
-	CreatureCard.stroke(tag, Kit.COLOURS.outline, 2)
-	local text = Kit.label(tag, string.upper(element), UDim2.fromScale(1, 1), UDim2.new(), 20)
-	text.TextXAlignment = Enum.TextXAlignment.Center
-	text.TextColor3 = Kit.COLOURS.white
-	Kit.pixel(text, 14)
-	return tag
+	return Kit.typeChip(parent, element, size, position, 14)
 end
 
 -- A stripe of the type's colour behind a portrait, so the types are learned by colour.
@@ -145,7 +133,7 @@ function CreatureCard.new(
 	local bar: Kit.Bar
 	local position: TextLabel? = nil
 	if isTeam then
-		name = Kit.label(frame, species, UDim2.new(1, -8, 0.17, 0), UDim2.new(0, 4, 0.52, 0), 40)
+		name = Kit.title(frame, species, UDim2.new(1, -8, 0.17, 0), UDim2.new(0, 4, 0.52, 0), 40)
 		name.TextXAlignment = Enum.TextXAlignment.Center
 		level = Kit.label(frame, "", UDim2.fromScale(0.36, 0.16), UDim2.new(0, 6, 0.7, 0), 20)
 		if def then
@@ -171,7 +159,7 @@ function CreatureCard.new(
 		Kit.pixel(number, 14)
 		position = number
 	else
-		name = Kit.label(frame, species, UDim2.new(1, -12, 0, 19), UDim2.fromOffset(6, 3), 40)
+		name = Kit.title(frame, species, UDim2.new(1, -12, 0, 19), UDim2.fromOffset(6, 3), 40)
 		level = Kit.label(frame, "", UDim2.new(1, -68, 0, 18), UDim2.fromOffset(62, 28), 20)
 		bar = Kit.bar(frame, UDim2.new(1, -70, 0, 9), UDim2.fromOffset(62, 54), Kit.COLOURS.good)
 	end

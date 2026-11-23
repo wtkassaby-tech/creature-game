@@ -8,16 +8,20 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
+local AudioConfig = require(ReplicatedStorage.config.AudioConfig)
 local BeatHint = require(ReplicatedStorage.shared.BeatHint)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
+local Icons = require(script.Parent.Parent.UI.Icons)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local LookAt = require(script.Parent.LookAt)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local Cadence = require(ReplicatedStorage.shared.Cadence)
 local Snapshot = require(ReplicatedStorage.shared.Snapshot)
 local SpeakerFace = require(script.Parent.SpeakerFace)
 local StarterPick = require(script.Parent.StarterPick)
@@ -80,7 +84,7 @@ end
 
 function StoryView.start(playerGui: Instance)
 	-- The tracker: always on, top-left, clear of the bar at the top right.
-	local hud = Kit.screen(playerGui, "Tracker", 3)
+	local hud = Kit.screen(playerGui, "Tracker", 3, true)
 	hud.Enabled = true
 	-- A little notebook page: a striped "TO DO" strip across the top and a line for each thing,
 	-- only as tall as its lines.
@@ -113,14 +117,14 @@ function StoryView.start(playerGui: Instance)
 	local opening = false -- the title and the mentor's words keep the tracker hidden
 
 	-- The dialogue box: bottom of the screen, one line at a time.
-	local gui = Kit.screen(playerGui, "Dialogue", 20)
+	local gui = Kit.screen(playerGui, "Dialogue", 20, true)
 	-- The box and its name tab sit in one holder, so they slide up together when the box opens.
 	local slide = Instance.new("Frame")
 	slide.Size = UDim2.fromScale(1, 1)
 	slide.BackgroundTransparency = 1
 	slide.BorderSizePixel = 0
 	slide.Parent = gui
-	local box = Kit.panel(slide, UDim2.new(0.8, 0, 0, 130), UDim2.new(0.1, 0, 1, -150))
+	local box = Kit.panel(slide, UDim2.new(0.8, 0, 0, 110), UDim2.new(0.1, 0, 1, -128))
 	-- Who is speaking: a name tab on the box's top edge and, for some, a face at its left.
 	local face = SpeakerFace.new(slide, box)
 	local slideTween: Tween? = nil
@@ -142,11 +146,11 @@ function StoryView.start(playerGui: Instance)
 		slideTween = rise
 		rise:Play()
 	end)
-	-- The words keep clear of the NEXT button at the top right.
-	local line = Kit.label(box, "", UDim2.new(1, -170, 1, -28), UDim2.fromOffset(16, 14), 22)
+	-- The words keep clear of the face at the left and the arrow at the bottom right.
+	local line = Kit.label(box, "", UDim2.new(1, -56, 1, -24), UDim2.fromOffset(16, 12), 22)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
-	Kit.pixel(line, 20)
+	Kit.textSize(line, 22) -- the body face: a sentence, not a title
 	-- `look` is a place the camera turns to while the line shows (a beat's `lookAt`).
 	local queue: { { speaker: string, text: string, look: string? } } = {}
 	-- Things to do once the queue has been read to its end (the pick screen, the Day one card).
@@ -154,6 +158,7 @@ function StoryView.start(playerGui: Instance)
 	-- Lines are typed out a letter at a time with a soft tick, as in the old handheld games.
 	-- Pressing Next while a line is still being typed shows the rest of it at once.
 	local typing = 0
+	local lastTick = -math.huge
 	local function typeOut(text: string)
 		typing += 1
 		local mine = typing
@@ -165,8 +170,11 @@ function StoryView.start(playerGui: Instance)
 					return
 				end
 				line.MaxVisibleGraphemes = count
-				if count % 3 == 0 then
-					Sfx.play("count")
+				-- A soft tick for each batch of letters, never more often than TICK_GAP.
+				local now = os.clock()
+				if Cadence.ready(lastTick, now, AudioConfig.TICK_GAP) then
+					lastTick = now
+					Sfx.play("tick")
 				end
 				task.wait(0.022)
 			end
@@ -197,8 +205,8 @@ function StoryView.start(playerGui: Instance)
 			return
 		end
 		local taken = face.show(nextLine.speaker)
-		line.Position = UDim2.fromOffset(16 + taken, 14)
-		line.Size = UDim2.new(1, -(170 + taken), 1, -28)
+		line.Position = UDim2.fromOffset(16 + taken, 12)
+		line.Size = UDim2.new(1, -(56 + taken), 1, -24)
 		typeOut(nextLine.text)
 		showing = true
 		gui.Enabled = not battleOpen
@@ -223,7 +231,9 @@ function StoryView.start(playerGui: Instance)
 		battle:GetPropertyChangedSignal("Enabled"):Connect(battleChanged)
 		battleChanged()
 	end)
-	local nextButton = Kit.button(box, "NEXT", Kit.COLOURS.accent, function()
+	-- Advancing: tap anywhere on the box, or press Enter, Space or the gamepad's A. A tap while
+	-- a line is still being typed shows the rest of it.
+	local function advance()
 		if LookAt.turning() then
 			LookAt.release() -- a tap while the camera is still turning skips the look
 		end
@@ -233,9 +243,53 @@ function StoryView.start(playerGui: Instance)
 		else
 			showNext()
 		end
+	end
+	local tapBox = Instance.new("TextButton")
+	tapBox.Name = "TapToContinue"
+	tapBox.Text = ""
+	tapBox.AutoButtonColor = false
+	tapBox.BackgroundTransparency = 1
+	tapBox.Size = UDim2.fromScale(1, 1)
+	tapBox.ZIndex = 5
+	tapBox.Parent = box
+	tapBox.Activated:Connect(function()
+		Sfx.play("press")
+		advance()
 	end)
-	nextButton.Size = UDim2.fromOffset(120, 44) -- finger-sized on a phone
-	nextButton.Position = UDim2.new(1, -132, 0, 6)
+	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		if processed or not gui.Enabled then
+			return
+		end
+		local key = input.KeyCode
+		if
+			key == Enum.KeyCode.Return
+			or key == Enum.KeyCode.Space
+			or key == Enum.KeyCode.ButtonA
+		then
+			advance()
+		end
+	end)
+	-- A small arrow bobbing at the bottom right says there is more; it shows once the line is
+	-- fully typed.
+	local arrow = Icons.arrowDown(box, 20, Kit.COLOURS.accent)
+	arrow.AnchorPoint = Vector2.new(1, 1)
+	arrow.Position = UDim2.new(1, -16, 1, -14)
+	arrow.ZIndex = 6
+	for _, part in arrow:GetChildren() do
+		if part:IsA("GuiObject") then
+			part.ZIndex = 6
+		end
+	end
+	TweenService:Create(
+		arrow,
+		TweenInfo.new(0.45, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+		{ Position = UDim2.new(1, -16, 1, -8) }
+	):Play()
+	local function showArrow()
+		arrow.Visible = line.MaxVisibleGraphemes == -1
+	end
+	line:GetPropertyChangedSignal("MaxVisibleGraphemes"):Connect(showArrow)
+	showArrow()
 
 	-- The tracker text. The egg line counts down, so this also runs once a second; it sets this
 	-- one label and nothing else.
@@ -260,7 +314,7 @@ function StoryView.start(playerGui: Instance)
 	local dayPanel = Kit.panel(dayGui, UDim2.fromOffset(440, 250), UDim2.fromScale(0.5, 0.5))
 	dayPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 	local dayTitle =
-		Kit.label(dayPanel, "Day one", UDim2.new(1, -28, 0, 40), UDim2.fromOffset(14, 10), 32)
+		Kit.title(dayPanel, "Day one", UDim2.new(1, -28, 0, 40), UDim2.fromOffset(14, 10), 32)
 	dayTitle.TextXAlignment = Enum.TextXAlignment.Center
 	local dayText =
 		Kit.label(dayPanel, "", UDim2.new(1, -40, 1, -132), UDim2.fromOffset(20, 56), 20)

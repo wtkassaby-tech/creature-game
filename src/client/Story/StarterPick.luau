@@ -49,13 +49,13 @@ function StarterPick.new(playerGui: Instance, startBeat: WorldTypes.Beat?): Pick
 	shade.Parent = gui
 	local box = Kit.panel(gui, UDim2.fromScale(0.92, 0.9), UDim2.fromScale(0.04, 0.05))
 	local title =
-		Kit.label(box, "Pick a friend", UDim2.new(1, -28, 0, 32), UDim2.fromOffset(14, 8), 28)
+		Kit.title(box, "Pick a friend", UDim2.new(1, -28, 0, 44), UDim2.fromOffset(14, 6), 36)
 	title.TextXAlignment = Enum.TextXAlignment.Center
 
 	-- The cards take everything between the title and the button row.
 	local cards = Instance.new("Frame")
-	cards.Size = UDim2.new(1, -28, 1, -112)
-	cards.Position = UDim2.fromOffset(14, 46)
+	cards.Size = UDim2.new(1, -28, 1, -122)
+	cards.Position = UDim2.fromOffset(14, 56)
 	cards.BackgroundTransparency = 1
 	cards.Parent = box
 	local grid = Instance.new("UIGridLayout")
@@ -143,23 +143,17 @@ function StarterPick.new(playerGui: Instance, startBeat: WorldTypes.Beat?): Pick
 			Portrait.new(card, species, def.element, UDim2.fromScale(1, 0.58), UDim2.new())
 		end
 		local name =
-			Kit.label(card, species, UDim2.new(1, -12, 0.12, 0), UDim2.new(0, 6, 0.6, 0), 40)
+			Kit.title(card, species, UDim2.new(1, -12, 0.12, 0), UDim2.new(0, 6, 0.6, 0), 40)
 		name.TextXAlignment = Enum.TextXAlignment.Center
 		if def then
-			-- The type as a little coloured tag, the same colour as the band and the move buttons.
-			local tag = Instance.new("Frame")
-			tag.AnchorPoint = Vector2.new(0.5, 0)
-			tag.Size = UDim2.fromScale(0.36, 0.07)
-			tag.Position = UDim2.fromScale(0.5, 0.735)
-			tag.BackgroundColor3 = Kit.ELEMENT_COLOURS[def.element]
-			tag.BorderSizePixel = 0
-			tag.Parent = card
-			rounded(tag, 6)
-			stroke(tag, Kit.COLOURS.outline, 2)
-			local kind =
-				Kit.label(tag, string.upper(def.element), UDim2.fromScale(1, 1), UDim2.new(), 20)
-			kind.TextXAlignment = Enum.TextXAlignment.Center
-			kind.TextColor3 = Color3.new(1, 1, 1)
+			-- The one type chip, with its icon, used everywhere a type is shown.
+			Kit.typeChip(
+				card,
+				def.element,
+				UDim2.fromOffset(132, 26),
+				UDim2.new(0.5, -66, 0.73, 0),
+				20
+			)
 		end
 		local blurb = Kit.label(
 			card,

@@ -18,6 +18,8 @@ local DailyRows = require(script.Parent.DailyRows)
 local DetailPanel = require(script.Parent.DetailPanel)
 local FriendsStrip = require(script.Parent.FriendsStrip)
 local HeaderChips = require(script.Parent.HeaderChips)
+local HudStrip = require(script.Parent.Parent.UI.HudStrip)
+local Icons = require(script.Parent.Parent.UI.Icons)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -37,25 +39,31 @@ local function clock(seconds: number): string
 end
 
 function CreaturesView.start(playerGui: Instance)
-	-- The bar that is always there.
-	local hud = Kit.screen(playerGui, "Hud", 2)
-	hud.Enabled = true
-	local bar = Kit.panel(hud, UDim2.fromOffset(340, 52), UDim2.new(1, -350, 0, 10))
-	local wallet = Kit.label(bar, "", UDim2.new(1, -136, 1, -8), UDim2.fromOffset(10, 4))
+	-- The strip along the top right is shared with the Journal button (FindsView).
+	local strip = HudStrip.get(playerGui).strip
+	local coinsLabel = HudStrip.currency(strip, Icons.coin, 1)
+	local prismLabel = HudStrip.currency(strip, Icons.prism, 2)
 	-- Notices sit on their own layer above every screen: on the Hud's layer the Creatures panel
 	-- covered them ("Not enough coins" was half hidden in the longer Studio run).
-	local notices = Kit.screen(playerGui, "Notices", 50)
+	local notices = Kit.screen(playerGui, "Notices", 50, true)
 	notices.Enabled = true
 	local notice = Kit.label(notices, "", UDim2.new(0.6, 0, 0, 28), UDim2.new(0.2, 0, 0, 68), 20)
 	notice.TextXAlignment = Enum.TextXAlignment.Center
 	Kit.overWorld(notice)
 	notice.TextStrokeTransparency = 0.3
 
-	local gui = Kit.screen(playerGui, "Creatures", 6)
+	local gui = Kit.screen(playerGui, "Creatures", 6, true)
 	-- What the button does is set further down, once the screen can be rebuilt.
-	local open = Kit.button(bar, "Creatures", Kit.COLOURS.accent, function() end)
-	open.Size = UDim2.new(0, 116, 1, -8) -- 44 px tall: finger-sized on a phone
-	open.Position = UDim2.new(1, -122, 0, 4)
+	local open = HudStrip.button(
+		strip,
+		"Creatures",
+		Kit.COLOURS.accent,
+		function(parent, size, position)
+			return Icons.creatures(parent, size, Kit.COLOURS.white, position)
+		end,
+		4,
+		function() end
+	)
 
 	-- Nearly the whole screen: at 874 by 402 this is 839 by 378 points.
 	local root = Kit.panel(gui, UDim2.fromScale(0.96, 0.94), UDim2.fromScale(0.02, 0.03))
@@ -103,8 +111,8 @@ function CreaturesView.start(playerGui: Instance)
 			end
 		)
 	end
-	local close = Kit.button(root, "Close", Kit.COLOURS.bad, closeScreen)
-	close.Size = UDim2.fromOffset(96, 44) -- finger-sized on a phone
+	local close = Kit.button(root, "Close", Kit.COLOURS.neutral, closeScreen)
+	close.Size = Kit.CLOSE_SIZE
 	close.Position = UDim2.new(1, -108, 0, 4)
 
 	-- Left: the team row, the stable, and (while parents are picked) the breeding strip.
@@ -319,7 +327,8 @@ function CreaturesView.start(playerGui: Instance)
 		if not state then
 			return
 		end
-		wallet.Text = `{state.Coins} coins   {math.floor(state.Candy.Prism)} Prism`
+		coinsLabel.Text = tostring(state.Coins)
+		prismLabel.Text = tostring(math.floor(state.Candy.Prism))
 		updatePulse()
 		if not gui.Enabled then
 			return

@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local Kit = require(script.Parent.Kit)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
 
 local Transition = {}
 
@@ -152,6 +153,7 @@ function Transition.fade(onCovered: () -> ())
 		return
 	end
 	busy = true
+	Sfx.play("travel")
 	screen.Enabled = true
 	for _, bar in bars do
 		bar.Visible = false

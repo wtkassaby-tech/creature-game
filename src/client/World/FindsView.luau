@@ -22,6 +22,8 @@ local Finds = require(ReplicatedStorage.shared.Finds)
 local FindsConfig = require(ReplicatedStorage.config.FindsConfig)
 local Ground = require(ReplicatedStorage.shared.Ground)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local HudStrip = require(script.Parent.Parent.UI.HudStrip)
+local Icons = require(script.Parent.Parent.UI.Icons)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local Particles = require(script.Parent.Parent.Fx.Particles)
@@ -209,7 +211,7 @@ local function textRow(
 	row.TextWrapped = true
 	row.TextXAlignment = Enum.TextXAlignment.Left
 	row.TextYAlignment = Enum.TextYAlignment.Top
-	row.Font = Kit.FONT
+	row.FontFace = Kit.BODY_FACE
 	row.TextSize = size
 	row.TextColor3 = colour or Kit.COLOURS.text
 	row.LayoutOrder = order
@@ -395,12 +397,10 @@ function FindsView.start(playerGui: Instance)
 		end)
 	end)
 
-	-- The journal: a button under the top bar, and a panel for the finds, pages and keepsakes.
-	local hud = Kit.screen(playerGui, "FindsHud", 2)
-	hud.Enabled = true
-	local gui = Kit.screen(playerGui, "Journal", 7)
+	-- The journal: a button in the top strip, and a panel for the finds, pages and keepsakes.
+	local gui = Kit.screen(playerGui, "Journal", 7, true)
 	local root = Kit.panel(gui, UDim2.fromScale(0.7, 0.9), UDim2.fromScale(0.15, 0.05))
-	local title = Kit.label(root, "Journal", UDim2.new(1, -140, 0, 40), UDim2.fromOffset(14, 6), 26)
+	local title = Kit.title(root, "Journal", UDim2.new(1, -140, 0, 40), UDim2.fromOffset(14, 6), 26)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	local list = Instance.new("ScrollingFrame")
 	list.BackgroundTransparency = 1
@@ -419,16 +419,24 @@ function FindsView.start(playerGui: Instance)
 	local function close()
 		gui.Enabled = false
 	end
-	local closeButton = Kit.button(root, "Close", Kit.COLOURS.bad, close)
-	closeButton.Size = UDim2.fromOffset(96, 40)
-	closeButton.Position = UDim2.new(1, -108, 0, 6)
-	local open = Kit.button(hud, "Journal", Kit.COLOURS.gold, function()
-		fillJournal(list, ClientState.get())
-		gui.Enabled = true
-		Kit.pop(root)
-	end)
-	open.Size = UDim2.fromOffset(116, 40)
-	open.Position = UDim2.new(1, -126, 0, 68)
+	local closeButton = Kit.button(root, "Close", Kit.COLOURS.neutral, close)
+	closeButton.Size = Kit.CLOSE_SIZE
+	closeButton.Position = UDim2.new(1, -108, 0, 4)
+	local strip = HudStrip.get(playerGui).strip
+	HudStrip.button(
+		strip,
+		"Journal",
+		Kit.COLOURS.gold,
+		function(parent, size, position)
+			return Icons.journal(parent, size, Kit.COLOURS.outline, position)
+		end,
+		3,
+		function()
+			fillJournal(list, ClientState.get())
+			gui.Enabled = true
+			Kit.pop(root)
+		end
+	)
 	ClientState.onChanged(function(state)
 		if gui.Enabled then
 			fillJournal(list, state)

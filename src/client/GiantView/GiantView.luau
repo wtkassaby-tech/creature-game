@@ -31,13 +31,13 @@ local GiantView = {}
 local MAX_LOG_LINES = 3
 
 function GiantView.start(playerGui: Instance)
-	local gui = Kit.screen(playerGui, "Giant", 11)
+	local gui = Kit.screen(playerGui, "Giant", 11, true)
 	MovementLock.whileOpen(gui) -- no walking off in the middle of a giant fight
 	local model: Model? = nil
 	local offered = false -- a capture attempt is on offer and not yet thrown
 
 	local boss = Kit.panel(gui, UDim2.new(0.94, 0, 0, 80), UDim2.fromScale(0.03, 0.06))
-	local bossName = Kit.label(boss, "", UDim2.new(1, -20, 0, 28), UDim2.fromOffset(10, 6), 24)
+	local bossName = Kit.title(boss, "", UDim2.new(1, -20, 0, 28), UDim2.fromOffset(10, 6), 24)
 	local bossHealth =
 		Kit.bar(boss, UDim2.new(1, -20, 0, 20), UDim2.fromOffset(10, 40), Kit.COLOURS.bad)
 	local intent = Kit.panel(
@@ -94,7 +94,7 @@ function GiantView.start(playerGui: Instance)
 		Kit.panel(gui, UDim2.fromScale(0.6, 0.3), UDim2.fromScale(0.2, 0.2), Kit.COLOURS.panelLight)
 	done.Visible = false
 	done.ZIndex = 8
-	local doneText = Kit.label(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.fromOffset(12, 8), 26)
+	local doneText = Kit.title(done, "", UDim2.new(1, -24, 0.6, 0), UDim2.fromOffset(12, 8), 26)
 	doneText.TextWrapped = true
 	doneText.ZIndex = 9
 	local close = Kit.button(done, "Continue", Kit.COLOURS.accent, function()
@@ -172,10 +172,10 @@ function GiantView.start(playerGui: Instance)
 			button.Size = UDim2.new(1, 0, 0, 44)
 			button.ZIndex = 6
 		end
-		local back = Kit.button(picker, "Back", Kit.COLOURS.bad, function()
+		local back = Kit.button(picker, "Back", Kit.COLOURS.neutral, function()
 			picker.Visible = false
 		end)
-		back.Size = UDim2.new(1, 0, 0, 40)
+		back.Size = UDim2.new(1, 0, 0, 44)
 		back.ZIndex = 6
 		picker.Visible = true
 	end

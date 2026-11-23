@@ -49,7 +49,7 @@ function FriendsStrip.new(parent: Instance, order: number): Strip
 		cell.Parent = cells
 		local window =
 			Portrait.new(cell, species, def.element, UDim2.fromScale(1, 1), UDim2.new(), true)
-		local mark = Kit.label(cell, "?", UDim2.fromScale(1, 1), UDim2.new(), 24)
+		local mark = Kit.title(cell, "?", UDim2.fromScale(1, 1), UDim2.new(), 24)
 		mark.TextXAlignment = Enum.TextXAlignment.Center
 		Kit.overWorld(mark)
 		mark.ZIndex = 2
