@@ -136,6 +136,50 @@ do
 	check("the capture marks the species seen and owned", p.Index.owned.Spadesnout == true)
 end
 
+print("\n== A catch joins the team while there is a free place ==")
+do
+	local p = fresh(100)
+	local limit = Profile.teamSize(p.Story.badges)
+	local caught: { Types.Creature } = {}
+	for _ = 1, limit + 2 do
+		local wild = creature("Spadesnout")
+		Grants.capture(p, wild)
+		table.insert(caught, wild)
+	end
+	check("the team fills to its limit", #p.Team == limit, `{#p.Team} of {limit}`)
+	check(
+		"the first catches are the ones on the team, in order",
+		p.Team[1] == caught[1].id and p.Team[limit] == caught[limit].id
+	)
+	check(
+		"later catches stay in the stable",
+		p.Creatures[caught[limit + 1].id] ~= nil and table.find(p.Team, caught[limit + 1].id) == nil
+	)
+	p.Story.badges = 3
+	local more = creature("Spadesnout")
+	Grants.capture(p, more)
+	check(
+		"a new badge's place takes the next catch",
+		#p.Team == limit + 1 and p.Team[limit + 1] == more.id
+	)
+
+	local gifts = fresh()
+	Grants.giveOnce(gifts, "Starter", "starter", function()
+		return creature()
+	end)
+	Grants.giveOnce(gifts, "Quest", "q1", function()
+		return creature()
+	end)
+	check("a gift still waits in the stable when the team is not empty", #gifts.Team == 1)
+
+	local twice = fresh()
+	local one = creature()
+	twice.Creatures[one.id] = one
+	Grants.recordOwned(twice, one, true)
+	Grants.recordOwned(twice, one, true)
+	check("a creature is never on the team twice", #twice.Team == 1)
+end
+
 print("\n== A new day ==")
 do
 	local p = fresh()

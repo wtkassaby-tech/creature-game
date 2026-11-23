@@ -228,7 +228,7 @@ function GiantCapture.complete(
 	end
 	local grant = Grants.finishGiant(profile, giant.id, creature)
 	if grant.outcome == "Granted" then
-		Grants.recordOwned(profile, creature)
+		Grants.recordOwned(profile, creature, true)
 		return grant, creature
 	end
 	return grant, nil

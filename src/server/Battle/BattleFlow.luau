@@ -150,11 +150,18 @@ end
 
 -- A player whose whole team has fainted wakes up at the healer in town with everyone mended.
 -- Losing costs the walk back and whatever was used in the battle.
-function BattleFlow.wakeAtHealerIfBeaten(player: Player, profile: Profile.Profile)
+-- `fought` is the creatures that were in the battle: a catch can join the team while a battle is
+-- on (a gem or giant whose serial number arrives then), and that fresh newcomer must not spare a
+-- beaten team the walk. Nil looks at the whole team.
+function BattleFlow.wakeAtHealerIfBeaten(
+	player: Player,
+	profile: Profile.Profile,
+	fought: { [string]: boolean }?
+)
 	local team: { Types.Creature } = {}
 	for _, id in profile.Team do
 		local creature = profile.Creatures[id]
-		if creature then
+		if creature and (fought == nil or fought[id]) then
 			table.insert(team, creature)
 		end
 	end
@@ -211,8 +218,12 @@ local function battleFinished(
 		return
 	end
 	StateSync.changed(player) -- health changed, whatever the result
+	local fought: { [string]: boolean } = {}
+	for _, fighter in session.state.sides[1].team do
+		fought[fighter.creature.id] = true
+	end
 	if outcome ~= 1 then
-		BattleFlow.wakeAtHealerIfBeaten(player, profile)
+		BattleFlow.wakeAtHealerIfBeaten(player, profile, fought)
 		return
 	end
 	local team = {}
@@ -288,7 +299,7 @@ local function battleFinished(
 	-- A win can still leave the whole team down (both sides fell on the last turn). Checked
 	-- last, after the mend above: a battle that cannot be lost never ends in a walk from the
 	-- healer (found in the first Studio run, where winning the first rival battle did).
-	BattleFlow.wakeAtHealerIfBeaten(player, profile)
+	BattleFlow.wakeAtHealerIfBeaten(player, profile, fought)
 end
 
 function BattleFlow.start(logger: (event: string, fields: { [string]: any }) -> ())

@@ -2,6 +2,18 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 23 November 2026: a catch joins the team while there is room (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Grants.luau` (`recordOwned`, `capture`, `finishGem`), `src/shared/GiantCapture.luau`, `src/shared/Coach.luau`, `src/client/BattleView/BattleView.luau`, read against `BattleService`, `BattleFlow`, `SerialGrants`, `Team` and the profile checks.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | A gem or giant whose serial number arrives during a later battle joins the team then; if that battle is lost, the healthy newcomer meant the beaten team skipped the wake at the healer | Low | `BattleFlow.wakeAtHealerIfBeaten` now looks only at the creatures that fought in the battle |
+| 2 | The catch card could say "Joined your team!" for a gem-tier catch, which joins only once its number arrives | Low (words only) | A numbered catch gets the neutral "A new friend!" line, with a test |
+| 3 | `recordOwned` does not check whether a creature may battle yet (a creature from a biome not yet reached) | Note | No path catches such a creature today; left as is |
+
+Found sound: the team can never pass its size for the player's badges, never holds a creature twice or one not in the stable; a battle's team is fixed when it starts, so a catch never joins a battle in progress; release, retries of the serial steps and the profile checks are unaffected; no client value reaches the server.
+
 ## 22 November 2026: the lasso's early-claim slack (first Studio run, branch fix/studio-first-run)
 
 Reviewer: a separate read-only exploit reviewer that did not write the change. Reviewed: `CLAIM_EARLY_MARGIN_MS` (120) added to the early allowance in `Lasso.judge`, the fuller `LassoInvalid` log line, and the lag-window tests. Verdict: safe to merge, no must-fix.

@@ -2,6 +2,16 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (a catch joins your team)
+
+**In one line:** a caught creature now joins your team while it has a free place (three to start, more with badges); once the team is full, catches wait in Creatures as before. Played in Studio from a new save: Sloshcalf picked, the rival won in three turns with STRONG moves from the first turn, the lasso lesson's Gorsling made two, a wild Sloshcalf caught made three ("Joined your team!"), and a Spadesnout caught after that went to Creatures ("Waiting in Creatures..."). `lune run check` passes; an independent review found no exploit and two small issues, both fixed (`docs/REVIEWS.md`).
+
+**Found while playing:** Studio had an old copy of the first-battle story lines and Greenwood's tamers (the rival still had Mossmitt against a Sloshcalf). Every source file was compared and the three stale ones replaced; nothing else differed.
+
+**Small thing noticed, not changed yet:** the end-of-battle card says "Level 6!" and "Level 4!" without saying which creature levelled up.
+
+**To playtest:** catch two creatures early on and check both are on your team for the next battle.
+
 ## 23 November 2026 (Dust Canyon and Tide Flats designed)
 
 **In one line:** the two other launch biomes are now drawn on purpose like Greenwood, from written plans, with twenty-six new painted town models. Run in Studio with no errors; `lune run check` passes.
@@ -75,7 +85,7 @@ What changed, and what Ayrton should do or look at next. Newest first.
 2. **Nicknames** for creatures: needs a save change and Roblox's text filter.
 3. **A "pick one of two" gift** from the mentor, and the Hollow Log's spawn table.
 4. **Painted models against the brief's art rule.** The brief locks "low-poly, flat colours". You said you like the painted clay models, so I am treating that rule as replaced. Say if that is wrong.
-5. **A caught creature should join the team when there is room.** Today it goes to the stable unless the team is empty, so a new player's second catch is not on their team. It is a one-line rule on the server, but it is part of catching, so it waits for your yes.
+5. ~~A caught creature should join the team when there is room.~~ Done 23 November (yes from Ayrton).
 6. **A name.** My pick is **Patchlings** for the creatures and **"Patchlings: Thistledown"** for the game; runner-up **Quiltlings**. Neither has been cleared legally (`docs/research/games/09_NAMES.md`).
 
 **To playtest:** start a new game on the new map. Does the town feel like a place? Is it clear where to go? Does the first battle feel won?

@@ -126,6 +126,7 @@ Paths: rows written before the project was restructured mention `prototype/`. Th
 | 23 Nov 2026 | **Tide Flats' cliffs are grey sea rock** (a new SeaCliff edge style with its own painted piece), not Dust Canyon's red sandstone, which the plan named for the cove and the sea cave | Claude (Default) | 12 |
 | 23 Nov 2026 | **The Redstack is built from the canyon's own cliff pieces** (two uneven tiers of CliffWall sections with a cap), not a single painted model: three generated mesas all came out looking like layered cakes | Claude (Default) | 12 |
 | 23 Nov 2026 | **Search spots take their stretch's look** (a ring of dry tufts in the canyon, marram or kelp by the sea) instead of Greenwood's reeds on mud everywhere | Claude (Default) | 12 |
+| 23 Nov 2026 | **A caught creature joins the team while the team has a free place** for the player's badges (wild catches, gem finds once numbered, giants). Gifts and hatched eggs still wait in the stable unless the team is empty. Before, every catch went to the stable unless the team was empty, so a new player's second catch was not on their team. The catch card says which | Ayrton ("the catching system sounds good") | 5 |
 
 ## Still open
 

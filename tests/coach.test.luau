@@ -83,9 +83,15 @@ check("uncommon keeps the old line", Coach.missLine("Uncommon") == nil)
 check("gem keeps the old line", Coach.missLine("Gem") == nil)
 
 print("where a catch went")
-check("joins the team only when the team was empty", Coach.placementLine(0) == Coach.LINES.joined)
-check("goes to the stable otherwise", Coach.placementLine(2) == Coach.LINES.stable)
-check("unknown gives the safe words", Coach.placementLine(nil) == Coach.LINES.friend)
+check("joins an empty team", Coach.placementLine(0, 3) == Coach.LINES.joined)
+check("joins a team with a free place", Coach.placementLine(2, 3) == Coach.LINES.joined)
+check("goes to the stable when the team is full", Coach.placementLine(3, 3) == Coach.LINES.stable)
+check("unknown gives the safe words", Coach.placementLine(nil, 3) == Coach.LINES.friend)
+check("an unknown limit gives the safe words", Coach.placementLine(1, nil) == Coach.LINES.friend)
+check(
+	"a numbered catch, which joins later, gets the safe words",
+	Coach.placementLine(0, 3, true) == Coach.LINES.friend
+)
 
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then

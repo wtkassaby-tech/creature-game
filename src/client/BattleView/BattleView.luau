@@ -10,6 +10,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local BreedConfig = require(ReplicatedStorage.config.BreedConfig)
 local Coach = require(ReplicatedStorage.shared.Coach)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local MovementLock = require(script.Parent.Parent.UI.MovementLock)
@@ -19,6 +20,7 @@ local Portrait = require(script.Parent.Parent.Creatures.Portrait)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local MoveButton = require(script.Parent.MoveButton)
 local Moves = require(ReplicatedStorage.content.Moves)
+local Profile = require(ReplicatedStorage.shared.Profile)
 local ResultPanel = require(script.Parent.ResultPanel)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local TypeChart = require(ReplicatedStorage.shared.TypeChart)
@@ -50,6 +52,7 @@ type Model = {
 	kind: string, -- Wild, Tamer, Rival or Friendly: the coach only speaks in the first rival bout
 	foeRarity: string, -- the first foe's rarity, for the lasso coach
 	teamBefore: number?, -- how many were on the team before this battle, for the catch card
+	teamLimit: number?, -- how many the player's badges allow on the team, for the catch card
 	strongTold: boolean, -- the coach has already praised a strong hit this battle
 	caughtFoe: Fighter?, -- the creature that was caught, for the "New friend" card
 	sides: { { Fighter } }, -- 1 = yours, 2 = theirs
@@ -420,7 +423,11 @@ function BattleView.start(playerGui: Instance)
 				name = foe.name,
 				element = foe.element,
 				level = foe.level,
-				placement = Coach.placementLine(current.teamBefore),
+				placement = Coach.placementLine(
+					current.teamBefore,
+					current.teamLimit,
+					BreedConfig.SERIAL_RARITIES[current.foeRarity] == true
+				),
 			}
 		end
 		result.show(kind, current.rewards, caught)
@@ -571,6 +578,7 @@ function BattleView.start(playerGui: Instance)
 			kind = value.Kind :: string,
 			foeRarity = value.Theirs[1].Rarity :: string,
 			teamBefore = if state then #state.Team else nil,
+			teamLimit = if state then Profile.teamSize(state.Badges) else nil,
 			strongTold = false,
 			caughtFoe = nil,
 			sides = { fighters(value.Yours), fighters(value.Theirs) },

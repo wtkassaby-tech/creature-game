@@ -113,14 +113,16 @@ function Coach.missLine(rarity: string): string?
 	return nil
 end
 
--- Where a newly caught creature went. The server puts a catch in the stable, and on the team
--- only when the team was empty (Grants.recordOwned), so that is the rule used here.
--- `teamBefore` is the team size before the catch; nil (not known) gives the safe words.
-function Coach.placementLine(teamBefore: number?): string
-	if teamBefore == nil then
+-- Where a newly caught creature went. The server puts a catch on the team while the team has a
+-- free place (Grants.recordOwned), and in the stable otherwise, so that is the rule used here.
+-- `teamBefore` is the team size before the catch and `teamLimit` the places the player's badges
+-- give; either nil (not known) gives the safe words. A `numbered` catch (a gem tier, which waits
+-- for its serial number before joining) also gets the safe words: where it lands is decided later.
+function Coach.placementLine(teamBefore: number?, teamLimit: number?, numbered: boolean?): string
+	if teamBefore == nil or teamLimit == nil or numbered == true then
 		return Coach.LINES.friend
 	end
-	return if teamBefore == 0 then Coach.LINES.joined else Coach.LINES.stable
+	return if teamBefore < teamLimit then Coach.LINES.joined else Coach.LINES.stable
 end
 
 return Coach

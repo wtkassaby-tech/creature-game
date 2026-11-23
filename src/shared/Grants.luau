@@ -118,13 +118,22 @@ end
 
 -- Records a creature that has just joined the stable: in the Index, and on the team if the team
 -- is empty (a starter that had to wait must not leave the player with nobody to battle with).
-function Grants.recordOwned(profile: Profile, creature: Creature)
+-- A catch (`caught`: wild, gem or giant) also joins the team while the team has a free place
+-- for the player's badges (Ayrton, 23 November 2026): a new friend is ready to battle at once.
+-- Gifts and hatched eggs still wait in the stable. Returns true if it went on the team.
+function Grants.recordOwned(profile: Profile, creature: Creature, caught: boolean?): boolean
 	local key = creature.parts.Torso.species
 	profile.Index.owned[key] = true
 	profile.Index.seen[key] = true
-	if #profile.Team == 0 then
-		table.insert(profile.Team, creature.id)
+	if table.find(profile.Team, creature.id) then
+		return false
 	end
+	local room = #profile.Team < Profile.teamSize(profile.Story.badges)
+	if #profile.Team == 0 or (caught == true and room) then
+		table.insert(profile.Team, creature.id)
+		return true
+	end
+	return false
 end
 
 -- Hands over waiting gifts while there is room. `make` rebuilds a gift from its source and ref
@@ -192,7 +201,7 @@ function Grants.capture(profile: Profile, creature: Creature): Grant
 		return waiting
 	end
 	profile.Creatures[caught.id] = caught
-	Grants.recordOwned(profile, caught)
+	Grants.recordOwned(profile, caught, true)
 	local granted: Grant = { outcome = "Granted", candy = candy, element = element }
 	return granted
 end
@@ -260,7 +269,7 @@ function Grants.finishGem(profile: Profile, creatureId: string): Grant
 			creature.serial = pending.serial
 			table.remove(profile.Pending, index)
 			profile.Creatures[creature.id] = creature
-			Grants.recordOwned(profile, creature)
+			Grants.recordOwned(profile, creature, true)
 			return { outcome = "Granted" }
 		end
 	end
