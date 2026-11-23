@@ -362,6 +362,12 @@ function WorldView.start(openShop: () -> ())
 		if now < pausedUntil then
 			return
 		end
+		-- Never while a battle (or another screen) is open: standing on a clump during a battle
+		-- kept asking for a new one, and "You are already in a battle" flashed on screen
+		-- (Studio, 23 November 2026). The world's prompts are off exactly then.
+		if not ProximityPromptService.Enabled then
+			return
+		end
 		for id, hidden in shown do
 			if now >= (calmUntil[id] or 0) then
 				local flat =
