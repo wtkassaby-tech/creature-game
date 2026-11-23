@@ -60,7 +60,7 @@ function Dressing.mood()
 	Lighting.ExposureCompensation = -0.1
 	Lighting.ShadowSoftness = 0.45
 	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 0.3
+	Lighting.EnvironmentSpecularScale = 0.06 -- matte clay: low shine (Studio, 23 Nov)
 
 	local air = Instance.new("Atmosphere")
 	air.Density = 0.3

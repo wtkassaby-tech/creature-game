@@ -72,7 +72,7 @@ local function place(parent: Instance, piece: WorldTypes.FarScenery): BasePart
 			-- A painted model keeps its own colours, faded a little toward the haze through
 			-- its tint (a Color tint on a textured MeshPart darkens it, so it starts at white).
 			local layer = FarSceneryConfig.LAYERS[piece.layer]
-			local fade = (if layer then layer.haze else 0) * 0.35
+			local fade = (if layer then layer.haze else 0) * 0.9
 			copy.Color = Color3.new(1, 1, 1):Lerp(Props.colour(FarSceneryConfig.HAZE), fade)
 			copy.Parent = parent
 			made = copy

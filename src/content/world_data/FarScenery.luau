@@ -42,26 +42,16 @@ for index = 1, 9 do
 		base = 0,
 		scale = 1,
 		faces = degrees + 90,
-		size = { 520, tall * 1.15, 230 }, -- rounder than a ridge: the painted peak is a cone
+		-- Lower than their crest numbers: from Saltwick the nearest peak is only about 940 studs
+		-- off, and at full height the range loomed like a hill next door (Studio, 23 Nov).
+		size = { 420, tall * 0.68, 190 },
 		colour = CROWN_ROCK,
 	})
 	-- (The painted SnowPeak carries its own snow: no separate caps.)
 end
 
-for index = 1, 6 do
-	local degrees = 30 + 60 * (index - 1)
-	add({
-		id = `halo_{index}`,
-		layer = "crown",
-		model = "Puff",
-		at = onRing(degrees, 800),
-		base = 450,
-		scale = 1,
-		faces = degrees + 90,
-		size = { 820, 70, 280 },
-		colour = { 252, 246, 236 }, -- cream
-	})
-end
+-- (No cloud halo: six flat discs over the Crown read as flying saucers from the towns,
+-- Studio, 23 November 2026. The sky's own clouds sit over the peaks instead.)
 
 -- The Western Highlands ------------------------------------------------------------------------
 -- Wooded hills behind Greenwood's plateau, taller and hazier further out, and the Lantern Spire

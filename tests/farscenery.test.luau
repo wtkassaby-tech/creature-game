@@ -108,8 +108,8 @@ for _, piece in pieces do
 	end
 end
 check(
-	"the Crown is a ring of mountains with a halo",
-	lumps >= 8 and puffs >= 4,
+	"the Crown is a ring of mountains (no cloud halo: it read as flying saucers)",
+	lumps >= 8 and puffs == 0,
 	`{lumps} / {puffs}`
 )
 check(

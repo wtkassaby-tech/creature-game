@@ -63,8 +63,8 @@ local PRESETS: { [string]: Preset } = {
 	-- Afternoon gold gives way to bright, hot white: higher sun, harder haze, thinner cloud.
 	dust_canyon = {
 		clockTime = 15.8,
-		brightness = 3.0,
-		exposure = -0.05,
+		brightness = 2.45,
+		exposure = -0.25,
 		ambient = { 138, 112, 88 },
 		outdoorAmbient = { 170, 140, 110 },
 		shiftTop = { 255, 200, 140 },
@@ -86,8 +86,8 @@ local PRESETS: { [string]: Preset } = {
 	-- Bright sea light, a bluer air and a wider sky.
 	tide_flats = {
 		clockTime = 16.2,
-		brightness = 2.8,
-		exposure = -0.1,
+		brightness = 2.4,
+		exposure = -0.25,
 		ambient = { 122, 124, 128 },
 		outdoorAmbient = { 150, 150, 150 },
 		shiftTop = { 255, 226, 190 },
@@ -132,8 +132,8 @@ local PRESETS: { [string]: Preset } = {
 	-- Starfall Crater (a side area of Dust Canyon): the same hot light with a violet decay.
 	starfall = {
 		clockTime = 15.8,
-		brightness = 2.8,
-		exposure = -0.05,
+		brightness = 2.4,
+		exposure = -0.2,
 		ambient = { 130, 108, 100 },
 		outdoorAmbient = { 160, 134, 120 },
 		shiftTop = { 255, 200, 160 },

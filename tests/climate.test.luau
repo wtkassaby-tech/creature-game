@@ -281,7 +281,15 @@ local b = ClimateBlend.mix(ClimateConfig.PRESETS, { greenwood = 0.5, dust_canyon
 check("weights are scaled to sum to 1", a ~= nil and b ~= nil and lookMatches(a, b))
 check(
 	"an even mix of brightness is between the two",
-	a ~= nil and a.numbers.brightness > 2.6 and a.numbers.brightness < 3.0
+	(function()
+		-- Between the two presets' own brightness, whatever they are tuned to.
+		local g = ClimateConfig.PRESETS.greenwood.brightness
+		local d = ClimateConfig.PRESETS.dust_canyon.brightness
+		local low, high = math.min(g, d), math.max(g, d)
+		return a ~= nil
+			and a.numbers.brightness >= low - 1e-6
+			and a.numbers.brightness <= high + 1e-6
+	end)()
 )
 check(
 	"no weight gives no look",
@@ -308,7 +316,15 @@ local before = start.numbers.brightness
 ClimateBlend.ease(start, goal, ClimateBlend.alpha(1 / 60, ClimateConfig.LOOK_TIME_CONSTANT))
 check(
 	"easing closes part of the gap and never overshoots",
-	start.numbers.brightness > before and start.numbers.brightness < goal.numbers.brightness
+	(function()
+		-- It moves toward the goal and stops short of it, from either side.
+		local toGoal = goal.numbers.brightness - before
+		local stepped = start.numbers.brightness - before
+		if math.abs(toGoal) < 1e-6 then
+			return math.abs(stepped) < 1e-6
+		end
+		return stepped / toGoal > 0 and stepped / toGoal < 1
+	end)()
 )
 check(
 	"alpha is about 63% after one time constant and 0 for no time",
