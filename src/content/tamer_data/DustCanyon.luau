@@ -72,7 +72,7 @@ local locals: { WorldTypes.Tamer } = {
 			},
 			tint = 0,
 		},
-		before = "I bake bricks all day. A battle is a nice break. Come on!",
+		before = "I bake bricks all day. A battle cools my hands. Come on!",
 		after = "Well fired! You have the heat for the Mesa Road.",
 	},
 	{
@@ -124,7 +124,7 @@ local locals: { WorldTypes.Tamer } = {
 			},
 			tint = 0,
 		},
-		before = "Nobody reaches the Stair Gate without passing me. Three of mine, then.",
+		before = "The Stair Gate is past me, and I am not moving. Three of mine, then.",
 		after = "You climb well. The warden is waiting, and she is no pushover.",
 	},
 }
@@ -145,7 +145,7 @@ local rivalTeams: WorldTypes.ByStarter<WorldTypes.TamerTeam> = {
 		members = {
 			member("Sloshcalf", 19, { "Ripple Ram", "Mud Slap", "Brook Rush", "Dew Splash" }),
 			member("Thatchling", 18, { "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }),
-			member("Spurlet", 18, { "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }),
+			member("Spurlet", 18, { "Agave Lance", "Needle Fan", "Hoof Scuff", "Spine Jab" }),
 		},
 		tint = 0.5,
 	},
@@ -154,11 +154,7 @@ local rivalTeams: WorldTypes.ByStarter<WorldTypes.TamerTeam> = {
 		members = {
 			member("Mossmitt", 19, { "Bramble Rake", "Thorn Volley", "Leaf Gust", "Moss Slam" }),
 			member("Spurlet", 18, { "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }),
-			member(
-				"Cairnback",
-				18,
-				{ "Mesa Slam", "Capstone Crash", "Tumbleweed Toss", "Pebble Pelt" }
-			),
+			member("Cairnback", 18, { "Mesa Slam", "Capstone Crash", "Hoof Scuff", "Pebble Pelt" }),
 		},
 		tint = 0.5,
 	},
@@ -174,7 +170,7 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 		xpKind = "Rival",
 		teams = rivalTeams,
 		before = "You keep up, I will give you that. But I have help now. Watch this.",
-		after = "It hums louder when I lose. I do not like that. Not one bit.",
+		after = "It went quiet just now. Like it was disappointed. In me.",
 		cannotLose = false, -- he can be lost to here; only the very first battle cannot
 	},
 	{
@@ -195,16 +191,12 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 					22,
 					{ "Mesa Slam", "Capstone Crash", "Talus Tumble", "Pebble Pelt" }
 				),
-				member(
-					"Thatchling",
-					23,
-					{ "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }
-				),
+				member("Thatchling", 23, { "Agave Lance", "Needle Fan", "Grit Step", "Spine Jab" }),
 			},
 			tint = 0,
 		},
 		before = "The Stair is not climbed, it is earned. Show me a team worth a badge.",
-		after = "Fast, and calm with it. The Cairn Badge is yours. Go well.",
+		after = "Hmph. Well climbed.",
 		cannotLose = false,
 	},
 }

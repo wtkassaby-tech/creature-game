@@ -89,18 +89,30 @@ do
 
 	-- At the cap the XP keeps growing and the level stays put.
 	local level, xp = 15, 0
-	local totalGiven = 0
 	for _ = 1, 50 do
 		local step = Xp.applyXp(level, xp, 700, 15)
 		level, xp = step.level, step.xp
-		totalGiven += 700
 	end
 	check("at the cap the level holds", level == 15)
-	check("at the cap no XP is lost", xp == totalGiven, `{xp} banked`)
+	local bankMax = Xp.xpToNext(15) + Xp.xpToNext(16)
+	check(
+		"the bank stops at BANK_MAX_LEVELS levels above the cap",
+		ProgressionConfig.BANK_MAX_LEVELS == 2 and xp == bankMax,
+		`{xp} banked`
+	)
+	local small = Xp.applyXp(15, 0, 100, 15)
+	check("a small bank below the limit loses nothing", small.xp == 100 and small.level == 15)
+	local spent = Xp.applyXp(level, xp, 0, 25)
+	check("a full bank spends exactly two levels", spent.level == 17 and spent.xp == 0)
+	local rest = Xp.applyXp(14, 0, Xp.xpToNext(14) + bankMax + 999, 15)
+	check(
+		"levelling up to the cap still banks, and drops the excess",
+		rest.level == 15 and rest.xp == bankMax
+	)
 
 	-- Lifting the cap spends the bank at once.
 	local lifted = Xp.applyXp(level, xp, 0, 25)
-	local expectedTotal = Xp.totalXpForLevel(15) + totalGiven
+	local expectedTotal = Xp.totalXpForLevel(15) + xp
 	check(
 		"a lifted cap spends banked XP on levels",
 		lifted.level > 15 and lifted.levelsGained == lifted.level - 15

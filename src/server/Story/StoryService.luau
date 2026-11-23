@@ -54,6 +54,13 @@ function StoryService.event(
 	if not profile then
 		return false
 	end
+	if event.kind == "Tame" then
+		-- Keep the catch for the chapter's "tame a creature" beat even if the story is not there
+		-- yet; the flag saves with the profile like any other story flag.
+		if event.biome and StoryTriggers.creditTame(Storyline, profile, event.biome) then
+			hooks.changed(player)
+		end
+	end
 	local beat = StoryTriggers.ready(Storyline, profile, hooks.map(), event)
 	if not beat then
 		if not quiet then

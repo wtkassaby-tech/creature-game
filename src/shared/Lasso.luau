@@ -37,6 +37,7 @@ export type AttemptInput = {
 	isGiant: boolean,
 	slowMode: boolean,
 	roundTripMs: number,
+	firstCatch: boolean?, -- the player has never caught anything (the server's own record)
 }
 
 export type Verdict = "Hit" | "Miss" | "Invalid"
@@ -106,6 +107,16 @@ function Lasso.createAttempt(input: AttemptInput): Pattern
 		Lasso.zoneWidth(input.rarity, input.lassoDifficulty, input.healthFraction, input.tier)
 	if input.isGiant then
 		width = math.max(width * LassoConfig.GIANT_WIDTH, LassoConfig.MIN_WIDTH)
+	end
+	if
+		input.firstCatch
+		and not input.isGiant
+		and LassoConfig.FIRST_CATCH_RARITIES[input.rarity]
+	then
+		width = math.min(
+			math.max(width * LassoConfig.FIRST_CATCH_WIDTH, LassoConfig.FIRST_CATCH_MIN_WIDTH),
+			LassoConfig.MAX_WIDTH
+		)
 	end
 	local assist = Lasso.assistScale(input.roundTripMs)
 	-- Slow mode and the assist stack, but only down to a floor, so the two cannot be combined
@@ -315,6 +326,16 @@ function Lasso.catchChance(chances: { number }, rarity: Types.Rarity): number
 		chance *= clamp(each, 0, 1)
 	end
 	return clamp(chance, 0, 1)
+end
+
+-- The best a throw of this pattern could do: every tap dead centre. Shown to the player before
+-- the throw ("up to N%"); the real chance comes from where the taps land.
+function Lasso.bestChance(zoneCount: number, rarity: Types.Rarity): number
+	local chances: { number } = {}
+	for _ = 1, zoneCount do
+		table.insert(chances, LassoConfig.CHANCE_CENTRE)
+	end
+	return Lasso.catchChance(chances, rarity)
 end
 
 -- True when the recent errors look scripted: enough throws, and most of them within a few

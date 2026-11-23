@@ -61,6 +61,7 @@ type Bot = {
 	book: Encounters.Book,
 	time: number, -- the server's clock, in seconds
 	seed: number,
+	starter: string,
 	nextId: number,
 	battleId: number,
 	wildBattles: number,
@@ -74,12 +75,13 @@ type Bot = {
 	alsoAgainst: { Types.Element }, -- the types of the creatures that were still standing when it lost
 }
 
-local function newBot(seed: number): Bot
+local function newBot(seed: number, starter: string): Bot
 	return {
 		profile = Profile.template(),
 		book = Encounters.new(),
 		time = 86400 * 400,
 		seed = seed,
+		starter = starter,
 		nextId = 0,
 		battleId = 0,
 		wildBattles = 0,
@@ -633,7 +635,7 @@ local function step(bot: Bot): boolean
 		end
 	end
 	if trigger.kind == "Start" then
-		return tell(bot, { kind = "Ask", at = nil }, "Mossmitt")
+		return tell(bot, { kind = "Ask", at = nil }, bot.starter)
 	elseif trigger.kind == "Follow" then
 		return tell(bot, { kind = "Ask", at = nil }, nil)
 	elseif trigger.kind == "Enter" or trigger.kind == "Sight" then
@@ -669,8 +671,8 @@ end
 type Leg = { wild: number, minutes: number, level: number, coins: number }
 type Run = { bot: Bot, stuckAt: string?, legs: { Leg }, barred: string? }
 
-local function play(seed: number): Run
-	local bot = newBot(seed)
+local function play(seed: number, starter: string): Run
+	local bot = newBot(seed, starter)
 	local run: Run = { bot = bot, stuckAt = nil, legs = {}, barred = nil }
 	local start = { wild = 0, time = bot.time }
 	local badges = 0
@@ -719,7 +721,7 @@ local MOST_WILD_BATTLES_A_BADGE = 100 -- the unluckiest robot; more than this is
 
 print("\n== A robot plays the whole story ==")
 do
-	local first = play(1)
+	local first = play(1, "Mossmitt")
 	for number, leg in first.legs do
 		print(
 			`    badge {number}: team level {leg.level}, {leg.wild} wild battles, about {leg.minutes} minutes, {leg.coins} coins`
@@ -752,9 +754,12 @@ do
 	)
 end
 
-print("\n== Twelve different robots: is the story fair and well paced for all of them? ==")
+print("\n== Twelve robots for each starter: is the story fair and well paced for all of them? ==")
 do
 	local SEEDS: { number } = { 1, 7, 13, 99, 1234, 5555, 31337, 77777, 424242, 8675309, 2026, 11 }
+	local STARTERS: { string } = { "Mossmitt", "Spadesnout", "Sloshcalf" }
+	local byStarter: { [string]: { wild: { { number } }, tries: number, firstTry: number, battles: number } } =
+		{}
 	local stuck: { string } = {}
 	local barred: { string } = {}
 	local wild: { { number } } = {}
@@ -762,35 +767,44 @@ do
 	local total: { number } = {}
 	local worstLosses, worstTries, mostWild = 0, 0, 0
 	local firstTryWins, storyBattles = 0, 0
-	for _, seed in SEEDS do
-		local run = play(seed)
-		if run.barred then
-			table.insert(barred, `seed {seed}: {run.barred}`)
-		end
-		if run.stuckAt or World.nextBeat(Storyline, run.bot.profile.Story.flags) ~= nil then
-			table.insert(stuck, `seed {seed}: {run.stuckAt or "ran out of steps"}`)
-			continue
-		end
-		local sum = 0
-		for number, leg in run.legs do
-			wild[number] = wild[number] or {}
-			minutes[number] = minutes[number] or {}
-			table.insert(wild[number], leg.wild)
-			table.insert(minutes[number], leg.minutes)
-			mostWild = math.max(mostWild, leg.wild)
-			-- The launch target covers the three launch biomes only, even when a test opens more.
-			if number <= LAUNCH_BIOMES then
-				sum += leg.minutes
+	for _, starter in STARTERS do
+		local per = { wild = {}, tries = 0, firstTry = 0, battles = 0 }
+		byStarter[starter] = per
+		for _, seed in SEEDS do
+			local run = play(seed, starter)
+			if run.barred then
+				table.insert(barred, `{starter} seed {seed}: {run.barred}`)
 			end
-		end
-		table.insert(total, sum)
-		worstLosses = math.max(worstLosses, run.bot.losses)
-		for _, line in run.bot.log do
-			local tries = tonumber(string.match(line, "try (%d+)")) or 1
-			worstTries = math.max(worstTries, tries)
-			storyBattles += 1
-			if tries == 1 then
-				firstTryWins += 1
+			if run.stuckAt or World.nextBeat(Storyline, run.bot.profile.Story.flags) ~= nil then
+				table.insert(stuck, `{starter} seed {seed}: {run.stuckAt or "ran out of steps"}`)
+				continue
+			end
+			local sum = 0
+			for number, leg in run.legs do
+				wild[number] = wild[number] or {}
+				minutes[number] = minutes[number] or {}
+				table.insert(wild[number], leg.wild)
+				table.insert(minutes[number], leg.minutes)
+				per.wild[number] = per.wild[number] or {}
+				table.insert(per.wild[number], leg.wild)
+				mostWild = math.max(mostWild, leg.wild)
+				-- The launch target covers the three launch biomes only, even when a test opens more.
+				if number <= LAUNCH_BIOMES then
+					sum += leg.minutes
+				end
+			end
+			table.insert(total, sum)
+			worstLosses = math.max(worstLosses, run.bot.losses)
+			for _, line in run.bot.log do
+				local tries = tonumber(string.match(line, "try (%d+)")) or 1
+				worstTries = math.max(worstTries, tries)
+				storyBattles += 1
+				per.battles += 1
+				per.tries = math.max(per.tries, tries)
+				if tries == 1 then
+					firstTryWins += 1
+					per.firstTry += 1
+				end
 			end
 		end
 	end
@@ -799,6 +813,23 @@ do
 		"no robot is ever handed a creature it is not yet allowed to use",
 		#barred == 0,
 		table.concat(barred, "; ")
+	)
+	for _, starter in STARTERS do
+		local per = byStarter[starter]
+		local line = `    {starter}:`
+		for number in per.wild do
+			line ..= ` badge {number} {middle(per.wild[number])} wild;`
+		end
+		print(
+			`{line} {per.battles - per.firstTry} of {per.battles} story battles lost on the first try ({math.floor(
+				100 * (per.battles - per.firstTry) / math.max(1, per.battles)
+			)}%), worst {per.tries} tries`
+		)
+	end
+	print(
+		`    all: {storyBattles - firstTryWins} of {storyBattles} story battles lost on the first try ({math.floor(
+			100 * (storyBattles - firstTryWins) / math.max(1, storyBattles)
+		)}%)`
 	)
 	if #stuck == 0 then
 		for number in wild do

@@ -133,6 +133,8 @@ function BattleFlow.sendRewards(player: Player, battleId: number, paid: Rewards.
 			Gained = member.gained,
 			Level = member.level,
 			LevelsGained = member.levelsGained,
+			XpBefore = math.max(0, math.floor(member.xpBefore)),
+			XpAfter = math.max(0, math.floor(member.xpAfter)),
 			NewMoves = member.newMoves,
 		})
 	end
@@ -256,7 +258,7 @@ local function battleFinished(
 		if ending == "Caught" then
 			local caught = BattleSession.foe(session)
 			QuestService.record(player, { kind = "Tame", species = caught.parts.Torso.species })
-			StoryService.event(player, { kind = "Tame" }, nil, true)
+			StoryService.event(player, { kind = "Tame", biome = wildBiome }, nil, true)
 		end
 	elseif ref and ref.kind == "Trained" then
 		local trained = ref :: TrainedRef

@@ -13,6 +13,7 @@ local BattleSession = require("./BattleSession")
 local EconomyConfig = require("../config/EconomyConfig")
 local Grants = require("./Grants")
 local Lasso = require("./Lasso")
+local PassEffects = require("./PassEffects")
 local Profile = require("./Profile")
 local Rng = require("./Rng")
 local Species = require("../content/Species")
@@ -24,6 +25,8 @@ export type Throw = {
 	tier: Lasso.LassoTier,
 	pattern: Lasso.Pattern,
 	startedAtMs: number, -- server clock when the pattern was sent
+	boostActive: boolean, -- the Lasso Pass applies to this throw, decided when it began
+	paidLasso: boolean, -- the lasso used was bought with Gems
 	used: boolean, -- a throw is judged once
 }
 
@@ -31,7 +34,8 @@ export type Outcome = "Caught" | "Missed" | "Fled"
 export type Result = {
 	outcome: Outcome,
 	judgement: Lasso.Judgement,
-	chance: number, -- the throw's catch chance, 0 for an invalid throw
+	chance: number, -- the throw's catch chance (Lasso Pass included), 0 for an invalid throw
+	boosted: boolean, -- the Lasso Pass raised it
 	roll: number?, -- the server's roll against it (nil when there was nothing to roll)
 	turn: BattleSession.TurnResult,
 	candy: number?,
@@ -39,6 +43,19 @@ export type Result = {
 }
 
 local Capture = {}
+
+-- Lassos bought with Gems are kept under the tier's name plus this, so a throw knows it was paid for.
+Capture.GEM_LASSO_SUFFIX = "_g"
+
+-- Set by the first catch the server judges, so the first-catch help (LassoConfig.FIRST_CATCH_*)
+-- is given once. A story flag: free-form, so no save migration.
+local CAUGHT_FLAG = "caught:first"
+
+function Capture.hasCaught(profile: Profile.Profile): boolean
+	-- Saves from before the flag: Chapter 1's "team of three" beat only ever finished through a
+	-- catch the server judged, so it counts as a catch made.
+	return profile.Story.flags[CAUGHT_FLAG] == true or profile.Story.flags.third_creature == true
+end
 
 local TIER_RANK: { [string]: number } = { Basic = 1, Braided = 2, Gilded = 3 }
 
@@ -67,6 +84,7 @@ export type BeginInput = {
 	roundTripMs: number, -- from Lasso.trustedRoundTripMs over the server's own readings
 	nowMs: number,
 	misses: number, -- misses already made against this creature in this battle
+	paidRandomRestricted: boolean?, -- PolicyService's answer; nil counts as restricted
 }
 
 function Capture.begin(input: BeginInput): (Throw?, string?)
@@ -85,7 +103,6 @@ function Capture.begin(input: BeginInput): (Throw?, string?)
 	if tier == nil then
 		return nil, "Bad lasso"
 	end
-	local itemKey = tostring(input.tier)
 	local creature, healthFraction = BattleSession.foe(session)
 	if healthFraction <= 0 then
 		return nil, "That creature has fainted"
@@ -98,11 +115,18 @@ function Capture.begin(input: BeginInput): (Throw?, string?)
 		return nil, "Your stable is full: release or store a creature first"
 	end
 	local needed: string = EconomyConfig.LASSO_MIN_TIER[creature.rarity]
-	if tierRank(itemKey) < tierRank(needed) then
+	if tierRank(tier) < tierRank(needed) then
 		return nil, `That creature needs at least a {needed} lasso`
 	end
+	-- A lasso bought with coins is used first; a Gem-bought one (its own item key) counts as the
+	-- same tier. Gem lassos work only where paid random items are allowed.
+	local paidLasso: boolean = (profile.Items[tier] or 0) < 1
+	local itemKey: string = if paidLasso then tier .. Capture.GEM_LASSO_SUFFIX else tier
 	if (profile.Items[itemKey] or 0) < 1 then
-		return nil, `You have no {itemKey} lasso`
+		return nil, `You have no {tier} lasso`
+	end
+	if paidLasso and input.paidRandomRestricted ~= false then
+		return nil, "That lasso is not available to you"
 	end
 
 	-- Take the lasso first: from here on the throw is paid for, whatever happens.
@@ -116,6 +140,7 @@ function Capture.begin(input: BeginInput): (Throw?, string?)
 		isGiant = false,
 		slowMode = profile.Settings.lassoSlowMode,
 		roundTripMs = input.roundTripMs,
+		firstCatch = not Capture.hasCaught(profile),
 	})
 	return {
 		battleId = session.battleId,
@@ -123,9 +148,25 @@ function Capture.begin(input: BeginInput): (Throw?, string?)
 		tier = tier :: Lasso.LassoTier,
 		pattern = pattern,
 		startedAtMs = input.nowMs,
+		boostActive = PassEffects.lassoBoostApplies(
+			profile,
+			input.paidRandomRestricted,
+			creature.rarity,
+			false
+		),
+		paidLasso = paidLasso :: boolean,
 		used = false,
 	},
 		nil
+end
+
+-- The chance to show before a wild throw ("up to N%"): the best the sweep allows, with the Lasso
+-- Pass included when the throw began with it applying. Returns the chance (0..1) and whether the
+-- pass is in it. It is the same decision `finish` rolls with.
+function Capture.previewChance(throw: Throw, rarity: Types.Rarity): (number, boolean)
+	local base = Lasso.bestChance(#throw.pattern.zones, rarity)
+	local chance = PassEffects.boostChance(base, throw.boostActive, throw.pattern.isGiant)
+	return chance, chance > base
 end
 
 local function asTimes(value: unknown): { number }?
@@ -173,7 +214,11 @@ function Capture.finish(
 
 	-- Skill plus chance: the tap timing sets the chance, the server's own roll decides. An
 	-- invalid throw has no chance and no roll.
-	local chance = Lasso.catchChance(judgement.chances, creature.rarity)
+	local baseChance = Lasso.catchChance(judgement.chances, creature.rarity)
+	-- The Lasso Pass (decided when the throw began: wild, non-fleeing rarities, policy open) raises
+	-- the chance; the same number is rolled against and logged.
+	local chance = PassEffects.boostChance(baseChance, throw.boostActive, creature.isGiant)
+	local boosted = chance > baseChance
 	local roll: number? = nil
 	local caught = false
 	if judgement.verdict ~= "Invalid" and chance > 0 then
@@ -182,14 +227,23 @@ function Capture.finish(
 	end
 
 	if caught then
+		-- A creature caught with paid help is marked, in the same step as the catch (Grants.capture
+		-- copies the creature, mark included). Cleared again if the grant is refused.
+		-- A Gem lasso outranks the pass: it is the one that also stops release farming.
+		creature.paidAssist = if throw.paidLasso then "GemLasso" elseif boosted then "Pass" else nil
 		local granted = Grants.capture(profile, creature)
+		if granted.outcome ~= "Granted" and granted.outcome ~= "Waiting" then
+			creature.paidAssist = nil
+		end
 		-- "Waiting" is a gem-tier find whose serial number is being fetched: it is caught, and
 		-- joins the stable with its number a moment later.
 		if granted.outcome == "Granted" or granted.outcome == "Waiting" then
+			profile.Story.flags[CAUGHT_FLAG] = true -- in the same save as the catch
 			return {
 				outcome = "Caught",
 				judgement = judgement,
 				chance = chance,
+				boosted = boosted,
 				roll = roll,
 				turn = BattleSession.endCaught(session),
 				candy = granted.candy,
@@ -209,10 +263,24 @@ function Capture.finish(
 	if flee ~= nil and missesAfter >= flee and not turn.finished then
 		BattleSession.endFled(session)
 		turn.finished, turn.ran, turn.outcome = true, true, 2
-		return { outcome = "Fled", judgement = judgement, chance = chance, roll = roll, turn = turn },
+		return {
+			outcome = "Fled",
+			judgement = judgement,
+			chance = chance,
+			boosted = boosted,
+			roll = roll,
+			turn = turn,
+		},
 			nil
 	end
-	return { outcome = "Missed", judgement = judgement, chance = chance, roll = roll, turn = turn },
+	return {
+		outcome = "Missed",
+		judgement = judgement,
+		chance = chance,
+		boosted = boosted,
+		roll = roll,
+		turn = turn,
+	},
 		nil
 end
 

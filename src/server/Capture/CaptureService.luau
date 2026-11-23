@@ -109,11 +109,22 @@ type External = {
 }
 local external: { [Player]: External } = {}
 
+-- Supplied by the purchase service: true while PolicyService says this player may not be sold paid
+-- random items (or has not answered yet). The Lasso Pass only counts when this is false.
+local paidRestricted: (player: Player) -> boolean = function(_player: Player)
+	return true
+end
+function CaptureService.setPolicy(check: (player: Player) -> boolean)
+	paidRestricted = check
+end
+
 local function sendPattern(
 	player: Player,
 	battleId: number,
 	throwId: number,
-	pattern: Lasso.Pattern
+	pattern: Lasso.Pattern,
+	chance: number?, -- the best chance to show (0..1), nil for a giant
+	boosted: boolean?
 )
 	local zones = {}
 	for _, zone in pattern.zones do
@@ -131,6 +142,8 @@ local function sendPattern(
 		Zones = zones,
 		SlowMode = pattern.slowMode,
 		ConnectionAssist = pattern.connectionAssist,
+		Chance = if chance then math.clamp(math.floor(chance * 100 + 0.5), 0, 100) else nil,
+		Boosted = boosted,
 	})
 end
 
@@ -227,6 +240,9 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 				candy = result.candy,
 				element = result.element,
 				chance = result.chance,
+				boosted = result.boosted,
+				paidAssist = current.throw.paidLasso or result.boosted,
+				gemLasso = current.throw.paidLasso,
 				roll = result.roll,
 				roundTripMs = math.round(current.throw.pattern.roundTripMs),
 			})
@@ -239,6 +255,7 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 				player = player.UserId,
 				creature = BattleSession.foe(session).id,
 				outcome = result.outcome,
+				gemLasso = current.throw.paidLasso,
 				chance = result.chance,
 				roll = result.roll,
 				roundTripMs = math.round(current.throw.pattern.roundTripMs),
@@ -262,6 +279,7 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 			ZonesHit = hits,
 			Candy = math.clamp(math.floor(result.candy or 0), 0, 65535),
 			Element = result.element,
+			Chance = math.clamp(math.floor(result.chance * 100 + 0.5), 0, 100),
 		})
 		BattleService.publishTurn(player, session, result.turn)
 	end
@@ -293,6 +311,7 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 			roundTripMs = RoundTrip.trustedMs(player),
 			nowMs = 0,
 			misses = before,
+			paidRandomRestricted = paidRestricted(player),
 		})
 		if not throw then
 			return BattleService.refuse(player, problem or "You cannot throw now")
@@ -309,7 +328,8 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 			arrivals = {},
 			misses = before,
 		}
-		sendPattern(player, session.battleId, throwId, throw.pattern)
+		local best, boosted = Capture.previewChance(throw, BattleSession.foe(session).rarity)
+		sendPattern(player, session.battleId, throwId, throw.pattern, best, boosted)
 		task.delay(TIME_LIMIT_SECONDS, resolve, player, throwId)
 	end)
 

@@ -29,7 +29,7 @@ local locals: { WorldTypes.Tamer } = {
 		at = 100,
 		team = { members = { member("Gorsling", 3, { "Seed Shot", "Leaf Gust" }) }, tint = 0 },
 		before = "My hat is lucky! Show me what you and your friend can do!",
-		after = "Whoa! The hat has never lost before. Weaken them, then throw the rope.",
+		after = "Whoa! My lucky hat let me down!",
 	},
 	{
 		id = "gw_wren",
@@ -46,7 +46,7 @@ local locals: { WorldTypes.Tamer } = {
 			tint = 0,
 		},
 		before = "The brook is my patch. Show me you can handle it.",
-		after = "Fair and square. The fish will be jealous of that win.",
+		after = "Fair and square. I will tell the fish it was a big one.",
 	},
 	{
 		id = "gw_odette",
@@ -173,9 +173,9 @@ local rival: WorldTypes.RivalDef = {
 		},
 	},
 	firstBefore = "I picked the coolest one. Types? Who needs them. Watch this!",
-	firstAfter = "No fair, yours beats mine! Next time I bring the right one.",
+	firstAfter = "Gah! Beginner's luck!",
 	gateBefore = "I know my types now. This one beats yours. No more playing around.",
-	gateAfter = "Again... fine. I will get stronger, whatever it takes.",
+	gateAfter = "Tch. Not again.",
 }
 
 local pack: WorldTypes.BiomeTamers = { locals = locals, rival = rival }

@@ -8,7 +8,9 @@
 --   Breeding Candy: earned only, never sold, never traded. Typed (one balance per element): each
 --     parent in a breed uses BreedConfig.CANDY_COST of its own type. Catching and releasing pay
 --     typed candy; milestone and daily rewards pay Prism Candy (working name), which counts as any type.
---   Gems: bought with Robux; buy time and capacity only. Not modelled here.
+--   Gems: bought with Robux (src/config/PurchaseConfig) or earned in small amounts. They buy time,
+--     capacity and, from 23 November 2026, consumables (GEM_ITEM_IDS below). Never coins, candy,
+--     Breeding Candy, rarity, serials or stats.
 --
 -- Anchor: a common biome-1 breed costs BreedConfig.COST_BASE (400) coins, which should be about
 -- four minutes of biome-1 income (the simulation measures 4.5 to 4.9 minutes of all Greenwood play).
@@ -121,7 +123,7 @@ EconomyConfig.DIMINISH_FLOOR = 0.15
 EconomyConfig.DIMINISH_STOP = 50
 
 EconomyConfig.TRAINED = {
-	Tamer = { firstClear = 160, rematch = 50, rematchesPaidPerDay = 1 },
+	Tamer = { firstClear = 300, rematch = 50, rematchesPaidPerDay = 1 },
 	Gate = { firstClear = 500, rematch = 150, rematchesPaidPerDay = 1 },
 	-- A giant rematch pays less than a GiantCall costs: rematches are a coin sink that earns candy.
 	Giant = { firstClear = 800, rematch = 700, rematchesPaidPerDay = 2 },
@@ -212,10 +214,10 @@ EconomyConfig.ITEMS = {
 	},
 	GiantCall = {
 		name = "Giant Horn",
-		price = 1100,
+		price = 730,
 		scalesWithBiome = true,
 		-- Greenwood's horn is cheaper, so a new player's first giant is never far off.
-		firstBiomePrice = 900,
+		firstBiomePrice = 600,
 		fieldItem = false,
 		note = "Needed to start a giant fight; used up win or lose",
 	},
@@ -418,6 +420,38 @@ EconomyConfig.CANDY_SOURCES = CANDY_SOURCES
 -- Prism Candy per quest line by biome (later biomes use the last entry).
 local QUEST_LINE_CANDY: { number } = { 2, 3, 4 }
 EconomyConfig.QUEST_LINE_CANDY = QUEST_LINE_CANDY
+
+------------------------------------------------------------------------------------------------
+-- Gem prices (owner decision, 23 November 2026: consumables may be bought with Gems as well as
+-- coins). [Default]: a Gem is worth COINS_PER_GEM coins when a consumable is priced, rounded up,
+-- never under GEM_MIN_PRICE. Sold for Gems: lassos, tonics, Rally Root and Clearwater Drops.
+-- Never sold for Gems: Giant Horn (the giant retry limit stays coin-only) and Bond Charm (breeding
+-- stays coins and Breeding Candy). Breeding Candy is not an item and is never sold.
+------------------------------------------------------------------------------------------------
+
+EconomyConfig.COINS_PER_GEM = 10
+EconomyConfig.GEM_MIN_PRICE = 1
+-- Tide Bait is NOT sold for Gems yet: it brings out a random creature (a gem-tier one with
+-- BAIT_GEM_CHANCE), so a Gem sale needs a screen that shows every outcome and its odds, summing to
+-- 100%, before purchase. TODO(lead): build that screen, then add "Bait" here.
+-- Gem lassos are sold only where PolicyService says paid random items are not restricted, are
+-- kept under their own item key (Gems.GEM_LASSO_SUFFIX) and mark what they catch as paid-assisted.
+local GEM_ITEM_IDS: { ItemId } =
+	{ "Basic", "Braided", "Gilded", "Tonic", "GreatTonic", "Revive", "Cure" }
+EconomyConfig.GEM_ITEM_IDS = GEM_ITEM_IDS
+local GEM_PRICES: { [string]: number } = {}
+for _, id: ItemId in GEM_ITEM_IDS do
+	GEM_PRICES[id] = math.max(
+		EconomyConfig.GEM_MIN_PRICE,
+		math.ceil(EconomyConfig.ITEMS[id].price / EconomyConfig.COINS_PER_GEM)
+	)
+end
+EconomyConfig.GEM_PRICES = GEM_PRICES
+
+-- Finishing an egg now: one Gem for each EGG_FINISH_SECONDS_PER_GEM seconds left, at least
+-- EGG_FINISH_MIN_GEMS.
+EconomyConfig.EGG_FINISH_SECONDS_PER_GEM = 180
+EconomyConfig.EGG_FINISH_MIN_GEMS = 5
 
 ------------------------------------------------------------------------------------------------
 -- Stable and pens

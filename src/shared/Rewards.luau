@@ -20,6 +20,8 @@ export type MemberResult = {
 	gained: number,
 	level: number,
 	levelsGained: number,
+	xpBefore: number, -- progress toward the next level before the battle
+	xpAfter: number, -- and after it, for the result card bar
 	newMoves: { string },
 }
 
@@ -73,6 +75,8 @@ function Rewards.wildWin(profile: Profile.Profile, input: WildWinInput): Paid
 				gained = gained,
 				level = applied.level,
 				levelsGained = applied.levelsGained,
+				xpBefore = creature.xp,
+				xpAfter = applied.xp,
 				newMoves = Xp.newMoves(creature, creature.level, applied.level),
 			})
 			table.insert(xpAfter, applied.xp)
@@ -159,6 +163,8 @@ function Rewards.trainedWin(profile: Profile.Profile, input: TrainedWinInput): T
 				gained = gained,
 				level = applied.level,
 				levelsGained = applied.levelsGained,
+				xpBefore = creature.xp,
+				xpAfter = applied.xp,
 				newMoves = Xp.newMoves(creature, creature.level, applied.level),
 			})
 			table.insert(xpAfter, applied.xp)

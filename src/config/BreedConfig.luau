@@ -50,7 +50,7 @@ BreedConfig.PART_CHANCE = 0.5
 BreedConfig.CHARM_CHANCE = 0.8
 
 -- Offspring level = this share of the parents' average (brief: 50 and 45 give about 20).
-BreedConfig.LEVEL_SHARE = 0.4
+BreedConfig.LEVEL_SHARE = 0.75
 
 -- Stat scaling.
 BreedConfig.LEVEL_SCALE_PER_LEVEL = 0.05
@@ -93,7 +93,7 @@ BreedConfig.CANDY_COST =
 -- Cooldown (seconds) after each breed. Breeds beyond the list use the last entry.
 local MIN, HOUR = 60, 3600
 BreedConfig.COOLDOWN = {
-	Common = { 30 * MIN, 1 * HOUR, 2 * HOUR, 4 * HOUR, 8 * HOUR },
+	Common = { 15 * MIN, 1 * HOUR, 2 * HOUR, 4 * HOUR, 8 * HOUR },
 	Uncommon = { 30 * MIN, 1 * HOUR, 2 * HOUR, 4 * HOUR, 8 * HOUR },
 	Gem = { 12 * HOUR, 24 * HOUR },
 	Ruby = { 24 * HOUR, 48 * HOUR },
@@ -119,7 +119,7 @@ BreedConfig.GIANT_CANDY_COST = 10
 BreedConfig.GIFT_EGG_SECONDS = 3 * MIN
 
 BreedConfig.HATCH_SECONDS = {
-	Common = 30 * MIN,
+	Common = 15 * MIN,
 	Uncommon = 45 * MIN,
 	Gem = 4 * HOUR,
 	Ruby = 8 * HOUR,

@@ -36,7 +36,12 @@ ProgressionConfig.CAP_STEP = 10
 -- then has a small edge: at one level under the cap, the robot players in tests/playthrough.test
 -- could not beat the Dust Canyon gate in eight runs out of twelve.
 ProgressionConfig.GATE_TOP_UNDER_CAP = 2
-ProgressionConfig.GATE_TEAM_SPREAD = 2
+ProgressionConfig.GATE_TEAM_SPREAD = 3
+
+-- XP a creature can hold beyond its level cap, counted in levels: the bank holds the XP for this
+-- many levels above the cap, and anything more is dropped. Without it a full biome of training
+-- turned into three to five levels on the first win in the next biome.
+ProgressionConfig.BANK_MAX_LEVELS = 2
 
 -- XP paid for one defeated creature, before the share and gap rules below:
 --   (REWARD_FLAT + REWARD_PER_LEVEL x defeatedLevel) x kind x rarity
@@ -47,7 +52,7 @@ ProgressionConfig.REWARD_PER_LEVEL = 6
 -- rival are tuned slightly above a tamer; a giant is one creature that pays like a long fight.
 local KIND_MULTIPLIER: KindMultipliers = {
 	Wild = 1,
-	Tamer = 1.25,
+	Tamer = 2,
 	Rival = 1.5,
 	Gate = 1.5,
 	Giant = 8,

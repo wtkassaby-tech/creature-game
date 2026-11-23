@@ -9,6 +9,7 @@ local Rng = require("../src/shared/Rng")
 local Species = require("../src/content/Species")
 local Stats = require("../src/shared/Stats")
 local Types = require("../src/shared/Types")
+local ProgressionConfig = require("../src/config/ProgressionConfig")
 local Placeholders = require("./fixtures/Placeholders")
 
 Placeholders.install()
@@ -90,7 +91,7 @@ do
 	print(`  preview: child level {preview.level}, cost {preview.cost} coins`)
 	print("    lowest   " .. statLine(preview.statRange.low))
 	print("    highest  " .. statLine(preview.statRange.high))
-	check("offspring level is 40% of the parents' average (50 and 45 give 19)", preview.level == 19)
+	check("offspring level is 75% of the parents' average (50 and 45 give 35)", preview.level == 35)
 end
 
 ------------------------------------------------------------------------------------------------
@@ -473,6 +474,28 @@ do
 		lead <= BreedConfig.BUDGET_CAP - 1 + 0.01,
 		string.format("+%.1f%%", lead * 100)
 	)
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== A child is never higher level than its parents ==")
+do
+	check("the level share is below 1", BreedConfig.LEVEL_SHARE < 1 and BreedConfig.LEVEL_SHARE > 0)
+	local worst = true
+	local rng = Rng.new(77)
+	local levels = { 1, 2, 5, 10, 25, 50, 99, ProgressionConfig.MAX_LEVEL }
+	for _, la in levels do
+		for _, lb in levels do
+			local a = Breeding.wild("Brindle", "pa", la, "Common", "Moss", rng)
+			local b = Breeding.wild("Dartlet", "pb", lb, "Common", "Sand", rng)
+			local result =
+				Breeding.breed(a, b, Rng.new(la * 1000 + lb), { childId = "c", now = 1000 })
+			local child = result.child.level
+			if child > math.max(la, lb) or child > ProgressionConfig.MAX_LEVEL or child < 1 then
+				worst = false
+			end
+		end
+	end
+	check("for every pair of parent levels, 1 <= child <= the higher parent and the cap", worst)
 end
 
 print(`\n{passed} passed, {failed} failed`)

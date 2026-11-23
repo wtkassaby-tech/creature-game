@@ -87,7 +87,7 @@ local locals: { WorldTypes.Tamer } = {
 			},
 			tint = 0,
 		},
-		before = "I haul cargo all day. A battle is a rest. Come on, then!",
+		before = "I haul cargo all day. A battle is a change of scenery. Come on, then!",
 		after = "Heavy hands! You will do well on the boardwalk.",
 	},
 	{
@@ -113,8 +113,8 @@ local locals: { WorldTypes.Tamer } = {
 			},
 			tint = 0,
 		},
-		before = "The lamp has been flickering at night. Show me you are steady.",
-		after = "Steady as a lighthouse. Watch the wreck, though. Something is stirring.",
+		before = "The lamp has been flickering at night. Show me your nerve.",
+		after = "Firm as a lighthouse. Watch the wreck, though. Something is stirring.",
 	},
 	{
 		id = "tf_ludo",
@@ -139,8 +139,8 @@ local locals: { WorldTypes.Tamer } = {
 			},
 			tint = 0,
 		},
-		before = "Mended every net in Saltwick. Let me see if you can mend my pride.",
-		after = "Caught fair and square! The gate is just ahead. Brace yourself.",
+		before = "Mended every net in Saltwick. Never lost a fish, nor a battle.",
+		after = "Caught fair! Nets I can mend. My pride will take a week.",
 	},
 }
 
@@ -171,9 +171,9 @@ local rivalTeams: WorldTypes.ByStarter<WorldTypes.TamerTeam> = {
 	-- The player picked Sloshcalf (Water): Leaf leads, with a Toxic creature and a Leaf sprinter.
 	Sloshcalf = {
 		members = {
-			member("Mossmitt", 33, { "Bramble Rake", "Thorn Volley", "Leaf Gust", "Spore Puff" }),
+			member("Mossmitt", 33, { "Bramble Rake", "Thorn Volley", "Leaf Gust", "Seed Shot" }),
 			member("Moatkeep", 32, { "Rampart Slam", "Red Tide", "Shell Grind", "Cockle Crack" }),
-			member("Spurlet", 31, { "Agave Lance", "Needle Fan", "Dust Squall", "Spine Jab" }),
+			member("Spurlet", 31, { "Agave Lance", "Needle Fan", "Hoof Scuff", "Spine Jab" }),
 		},
 		tint = 0.75,
 	},
@@ -207,8 +207,8 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 			},
 			tint = 0,
 		},
-		before = "Nobody crosses my boardwalk unseen. Three of mine against your team.",
-		after = "A good strike, and a fair one. The wreck is a long way yet.",
+		before = "Not a boot crosses my boardwalk unseen. Three of mine against your team.",
+		after = "Shiver me timbers. That was a fair strike.",
 		cannotLose = false,
 	},
 	{

@@ -31,7 +31,7 @@ end
 local locals: { WorldTypes.Tamer } = {
 	{
 		id = "mr_wren",
-		name = "Wren Ashby",
+		name = "Tobin Reede",
 		look = "A reed-cutter in tall waders with a bundle of cut reeds over one shoulder",
 		tier = "Tamer",
 		route = "mire_route_a",
@@ -88,7 +88,7 @@ local locals: { WorldTypes.Tamer } = {
 	},
 	{
 		id = "mr_ysolde",
-		name = "Ysolde Greaves",
+		name = "Marit Greaves",
 		look = "A marsh-light watcher with a long pole, a notebook and a coat stitched with little mirrors",
 		tier = "Tamer",
 		route = "mire_route_b",
@@ -103,7 +103,7 @@ local locals: { WorldTypes.Tamer } = {
 			tint = 0,
 		},
 		before = "I count the marsh lights each night. Tonight there are too many. Battle me.",
-		after = "Calm and clear. The lights drift toward the grove now. Something big is awake.",
+		after = "Clear skies, clear head. The lights drift toward the grove now. Something big is awake.",
 	},
 	{
 		id = "mr_cuthbert",
@@ -121,7 +121,7 @@ local locals: { WorldTypes.Tamer } = {
 			},
 			tint = 0,
 		},
-		before = "Nobody sees Keeper Vell without seeing me first. Rules of the sluice!",
+		before = "Keeper Vell sees no one who has not seen me first. Rules of the sluice!",
 		after = "You will do. Bring creatures that shrug off poison, hers bite hard.",
 	},
 }
@@ -189,8 +189,8 @@ local storyBattles: { WorldTypes.StoryBattle } = {
 			},
 			tint = 0,
 		},
-		before = "The sluice opens for a steady team. Four of mine against four of yours.",
-		after = "Steady, and poison-wise. The Bulrush Badge is yours. Mind the cold road.",
+		before = "My sluice is for a sure-footed team. Four of mine against four of yours.",
+		after = "Not bad... not bad at all.",
 		cannotLose = false,
 	},
 }

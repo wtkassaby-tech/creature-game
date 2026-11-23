@@ -47,6 +47,15 @@ LassoConfig.GIANT_ZONES = 3
 LassoConfig.GIANT_WIDTH = 0.7 -- giant zones are narrower
 LassoConfig.GIANT_SPEED_STEPS = { 1.0, 1.45, 0.8 } -- speed change between a giant's zones
 
+-- The first catch a player ever makes (Ayrton, 23 November 2026: "Yes, do both"): the story's
+-- first catch should feel learnable, not a 17 ms window. Until a player has caught anything, a
+-- Common or Uncommon creature's zone is this many times wider, and never thinner than the floor
+-- below. Rarer creatures never get it, so the help cannot be saved for a prize. Server-decided:
+-- the flag is set only by a catch the server judged (src/shared/Capture.luau).
+LassoConfig.FIRST_CATCH_WIDTH = 2.5
+LassoConfig.FIRST_CATCH_MIN_WIDTH = 0.12
+LassoConfig.FIRST_CATCH_RARITIES = { Common = true, Uncommon = true }
+
 -- Layout in time and on the arc.
 LassoConfig.ZONE_GAP_MS = 3000 -- zone n starts this long after zone n-1
 LassoConfig.MAX_ATTEMPT_MS = 14000 -- a claim later than this is invalid (no waiting for a lucky pass)

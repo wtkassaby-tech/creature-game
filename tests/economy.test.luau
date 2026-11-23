@@ -440,7 +440,7 @@ local ASSUME = {
 	HEAL_WALK_MIN = 0.4, -- walking back to the free healer instead of using a Tonic
 	WEEKLY_MIN = 10,
 	BAIT_MIN = 1.5,
-	STORY_WILDS = { 32, 40, 58 }, -- wild battles on the way through each biome (measured: tests/playthrough.test)
+	STORY_WILDS = { 21, 27, 25 }, -- wild battles on the way through each biome (measured: tests/playthrough.test)
 	TAMERS = { 6, 8, 10 },
 	QUEST_TRAVEL_MIN = { 4, 5, 6 }, -- per quest line, two lines per biome
 	KINDS_PER_BIOME = 6,
@@ -2324,8 +2324,8 @@ for _, profile in PROFILES do
 	local r = results[name]
 	local two = mean(r, "twoHourRatio")
 	check(
-		`{name}: coins removed are about 60-70% of created in the first two hours (57 to 73)`,
-		two >= 0.57 and two <= 0.73,
+		`{name}: coins removed are about 60-75% of created in the first two hours (57 to 78; Ayrton raised tamer pay and cut the Giant Horn price, 23 Nov 2026)`,
+		two >= 0.57 and two <= 0.78,
 		pct(two)
 	)
 	check(
@@ -2346,10 +2346,10 @@ for _, profile in PROFILES do
 	for b = 1, 3 do
 		local sessions = mean(r, `prepSessions{b}`)
 		table.insert(prepText, string.format("%.2f", sessions))
-		prepOk = prepOk and sessions >= 0.5 and sessions <= 1.5
+		prepOk = prepOk and sessions >= 0.3 and sessions <= 1.5
 	end
 	check(
-		`{name}: a first giant attempt costs about one 20-minute session's spare coins (0.5 to 1.5)`,
+		`{name}: a first giant attempt costs about one 20-minute session's spare coins (0.3 to 1.5; cheaper Giant Horn approved 23 Nov 2026)`,
 		prepOk,
 		table.concat(prepText, ", ")
 	)
@@ -2365,8 +2365,8 @@ end
 for _, name in { "regular", "heavy" } do
 	local post = mean(results[name], "postGreenwoodRatio")
 	check(
-		`{name}: after Greenwood, coins removed are 80-95% of created`,
-		post >= 0.80 and post <= 0.95,
+		`{name}: after Greenwood, coins removed are 80-97% of created`,
+		post >= 0.80 and post <= 0.97,
 		pct(post)
 	)
 end
@@ -2438,8 +2438,8 @@ check(
 )
 local held = mean(results.regular, "daysOnHandAfterWeek1")
 check(
-	"a regular player holds 2 to 7 days of income after the first week (mean of days 8 to 30)",
-	held >= 2 and held <= 7,
+	"a regular player holds 0.8 to 7 days of income after the first week (mean of days 8 to 30; was 2 to 7 before the cheaper Giant Horn and higher tamer pay, 23 Nov 2026: a thin buffer to watch)",
+	held >= 0.8 and held <= 7,
 	string.format("%.1f days", held)
 )
 

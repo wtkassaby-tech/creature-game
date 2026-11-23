@@ -350,6 +350,12 @@ function Breeding.breed(a: Creature, b: Creature, rng: Rng.Rng, options: BreedOp
 		-- A child of a creature that can never be traded can never be traded either,
 		-- so breeding cannot be used to move a bound creature's value into a tradable one.
 		bound = a.bound or b.bound,
+		-- Paid help is inherited the same way, so breeding cannot launder a Gem-lasso catch into a
+		-- creature that releases for coins. "GemLasso" outranks "Pass".
+		paidAssist = if a.paidAssist == "GemLasso" or b.paidAssist == "GemLasso"
+			then "GemLasso"
+			elseif a.paidAssist == "Pass" or b.paidAssist == "Pass" then "Pass"
+			else nil,
 	}
 
 	local function after(parent: Creature)
