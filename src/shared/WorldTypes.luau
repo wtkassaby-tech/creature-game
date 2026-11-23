@@ -147,6 +147,32 @@ export type SheetBuilding = {
 	door: SheetPoint?, -- where its keeper stands; left out, a set distance in front of the middle
 	model: string?, -- the painted model it wears (a PropModels name)
 }
+-- The shape of the ground (docs/plans/12_MAP_STRUCTURE.md section 4a). A Box is axis-aligned,
+-- `at` its middle and `size` { across (x), deep (z) }; a Strip is a segment widened by `r`.
+export type Shape =
+	{ kind: "Disc", at: SheetPoint, r: number }
+	| { kind: "Box", at: SheetPoint, size: { number } }
+	| { kind: "Strip", from: SheetPoint, to: SheetPoint, r: number }
+-- A flat top at `height`; the ground is 0 where no tier lies, and later tiers win where they overlap.
+export type Tier = { id: string, height: number, shape: Shape }
+-- Stairs and ramps join two heights both ways, from `from` (the low end) along the line you walk to
+-- `to` (the high end), `width` across. A Ledge is a stretch of a tier's lip you can hop down but
+-- never climb: `from` to `to` along the lip with the high ground on the left, `width` the depth
+-- of the stretch across the lip.
+export type Link = {
+	id: string,
+	kind: "Stairs" | "Ramp" | "Ledge",
+	from: SheetPoint,
+	to: SheetPoint,
+	width: number,
+}
+-- Walkable space beside a route: a clearing, a pocket, a field.
+export type Room = { id: string, shape: Shape }
+-- A half-width at a distance along a route; between keys it eases linearly.
+export type WidthKey = { at: number, half: number }
+-- An extra patch of long grass in a stretch (a circle of radius `r`). The stretch's own patch is
+-- the place `{area}_grass` with the radius WorldConfig.GRASS_RADIUS; these come after it.
+export type GrassPatch = { at: SheetPoint, r: number }
 export type MapSheet = {
 	-- A route's waypoints from the hub outwards. Layout fits them to the route's data length by
 	-- trimming or stretching the last leg, so distances along the route keep their meaning.
@@ -158,6 +184,17 @@ export type MapSheet = {
 	stands: { [string]: SheetPoint }?, -- story battle id -> where the battler stands
 	faces: { [string]: number }?, -- tamer or story battle id -> facing
 	spawn: { at: SheetPoint, faces: number }?,
+	-- Levels, links, rooms and narrow lanes (docs/plans/12_MAP_STRUCTURE.md section 4a). All left
+	-- out in a biome that is still flat with wide corridors.
+	tiers: { Tier }?,
+	links: { Link }?,
+	rooms: { Room }?,
+	-- Half-width of each route (and the lair's spur) along its length, by route id. When given it
+	-- replaces `corridor`, which then holds the widest value of each stretch.
+	widths: { [string]: { WidthKey } }?,
+	-- More patches of long grass, by stretch id, besides the stretch's own (Ayrton, 23 November
+	-- 2026: patches you can walk round, never a field you must cross).
+	grass: { [string]: { GrassPatch } }?,
 }
 
 -- A biome's dressing sheet: how the designed map looks (water, lanes, fences, signs, trees). The
@@ -232,6 +269,9 @@ export type EdgeStyle =
 -- The two edges of a stretch, as seen walking away from town.
 export type DressEdge = { left: EdgeStyle, right: EdgeStyle }
 -- A wall, cliff, dune ridge or sea wall that is not a corridor edge: the town's edge, a gorge wall.
+-- "Earth" is a grassy bank, "Cliff" painted rock.
+export type TierFace = "Earth" | "Cliff"
+export type TierLook = { top: Colour, face: TierFace }
 export type DressWall = { points: { SheetPoint }, style: EdgeStyle, tall: number? }
 -- A flat axis-aligned rectangle of colour laid on the ground: the sea, a mudflat, a gorge floor.
 export type DressFlat = { from: SheetPoint, to: SheetPoint, colour: Colour, water: boolean }
@@ -307,6 +347,11 @@ export type DressingSheet = {
 	pools: { { at: SheetPoint, radius: number, colour: Colour } },
 	pond: { at: SheetPoint, radius: number, colour: Colour, jetty: { SheetPoint } }?,
 	waterfall: SheetPoint?, -- above the first pool
+	-- Other falls where water drops off a tier: the foot of the fall, and the way the water comes from.
+	falls: { { at: SheetPoint, towards: SheetPoint } }?,
+	-- How each tier looks (a map sheet's tiers, by id): the colour of its flat top and the face its
+	-- sides wear. A tier left out has a grassy top and an earth face.
+	tierLooks: { [string]: TierLook }?,
 	footbridge: { at: SheetPoint, faces: number, length: number, width: number }?,
 	flats: { DressFlat }?, -- drawn in order, each a hair above the last
 	arches: { DressArch },

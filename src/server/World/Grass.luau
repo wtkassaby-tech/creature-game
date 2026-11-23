@@ -82,15 +82,17 @@ end
 
 -- A patch of long grass named `name` round `centre`: the server's circle as a dark disc, and
 -- tufts on a jittered hex grid inside it. `look` gives the tuft model and the disc's colour;
--- left out, Greenwood's GrassTuft on dark green.
+-- left out, Greenwood's GrassTuft on dark green. `size` is the patch's radius: left out, the
+-- stretch's own patch (WorldConfig.GRASS_RADIUS); the sheet's extra patches are smaller.
 function Grass.patch(
 	parent: Instance,
 	name: string,
 	centre: Vector3,
 	pick: Random,
-	look: WorldTypes.GrassLook?
+	look: WorldTypes.GrassLook?,
+	size: number?
 ): Part
-	local radius = WorldConfig.GRASS_RADIUS
+	local radius = size or WorldConfig.GRASS_RADIUS
 	local under = if look then look.under else UNDER
 	local model = if look then look.model else "GrassTuft"
 	local tall = TUFT_TALL[model] or 2.5

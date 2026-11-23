@@ -8,8 +8,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
-local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local Markers = require(script.Parent.Markers)
@@ -133,15 +133,18 @@ function Lanes.build(
 	parent: Instance,
 	biome: WorldTypes.Biome,
 	map: Layout.Map,
-	dressing: WorldTypes.DressingSheet
+	dressing: WorldTypes.DressingSheet,
+	levels: Ground.Ground
 )
 	local width = dressing.laneWidth
-	local grass: { Vector3 } = {}
+	local grass: { { at: Vector3, r: number } } = {}
 	for _, route in biome.routes do
 		for _, area in route.areas do
-			local patch = map.places[Layout.grassId(area.id)]
-			if patch then
-				table.insert(grass, flat(patch))
+			local listed = map.grass[area.id]
+			if listed then
+				for _, patch in listed do
+					table.insert(grass, { at = Vector3.new(patch.x, 0, patch.z), r = patch.r })
+				end
 			end
 		end
 	end
@@ -196,10 +199,15 @@ function Lanes.build(
 		while along <= line.length do
 			local at = flat(Layout.pointAt(line, along))
 			local covered = false
-			for _, centre in grass do
-				if (at - centre).Magnitude < WorldConfig.GRASS_RADIUS then
+			for _, patch in grass do
+				if (at - patch.at).Magnitude < patch.r then
 					covered = true
 				end
+			end
+			-- Stairs and ramps have their own surface, and a lane piece must never lie across
+			-- two heights, so the lane stops short of them.
+			if Ground.linkAt(levels, at.X, at.Z, 1) then
+				covered = true
 			end
 			local colour, deck = surfaceAt(routeId, along)
 			if covered or colour ~= runColour or deck ~= runDeck then

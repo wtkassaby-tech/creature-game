@@ -238,6 +238,8 @@ function Enclosure.walkable(
 						r = widths[area.id] or r
 					end
 				end
+				-- A sheet with narrow lanes gives the half-width along the route.
+				r = Layout.halfWidthAt(line.widths, middle, r)
 				table.insert(out, capsule(a.x, a.z, b.x, b.z, r))
 				along = nextAlong
 			end
@@ -252,8 +254,39 @@ function Enclosure.walkable(
 		local at = world(map, clearing.at)
 		table.insert(out, disc(at.x, at.z, clearing.radius + 2))
 	end
+	-- A sheet with narrow lanes and rooms keeps every route place inside them (a test checks it),
+	-- so only the town's places need room made round them.
+	local drawn = biome.map
+	local narrow = drawn ~= nil and drawn.widths ~= nil
 	for _, place in map.places do
-		table.insert(out, disc(place.x, place.z, PLACE_RADIUS))
+		local inTown = math.abs(place.x - map.hub.x) < half + 20
+			and math.abs(place.z - map.hub.z) < half + 20
+		if inTown or not narrow then
+			table.insert(out, disc(place.x, place.z, PLACE_RADIUS))
+		end
+	end
+	if drawn and drawn.rooms then
+		for _, room in drawn.rooms do
+			local shape = room.shape
+			if shape.kind == "Disc" then
+				local at = world(map, shape.at)
+				table.insert(out, disc(at.x, at.z, shape.r))
+			elseif shape.kind == "Box" then
+				local at = world(map, shape.at)
+				table.insert(out, {
+					ax = at.x - shape.size[1] / 2,
+					az = at.z - shape.size[2] / 2,
+					bx = at.x + shape.size[1] / 2,
+					bz = at.z + shape.size[2] / 2,
+					r = 0,
+					box = true,
+					hub = false,
+				})
+			else
+				local a, b = world(map, shape.from), world(map, shape.to)
+				table.insert(out, capsule(a.x, a.z, b.x, b.z, shape.r))
+			end
+		end
 	end
 	for id, point in map.buildings do
 		local size = dressing.buildings[id]

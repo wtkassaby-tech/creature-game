@@ -287,6 +287,18 @@ function Scenery.build(
 			Props.colour(if stream then stream.colour else spring.colour)
 		)
 	end
+	-- Falls where water drops off a tier (the brook off the terrace).
+	local falls: { { at: WorldTypes.SheetPoint, towards: WorldTypes.SheetPoint } } = dressing.falls
+		or {}
+	for _, drop in falls do
+		local stream = dressing.water[1]
+		Water.waterfall(
+			town,
+			placed(map, drop.at),
+			placed(map, drop.towards),
+			Props.colour(if stream then stream.colour else { 110, 182, 214 })
+		)
+	end
 	local bridge = dressing.footbridge
 	if bridge then
 		Water.footbridge(

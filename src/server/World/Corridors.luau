@@ -9,7 +9,9 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
+local Walk = require(ReplicatedStorage.shared.Walk)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local Edges = require(script.Parent.Edges)
@@ -72,7 +74,11 @@ local function corridors(biome: WorldTypes.Biome, map: Layout.Map): { Corridor }
 				points = flatAll(line.points),
 				widthAt = function(along: number): number
 					local area = areaAt(along)
-					return (if area then widths[area] else nil) or 50
+					return Layout.halfWidthAt(
+						line.widths,
+						along,
+						(if area then widths[area] else nil) or 50
+					)
 				end,
 				areaAt = areaAt,
 			})
@@ -88,8 +94,8 @@ local function corridors(biome: WorldTypes.Biome, map: Layout.Map): { Corridor }
 			id = biome.lair.id,
 			line = { id = biome.lair.id, points = map.lairSpur, length = length, side = 0 },
 			points = flatAll(map.lairSpur),
-			widthAt = function(): number
-				return spurWidth
+			widthAt = function(along: number): number
+				return Layout.halfWidthAt(map.lairWidths, along, spurWidth)
 			end,
 			areaAt = function(): string?
 				return nil
@@ -144,12 +150,21 @@ function Corridors.edges(
 	map: Layout.Map,
 	dressing: WorldTypes.DressingSheet,
 	waters: { Fences.Water },
-	pick: Random
+	pick: Random,
+	ground: Ground.Ground
 )
 	local folder = Instance.new("Folder")
 	folder.Name = "Edges"
 	folder.Parent = parent
 	local list = corridors(biome, map)
+	local space = Walk.space(biome, map, dressing)
+	-- True where a hedge must not stand: stairs and ramps are open at their ends (their sides have
+	-- cheeks), a ledge is open on purpose, and a tier's wall at its foot is wall enough.
+	local function openByDesign(x: number, z: number): boolean
+		return Ground.linkAt(ground, x, z, 3) ~= nil
+			or Ground.ledgeAt(ground, x, z, 1.5) ~= nil
+			or Ground.atFoot(ground, x, z, 3)
+	end
 	local origin = Vector3.new(map.hub.x, 0, map.hub.z)
 	local rings: { { at: Vector3, radius: number } } = {}
 	local bulges: { { at: Vector3, radius: number } } = {}
@@ -245,8 +260,9 @@ function Corridors.edges(
 					end
 				end
 				local keep = not inTown(map, point, 2)
-					and not insideAny(list, point, INSIDE_MARGIN)
+					and Walk.depth(space, point.X, point.Z, false, nil) < INSIDE_MARGIN
 					and not inRing(point, 1)
+					and not openByDesign(point.X, point.Z)
 				local style: WorldTypes.EdgeStyle = styleOf(keyAt(corridor, along), side)
 				if keep then
 					local into: Run
@@ -332,6 +348,53 @@ function Corridors.edges(
 					{ outward = -side } -- its outside is beyond the route's end
 				)
 			end
+		end
+	end
+
+	-- An edge round each room of the map sheet (a pocket, a field, a dead end), open where a lane
+	-- or another room is, at a link or a ledge, and at a tier's foot.
+	for _, room in space.sheetRooms do
+		local runs: { { Vector3 } } = {}
+		local run: { Vector3 } = {}
+		local samples = Ground.outline(room, EDGE_STEP)
+		local allKept = true
+		for _, sample in samples do
+			local point = Vector3.new(sample.x, 0, sample.z)
+			local keep = not inTown(map, point, 2)
+				and Walk.depth(space, sample.x, sample.z, false, room) < INSIDE_MARGIN
+				and not inRing(point, 1)
+				and not openByDesign(sample.x, sample.z)
+			if keep then
+				table.insert(run, point)
+			else
+				allKept = false
+				if #run > 1 then
+					table.insert(runs, run)
+				end
+				run = {}
+			end
+		end
+		if allKept and #run > 1 then
+			table.insert(run, run[1]) -- a pocket with no way in closes on itself
+		end
+		if #run > 1 then
+			-- The loop starts mid-edge: join the last run to the first when both touch the seam.
+			local first = samples[1]
+			local last = samples[#samples]
+			local seam = #runs > 0
+				and Walk.depth(space, first.x, first.z, false, room) < INSIDE_MARGIN
+				and Walk.depth(space, last.x, last.z, false, room) < INSIDE_MARGIN
+			if seam and not openByDesign(first.x, first.z) and not openByDesign(last.x, last.z) then
+				for _, point in runs[1] do
+					table.insert(run, point)
+				end
+				runs[1] = run
+			else
+				table.insert(runs, run)
+			end
+		end
+		for _, piece in runs do
+			Edges.run(folder, piece, "Hedge", waters, pick, { outward = 1 })
 		end
 	end
 

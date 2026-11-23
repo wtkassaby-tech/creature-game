@@ -16,6 +16,7 @@ local DustCanyonDressing = require("../src/content/map_data/DustCanyonDressing")
 local GreenwoodDressing = require("../src/content/map_data/GreenwoodDressing")
 local Layout = require("../src/shared/Layout")
 local ReleaseConfig = require("../src/config/ReleaseConfig")
+local Walk = require("../src/shared/Walk")
 local Tamers = require("../src/content/Tamers")
 local TideFlatsDressing = require("../src/content/map_data/TideFlatsDressing")
 local WorldConfig = require("../src/config/WorldConfig")
@@ -174,6 +175,11 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 		return nil
 	end
 	local gateRoute = assert(routeOf(biome.gate.route), "the gate's route")
+	local space = Walk.space(biome, map, DRESSINGS[biome.id])
+	local function patchesOf(areaId: string): { Layout.GrassCircle }
+		local listed = map.grass[areaId]
+		return if listed then listed else {}
+	end
 
 	print(`\n== {biome.name}: the sheet names only real things ==`)
 	do
@@ -447,7 +453,30 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 		for _, route in biome.routes do
 			local line = map.routes[route.id]
 			local widths = line.halfWidth or {}
+			local narrow = line.widths ~= nil
 			local function inside(id: string, spot: Layout.Point, reach: number)
+				if narrow then
+					-- Narrow lanes and rooms: the spot, and a circle of `reach` round it, lie wholly
+					-- in walkable space (the lane at its half-width there, a room, or the town).
+					local worst = Walk.depth(space, spot.x, spot.z, true, nil)
+					for k = 0, 11 do
+						local angle = k / 12 * math.pi * 2
+						worst = math.min(
+							worst,
+							Walk.depth(
+								space,
+								spot.x + math.cos(angle) * reach,
+								spot.z + math.sin(angle) * reach,
+								true,
+								nil
+							)
+						)
+					end
+					if worst < -0.5 then
+						table.insert(outside, id)
+					end
+					return
+				end
 				local along, off = project(line, spot)
 				local area = areaAt(route, along)
 				local width = if area then widths[area.id] else nil
@@ -457,11 +486,9 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 			end
 			for _, area in route.areas do
 				inside(area.id, map.places[area.id], 0)
-				inside(
-					Layout.grassId(area.id),
-					map.places[Layout.grassId(area.id)],
-					WorldConfig.GRASS_RADIUS
-				)
+				for number, patch in patchesOf(area.id) do
+					inside(`{Layout.grassId(area.id)} {number}`, patch, patch.r)
+				end
 			end
 			for _, rustle in route.rustleSpots do
 				inside(rustle.id, map.places[rustle.id], 0)
@@ -469,11 +496,18 @@ local function checkMap(biome: WorldTypes.Biome, map: Layout.Map)
 			for _, tamerId in route.tamers do
 				inside(tamerId, map.places[tamerId], 0)
 			end
-			-- Wild creatures stand up to this far either side of the lane.
-			inside(`{route.id} creatures`, Layout.pointAt(line, 1), WorldConfig.SPAWN_SIDE_OFFSET)
+			-- Wild creatures stand up to this far either side of the lane (those that hide in
+			-- long grass are inside its patch, checked above).
+			if not narrow then
+				inside(
+					`{route.id} creatures`,
+					Layout.pointAt(line, 1),
+					WorldConfig.SPAWN_SIDE_OFFSET
+				)
+			end
 		end
 		check(
-			"every route place, grass edge included, is inside its corridor",
+			"every route place, grass edge included, is inside its corridor or room",
 			#outside == 0,
 			join(outside)
 		)

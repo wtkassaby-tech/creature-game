@@ -16,12 +16,11 @@ local MOSS: WorldTypes.Colour = { 118, 176, 92 }
 local SAND: WorldTypes.Colour = { 232, 214, 160 }
 local BIRCH: WorldTypes.Colour = { 140, 190, 100 }
 local OLD_WOOD: WorldTypes.Colour = { 88, 132, 70 }
+local RIDGE: WorldTypes.Colour = { 108, 160, 84 }
 local DIRT: WorldTypes.Colour = { 204, 180, 128 }
 local COBBLE: WorldTypes.Colour = { 222, 204, 168 }
 local STONE: WorldTypes.Colour = { 186, 180, 168 }
 local PLANKS: WorldTypes.Colour = { 170, 130, 90 }
-local OVERGROWN: WorldTypes.Colour = { 150, 168, 104 }
-local MOWN: WorldTypes.Colour = { 176, 214, 124 }
 
 -- A row of trees every `step` studs from one point to another.
 local function row(
@@ -69,17 +68,8 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		{ points = { p(0, 28), p(0, 104) }, width = 8, colour = COBBLE },
 		{ points = { p(-34, 104), p(44, 104) }, width = 8, colour = DIRT },
 		{ points = { p(118, -8), p(118, -17) }, width = 6, colour = DIRT }, -- the east cottage
-		-- The shut shortcut from the lair to the wicket, overgrown.
-		{ points = { p(215, -250), p(160, -195), p(110, -150) }, width = 8, colour = OVERGROWN },
 	},
-	footpaths = {
-		-- The mown path round the meadow's long grass.
-		{
-			points = { p(-286, 46), p(-306, 60), p(-332, 44), p(-337, 18) },
-			width = 6,
-			colour = MOWN,
-		},
-	},
+	footpaths = {},
 	stones = {
 		{ from = p(-24, -8), to = p(-36, -14) }, -- plaza to the notice oak
 		{ from = p(-70, 38), to = p(-90, 62) }, -- healer to the pond
@@ -88,16 +78,25 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	well = p(18, 12),
 
 	water = {
-		-- The brook: from the spring past the end of Route A, down through town to the pond.
+		-- The brook: it rises on the spring plateau, falls to the terrace pool, runs east along the
+		-- terrace's north side, falls again off its east face, and winds through the wood to town.
+		{
+			points = { p(-300, -140), p(-300, -112), p(-300, -86) },
+			width = 8,
+			colour = { 110, 182, 214 },
+		},
+		{
+			points = { p(-300, -62), p(-292, -66), p(-276, -67), p(-264, -64) },
+			width = 8,
+			colour = { 110, 182, 214 },
+		},
 		{
 			points = {
-				p(-235, -205),
-				p(-255, -150),
-				p(-290, -110),
-				p(-292, -60),
-				p(-265, -25),
-				p(-215, -28),
-				p(-165, -18),
+				p(-250, -60),
+				p(-240, -44),
+				p(-222, -30),
+				p(-196, -22),
+				p(-168, -18),
 				p(-150, -10),
 				p(-128, 0),
 				p(-118, 40),
@@ -123,7 +122,8 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		},
 	},
 	pools = {
-		{ at = p(-235, -205), radius = 8, colour = { 110, 182, 214 } }, -- the spring
+		{ at = p(-300, -118), radius = 8, colour = { 110, 182, 214 } }, -- the spring
+		{ at = p(-300, -62), radius = 7, colour = { 110, 182, 214 } }, -- the terrace pool
 		{ at = p(231, 50), radius = 9, colour = { 86, 160, 204 } }, -- the heron inlet
 	},
 	pond = {
@@ -132,7 +132,8 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		colour = { 100, 176, 210 },
 		jetty = { p(-96, 62), p(-96, 76) },
 	},
-	waterfall = p(-238, -214),
+	waterfall = p(-300, -71), -- the foot of the plateau's face, over the terrace pool
+	falls = { { at = p(-254, -62), towards = p(-266, -64) } },
 	footbridge = { at = p(-128, 0), faces = 90, length = 20, width = 12 },
 
 	arches = {
@@ -155,8 +156,8 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		},
 		-- The plan gives SP4 no facing; it points west along the shut wicket, read from town.
 		{ at = p(104, -142), faces = 270, lines = { "The Hollow path. Shut." } },
-		{ at = p(-190, 30), faces = 60, lines = { "Long grass:", "wild creatures hide here" } },
-		{ at = p(428, -118), faces = 225, lines = { "Hollowbough's Hollow", "Hollow Stall" } },
+		{ at = p(-196, 10), faces = 60, lines = { "Long grass:", "wild creatures hide here" } },
+		{ at = p(426, -87), faces = 330, lines = { "Hollowbough's Hollow", "Hollow Stall" } },
 		{ at = p(600, -66), faces = 270, lines = { "Greenwood Gatehouse", "badge challenge" } },
 	},
 	lamps = {
@@ -239,12 +240,6 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		-- By the Ring.
 		tree(110, 90),
 		tree(100, 120),
-		-- The picnic hollow on the meadow: a ring of five trees.
-		tree(-390, 26),
-		tree(-376.7, 35.7),
-		tree(-381.8, 51.3),
-		tree(-398.2, 51.3),
-		tree(-403.3, 35.7),
 	},
 	rows = {
 		-- The north belt, with a gap for the wicket at x 104 to 116.
@@ -273,7 +268,7 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		-- The shut wicket in the town hedge, on the lair shortcut.
 		{ points = { p(104, -150), p(116, -150) }, style = "Gate", across = true },
 		-- The old fence across the end of Route A, with a broken stile in the middle.
-		{ points = { p(-294.6, -176.6), p(-263.4, -145.4) }, style = "Rustic", across = true },
+		{ points = { p(-283.5, -54.5), p(-270, -47) }, style = "Rustic", across = true },
 		-- A low stone wall each side of the lane through the hamlet (along 560 to 600).
 		{ points = { p(644.4, -70), p(684, -70) }, style = "Stone" },
 		{ points = { p(644.4, -90), p(684, -90) }, style = "Stone" },
@@ -281,14 +276,9 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	-- The town hedge at ±150, broken at the arches (z ±14) and the wicket (x 104 to 116). Where
 	-- the brook or the river crosses it, the builder stops it short and lays a low rail.
 	hedges = {
-		{ p(-150, -14), p(-150, -150), p(104, -150) },
-		{ p(116, -150), p(150, -150), p(150, -14) },
-		{ p(150, 14), p(150, 150), p(-150, 150), p(-150, 14) },
-		-- Short funnel hedges angling out from each arch.
-		{ p(-150, -14), p(-176, -29) },
-		{ p(-150, 14), p(-176, 29) },
-		{ p(150, -14), p(176, -29) },
-		{ p(150, 14), p(176, 29) },
+		{ p(-150, -9), p(-150, -150), p(104, -150) },
+		{ p(116, -150), p(150, -150), p(150, -9) },
+		{ p(150, 9), p(150, 150), p(-150, 150), p(-150, 9) },
 	},
 
 	buildings = {
@@ -330,16 +320,12 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		{ name = "Picker", at = p(84, 104), faces = 90, model = "Grandmother" },
 	},
 
-	knoll = { at = p(-238, -2), size = { 22, 7, 16 } },
-	picnic = { at = p(-390, 40), radius = 16 },
-	pocket = { at = p(318, -78), radius = 22 },
+	picnic = { at = p(-290, 112), radius = 14 },
 	clearings = {
-		{ at = p(-390, 40), radius = 18, ring = false }, -- the picnic hollow
-		{ at = p(318, -78), radius = 22, ring = false }, -- Birch Rise's side pocket
-		{ at = p(270.6, -299.3), radius = 80, ring = true }, -- the lair, round its r75 arena
+		{ at = p(277, -293), radius = 76, ring = true }, -- the Hollow, round its bowl
 	},
 	caps = {
-		greenwood_route_a = 23, -- the old fence fills the middle
+		greenwood_route_a = 7, -- the old fence fills the middle
 		greenwood_route_b = 20, -- the gatehouse fills the middle
 	},
 	corridorTrees = {
@@ -351,9 +337,34 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 	ancientTree = { at = p(270, -362), tall = 160 },
 	stall = { side = 1 },
 	ring = { width = 40, depth = 30, gap = 12 },
-	brambles = { p(180, -215) },
+	brambles = {},
 	coop = p(126, -70),
 	patch = { from = p(22, -96), to = p(36, -78) },
+
+	-- How each tier looks: grassy banks for the gentle rises, painted cliff under the high ground.
+	-- Tiers that touch at one height share a top colour, so no seam shows.
+	tierLooks = {
+		clover_terrace = { top = MEADOW, face = "Earth" },
+		spring_plateau = { top = MOSS, face = "Cliff" },
+		birch_switchback_a = { top = BIRCH, face = "Earth" },
+		birch_switchback_b = { top = BIRCH, face = "Earth" },
+		birch_nook = { top = BIRCH, face = "Earth" },
+		birch_shelf = { top = BIRCH, face = "Earth" },
+		steps_landing = { top = BIRCH, face = "Earth" },
+		ridge_brink = { top = RIDGE, face = "Cliff" },
+		ridge_a = { top = RIDGE, face = "Cliff" },
+		wood_a = { top = RIDGE, face = "Cliff" },
+		wood_b = { top = RIDGE, face = "Cliff" },
+		wood_c = { top = RIDGE, face = "Cliff" },
+		wood_head = { top = RIDGE, face = "Cliff" },
+		wood_glade = { top = RIDGE, face = "Cliff" },
+		burl_clearing = { top = RIDGE, face = "Cliff" },
+		spur_a = { top = RIDGE, face = "Cliff" },
+		spur_b = { top = RIDGE, face = "Cliff" },
+		spur_c = { top = RIDGE, face = "Cliff" },
+		spur_d = { top = RIDGE, face = "Cliff" },
+		hollow_bowl = { top = MOSS, face = "Cliff" },
+	},
 
 	-- Solid woods close in everything past the edges (docs/plans/12_MAP_STRUCTURE.md, step 1).
 	fill = { style = "Forest", band = 80, floor = { 70, 118, 58 } },
@@ -375,13 +386,13 @@ local GreenwoodDressing: WorldTypes.DressingSheet = {
 		glints = true,
 		sources = {
 			-- Pollen over the meadows beside the lane.
-			{ kind = "Pollen", at = p(-208, 43), height = 4, area = { 90, 70, 6 } },
-			{ kind = "Pollen", at = p(-311, 25), height = 4, area = { 90, 70, 6 } },
-			{ kind = "Pollen", at = p(214, -8), height = 4, area = { 90, 70, 6 } },
+			{ kind = "Pollen", at = p(-190, 38), height = 4, area = { 50, 50, 6 } },
+			{ kind = "Pollen", at = p(-330, 70), height = 4, area = { 70, 60, 6 } },
+			{ kind = "Pollen", at = p(220, 6), height = 4, area = { 90, 60, 6 } },
 			-- Seed fluff on the breeze: the birch rise, the orchard and the clover meadow.
-			{ kind = "Fluff", at = p(365, -44), height = 5, area = { 80, 70, 8 } },
+			{ kind = "Fluff", at = p(262, -22), height = 15, area = { 50, 50, 8 } },
 			{ kind = "Fluff", at = p(95, 112), height = 5, area = { 70, 50, 8 } },
-			{ kind = "Fluff", at = p(-270, 40), height = 5, area = { 80, 70, 8 } },
+			{ kind = "Fluff", at = p(-300, 62), height = 5, area = { 80, 50, 8 } },
 		},
 	},
 }

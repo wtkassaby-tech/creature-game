@@ -151,7 +151,13 @@ function BattleStage.new(): Stage
 				top = top.Parent :: BasePart
 			end
 			-- Ground, paths and whole buildings stay: they are the scenery.
-			if top.Size.Y >= 1.5 and math.max(top.Size.X, top.Size.Z) < 100 then
+			-- Raised ground, its steps and its walls (tagged WorldGround) stay too, even when a piece
+			-- is under 100 wide (docs/plans/12_MAP_STRUCTURE.md section 4c).
+			if
+				top.Size.Y >= 1.5
+				and math.max(top.Size.X, top.Size.Z) < 100
+				and not top:HasTag("WorldGround")
+			then
 				for _, piece in { top :: Instance, table.unpack(top:GetDescendants()) } do
 					if piece:IsA("BasePart") and piece.LocalTransparencyModifier == 0 then
 						piece.LocalTransparencyModifier = 1
@@ -219,7 +225,11 @@ function BattleStage.new(): Stage
 		params.FilterDescendantsInstances = ignore
 		local count = 0
 		for _, found in Workspace:GetPartBoundsInRadius(at + Vector3.yAxis * 4, 9, params) do
-			if found.Size.Y >= 1.5 and math.max(found.Size.X, found.Size.Z) < 100 then
+			if
+				found.Size.Y >= 1.5
+				and math.max(found.Size.X, found.Size.Z) < 100
+				and not found:HasTag("WorldGround")
+			then
 				count += 1
 			end
 		end

@@ -5,6 +5,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
@@ -22,7 +23,8 @@ function CorridorGround.build(
 	parent: Instance,
 	biome: WorldTypes.Biome,
 	map: Layout.Map,
-	dressing: WorldTypes.DressingSheet
+	dressing: WorldTypes.DressingSheet,
+	ground: Ground.Ground
 )
 	local folder = Instance.new("Folder")
 	folder.Name = "GroundPatches"
@@ -51,24 +53,31 @@ function CorridorGround.build(
 		end
 		local band = far - near
 		local middle = (near + far) / 2
+		-- A lane with narrow keys is painted as wide as it is at each step; the stretch is
+		-- painted lane by lane, and never over the stairs or ramps (they have their own surface).
+		local keys = if patch.area and line then line.widths else nil
 		-- Over a sheet's flats (the sea, a gorge floor) the corridors' ground is painted on top.
 		local flats = dressing.flats
 		local top = (if flats and #flats > 0 then 0.07 else 0.03) + layer * 0.012
 		local colour = Props.colour(patch.colour)
 		local previous: Vector3? = nil
+		local lastWidth = band
 		local along = from
 		while along <= to do
 			local at = flat(Layout.pointAt(line, along, middle))
+			local here = if keys then Layout.halfWidthAt(keys, along, band / 2) * 2 else band
+			local overLink = keys ~= nil and Ground.linkAt(ground, at.X, at.Z, 2) ~= nil
 			-- Stay out of the town: its own green is its ground.
 			local half = map.hub.size / 2
 			local dx = math.max(math.abs(at.X - map.hub.x) - half, 0)
 			local dz = math.max(math.abs(at.Z - map.hub.z) - half, 0)
-			if math.sqrt(dx * dx + dz * dz) >= band / 2 then
-				Props.disc(folder, at, band, 0.1, top, colour)
+			if math.sqrt(dx * dx + dz * dz) >= here / 2 and not overLink then
+				Props.disc(folder, at, here, 0.1, top, colour)
 				if previous then
-					Props.strip(folder, previous, at, band, 0.1, top, colour)
+					Props.strip(folder, previous, at, math.min(here, lastWidth), 0.1, top, colour)
 				end
 				previous = at
+				lastWidth = here
 			else
 				previous = nil
 			end

@@ -7,6 +7,7 @@ local EconomyConfig = require("../src/config/EconomyConfig")
 local Encounters = require("../src/shared/Encounters")
 local Lasso = require("../src/shared/Lasso")
 local Layout = require("../src/shared/Layout")
+local Rng = require("../src/shared/Rng")
 local Tamers = require("../src/content/Tamers")
 local WorldConfig = require("../src/config/WorldConfig")
 
@@ -50,8 +51,8 @@ do
 		"Route A runs west of the hub and Route B east",
 		Layout.pointAt(a, 400).x < -200 and Layout.pointAt(b, 600).x > 400
 	)
-	-- Along 120 to 145 lies inside one straight leg of Route A, so it is a straight-line distance.
-	local step = Layout.distance(Layout.pointAt(a, 120), Layout.pointAt(a, 145))
+	-- Along 100 to 125 lies inside one straight leg of Route A, so it is a straight-line distance.
+	local step = Layout.distance(Layout.pointAt(a, 100), Layout.pointAt(a, 125))
 	check("distance along the path is real distance", math.abs(step - 25) < 0.001, `{step}`)
 	local legs = 0
 	for index = 1, #a.points - 1 do
@@ -545,11 +546,15 @@ do
 			for _, spawn in book.spawns do
 				table.insert(list, spawn)
 				total += 1
-				local patch = biomeMap.places[Layout.grassId(spawn.area)]
-				if
-					patch == nil
-					or Layout.distance(patch, spawn.at) > WorldConfig.GRASS_SPAWN_REACH + 1e-6
-				then
+				-- A stretch may have several patches: the creature sits inside one of them.
+				local within = false
+				for _, patch in Encounters.patchesOf(biomeMap, spawn.area) do
+					local reach = math.min(WorldConfig.GRASS_SPAWN_REACH, patch.r - 7)
+					if Layout.distance(patch, spawn.at) <= reach + 1e-6 then
+						within = true
+					end
+				end
+				if not within then
 					inside = false
 				end
 			end
@@ -632,6 +637,58 @@ do
 			) == spot
 		)
 	end
+end
+
+print("\n== Several patches in a stretch ==")
+do
+	local patches = map.grass.sandy_bank
+	local extra = patches[2]
+	check("a stretch can have more than one patch of grass", extra ~= nil and #patches > 1)
+	local found: Encounters.Spawn? = nil
+	local book = Encounters.new()
+	for second = 1, 60 do
+		found = found
+			or Encounters.grass(
+				book,
+				greenwood,
+				map,
+				{ x = extra.x, z = extra.z },
+				true,
+				second * 20,
+				second * 13 + 5,
+				newId
+			)
+	end
+	check("walking through an extra patch brings a creature out", found ~= nil)
+	local outside = Encounters.grass(
+		Encounters.new(),
+		greenwood,
+		map,
+		{ x = extra.x + extra.r + 6, z = extra.z },
+		true,
+		100,
+		7,
+		newId
+	)
+	check("just outside it nothing jumps out", outside == nil)
+	local hidden = true
+	for seed = 1, 40 do
+		local at = Encounters.hideAt(
+			map,
+			map.routes.greenwood_route_b,
+			greenwood.routes[2].areas[1],
+			{},
+			Rng.new(seed)
+		)
+		local inside = false
+		for _, patch in Encounters.patchesOf(map, "sandy_bank") do
+			if Layout.distance(patch, at) <= patch.r then
+				inside = true
+			end
+		end
+		hidden = hidden and inside
+	end
+	check("a creature always hides inside one of the patches", hidden)
 end
 
 print(`\n{passed} passed, {failed} failed`)

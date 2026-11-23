@@ -19,6 +19,7 @@ local DustCanyonDressing = require(ReplicatedStorage.content.map_data.DustCanyon
 local GreenwoodDressing = require(ReplicatedStorage.content.map_data.GreenwoodDressing)
 local TideFlatsDressing = require(ReplicatedStorage.content.map_data.TideFlatsDressing)
 local Enclosure = require(ReplicatedStorage.shared.Enclosure)
+local Ground = require(ReplicatedStorage.shared.Ground)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Tamers = require(ReplicatedStorage.content.Tamers)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
@@ -29,15 +30,18 @@ local Barriers = require(script.Parent.Barriers)
 local CorridorGround = require(script.Parent.CorridorGround)
 local Corridors = require(script.Parent.Corridors)
 local Dressing = require(script.Parent.Dressing)
+local Elevate = require(script.Parent.Elevate)
 local Fill = require(script.Parent.Fill)
 local Grass = require(script.Parent.Grass)
 local Lair = require(script.Parent.Lair)
 local Landmarks = require(script.Parent.Landmarks)
 local Lanes = require(script.Parent.Lanes)
+local Links = require(script.Parent.Links)
 local Markers = require(script.Parent.Markers)
 local Props = require(script.Parent.Props)
 local Scatter = require(script.Parent.Scatter)
 local Scenery = require(script.Parent.Scenery)
+local Tiers = require(script.Parent.Tiers)
 
 local TestMap = {}
 
@@ -137,10 +141,14 @@ local function buildBiome(
 	Markers.addGround(ground)
 
 	local waters = if dressing then Scenery.waters(map, dressing) else {}
+	-- The levels of this biome (flat when its sheet has no tiers): everything below is laid on the
+	-- flat and lifted onto them at the end (Elevate), then the tiers and links are built.
+	local levels = Ground.new(biome.map, { x = map.hub.x, z = map.hub.z })
+	local shapes: { Enclosure.Shape } = {}
 	if dressing then
 		-- Everything past the walkable space closes in: water blocks, and trees, rock or dunes
 		-- stand solid out to the fill's band (docs/plans/12_MAP_STRUCTURE.md section 10, step 1).
-		local shapes = Enclosure.walkable(biome, map, dressing, links)
+		shapes = Enclosure.walkable(biome, map, dressing, links)
 		local limits: Enclosure.Bounds =
 			{ x0 = west, z0 = middleZ - depth / 2, x1 = east, z1 = middleZ + depth / 2 }
 		Barriers.build(world, Enclosure.water(biome, map, dressing, shapes, limits))
@@ -158,8 +166,8 @@ local function buildBiome(
 				)
 			)
 		end
-		CorridorGround.build(world, biome, map, dressing)
-		Corridors.edges(world, biome, map, dressing, waters, pick)
+		CorridorGround.build(world, biome, map, dressing, levels)
+		Corridors.edges(world, biome, map, dressing, waters, pick, levels)
 		Scenery.build(world, biome, map, dressing, waters, pick)
 		Landmarks.build(world, map, dressing)
 		clipFlats(world, ground)
@@ -283,13 +291,19 @@ local function buildBiome(
 			local grass = map.places[Layout.grassId(area.id)]
 			if grass and dressing then
 				local looks = dressing.grassLooks
-				Grass.patch(
-					folder,
-					Layout.grassId(area.id),
-					Vector3.new(grass.x, 0, grass.z),
-					pick,
-					if looks then looks[area.id] else nil
-				)
+				local patches: { Layout.GrassCircle } = map.grass[area.id]
+				for number, patch in patches do
+					Grass.patch(
+						folder,
+						if number == 1
+							then Layout.grassId(area.id)
+							else `{Layout.grassId(area.id)}_{number}`,
+						Vector3.new(patch.x, 0, patch.z),
+						pick,
+						if looks then looks[area.id] else nil,
+						patch.r
+					)
+				end
 			elseif grass then
 				local size = WorldConfig.GRASS_RADIUS * 2
 				local patch = block(
@@ -343,7 +357,7 @@ local function buildBiome(
 		end
 	end
 	if dressing then
-		Lanes.build(world, biome, map, dressing)
+		Lanes.build(world, biome, map, dressing, levels)
 	end
 
 	-- The people the story sends the player to battle (the rival, a gate's champion) stand where
@@ -386,6 +400,31 @@ local function buildBiome(
 
 	-- The lair's spur and arena.
 	Lair.build(world, biome, map, dressing)
+
+	-- Raised ground: lift everything laid so far onto its tier, then build the tiers and the
+	-- stairs and ramps between them at their own heights.
+	if dressing and not Ground.isFlat(levels) then
+		local lifted, across = Elevate.apply(world, levels, {})
+		local near = Enclosure.index(shapes, 40)
+		local tierCounts = Tiers.build(
+			world,
+			levels,
+			dressing.tierLooks,
+			function(x: number, z: number): boolean
+				return Enclosure.indexed(near, x, z) <= 40
+			end
+		)
+		local linkCounts = Links.build(world, levels)
+		print(
+			`[World] {biome.id}: {lifted} parts lifted onto {#levels.tiers} tiers; `
+				.. `{tierCounts.blocks} tier blocks, {tierCounts.faces} wall facings, `
+				.. `{tierCounts.notches} ledge notches; `
+				.. `{linkCounts.slopes} slopes, {linkCounts.treads} treads, {linkCounts.cheeks} cheeks`
+		)
+		if #across > 0 then
+			warn(`[World] {biome.id}: parts lying across two heights: {table.concat(across, ", ")}`)
+		end
+	end
 end
 
 -- Builds every biome under workspace.World, laid out as the world layout says. Does nothing if

@@ -84,6 +84,16 @@ local function add(
 	return spawn
 end
 
+-- Every patch of long grass in a stretch: the map's list, or the stretch's one place patch.
+function Encounters.patchesOf(map: Layout.Map, areaId: string): { Layout.GrassCircle }
+	local listed = map.grass[areaId]
+	if listed then
+		return listed
+	end
+	local own = map.places[Layout.grassId(areaId)]
+	return if own then { { x = own.x, z = own.z, r = WorldConfig.GRASS_RADIUS } } else {}
+end
+
 -- Where a roaming creature hides: inside its stretch's long grass, not too close to another one
 -- hiding there (their triggers would overlap). A stretch with no patch falls back to the path.
 -- `taken` is the points already used in this stretch.
@@ -98,16 +108,20 @@ function Encounters.hideAt(
 	-- picked after it is the same one as before; the tries use a stream of their own.
 	local first, second = Rng.next(rng), Rng.next(rng)
 	local own = Rng.new(1 + math.floor(first * 1000000) * 1000 + math.floor(second * 1000))
-	local patch = map.places[Layout.grassId(area.id)]
-	if patch == nil then
+	local patches = Encounters.patchesOf(map, area.id)
+	if #patches == 0 then
 		local along = area.from + first * (area.to - area.from)
 		return Layout.pointAt(line, along, (second * 2 - 1) * WorldConfig.SPAWN_SIDE_OFFSET)
 	end
+	-- The first draw picks the patch (a stretch with one has no choice, so its stream is unchanged).
+	local chosen = patches[math.min(math.floor(first * #patches) + 1, #patches)]
+	local patch: Layout.Point = { x = chosen.x, z = chosen.z }
+	local spread = math.min(WorldConfig.GRASS_SPAWN_REACH, chosen.r - 7)
 	local best: Layout.Point = patch
 	local bestGap = -1.0
 	for _ = 1, WorldConfig.GRASS_SPAWN_TRIES do
 		local angle = Rng.next(own) * math.pi * 2
-		local reach = math.sqrt(Rng.next(own)) * WorldConfig.GRASS_SPAWN_REACH
+		local reach = math.sqrt(Rng.next(own)) * spread
 		local point =
 			{ x = patch.x + math.cos(angle) * reach, z = patch.z + math.sin(angle) * reach }
 		local gap = math.huge
@@ -305,8 +319,13 @@ function Encounters.grass(
 	end
 	for _, route in biome.routes do
 		for _, area in route.areas do
-			local patch = map.places[Layout.grassId(area.id)]
-			if patch and Layout.distance(patch, player) <= WorldConfig.GRASS_RADIUS then
+			local inside = false
+			for _, patch in Encounters.patchesOf(map, area.id) do
+				if Layout.distance(patch, player) <= patch.r then
+					inside = true
+				end
+			end
+			if inside then
 				local rng = Rng.new(seed)
 				if
 					not Rng.chance(rng, WorldConfig.GRASS_CHANCE)

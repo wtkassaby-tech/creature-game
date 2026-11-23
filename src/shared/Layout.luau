@@ -25,7 +25,11 @@ export type RouteLine = {
 	-- How far the route's edges stand from the middle of the lane, by area id. Only a biome with
 	-- a map sheet has them.
 	halfWidth: { [string]: number }?,
+	-- The half-width at distances along the route, when the sheet gives them (narrow lanes).
+	widths: { WorldTypes.WidthKey }?,
 }
+-- A patch of long grass: a circle on the flat map.
+export type GrassCircle = { x: number, z: number, r: number }
 export type Spawn = { at: Point, faces: number }
 export type Map = {
 	hub: { x: number, z: number, size: number },
@@ -36,6 +40,10 @@ export type Map = {
 	buildings: { [string]: Point }, -- each building's middle, for the map builder
 	lairSpur: { Point }, -- the whole spur, from where it leaves its route to the arena
 	lairHalfWidth: number?, -- how wide the spur's corridor is, from the map sheet
+	lairWidths: { WorldTypes.WidthKey }?, -- the spur's half-width along it, when the sheet gives it
+	-- Every patch of long grass by stretch id: the stretch's own place first, then the sheet's
+	-- extra patches (the server checks all of them).
+	grass: { [string]: { GrassCircle } },
 	faces: { [string]: number }, -- degrees clockwise from north, by building, tamer or battle id
 	stands: { [string]: Point }, -- where a story battle's opponent stands, by battle id
 	models: { [string]: string }, -- the painted model a building wears, by building id
@@ -77,6 +85,34 @@ function Layout.fit(points: { Point }, length: number): { Point }
 		end
 	end
 	return fitted
+end
+
+-- The half-width of a route's lane `along` studs down it: eased between the sheet's keys, else
+-- the stretch's corridor width, else `fallback`.
+function Layout.halfWidthAt(
+	widths: { WorldTypes.WidthKey }?,
+	along: number,
+	fallback: number
+): number
+	if widths == nil or #widths == 0 then
+		return fallback
+	end
+	local first, last = widths[1], widths[#widths]
+	if along <= first.at then
+		return first.half
+	end
+	if along >= last.at then
+		return last.half
+	end
+	for index = 1, #widths - 1 do
+		local a, b = widths[index], widths[index + 1]
+		if along <= b.at then
+			local span = b.at - a.at
+			local t = if span > 1e-9 then (along - a.at) / span else 1
+			return a.half + (b.half - a.half) * t
+		end
+	end
+	return last.half
 end
 
 -- The point `along` studs down a route's path, pushed `side` studs to its left (negative: right).
@@ -162,6 +198,7 @@ local function sheetLine(
 		length = route.length,
 		side = side,
 		halfWidth = halfWidth,
+		widths = if sheet.widths then sheet.widths[route.id] else nil,
 	}
 end
 
@@ -206,6 +243,7 @@ function Layout.build(
 		faces = {},
 		stands = {},
 		models = {},
+		grass = {},
 	}
 
 	-- A building's place is its door, where its keeper stands; a named character's place is the
@@ -315,6 +353,7 @@ function Layout.build(
 			{ id = biome.lair.id, points = spur, length = biome.lair.spurLength, side = 0 }
 		map.places[Layout.stallId(biome)] = Layout.pointAt(spurLine, WorldConfig.STALL_DISTANCE)
 		map.lairHalfWidth = if sheet and sheet.corridor then sheet.corridor[biome.lair.id] else nil
+		map.lairWidths = if sheet and sheet.widths then sheet.widths[biome.lair.id] else nil
 	elseif lairLine then
 		local join = Layout.pointAt(lairLine, biome.lair.joinsAt)
 		local arena =
@@ -347,6 +386,24 @@ function Layout.build(
 			map.spawn = { at = shifted(origin, spawn.at), faces = spawn.faces }
 		end
 	end
+	-- Every stretch's patches of long grass: its own place first, then the sheet's extras.
+	for _, route in biome.routes do
+		for _, area in route.areas do
+			local own = map.places[Layout.grassId(area.id)]
+			if own then
+				local list: { GrassCircle } =
+					{ { x = own.x, z = own.z, r = WorldConfig.GRASS_RADIUS } }
+				local more = if sheet and sheet.grass then sheet.grass[area.id] else nil
+				if more then
+					for _, patch in more do
+						local at = shifted(origin, patch.at)
+						table.insert(list, { x = at.x, z = at.z, r = patch.r })
+					end
+				end
+				map.grass[area.id] = list
+			end
+		end
+	end
 	return map
 end
 
@@ -372,6 +429,7 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 		faces = {},
 		stands = {},
 		models = {},
+		grass = {},
 	}
 	local maps: { [number]: Map } = {}
 	local biomeOfPlace: { [string]: number } = {}
@@ -382,6 +440,7 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 		if index == 1 then
 			merged.hub, merged.lairSpur = map.hub, map.lairSpur
 			merged.lairHalfWidth, merged.spawn = map.lairHalfWidth, map.spawn
+			merged.lairWidths = map.lairWidths
 		end
 		for id, degrees in map.faces do
 			merged.faces[id] = degrees
@@ -391,6 +450,9 @@ function Layout.world(biomes: { WorldTypes.Biome }, tamers: { [string]: WorldTyp
 		end
 		for id, model in map.models do
 			merged.models[id] = model
+		end
+		for id, list in map.grass do
+			merged.grass[id] = list
 		end
 		for id, line in map.routes do
 			merged.routes[id] = line
