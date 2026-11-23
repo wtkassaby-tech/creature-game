@@ -431,6 +431,12 @@ end
 -- Builds every biome under workspace.World, laid out as the world layout says. Does nothing if
 -- a World folder already exists (the real map, or an earlier build).
 function TestMap.build(biomes: { WorldTypes.Biome }, world: Layout.World)
+	-- A copy built in Studio's edit mode, to fly round without playing, is never the real map:
+	-- the game builds its own from the current code.
+	local preview = workspace:FindFirstChild("WorldPreview")
+	if preview then
+		preview:Destroy()
+	end
 	if workspace:FindFirstChild("World") then
 		return
 	end
