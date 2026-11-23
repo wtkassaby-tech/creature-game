@@ -22,6 +22,7 @@ export type Opponent = {
 	creatures: { Types.Creature },
 	moves: { { string } }?,
 	tier: BattleAi.Tier,
+	foe: string?, -- the tamer's or story battle's id, shown to the device for their words
 	ref: any?, -- whatever the resolver needs back when the battle ends (a spawn, a tamer)
 	cannotLose: boolean?, -- a story battle the player's last creature holds on through
 }
@@ -231,6 +232,7 @@ function BattleService.start(
 			Kind = started.kind,
 			Yours = toWire(started.yours),
 			Theirs = toWire(started.theirs),
+			Foe = opponent.foe,
 			Previews = started.previews,
 		})
 		return true

@@ -97,6 +97,21 @@ local Greenwood: WorldTypes.MapSheet = {
 
 	-- The spur to Hollowbough's Hollow leaves River Road at 330 along, runs along the ridge's
 	-- tier and goes down steps into the Hollow's bowl.
+	-- River Road waits for the mentor's errand (the `first_quest` beat opens `route_b`, as plan 07
+	-- says), so a new player is not met by level 6 to 8 creatures and Odette with a level 5
+	-- team. The closed area starts past the arch and covers the road, the lair spur and the
+	-- gatehouse.
+	holds = {
+		{
+			id = "river_road",
+			feature = "route_b",
+			from = p(158, -400),
+			to = p(780, 200),
+			back = p(120, 0),
+			line = "River Road is no place for a first-day tamer. Help around Thistledown first, and the road will open.",
+		},
+	},
+
 	spurs = {
 		greenwood_lair = { p(420, -95), p(405, -150), p(368, -188), p(338, -230), p(277, -293) },
 	},

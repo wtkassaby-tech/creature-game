@@ -121,6 +121,11 @@ WorldService.start({
 			and biomeNumber <= profile.Story.badges + 1
 			and biomeNumber <= ReleaseConfig.OPEN_BIOMES
 	end,
+	isOpen = function(player, feature)
+		local profile = DataService.get(player)
+		return profile ~= nil
+			and World.isUnlocked({ StoryService.chapter() }, profile.Story.flags, feature)
+	end,
 	canBeAmbushed = function(player)
 		-- Only once the story has opened wild battles, and only if someone on the team can fight.
 		local profile = DataService.get(player)

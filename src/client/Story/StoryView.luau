@@ -9,9 +9,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local BeatHint = require(ReplicatedStorage.shared.BeatHint)
 local Bus = require(script.Parent.Parent.Net.Bus)
 local ClientState = require(script.Parent.Parent.State.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local LookAt = require(script.Parent.LookAt)
 local Net = require(ReplicatedStorage.net.generated.Client)
 local QuestProgress = require(ReplicatedStorage.shared.QuestProgress)
 local Quests = require(ReplicatedStorage.content.Quests)
@@ -23,28 +25,12 @@ local TitleCard = require(script.Parent.TitleCard)
 local Storyline = require(ReplicatedStorage.content.Storyline)
 local Tracker = require(ReplicatedStorage.shared.Tracker)
 local World = require(ReplicatedStorage.shared.World)
-local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
 local StoryView = {}
 
 local TRACKER_WIDE = 300
 
 local DAY_ONE_BEAT = "first_quest"
-
--- A short hint for what the story is waiting for, from the next beat's trigger.
-local function hint(beat: WorldTypes.Beat): string
-	local trigger = beat.trigger
-	if trigger.kind == "Win" then
-		return `Next: win the battle ({beat.name})`
-	elseif trigger.kind == "Enter" or trigger.kind == "Sight" then
-		return `Next: {beat.name} (go and look)`
-	elseif trigger.kind == "Talk" then
-		return `Next: {beat.name} (talk to them)`
-	elseif trigger.kind == "Tame" then
-		return `Next: {beat.name} (tame a creature)`
-	end
-	return `Next: {beat.name}`
-end
 
 local GIFT_TEXT: { [string]: string } = {
 	Coins = "coins",
@@ -84,7 +70,7 @@ local function summarise(state: Snapshot.State, now: number): Tracker.Input
 		table.insert(owned, view.Torso.Species)
 	end
 	return {
-		hint = if beat then hint(beat) else nil,
+		hint = if beat then BeatHint.text(beat) else nil,
 		quests = quests,
 		eggs = eggs,
 		now = now,
@@ -161,7 +147,8 @@ function StoryView.start(playerGui: Instance)
 	line.TextWrapped = true
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	Kit.pixel(line, 20)
-	local queue: { { speaker: string, text: string } } = {}
+	-- `look` is a place the camera turns to while the line shows (a beat's `lookAt`).
+	local queue: { { speaker: string, text: string, look: string? } } = {}
 	-- Things to do once the queue has been read to its end (the pick screen, the Day one card).
 	local afterQueue: { () -> () } = {}
 	-- Lines are typed out a letter at a time with a soft tick, as in the old handheld games.
@@ -194,6 +181,11 @@ function StoryView.start(playerGui: Instance)
 	local battleOpen = false
 	local function showNext()
 		local nextLine = table.remove(queue, 1)
+		if nextLine and nextLine.look then
+			LookAt.start(nextLine.look)
+		else
+			LookAt.release()
+		end
 		if not nextLine then
 			showing = false
 			gui.Enabled = false
@@ -218,6 +210,9 @@ function StoryView.start(playerGui: Instance)
 		end
 		local function battleChanged()
 			battleOpen = battle.Enabled
+			if battleOpen then
+				LookAt.release()
+			end
 			hud.Enabled = not battleOpen -- the tracker sits under the foe's card
 			if not showing and not battleOpen and #queue > 0 then
 				showNext()
@@ -229,6 +224,9 @@ function StoryView.start(playerGui: Instance)
 		battleChanged()
 	end)
 	local nextButton = Kit.button(box, "NEXT", Kit.COLOURS.accent, function()
+		if LookAt.turning() then
+			LookAt.release() -- a tap while the camera is still turning skips the look
+		end
 		if line.MaxVisibleGraphemes ~= -1 then
 			typing += 1
 			line.MaxVisibleGraphemes = -1
@@ -340,7 +338,10 @@ function StoryView.start(playerGui: Instance)
 			-- The first beat's lines were already said before the pick.
 			if beat.id == value.BeatId and beat ~= startBeat then
 				for _, said in beat.lines do
-					table.insert(queue, { speaker = said.speaker, text = said.text })
+					table.insert(
+						queue,
+						{ speaker = said.speaker, text = said.text, look = beat.lookAt }
+					)
 				end
 			end
 		end

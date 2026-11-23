@@ -28,7 +28,7 @@ local locals: { WorldTypes.Tamer } = {
 		route = "greenwood_route_a",
 		at = 100,
 		team = { members = { member("Gorsling", 3, { "Seed Shot", "Leaf Gust" }) }, tint = 0 },
-		before = "My hat is lucky! One battle, then you can walk on.",
+		before = "My hat is lucky! Show me what you and your friend can do!",
 		after = "Whoa! The hat has never lost before. Weaken them, then throw the rope.",
 	},
 	{

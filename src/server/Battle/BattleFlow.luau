@@ -116,6 +116,7 @@ local function resolveTarget(
 			creatures = creatures,
 			moves = moves,
 			tier = if kind == "Rival" then "Rival" else "Tamer",
+			foe = opponent.id,
 			ref = ref,
 			cannotLose = opponent.cannotLose,
 		},

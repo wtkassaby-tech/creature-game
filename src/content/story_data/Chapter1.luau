@@ -14,7 +14,7 @@
 local EconomyConfig = require("../../config/EconomyConfig")
 local WorldTypes = require("../../shared/WorldTypes")
 
-local STARTER_LEVEL = 5 -- the first creature; the rival's first team is level 4
+local STARTER_LEVEL = 5 -- the first creature; the rival's first team is level 5
 local TOKEN_LEVEL = 12 -- the clear token, a friend for the road ahead
 
 local lasso: { WorldTypes.Reward } = {
@@ -181,6 +181,7 @@ local beats: { WorldTypes.Beat } = {
 		minuteTo = 8,
 		trigger = { kind = "Sight", target = "clover_meadow", requires = { "first_tamer" } },
 		unlocks = { "giant_marker" },
+		lookAt = "greenwood_lair", -- the camera turns to the old tree over the Hollow
 		grants = {},
 		lines = {
 			{
@@ -227,6 +228,10 @@ local beats: { WorldTypes.Beat } = {
 				speaker = "Mentor",
 				text = "Look at that! Three on your team, and one you earned yourself.",
 			},
+			{
+				speaker = "Mentor",
+				text = "Marlow at Tuppence's shop has work for new tamers. Go and say hello.",
+			},
 		},
 	},
 	{
@@ -240,7 +245,7 @@ local beats: { WorldTypes.Beat } = {
 		lines = {
 			{
 				speaker = "Marlow",
-				text = "Heard you have an egg! Win a few scraps on Clover Lane and I will stock you up.",
+				text = "Heard you have an egg! Tuppence's is open to you whenever you have coins to spend.",
 			},
 			{
 				speaker = "Marlow",

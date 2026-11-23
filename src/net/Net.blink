@@ -69,6 +69,9 @@ event BattleStarted {
 		Kind: BattleKind,
 		Yours: BattleCreature[1..6],
 		Theirs: BattleCreature[1..6],
+		-- The tamer's id or the story battle's id the server resolved; absent for a wild creature.
+		-- The device only reads the tamer's words for it; it decides nothing.
+		Foe: string(1..40)?,
 		-- Exact damage each of your active creature's moves would do now (no dice in ranked).
 		Previews: u16[0..4],
 	},

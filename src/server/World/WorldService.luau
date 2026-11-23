@@ -18,6 +18,7 @@ local Encounters = require(ReplicatedStorage.shared.Encounters)
 local Layout = require(ReplicatedStorage.shared.Layout)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Tamers = require(ReplicatedStorage.content.Tamers)
+local World = require(ReplicatedStorage.shared.World)
 local WorldConfig = require(ReplicatedStorage.config.WorldConfig)
 local WorldTypes = require(ReplicatedStorage.shared.WorldTypes)
 
@@ -37,6 +38,7 @@ export type Hooks = {
 	baitProblem: (player: Player) -> string?, -- why they cannot use a bait now, or nil
 	spendBait: (player: Player) -> (),
 	canBeAmbushed: (player: Player) -> boolean, -- wild battles are open and someone can fight
+	isOpen: (player: Player, feature: string) -> boolean, -- has the story opened this feature?
 	-- Finds (plan 14): the sighting rule for a rustle spot if its first stir today is still
 	-- free, and the call made in the same step that its creature steps out.
 	sightingFor: (player: Player, spotId: string) -> Encounters.Sighting?,
@@ -58,6 +60,12 @@ local KEEP_TIMERS_SECONDS = 600
 local lastRustle: { [Player]: number } = {}
 local lastTravel: { [Player]: number } = {}
 local lastEngage: { [Player]: number } = {}
+local isOpen: (player: Player, feature: string) -> boolean = function(
+	_player: Player,
+	_feature: string
+)
+	return true
+end
 local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function(
 	_player: Player,
 	_biomeNumber: number
@@ -66,6 +74,11 @@ local engageAllowed: (player: Player, biomeNumber: number) -> boolean = function
 end
 local lastAt: { [Player]: Layout.Point } = {}
 local onMoved: (player: Player) -> () = function(_player: Player) end
+local refuseTo: (player: Player, reason: string) -> () = function(
+	_player: Player,
+	_reason: string
+)
+end
 local random = Random.new()
 
 local function newId(): string
@@ -146,6 +159,38 @@ function WorldService.buildingAt(
 		end
 	end
 	return nil, nil
+end
+
+-- The hold (a stretch the story has not opened yet) that the point lies in, or nil.
+local function holdAt(player: Player, at: Layout.Point): (WorldTypes.Hold?, Layout.Point)
+	local number = Layout.biomeAt(world, at)
+	local biome = biomeNumbered(number)
+	local made = if number then world.maps[number] else nil
+	if biome.number ~= number or not biome.map or not made then
+		return nil, at
+	end
+	local hub = { x = made.hub.x, z = made.hub.z }
+	return World.holdAt(biome.map.holds, hub, function(feature)
+		return isOpen(player, feature)
+	end, at),
+		hub
+end
+
+-- Puts a player back at the foot of a road the story has not opened, with the reason. True if
+-- they were held.
+local function sendBack(player: Player, at: Layout.Point): boolean
+	local held, hub = holdAt(player, at)
+	if not held then
+		return false
+	end
+	local character = player.Character
+	if character then
+		character:PivotTo(CFrame.new(hub.x + held.back.x, 6, hub.z + held.back.z))
+	end
+	lastAt[player] = nil
+	onMoved(player)
+	refuseTo(player, held.line)
+	return true
 end
 
 -- A player's book, made when first needed. Its rest timers (rustle spots, stretches waiting to
@@ -229,6 +274,9 @@ function WorldService.engage(player: Player, spawnId: unknown): (Encounters.Spaw
 		return nil, "You are too far away"
 	end
 	-- A creature of a biome the player has not earned yet cannot be fought.
+	if not isOpen(player, "wild_battles") then
+		return nil, "Your mentor has not shown you how yet. Follow the story first"
+	end
 	local wanted = if typeof(spawnId) == "number" then book(player).spawns[spawnId] else nil
 	if wanted and not engageAllowed(player, wanted.biome) then
 		return nil, "You have not earned your way here yet"
@@ -267,7 +315,9 @@ function WorldService.start(hooks: Hooks): () -> ()
 	map = world.map
 	TestMap.build(biomes, world)
 	engageAllowed = hooks.mayEnter
+	isOpen = hooks.isOpen
 	onMoved = hooks.moved
+	refuseTo = hooks.refuse
 
 	local running = true
 	task.spawn(function()
@@ -276,7 +326,7 @@ function WorldService.start(hooks: Hooks): () -> ()
 				-- One player's trouble must never stop the world for everyone else.
 				local ok, problem = pcall(function()
 					local at = WorldService.position(player)
-					if at and hooks.isReady(player) then
+					if at and hooks.isReady(player) and not sendBack(player, at) then
 						-- Only biomes the player has earned are alive for them.
 						local changed = false
 						local jumped: Encounters.Spawn? = nil
@@ -347,6 +397,12 @@ function WorldService.start(hooks: Hooks): () -> ()
 		if not at or not hooks.isReady(player) then
 			return
 		end
+		if not isOpen(player, "wild_battles") then
+			return hooks.refuse(
+				player,
+				"Your mentor has not shown you how yet. Follow the story first"
+			)
+		end
 		-- The spot may be in any biome the player has earned.
 		local spawn: Encounters.Spawn? = nil
 		local why: string? = "There is nothing there"
@@ -391,6 +447,12 @@ function WorldService.start(hooks: Hooks): () -> ()
 		local at = WorldService.position(player)
 		if not at or not hooks.isReady(player) then
 			return
+		end
+		if not isOpen(player, "wild_battles") then
+			return hooks.refuse(
+				player,
+				"Your mentor has not shown you how yet. Follow the story first"
+			)
 		end
 		local problem = hooks.baitProblem(player)
 		if problem then

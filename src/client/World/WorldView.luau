@@ -269,16 +269,20 @@ local function flagsSeen(): { [string]: boolean }
 end
 
 -- Talking to someone: move the story on if it is waiting for them, and take or hand in one of
--- the quests given at their place. The server checks every part of this again.
-local function talk(who: string, place: string?)
+-- the quests given at their place. The server checks every part of this again. Returns true when
+-- the tap asked for a story beat or a quest (offer, or hand-in): they speak on screen, so the shop
+-- waits for the next tap instead of opening on top of them.
+local function talk(who: string, place: string?): boolean
 	local flags = flagsSeen()
 	local beat = World.nextBeat(Storyline, flags)
+	local spoke = false
 	if beat and beat.trigger.kind == "Talk" and beat.trigger.target == who then
 		Net.CompleteBeat.Fire({ BeatId = beat.id, Choice = nil })
+		spoke = true
 	end
 	local state = ClientState.get()
 	if not state or not place then
-		return
+		return spoke
 	end
 	local done: { [string]: boolean } = {}
 	for _, id in state.QuestsDone do
@@ -298,15 +302,16 @@ local function talk(who: string, place: string?)
 		local progress = state.QuestsActive[quest.id]
 		if progress ~= nil and progress >= QuestProgress.needed(quest) then
 			Net.HandInQuest.Fire({ QuestId = quest.id })
-			return
+			return true
 		end
 	end
 	for _, quest in World.availableQuests(here, done, flags) do
 		if state.QuestsActive[quest.id] == nil then
 			Net.AcceptQuest.Fire({ QuestId = quest.id })
-			return
+			return true
 		end
 	end
+	return spoke
 end
 
 -- `openShop` shows the shop screen (the server still checks the player is at a shop).
@@ -406,10 +411,14 @@ function WorldView.start(openShop: () -> ())
 			openShop()
 		elseif kind == "Talk" then
 			local place = prompt:GetAttribute("Place")
-			talk(id, if typeof(place) == "string" then place else nil)
+			local spoke = talk(id, if typeof(place) == "string" then place else nil)
 			local role = prompt:GetAttribute("Role")
 			if role == "Shop" then
-				openShop()
+				-- A tap that began a story beat or a quest has its dialogue (and the Day one card)
+				-- to show first; the next tap opens the shop.
+				if not spoke then
+					openShop()
+				end
 			elseif role == "Teleport" then
 				-- Travel to the next town the player has reached (round and round).
 				local state = ClientState.get()

@@ -173,4 +173,26 @@ function World.isUnlocked(chapters: { WorldTypes.Chapter }, flags: Flags, featur
 	return not mentioned
 end
 
+-- The hold that closes this point to a player, or nil. `hub` is where the sheet's origin is in
+-- the world; `open` says whether the story has opened a feature for this player.
+function World.holdAt(
+	holds: { WorldTypes.Hold }?,
+	hub: { x: number, z: number },
+	open: (feature: string) -> boolean,
+	at: { x: number, z: number }
+): WorldTypes.Hold?
+	if not holds then
+		return nil
+	end
+	local x, z = at.x - hub.x, at.z - hub.z
+	for _, hold in holds do
+		local x0, x1 = math.min(hold.from.x, hold.to.x), math.max(hold.from.x, hold.to.x)
+		local z0, z1 = math.min(hold.from.z, hold.to.z), math.max(hold.from.z, hold.to.z)
+		if x >= x0 and x <= x1 and z >= z0 and z <= z1 and not open(hold.feature) then
+			return hold
+		end
+	end
+	return nil
+end
+
 return World

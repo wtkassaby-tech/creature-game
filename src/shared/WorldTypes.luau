@@ -179,6 +179,19 @@ export type WidthKey = { at: number, half: number }
 -- An extra patch of long grass in a stretch (a circle of radius `r`). The stretch's own patch is
 -- the place `{area}_grass` with the radius WorldConfig.GRASS_RADIUS; these come after it.
 export type GrassPatch = { at: SheetPoint, r: number }
+-- A stretch of a biome that stays closed until the story opens `feature` (the name a beat lists
+-- in `unlocks`). `from` and `to` are opposite corners of the closed area; a player found inside
+-- it without the unlock is put back at `back` and told `line`. The server does this on its own
+-- reading of where the character is, so it cannot be walked round.
+export type Hold = {
+	id: string,
+	feature: string,
+	from: SheetPoint,
+	to: SheetPoint,
+	back: SheetPoint,
+	line: string,
+}
+
 export type MapSheet = {
 	-- A route's waypoints from the hub outwards. Layout fits them to the route's data length by
 	-- trimming or stretching the last leg, so distances along the route keep their meaning.
@@ -201,6 +214,7 @@ export type MapSheet = {
 	-- More patches of long grass, by stretch id, besides the stretch's own (Ayrton, 23 November
 	-- 2026: patches you can walk round, never a field you must cross).
 	grass: { [string]: { GrassPatch } }?,
+	holds: { Hold }?, -- stretches closed until the story opens them
 }
 
 -- A biome's dressing sheet: how the designed map looks (water, lanes, fences, signs, trees). The
@@ -386,6 +400,7 @@ export type DressingSheet = {
 	arches: { DressArch },
 	signs: { DressSign },
 	lamps: { SheetPoint },
+	lampModel: string?, -- the painted lamp post (a PropModels name); left out, the Greenwood Lamp
 	beds: { SheetPoint },
 	trees: { DressTree },
 	rows: { DressRow },
@@ -422,6 +437,9 @@ export type DressingSheet = {
 	fill: DressFill?, -- the trees, rock or dunes that close in everything past the edges
 	ambience: Ambience?, -- smoke, lights and drifting motes (src/server/World/Ambience)
 	scatter: ScatterSheet?, -- small ground detail on the lawns and verges (src/server/World/Detail)
+	-- The painted models over the stairs and ramps between tiers (PropModels names); left out,
+	-- StoneSteps and EarthRamp. Mossy stone steps looked out of place in red rock.
+	linkModels: { stairs: string?, ramp: string? }?,
 }
 
 export type Biome = {
@@ -666,6 +684,12 @@ export type Beat = {
 	unlocks: { string }, -- named game features and places the beat opens
 	grants: { Reward },
 	lines: { DialogueLine },
+	-- Optional. The tracker's words for this beat when the ones derived from its trigger read
+	-- badly (src/shared/BeatHint.luau).
+	hint: string?,
+	-- Optional. A place id (a key of the map's `places`) the camera turns to look at while the
+	-- beat's lines show (src/client/Story/LookAt.luau).
+	lookAt: string?,
 }
 
 export type Chapter = {

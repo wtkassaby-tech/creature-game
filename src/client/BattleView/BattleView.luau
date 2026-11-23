@@ -26,6 +26,7 @@ local MoveFx = require(script.Parent.Parent.Fx.MoveFx)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local ResultPanel = require(script.Parent.ResultPanel)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local TamerLines = require(ReplicatedStorage.shared.TamerLines)
 local TypeChart = require(ReplicatedStorage.shared.TypeChart)
 local Types = require(ReplicatedStorage.shared.Types)
 local LassoView = require(script.Parent.Parent.Lasso.LassoView)
@@ -53,6 +54,11 @@ type Fighter = {
 type Model = {
 	battleId: number,
 	wild: boolean,
+	foe: string?, -- the tamer's or story battle's id, for their words
+	afterTold: boolean, -- their words after losing have been shown
+	holdUntil: number, -- os.clock() until which the battle box stays up after the win
+	speakUntil: number, -- os.clock() until which a tamer's opening words keep the box
+	endScheduled: boolean, -- the result card is waiting for the box to finish
 	kind: string, -- Wild, Tamer, Rival or Friendly: the coach only speaks in the first rival bout
 	foeRarity: string, -- the first foe's rarity, for the lasso coach
 	teamBefore: number?, -- how many were on the team before this battle, for the catch card
@@ -72,6 +78,9 @@ type Model = {
 }
 
 local BattleView = {}
+
+local AFTER_SECONDS = 2.4 -- how long a beaten tamer's parting words show before the result card
+local OPENING_SECONDS = 2.6 -- how long a tamer's opening words hold the box before the prompt
 
 local OUTCOME_KIND: { [number]: ResultPanel.Kind } = { [0] = "Draw", [1] = "Won", [2] = "Lost" }
 
@@ -441,13 +450,38 @@ function BattleView.start(playerGui: Instance)
 	speed.Position = UDim2.fromOffset(10, 10) -- top left: the quest tracker is hidden in a battle
 
 	-- The end panel appears once the last turn has been shown; rewards join it when they arrive.
-	local function showEnd(current: Model)
+	local showEnd: (current: Model) -> ()
+	showEnd = function(current: Model)
 		if current.outcome == nil or capturing then
 			return
 		end
 		local kind: ResultPanel.Kind = if current.caught
 			then "Caught"
 			else OUTCOME_KIND[current.outcome] or "Draw"
+		-- A beaten tamer has a word to say before the result card (once).
+		if kind == "Won" and not current.afterTold then
+			current.afterTold = true
+			local parting = TamerLines.after(current.foe)
+			if parting then
+				message.Text = TamerLines.words(parting)
+				current.holdUntil = os.clock() + AFTER_SECONDS
+				refresh() -- keeps the box up while they speak
+			end
+		end
+		local waitFor = current.holdUntil - os.clock()
+		if waitFor > 0 then
+			if not current.endScheduled then
+				current.endScheduled = true
+				task.delay(waitFor, function()
+					current.endScheduled = false
+					if model == current then
+						refresh()
+						showEnd(current)
+					end
+				end)
+			end
+			return
+		end
 		local caught: ResultPanel.Caught? = nil
 		local foe = current.caughtFoe
 		if kind == "Caught" and foe then
@@ -552,7 +586,7 @@ function BattleView.start(playerGui: Instance)
 		if not open then
 			choosingMove = false -- a choice was made, or the battle ended
 		end
-		box.Visible = not current.over and not choosingMove
+		box.Visible = (not current.over or os.clock() < current.holdUntil) and not choosingMove
 		menu.Visible = open and not choosingMove
 		actions.Visible = open and choosingMove
 		-- The coach, when it has something to say, takes the place of "What will X do?". It only
@@ -563,7 +597,8 @@ function BattleView.start(playerGui: Instance)
 			line = Coach.firstBattleLine(flags, current.kind, mine.moves, foe.element)
 				or Coach.lassoLine(flags, current.wild, foe.hp, foe.maxHp)
 		end
-		if open and not choosingMove and mine then
+		-- A tamer's opening words stay up a moment before the prompt or the coach takes the box.
+		if open and not choosingMove and mine and os.clock() >= current.speakUntil then
 			message.Text = line or `What will {mine.name} do?`
 		end
 		setPulse(
@@ -609,6 +644,11 @@ function BattleView.start(playerGui: Instance)
 			battleId = value.BattleId,
 			wild = value.Kind == "Wild",
 			kind = value.Kind :: string,
+			foe = value.Foe,
+			afterTold = false,
+			holdUntil = 0,
+			speakUntil = 0,
+			endScheduled = false,
 			foeRarity = value.Theirs[1].Rarity :: string,
 			teamBefore = if state then #state.Team else nil,
 			teamLimit = if state then Profile.teamSize(state.Badges) else nil,
@@ -625,8 +665,19 @@ function BattleView.start(playerGui: Instance)
 			outcome = nil,
 			rewards = nil,
 		}
+		local opens = TamerLines.before(value.Foe)
+		local fresh = model
+		if opens and fresh then
+			fresh.speakUntil = os.clock() + OPENING_SECONDS
+			task.delay(OPENING_SECONDS, function()
+				if model == fresh then
+					refresh()
+				end
+			end)
+		end
 		message.Text = if value.Kind == "Wild"
 			then `A wild {value.Theirs[1].Torso} appears!`
+			elseif opens then TamerLines.words(opens)
 			else "The battle begins!"
 		picker.Visible = false
 		result.hide()
