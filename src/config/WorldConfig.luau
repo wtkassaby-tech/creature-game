@@ -27,6 +27,12 @@ WorldConfig.RUSTLE_COOLDOWN_SECONDS = 90 -- per spot, per player
 -- nobody stands inside one (tests/layout.test.luau reads the same number).
 WorldConfig.EDGE_CLEAR_STUDS = 7
 
+-- A wall piece (a hedge, a cliff, a boulder bank) is lifted whole onto one tier, so it must not
+-- cover ground at two heights or a stair or ramp: no edge point stands where the ground within
+-- this many studs of it changes height by more than WALL_HEIGHT_TOLERANCE (tests/walltiers.test.luau).
+WorldConfig.WALL_FOOTPRINT_STUDS = 4
+WorldConfig.WALL_HEIGHT_TOLERANCE = 0.3
+
 WorldConfig.GRASS_RADIUS = 20 -- studs: the size of a patch
 WorldConfig.GRASS_SIDE_OFFSET = 40 -- how far to one side of the path a patch lies
 WorldConfig.GRASS_CHANCE = 0.22 -- each second the player is moving inside a patch

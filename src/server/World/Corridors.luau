@@ -284,38 +284,24 @@ function Corridors.edges(
 	local ringStyle: WorldTypes.EdgeStyle = styleOf(biome.lair.id, -1)
 	local ringTrees = dressing.corridorTrees[biome.lair.id]
 	for _, ring in rings do
-		local points: { Vector3 } = {}
-		local count = 64
-		for k = 0, count do
-			local angle = k / count * math.pi * 2
-			table.insert(
-				points,
-				ring.at + Vector3.new(math.cos(angle), 0, math.sin(angle)) * ring.radius
-			)
-		end
+		-- Where the circle goes is worked out as plain numbers too (EdgeTrace.ring).
+		local samples =
+			EdgeTrace.ring(trace, { x = ring.at.X, z = ring.at.Z, radius = ring.radius })
 		local run: { Vector3 } = {}
 		local runs: { { Vector3 } } = {}
-		for _, point in points do
-			if EdgeTrace.insideAny(trace, point.X, point.Z, EdgeTrace.INSIDE_MARGIN) then
+		for _, sample in samples do
+			if not sample.keep then
 				if #run > 1 then
 					table.insert(runs, run)
 				end
 				run = {}
 			else
-				table.insert(run, point)
+				table.insert(run, Vector3.new(sample.x, 0, sample.z))
 			end
 		end
 		if #run > 1 then
 			-- The circle closes: join the last run to the first when both touch the seam.
-			if
-				#runs > 0
-				and not EdgeTrace.insideAny(
-					trace,
-					points[1].X,
-					points[1].Z,
-					EdgeTrace.INSIDE_MARGIN
-				)
-			then
+			if #runs > 0 and samples[1].keep then
 				for _, point in runs[1] do
 					table.insert(run, point)
 				end

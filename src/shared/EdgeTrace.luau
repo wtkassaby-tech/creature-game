@@ -229,6 +229,87 @@ function EdgeTrace.openByDesign(trace: Trace, x: number, z: number): boolean
 		or Ground.atFoot(ground, x, z, 3)
 end
 
+-- True where a wall piece standing at the point would lie across a tier edge: the ground within
+-- WALL_FOOTPRINT_STUDS of it is at more than one height, or a stair or ramp is that close.
+function EdgeTrace.acrossTiers(trace: Trace, x: number, z: number): boolean
+	local ground = trace.ground
+	if Ground.isFlat(ground) then
+		return false
+	end
+	local reach = WorldConfig.WALL_FOOTPRINT_STUDS
+	if Ground.linkAt(ground, x, z, reach) then
+		return true
+	end
+	local here = Ground.heightAt(ground, x, z)
+	for _, ring in { 0.5, 1 } do
+		for k = 0, 7 do
+			local angle = k / 8 * math.pi * 2
+			local height = Ground.heightAt(
+				ground,
+				x + math.cos(angle) * reach * ring,
+				z + math.sin(angle) * reach * ring
+			)
+			if math.abs(height - here) > WorldConfig.WALL_HEIGHT_TOLERANCE then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- A point that would lie across a tier edge, moved the shortest way onto the ground of its own
+-- height until a whole piece fits there (a hedge on a terrace's lip stands a little back from it).
+-- Left where it is when nothing close by is flat enough; the caller then drops it.
+function EdgeTrace.settle(
+	trace: Trace,
+	x: number,
+	z: number,
+	nx: number,
+	nz: number
+): (number, number)
+	if not EdgeTrace.acrossTiers(trace, x, z) then
+		return x, z
+	end
+	local here = Ground.heightAt(trace.ground, x, z)
+	local reach = WorldConfig.WALL_FOOTPRINT_STUDS
+	local bestX, bestZ, bestScore = x, z, math.huge
+	for step = 1, 2 * reach do
+		local d = step * 0.5
+		for k = 0, 15 do
+			local angle = k / 16 * math.pi * 2
+			local dx, dz = math.cos(angle), math.sin(angle)
+			local cx, cz = x + dx * d, z + dz * d
+			if
+				math.abs(Ground.heightAt(trace.ground, cx, cz) - here)
+					<= WorldConfig.WALL_HEIGHT_TOLERANCE
+				and not EdgeTrace.acrossTiers(trace, cx, cz)
+			then
+				-- The nearest way wins; of equals, the one that leans least towards the outside.
+				local score = d + (dx * nx + dz * nz) * 0.01
+				if score < bestScore then
+					bestX, bestZ, bestScore = cx, cz, score
+				end
+			end
+		end
+		if bestScore < math.huge then
+			break
+		end
+	end
+	return bestX, bestZ
+end
+
+-- Drops each kept sample whose piece back to the kept sample before it would lie across a tier
+-- edge (two points each clear on their own can still lie on different tiers), so the run breaks
+-- there instead.
+local function breakAcross(trace: Trace, samples: { any }) -- Sample or RoomSample: both have x, z, keep
+	for index = 2, #samples do
+		local a, b = samples[index - 1], samples[index]
+		if a.keep and b.keep and EdgeTrace.acrossTiers(trace, (a.x + b.x) / 2, (a.z + b.z) / 2) then
+			b.keep = false
+		end
+	end
+end
+
 -- The direction of a line at a distance along it, smoothed over a few studs so edges round the
 -- bends instead of jumping.
 function EdgeTrace.heading(line: Layout.RouteLine, along: number): (number, number)
@@ -262,17 +343,20 @@ function EdgeTrace.side(trace: Trace, corridor: Corridor, side: number): { Sampl
 				z = bulge.z + oz / length * (bulge.radius + 2)
 			end
 		end
+		x, z = EdgeTrace.settle(trace, x, z, nx, nz)
 		local keep = not EdgeTrace.inTown(map, x, z, 2)
 			and Walk.depth(trace.space, x, z, false, nil) < INSIDE_MARGIN
 			and not EdgeTrace.inRing(trace, x, z, 1)
 			and not EdgeTrace.openByDesign(trace, x, z)
 			and not EdgeTrace.nearSpot(trace, x, z)
+			and not EdgeTrace.acrossTiers(trace, x, z)
 		table.insert(out, { along = along, x = x, z = z, nx = nx, nz = nz, keep = keep })
 		if along >= corridor.line.length then
 			break
 		end
 		along = math.min(along + EDGE_STEP, corridor.line.length)
 	end
+	breakAcross(trace, out)
 	return out
 end
 
@@ -281,13 +365,34 @@ end
 function EdgeTrace.room(trace: Trace, room: Ground.Shape): { RoomSample }
 	local out: { RoomSample } = {}
 	for _, sample in Ground.outline(room, EDGE_STEP) do
-		local keep = not EdgeTrace.inTown(trace.map, sample.x, sample.z, 2)
-			and Walk.depth(trace.space, sample.x, sample.z, false, room) < INSIDE_MARGIN
-			and not EdgeTrace.inRing(trace, sample.x, sample.z, 1)
-			and not EdgeTrace.openByDesign(trace, sample.x, sample.z)
-			and not EdgeTrace.nearSpot(trace, sample.x, sample.z)
-		table.insert(out, { x = sample.x, z = sample.z, keep = keep })
+		local sx, sz = EdgeTrace.settle(trace, sample.x, sample.z, sample.nx, sample.nz)
+		local keep = not EdgeTrace.inTown(trace.map, sx, sz, 2)
+			and Walk.depth(trace.space, sx, sz, false, room) < INSIDE_MARGIN
+			and not EdgeTrace.inRing(trace, sx, sz, 1)
+			and not EdgeTrace.openByDesign(trace, sx, sz)
+			and not EdgeTrace.nearSpot(trace, sx, sz)
+			and not EdgeTrace.acrossTiers(trace, sx, sz)
+		table.insert(out, { x = sx, z = sz, keep = keep })
 	end
+	breakAcross(trace, out)
+	return out
+end
+
+-- The samples round a ring clearing (the lair), in 64 steps round the circle and back to the start:
+-- open where a corridor comes in, and where a piece would lie across a tier edge.
+function EdgeTrace.ring(trace: Trace, ring: Disc): { RoomSample }
+	local out: { RoomSample } = {}
+	local count = 64
+	for k = 0, count do
+		local angle = k / count * math.pi * 2
+		local nx, nz = math.cos(angle), math.sin(angle)
+		local x, z =
+			EdgeTrace.settle(trace, ring.x + nx * ring.radius, ring.z + nz * ring.radius, nx, nz)
+		local keep = not EdgeTrace.insideAny(trace, x, z, INSIDE_MARGIN)
+			and not EdgeTrace.acrossTiers(trace, x, z)
+		table.insert(out, { x = x, z = z, keep = keep })
+	end
+	breakAcross(trace, out)
 	return out
 end
 
