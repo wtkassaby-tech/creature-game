@@ -17,7 +17,8 @@ local Types = require(ReplicatedStorage.shared.Types)
 
 local ResultPanel = {}
 
-export type Rewards = { coins: number, xp: number, material: string, levels: { number } }
+export type LevelUp = { name: string, level: number }
+export type Rewards = { coins: number, xp: number, material: string, levels: { LevelUp } }
 export type Kind = "Won" | "Caught" | "Lost" | "Draw"
 -- The creature just caught, for the "New friend" card. `placement` is the line saying where it
 -- went ("Joined your team!"), worked out by the caller.
@@ -233,12 +234,12 @@ function ResultPanel.new(gui: ScreenGui, onContinue: () -> ()): View
 			Sfx.play("confirm")
 			task.wait(ROW_GAP_SECONDS)
 		end
-		for _, level in rewards.levels do
+		for _, up in rewards.levels do
 			if mine ~= run or order >= 4 then
 				break -- four lines fit; any further level-up is seen on the Creatures screen
 			end
 			local line = nextRow(Kit.COLOURS.good)
-			line.Text = `Level {level}!`
+			line.Text = `{up.name} reached level {up.level}!`
 			Kit.pop(line)
 			Sfx.play("confirm")
 			task.wait(ROW_GAP_SECONDS)

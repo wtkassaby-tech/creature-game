@@ -37,6 +37,7 @@ local FAST_EVENT_SECONDS = 0.35
 local HURRIED_EVENT_SECONDS = 0.12
 
 type Fighter = {
+	id: string,
 	name: string,
 	element: Types.Element,
 	size: number,
@@ -558,6 +559,7 @@ function BattleView.start(playerGui: Instance)
 		local made: { Fighter } = {}
 		for _, c in list do
 			table.insert(made, {
+				id = c.Id,
 				name = c.Torso,
 				element = c.Element,
 				size = c.Size,
@@ -749,11 +751,18 @@ function BattleView.start(playerGui: Instance)
 			return
 		end
 		local xp = 0
-		local levels: { number } = {}
+		local levels: { ResultPanel.LevelUp } = {}
 		for _, member in value.Members do
 			xp = math.max(xp, member.Gained)
 			if member.LevelsGained > 0 then
-				table.insert(levels, member.Level)
+				-- Say whose level it is: "Level 6!" alone left the player guessing.
+				local name = "Your creature"
+				for _, fighter in current.sides[1] do
+					if fighter.id == member.Id then
+						name = fighter.name
+					end
+				end
+				table.insert(levels, { name = name, level = member.Level })
 			end
 		end
 		current.rewards =
