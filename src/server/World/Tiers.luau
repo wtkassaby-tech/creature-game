@@ -136,6 +136,7 @@ function Tiers.build(
 	end
 
 	local cliff = Props.model("CliffWall")
+	local earth = Props.model("EarthBank")
 	for _, run in Ground.edges(ground, 3) do
 		local points: { Vector3 } = {}
 		for _, point in run.points do
@@ -154,6 +155,32 @@ function Tiers.build(
 					notch.CanQuery = false
 					notch.CastShadow = false
 					counts.notches += 1
+				end
+			end
+		end
+		-- An Earth face is tiled with the painted earth bank, each tile about as long as one
+		-- and a half times the face is tall, so the clay soil bands keep their shape.
+		if faceOf[run.tier] == "Earth" and earth and out.Magnitude > 0.5 then
+			local tall = run.high - run.low
+			local tiles = Props.resample(points, math.max(6, tall * 1.5))
+			for k = 1, #tiles - 1 do
+				local a, b = tiles[k], tiles[k + 1]
+				local middle = (a + b) / 2
+				if visible(middle.X, middle.Z) then
+					local made = Props.span(
+						folder,
+						earth,
+						middle + out.Unit * ENDS,
+						Vector3.new(-out.Z, 0, out.X),
+						(b - a).Magnitude + 0.8,
+						FACE_DEPTH,
+						tall + 0.6
+					)
+					made.CanCollide = false
+					made.CanQuery = false
+					made.CanTouch = false
+					made.CastShadow = false
+					counts.faces += 1
 				end
 			end
 		end

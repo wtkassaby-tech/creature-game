@@ -21,6 +21,12 @@ local MOST_NAMES = 20 -- how many spanning parts are named
 
 -- True when a long part lies across two heights.
 local function spans(ground: Ground.Ground, thing: BasePart, axis: Vector3, length: number): boolean
+	-- Something standing up (a tree, a bush, a house) stands on the height under its middle;
+	-- only a piece lying along the ground (a lane, a rail, a hedge run) can lie across an edge.
+	-- Big tree crowns hanging over a terrace's lip were all named here before (Studio, 23 Nov).
+	if thing.Size.Y > math.max(thing.Size.X, thing.Size.Z) * 0.6 and thing.Size.Y > 4 then
+		return false
+	end
 	if length <= LONG or math.abs(axis.Y) >= 0.5 then
 		return false
 	end

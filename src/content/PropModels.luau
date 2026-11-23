@@ -315,6 +315,23 @@ local PropModels: { [string]: ModelDef } = {
 		texture = "rbxassetid://119424852006008",
 		size = { 12.2, 12.08, 12 },
 	},
+	-- Terraces (plan 12): a grassy earth bank tiled along each Earth tier face (23 November 2026).
+	EarthBank = {
+		mesh = "rbxassetid://73485906713072",
+		texture = "rbxassetid://135653546407001",
+		size = { 7.53, 4.96, 6 },
+	},
+	-- Stairs and ramps between tiers (plan 12): low end at the model's front (-z).
+	StoneSteps = {
+		mesh = "rbxassetid://109683244653495",
+		texture = "rbxassetid://70479128876101",
+		size = { 6.94, 9, 10.12 },
+	},
+	EarthRamp = {
+		mesh = "rbxassetid://124289960017648",
+		texture = "rbxassetid://78248099068134",
+		size = { 6.82, 8, 8.01 },
+	},
 }
 
 return PropModels

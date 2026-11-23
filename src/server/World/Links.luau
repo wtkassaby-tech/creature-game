@@ -59,7 +59,30 @@ function Links.build(parent: Instance, ground: Ground.Ground): Counts
 		solid(slab, link.id)
 		counts.slopes += 1
 
-		if link.kind == "Stairs" then
+		-- The painted flight or ramp sits over the slab (which stays as the walking surface,
+		-- unseen): its low end, the model's front, toward the low tier.
+		local painted = Props.model(if link.kind == "Stairs" then "StoneSteps" else "EarthRamp")
+		if painted then
+			local up = math.abs(rise)
+			local copy = painted:Clone()
+			copy.Size = Vector3.new(link.width + 0.6, up + 0.4, link.length + 0.6)
+			local centre = (flatFrom + flatTo) / 2
+			local low = math.min(link.h0, link.h1)
+			local seat = Vector3.new(centre.X, low + (up + 0.4) / 2 - 0.2, centre.Z)
+			-- `ahead` runs from the a end to the b end; the front must face the lower end.
+			local towardLow = if link.h0 <= link.h1 then -ahead else ahead
+			copy.CFrame = CFrame.lookAt(seat, seat + towardLow)
+			copy.Anchored = true
+			copy.CanCollide = false
+			copy.CanQuery = false
+			copy.CanTouch = false
+			copy.Name = if link.kind == "Stairs" then "StoneSteps" else "EarthRamp"
+			copy:AddTag("WorldGround")
+			copy.Parent = folder
+			slab.Transparency = 1
+		end
+
+		if link.kind == "Stairs" and not painted then
 			local count = math.max(2, math.floor(math.abs(rise) / RISER + 0.5))
 			local run = link.length / count
 			for k = 0, count - 1 do
@@ -105,6 +128,11 @@ function Links.build(parent: Instance, ground: Ground.Ground): Counts
 					CHEEK
 				)
 				solid(wall, "Cheek")
+				if painted then
+					-- The painted flight has its own sides: the cheek stays only as a wall.
+					wall.Transparency = 1
+					wall.CastShadow = false
+				end
 				local coreTall = surface + CHEEK_CORE
 				local core = Props.part(
 					folder,
