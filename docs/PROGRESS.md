@@ -2,6 +2,33 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (terraces, finds, far scenery, the Mire's look, a quality pass)
+
+**In one line:** the terraces got painted stairs, ramps and earth banks; Dust Canyon and Tide Flats were rebuilt on Greenwood's pattern; far scenery (the Crown, highlands, islands) and finds and rewards are in; a player-height audit led to a quality pass; the Mire has its own map and look but stays closed at launch. Most of it was seen in Studio; the notes below say what was not.
+
+| What | Now |
+| --- | --- |
+| **Terraces** | Painted stone steps, earth ramps and earth-bank faces (three new models). The flights sit over the walking ground. Seen: cream steps with moss climbing onto the clover terrace |
+| **Light and sound between biomes** (plan 13) | Light, the sky and the colour grade ease toward the zone you are in, and ambient sound follows it. Presets for Greenwood, Dust Canyon, Tide Flats and Starfall. Seen: walking from Greenwood into Dust Canyon, the sun lowers and the light warms with no seam |
+| **Dust Canyon and Tide Flats rebuilt** (plan 12) | Tiers, painted steps and ramps, one-way ledges home, narrow winding routes, pockets and dead ends. Every place, tamer, story trigger and gate stays where it was |
+| **Far scenery** (plan 13) | The Crown as a ring of painted snowy peaks, the northern peaks, the volcano's plume, wooded highland hills, islands and sea stacks. Forty cheap pieces, kept off walkable ground by a test |
+| **Finds and rewards** (plan 14, approved by Ayrton) | One-time caches, daily gathering after the first badge, a daily sighting at search spots, cairns and keepsakes. Journal sets pay 2 Prism, once. Save data moves to schema 2 with a migration. The server checks each claim and logs it; an independent review found no way to claim twice or move value between accounts (`docs/REVIEWS.md`). Not yet played |
+| **Gull Cove** (plan 13) | A sea arch off Tide Flats' beach, a cliff-foot walk to a cove with pools, stacks and a bench. Its finds are live, so Tide Flats' journal set can be completed |
+| **Starfall Crater** | Seen across Dust Canyon's broken bridge, out of reach until the Arcane chapter, with its own light zone |
+| **Lighter models for phones** | Low-detail versions of the hedge bush, canyon boulder, sea rock, cliff wall, earth bank, sand dune and marram tuft. Launch views measured at 0.2 to 1.1 million triangles on screen, down from 3.3 to 4.9 million |
+| **Ambient sound** | Beds for Dust Canyon (birds, still air), Tide Flats (gulls, waves on rocks) and the Mire (frogs, insects), from the Pro Sound Effects library; logged in `docs/ASSETS.md` |
+| **Edit-mode copy of the world** | `WorldPreview` is built into the edit workspace so you can fly over the map in Studio. The game deletes it at start and builds the real world |
+| **The Mire** (plan 15) | Sedgeholm on duckboards round the Bell Cypress; two routes (the Duckboard Trail and the Cypress Road), the Sunken Bell branch and the Heron Causeway. Its own region and climate. Reed huts on stilts, mangroves and cypresses over mossy mounds, murky ground, cattails and lily pads. Six new models (reed hut, mangrove, cypress, bell tower, lily pads, cattails). Still closed at launch |
+| **Quality pass** | From player-height audits in Studio: the Crown's cloud halo read as flying saucers over the towns, so it is gone and the peaks are lower and further off; clay is matte, with far less shine; Dust Canyon, Tide Flats and Starfall are less bright and the sand is warmer; tamers no longer stand inside hedges (edges keep 7 studs clear of tamers, people, doors and stalls); plazas get paving, a centre motif and flower beds, and lawns get a seeded scatter of flowers, clover and pebbles; the battle camera hides scenery round both creatures; "You are already in a battle" no longer flashes during a fight |
+
+**Note on the older entry below:** its line "Dust Canyon and Tide Flats still have the old flat structure; only Greenwood's ambient sound has a sound id" is out of date. Both biomes are rebuilt (this entry) and all three biomes now have ambient sound.
+
+**Not checked or not done:** the catch scene on screen; frame rate on a real phone (the triangle counts were measured, the frame rate was not); the Mire's wetter ground and reed edge; Gull Cove's sighting (still pending, as it would change encounter counts); hedge pieces across terrace edges; the battle camera beside a hedge (fixed, not yet seen); the new finds in play.
+
+**Waiting for Ayrton:** nothing in these commits waits on a yes. The Mire stays closed at launch, as set.
+
+**To playtest:** walk from Greenwood into Dust Canyon and watch the light change; climb a terrace by its stairs; try a find (a cache, a cairn, a search spot) and check a journal set pays 2 Prism once; fly over the map with `WorldPreview` in edit mode; walk a route in Dust Canyon or Tide Flats and look for hedges standing in the way of tamers.
+
 ## 23 November 2026 (studio polish, hidden creatures, catch odds, a structured world)
 
 **In one line:** after Ayrton played, the game got studio-style effects and motion, wild creatures now hide in grass, the catch is a scene with real odds, Greenwood is rebuilt with terraces, stairs and one-way ledges, and the whole eleven-biome world is planned as one journey. `lune run check` passes; every piece below was run in Studio unless it says otherwise.
