@@ -322,6 +322,142 @@ do
 	check("a full-health creature is caught rarely", full < 0.2)
 end
 
+print("\n== Catch chance ==")
+do
+	local zone: Lasso.Zone = { centre = 0.5, width = 0.2, speed = 1, startPhase = 0, startMs = 0 }
+	local function near(a: number, b: number): boolean
+		return math.abs(a - b) < 1e-9
+	end
+	check(
+		"the centre of the green is 0.95",
+		near(Lasso.tapChance(zone, 0.5), LassoConfig.CHANCE_CENTRE)
+	)
+	check(
+		"the edge of the green is 0.75",
+		near(Lasso.tapChance(zone, 0.6), LassoConfig.CHANCE_EDGE)
+	)
+	check("halfway out in the green is 0.85", near(Lasso.tapChance(zone, 0.55), 0.85))
+	check(
+		"just outside the green is about 0.45",
+		math.abs(Lasso.tapChance(zone, 0.6 + 1e-6) - LassoConfig.CHANCE_OUTSIDE_NEAR) < 1e-3
+	)
+	check(
+		"a quarter of the arc beyond the edge is the 0.05 floor",
+		near(Lasso.tapChance(zone, 0.85), LassoConfig.CHANCE_OUTSIDE_FLOOR)
+	)
+	check(
+		"and it stays at the floor further out",
+		near(Lasso.tapChance(zone, 1.0), LassoConfig.CHANCE_OUTSIDE_FLOOR)
+	)
+	check("a NaN position is 0", Lasso.tapChance(zone, 0 / 0) == 0)
+	-- A full-health Common's zone is about 0.015 wide: a tap 50 ms off (0.045 of the arc) must
+	-- be at the floor, so weakening a creature first still matters (review, 23 November 2026).
+	local healthy: Lasso.Zone =
+		{ centre = 0.5, width = 0.015, speed = 1, startPhase = 0, startMs = 0 }
+	check(
+		"a narrow zone forgives little: 0.045 off a full-health zone is the floor",
+		near(Lasso.tapChance(healthy, 0.545), LassoConfig.CHANCE_OUTSIDE_FLOOR)
+	)
+	check(
+		"and just outside a narrow zone still gives a chance",
+		Lasso.tapChance(healthy, 0.5076) > 0.4
+	)
+	local falling = true
+	local previous = 2
+	for step = 0, 100 do
+		local chance = Lasso.tapChance(zone, 0.5 + step / 100 * 0.5)
+		falling = falling and chance <= previous + 1e-12
+		previous = chance
+	end
+	check("the chance never rises as the tap moves away from the centre", falling)
+
+	check(
+		"an invalid throw has no chance",
+		Lasso.catchChance({}, "Common") == 0
+			and Lasso.judge(Lasso.createAttempt(input()), { 1 }, { 9999 }).chances[1] == nil
+	)
+	check(
+		"rarity multiplies the zones' chances",
+		near(Lasso.catchChance({ 0.9, 0.8 }, "Ruby"), 0.9 * 0.8 * LassoConfig.RARITY_CHANCE.Ruby)
+	)
+	check(
+		"a rarer creature is never easier",
+		Lasso.catchChance({ 0.9 }, "Cosmic") < Lasso.catchChance({ 0.9 }, "Gem")
+			and Lasso.catchChance({ 0.9 }, "Gem") < Lasso.catchChance({ 0.9 }, "Common")
+	)
+	check("no chance reaches 1", Lasso.catchChance({ LassoConfig.CHANCE_CENTRE }, "Common") < 1)
+end
+
+print("\n== Simulated throws at set offsets ==")
+do
+	local THROWS = 6000
+	local TOLERANCE = 0.025 -- about 4 standard deviations at 6000 throws
+	-- Throws at a set distance in milliseconds from the zone's centre crossing, judged the way
+	-- the server does, then rolled against the chance with a seeded Rng.
+	local function simulate(offsetMs: number, rarity: Types.Rarity): (number, number)
+		local rng = Rng.new(5150 + math.floor(offsetMs) + #rarity)
+		local caught, expected = 0, 0
+		for trial = 1, THROWS do
+			local pattern = Lasso.createAttempt(
+				input({ seed = trial * 17, rarity = rarity, healthFraction = 0.2 })
+			)
+			local claims: { number } = {}
+			for i, zone in pattern.zones do
+				table.insert(
+					claims,
+					math.max(
+						zone.startMs,
+						Lasso.nextCentreTimeMs(pattern, i, zone.startMs + 600) + offsetMs
+					)
+				)
+			end
+			local judgement = Lasso.judge(pattern, claims, claims)
+			local chance = Lasso.catchChance(judgement.chances, rarity)
+			expected += chance
+			if Rng.next(rng) < chance then
+				caught += 1
+			end
+		end
+		return caught / THROWS, expected / THROWS
+	end
+	local centreRate, centreExpected = simulate(0, "Common")
+	local edgeRate, edgeExpected = simulate(150, "Common")
+	local outRate, outExpected = simulate(700, "Common")
+	local rubyRate, rubyExpected = simulate(0, "Ruby")
+	print(
+		string.format(
+			"  Common: centre %.1f%% (formula %.1f%%), 150 ms off %.1f%% (%.1f%%), 700 ms off %.1f%% (%.1f%%); Ruby centre %.1f%% (%.1f%%)",
+			centreRate * 100,
+			centreExpected * 100,
+			edgeRate * 100,
+			edgeExpected * 100,
+			outRate * 100,
+			outExpected * 100,
+			rubyRate * 100,
+			rubyExpected * 100
+		)
+	)
+	check(
+		"a centred throw lands near the formula",
+		math.abs(centreRate - centreExpected) < TOLERANCE
+	)
+	check(
+		"an off-centre throw lands near the formula",
+		math.abs(edgeRate - edgeExpected) < TOLERANCE
+	)
+	check("a far-out throw lands near the formula", math.abs(outRate - outExpected) < TOLERANCE)
+	check(
+		"a ruby centred throw lands near the formula",
+		math.abs(rubyRate - rubyExpected) < TOLERANCE
+	)
+	check(
+		"a centred throw catches more than an off-centre one, and that more than a far-out one",
+		centreRate > edgeRate and edgeRate > outRate
+	)
+	check("no centred throw is guaranteed", centreRate < 1 and centreExpected < 0.96)
+	check("a far-out throw is not a guaranteed miss", outRate > 0)
+end
+
 print(`\n{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("tests failed")

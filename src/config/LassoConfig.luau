@@ -18,7 +18,9 @@ LassoConfig.BASE_WIDTH = {
 
 -- Health factor = FULL + (EMPTY - FULL) x (1 - health)^EXPONENT.
 -- At full health the zone is 5% of its base: for a common creature and a basic lasso that is 0.015
--- of the arc, a pass of about 17 ms, which is not worth trying. At 20% health the factor is about 0.73.
+-- of the arc, a pass of about 17 ms, and the chance outside it falls to the floor within about
+-- 30 ms either side (CHANCE_OUTSIDE_FALL_WIDTHS), so weakening first still pays. At 20% health
+-- the factor is about 0.73.
 LassoConfig.HEALTH_FACTOR_FULL = 0.05
 LassoConfig.HEALTH_FACTOR_EMPTY = 1.0
 LassoConfig.HEALTH_FACTOR_EXPONENT = 1.5
@@ -75,6 +77,33 @@ LassoConfig.ROUND_TRIP_DEFAULT_MS = 120
 LassoConfig.SCRIPTED_MIN_SAMPLES = 30
 LassoConfig.SCRIPTED_TINY_MS = 10
 LassoConfig.SCRIPTED_TINY_SHARE = 0.8
+
+-- Catch chance for wild throws (Ayrton, 23 November 2026: the green is a higher chance, never a
+-- guaranteed catch, and landing outside it is never a guaranteed miss). [Default], to tune in
+-- playtests. Giants do not use these: a giant is still one hard attempt, every zone must be hit.
+-- A tap's chance, from where the marker was on the arc:
+--   inside the green: CENTRE at the zone's centre, falling in a straight line to EDGE at its edge;
+--   outside it: OUTSIDE_NEAR just past the edge, falling in a straight line to OUTSIDE_FLOOR at
+--   OUTSIDE_FALL_ARC of the arc beyond the edge, and staying at the floor after that.
+LassoConfig.CHANCE_CENTRE = 0.95
+LassoConfig.CHANCE_EDGE = 0.75
+LassoConfig.CHANCE_OUTSIDE_NEAR = 0.45
+LassoConfig.CHANCE_OUTSIDE_FLOOR = 0.05
+LassoConfig.CHANCE_OUTSIDE_FALL_ARC = 0.25 -- the longest fall-off, for the widest zones
+-- The fall-off is this many zone widths, but never shorter than MIN_ARC: a full-health Common
+-- (a 0.015 zone) gives the floor by 0.03 past its edge, about 30 ms of marker travel.
+LassoConfig.CHANCE_OUTSIDE_FALL_WIDTHS = 2
+LassoConfig.CHANCE_OUTSIDE_FALL_MIN_ARC = 0.02
+-- The zones' chances multiply, then this factor for the creature's rarity applies. Harder to
+-- catch the rarer it is, on top of its narrower zones and extra zones.
+LassoConfig.RARITY_CHANCE = {
+	Common = 1.0,
+	Uncommon = 0.95,
+	Gem = 0.85,
+	Ruby = 0.75,
+	Diamond = 0.65,
+	Cosmic = 0.55,
+}
 
 -- Misses a wild creature allows before it flees. 0 means it never flees.
 LassoConfig.FLEE_AFTER_MISSES =

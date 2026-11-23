@@ -4,8 +4,9 @@
 --   1. `begin` checks the battle is live and wild, the creature is standing, the stable has room
 --      and the player has the lasso; it takes the lasso BEFORE the sweep is sent, and builds the
 --      sweep with the server's own round-trip reading fixed inside it.
---   2. `finish` judges the taps. An impossible tap counts exactly as a miss. A hit captures the
---      creature (typed candy and all, through Grants) and ends the battle; a miss spends the
+--   2. `finish` judges the taps. An impossible tap counts exactly as a miss. Each valid tap gives
+--      a chance from where it landed (Lasso.tapChance); the server rolls against the product.
+--      A catch captures the creature (typed candy and all, through Grants) and ends the battle; a miss spends the
 --      player's turn, the wild creature acts, and rare creatures may flee after enough misses.
 
 local BattleSession = require("./BattleSession")
@@ -13,6 +14,7 @@ local EconomyConfig = require("../config/EconomyConfig")
 local Grants = require("./Grants")
 local Lasso = require("./Lasso")
 local Profile = require("./Profile")
+local Rng = require("./Rng")
 local Species = require("../content/Species")
 local Types = require("./Types")
 
@@ -29,6 +31,8 @@ export type Outcome = "Caught" | "Missed" | "Fled"
 export type Result = {
 	outcome: Outcome,
 	judgement: Lasso.Judgement,
+	chance: number, -- the throw's catch chance, 0 for an invalid throw
+	roll: number?, -- the server's roll against it (nil when there was nothing to roll)
 	turn: BattleSession.TurnResult,
 	candy: number?,
 	element: Types.Element?,
@@ -147,7 +151,8 @@ function Capture.finish(
 	throw: Throw,
 	claimsMs: unknown,
 	serverElapsedMs: { number },
-	missesAfter: number
+	missesAfter: number,
+	rng: Rng.Rng
 ): (Result?, string?)
 	if throw.used then
 		return nil, "That throw has already been judged"
@@ -166,7 +171,17 @@ function Capture.finish(
 	local judgement = Lasso.judge(throw.pattern, claims, serverElapsedMs)
 	local creature = BattleSession.foe(session)
 
-	if judgement.verdict == "Hit" then
+	-- Skill plus chance: the tap timing sets the chance, the server's own roll decides. An
+	-- invalid throw has no chance and no roll.
+	local chance = Lasso.catchChance(judgement.chances, creature.rarity)
+	local roll: number? = nil
+	local caught = false
+	if judgement.verdict ~= "Invalid" and chance > 0 then
+		roll = Rng.next(rng)
+		caught = (roll :: number) < chance
+	end
+
+	if caught then
 		local granted = Grants.capture(profile, creature)
 		-- "Waiting" is a gem-tier find whose serial number is being fetched: it is caught, and
 		-- joins the stable with its number a moment later.
@@ -174,6 +189,8 @@ function Capture.finish(
 			return {
 				outcome = "Caught",
 				judgement = judgement,
+				chance = chance,
+				roll = roll,
 				turn = BattleSession.endCaught(session),
 				candy = granted.candy,
 				element = granted.element,
@@ -192,9 +209,11 @@ function Capture.finish(
 	if flee ~= nil and missesAfter >= flee and not turn.finished then
 		BattleSession.endFled(session)
 		turn.finished, turn.ran, turn.outcome = true, true, 2
-		return { outcome = "Fled", judgement = judgement, turn = turn }, nil
+		return { outcome = "Fled", judgement = judgement, chance = chance, roll = roll, turn = turn },
+			nil
 	end
-	return { outcome = "Missed", judgement = judgement, turn = turn }, nil
+	return { outcome = "Missed", judgement = judgement, chance = chance, roll = roll, turn = turn },
+		nil
 end
 
 return Capture

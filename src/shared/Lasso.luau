@@ -45,6 +45,7 @@ export type Judgement = {
 	verdict: Verdict,
 	zoneHits: { boolean }, -- empty when invalid
 	errorsMs: { number }, -- timing error from each zone's centre; empty when invalid
+	chances: { number }, -- each zone's catch chance from where its tap landed; empty when invalid
 	reason: string?, -- set when invalid
 }
 
@@ -192,7 +193,7 @@ function Lasso.nextCentreTimeMs(pattern: Pattern, zoneIndex: number, afterMs: nu
 end
 
 local function invalid(reason: string): Judgement
-	return { verdict = "Invalid", zoneHits = {}, errorsMs = {}, reason = reason }
+	return { verdict = "Invalid", zoneHits = {}, errorsMs = {}, chances = {}, reason = reason }
 end
 
 local function isFiniteNumber(value: any): boolean
@@ -255,15 +256,65 @@ function Lasso.judge(
 
 	local hits: { boolean } = {}
 	local errors: { number } = {}
+	local chances: { number } = {}
 	local allHit = true
 	for index = 1, count do
 		local zone = pattern.zones[index]
-		local hit = Lasso.isInZone(zone, Lasso.markerPosition(pattern, index, claimedMs[index]))
+		local position = Lasso.markerPosition(pattern, index, claimedMs[index])
+		local hit = Lasso.isInZone(zone, position)
 		table.insert(hits, hit)
 		table.insert(errors, Lasso.timingErrorMs(pattern, index, claimedMs[index]))
+		table.insert(chances, Lasso.tapChance(zone, position))
 		allHit = allHit and hit
 	end
-	return { verdict = if allHit then "Hit" else "Miss", zoneHits = hits, errorsMs = errors }
+	return {
+		verdict = if allHit then "Hit" else "Miss",
+		zoneHits = hits,
+		errorsMs = errors,
+		chances = chances,
+	}
+end
+
+-- One tap's catch chance (wild throws only), from where the marker was on the arc when the tap
+-- was judged. Straight lines: CENTRE at the zone centre to EDGE at its edge, then OUTSIDE_NEAR
+-- just past the edge down to OUTSIDE_FLOOR at OUTSIDE_FALL_ARC beyond it. The position is the
+-- server's own reading of the claimed time, which Lasso.judge has already checked against the
+-- server's clock; an invalid claim never reaches here and counts 0.
+function Lasso.tapChance(zone: Zone, position: number): number
+	if position ~= position then
+		return 0
+	end
+	local half = math.max(zone.width / 2, 1e-9)
+	local distance = math.abs(position - zone.centre)
+	if distance <= half then
+		local share = distance / half
+		return LassoConfig.CHANCE_CENTRE
+			+ (LassoConfig.CHANCE_EDGE - LassoConfig.CHANCE_CENTRE) * share
+	end
+	-- The fall-off is measured in zone widths, so a narrow zone (a healthy or rare creature, a
+	-- plain lasso) forgives little outside it and weakening a creature still matters; capped
+	-- both ways in arc units (review of 23 November 2026).
+	local fall = clamp(
+		zone.width * LassoConfig.CHANCE_OUTSIDE_FALL_WIDTHS,
+		LassoConfig.CHANCE_OUTSIDE_FALL_MIN_ARC,
+		LassoConfig.CHANCE_OUTSIDE_FALL_ARC
+	)
+	local share = clamp((distance - half) / fall, 0, 1)
+	return LassoConfig.CHANCE_OUTSIDE_NEAR
+		+ (LassoConfig.CHANCE_OUTSIDE_FLOOR - LassoConfig.CHANCE_OUTSIDE_NEAR) * share
+end
+
+-- The whole throw's catch chance: the zones' chances multiplied, times the rarity factor,
+-- clamped to 0..1. No chances (an invalid throw) is 0.
+function Lasso.catchChance(chances: { number }, rarity: Types.Rarity): number
+	if #chances == 0 then
+		return 0
+	end
+	local chance = LassoConfig.RARITY_CHANCE[rarity]
+	for _, each in chances do
+		chance *= clamp(each, 0, 1)
+	end
+	return clamp(chance, 0, 1)
 end
 
 -- True when the recent errors look scripted: enough throws, and most of them within a few

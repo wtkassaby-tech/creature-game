@@ -75,6 +75,24 @@ local function perfectTaps(throw: Capture.Throw): { number }
 	return taps
 end
 
+-- Dice with a known first roll: the first seed whose roll is below 0.01, or at least 0.99.
+local function lowDice(): Rng.Rng
+	for seed = 1, 10000 do
+		if Rng.next(Rng.new(seed)) < 0.01 then
+			return Rng.new(seed)
+		end
+	end
+	error("no low seed")
+end
+local function highDice(): Rng.Rng
+	for seed = 1, 10000 do
+		if Rng.next(Rng.new(seed)) >= 0.99 then
+			return Rng.new(seed)
+		end
+	end
+	error("no high seed")
+end
+
 print("\n== Before the throw ==")
 do
 	local profile, session = setup(1)
@@ -114,9 +132,15 @@ do
 	local profile, session = setup(3)
 	local throw = assert(Capture.begin(input(profile, session)), "throw should start")
 	local taps = perfectTaps(throw)
-	local result =
-		assert(Capture.finish(profile, session, throw, taps, taps, 0), "throw should be judged")
-	check("a perfect throw catches the creature", result.outcome == "Caught")
+	local result = assert(
+		Capture.finish(profile, session, throw, taps, taps, 0, lowDice()),
+		"throw should be judged"
+	)
+	check("a perfect throw with a kind roll catches the creature", result.outcome == "Caught")
+	check(
+		"the result carries the chance and the roll",
+		result.chance > 0.9 and result.chance < 1 and result.roll ~= nil and result.roll < 0.01
+	)
 	check("the creature is in the stable", profile.Creatures.wild ~= nil)
 	check(
 		"typed candy of its type is paid",
@@ -125,12 +149,38 @@ do
 	check("the battle ends", result.turn.finished and result.turn.outcome == 1)
 	check(
 		"the same throw cannot be judged twice",
-		Capture.finish(profile, session, throw, taps, taps, 0) == nil
+		Capture.finish(profile, session, throw, taps, taps, 0, lowDice()) == nil
 	)
 	check(
 		"the record is still sound",
 		#Profile.validate(profile) == 0,
 		table.concat(Profile.validate(profile), "; ")
+	)
+
+	-- Not guaranteed: a perfect throw can still miss on a bad roll.
+	local unlucky, unluckySession = setup(13)
+	local again = assert(Capture.begin(input(unlucky, unluckySession)), "throw should start")
+	local perfect = perfectTaps(again)
+	local slipped = assert(
+		Capture.finish(unlucky, unluckySession, again, perfect, perfect, 1, highDice()),
+		"throw should be judged"
+	)
+	check(
+		"a perfect throw can still slip away on a bad roll",
+		slipped.outcome == "Missed" and unlucky.Creatures.wild == nil and slipped.chance < 1
+	)
+
+	-- Not a guaranteed miss: a tap outside the green can still catch on a lucky roll.
+	local lucky, luckySession = setup(14)
+	local wide = assert(Capture.begin(input(lucky, luckySession)), "throw should start")
+	local off = { wide.pattern.zones[1].startMs + 1 }
+	local landed = assert(
+		Capture.finish(lucky, luckySession, wide, off, off, 1, lowDice()),
+		"throw should be judged"
+	)
+	check(
+		"a tap outside the green can still catch on a lucky roll",
+		landed.outcome == "Caught" and landed.judgement.verdict == "Miss"
 	)
 end
 
@@ -139,8 +189,10 @@ do
 	local profile, session = setup(4)
 	local throw = assert(Capture.begin(input(profile, session)), "throw should start")
 	local late = { throw.pattern.zones[1].startMs + 13999 }
-	local missed =
-		assert(Capture.finish(profile, session, throw, late, late, 1), "throw should be judged")
+	local missed = assert(
+		Capture.finish(profile, session, throw, late, late, 1, highDice()),
+		"throw should be judged"
+	)
 	check(
 		"a miss does not catch, and the battle goes on",
 		missed.outcome == "Missed" and profile.Creatures.wild == nil and not missed.turn.finished
@@ -150,7 +202,7 @@ do
 	local again = assert(Capture.begin(input(profile, session)), "throw should start")
 	local perfect = perfectTaps(again)
 	local impossible = assert(
-		Capture.finish(profile, session, again, perfect, { perfect[1] + 5000 }, 2),
+		Capture.finish(profile, session, again, perfect, { perfect[1] + 5000 }, 2, lowDice()),
 		"throw should be judged"
 	)
 	check(
@@ -161,8 +213,10 @@ do
 	)
 	check("the lasso stays spent", profile.Items.Basic == 3)
 	local junk = assert(Capture.begin(input(profile, session)), "throw should start")
-	local bad =
-		assert(Capture.finish(profile, session, junk, "lots", { 10 }, 3), "throw should be judged")
+	local bad = assert(
+		Capture.finish(profile, session, junk, "lots", { 10 }, 3, lowDice()),
+		"throw should be judged"
+	)
 	check("taps that are not numbers count as a miss", bad.outcome == "Missed")
 end
 
@@ -186,7 +240,7 @@ do
 			"throw should start"
 		)
 		profile.Items.Braided = 5
-		last = Capture.finish(profile, session, throw, { 1 }, { 1 }, miss)
+		last = Capture.finish(profile, session, throw, { 1 }, { 1 }, miss, highDice())
 		if session.state.winner ~= nil then
 			break
 		end
@@ -214,8 +268,10 @@ do
 	local profile, session = setup(8, "Gem")
 	local throw = assert(Capture.begin(input(profile, session, "Braided")), "throw should start")
 	local taps = perfectTaps(throw)
-	local result =
-		assert(Capture.finish(profile, session, throw, taps, taps, 0), "throw should be judged")
+	local result = assert(
+		Capture.finish(profile, session, throw, taps, taps, 0, lowDice()),
+		"throw should be judged"
+	)
 	check(
 		"a hit catches it and ends the battle",
 		result.outcome == "Caught" and result.turn.finished
@@ -234,7 +290,7 @@ do
 	local throw = assert(Capture.begin(input(profile, session)), "throw should start")
 	session.ran = true -- as if a Run had slipped in before the taps were judged
 	local taps = perfectTaps(throw)
-	local result = Capture.finish(profile, session, throw, taps, taps, 0)
+	local result = Capture.finish(profile, session, throw, taps, taps, 0, lowDice())
 	check(
 		"a throw judged after the battle ended catches nothing",
 		result == nil and profile.Creatures.wild == nil

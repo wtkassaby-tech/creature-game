@@ -14,6 +14,7 @@ local Health = require("../src/shared/Health")
 local Lasso = require("../src/shared/Lasso")
 local Layout = require("../src/shared/Layout")
 local Profile = require("../src/shared/Profile")
+local Rng = require("../src/shared/Rng")
 local Rewards = require("../src/shared/Rewards")
 local Shop = require("../src/shared/Shop")
 local Species = require("../src/content/Species")
@@ -331,7 +332,17 @@ local function wildBattle(bot: Bot, catch: boolean): boolean
 				for index, zone in throw.pattern.zones do
 					table.insert(taps, Lasso.nextCentreTimeMs(throw.pattern, index, zone.startMs))
 				end
-				Capture.finish(bot.profile, session, throw, taps, taps, spawn.misses + 1)
+				Capture.finish(
+					bot.profile,
+					session,
+					throw,
+					taps,
+					taps,
+					spawn.misses + 1,
+					-- The catch roll has its own stream (from the spawn and the throw count), so a
+					-- robot's luck with the lasso never reshuffles which creatures it meets later.
+					Rng.new(spawn.id * 7919 + spawn.misses * 104729 + 1)
+				)
 			end
 		end
 		ending = BattleSession.ending(session) or fight(bot, session)
@@ -433,7 +444,15 @@ local function hunt(bot: Bot, element: Types.Element): boolean
 							Lasso.nextCentreTimeMs(throw.pattern, index, zone.startMs)
 						)
 					end
-					Capture.finish(bot.profile, session, throw, taps, taps, spawn.misses + 1)
+					Capture.finish(
+						bot.profile,
+						session,
+						throw,
+						taps,
+						taps,
+						spawn.misses + 1,
+						Rng.new(nextSeed(bot))
+					)
 				end
 				ending = BattleSession.ending(session) or fight(bot, session)
 			else

@@ -20,6 +20,7 @@ local Lasso = require(ReplicatedStorage.shared.Lasso)
 local LassoConfig = require(ReplicatedStorage.config.LassoConfig)
 local Net = require(ReplicatedStorage.net.generated.Server)
 local Profile = require(ReplicatedStorage.shared.Profile)
+local Rng = require(ReplicatedStorage.shared.Rng)
 
 local BattleService = require(script.Parent.Parent.Battle.BattleService)
 local RoundTrip = require(script.Parent.RoundTrip)
@@ -203,7 +204,8 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 			current.throw,
 			current.claims,
 			current.arrivals,
-			missesAfter
+			missesAfter,
+			Rng.new(random:NextInteger(1, 2147483646)) -- the server's own dice, never a client value
 		)
 		if not result then
 			log("LassoUnjudged", { player = player.UserId, problem = problem })
@@ -224,9 +226,23 @@ function CaptureService.start(getData: GetData, log: Log, changed: (player: Play
 				rarity = creature.rarity,
 				candy = result.candy,
 				element = result.element,
+				chance = result.chance,
+				roll = result.roll,
+				roundTripMs = math.round(current.throw.pattern.roundTripMs),
 			})
 		else
 			misses[player] = { battleId = session.battleId, count = missesAfter }
+			-- Missed and Fled apart; a roll under the chance that still missed means the grant
+			-- was refused (a full stable). The round trip shows how much the slow-connection
+			-- assist slowed the marker.
+			log("LassoMissed", {
+				player = player.UserId,
+				creature = BattleSession.foe(session).id,
+				outcome = result.outcome,
+				chance = result.chance,
+				roll = result.roll,
+				roundTripMs = math.round(current.throw.pattern.roundTripMs),
+			})
 			if result.judgement.verdict == "Invalid" then
 				-- The numbers behind the verdict, so a window that is too tight shows in the log.
 				log("LassoInvalid", {

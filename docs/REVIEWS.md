@@ -2,6 +2,18 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 23 November 2026: the wild lasso as skill plus chance (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Lasso.luau` (`tapChance`, `catchChance`), `src/shared/Capture.luau` (`finish` rolls before `Grants.capture`), `src/server/Capture/CaptureService.luau`, `src/config/LassoConfig.luau`, and the tests.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The chance outside the green fell off over a fixed quarter of the arc, so health, rarity and lasso tier only narrowed the in-zone band: a full-health Common tapped 50 ms off still gave about 40% | Medium (balance) | The fall-off is now two zone widths (between 0.02 and 0.25 of the arc); a test pins the full-health case to the 0.05 floor |
+| 2 | Holding back pong replies raises the trusted round trip, which slows the marker (to 0.4x at most) and so raises each tap's chance a little | Low (existed before) | The round trip is now logged on every throw, so an account that always plays at the assist floor shows in the logs; tuning `ASSIST_MIN_SPEED` is left for playtests |
+| 3 | Misses and flees were logged as one event with no outcome | Low (logging) | `LassoMissed` now carries the outcome; a roll under the chance that still missed shows the grant was refused (a full stable) |
+
+Found sound: no client value reaches the chance except tap timing already checked against the server clock (NaN, infinity, negative, missing, extra or out-of-order claims all make the throw invalid, chance 0, no roll); a throw cannot be judged twice; a fresh server-side seed per throw, never sent to the client; the Waiting, NoRoom and Refused grant paths; flee counting; giant capture unchanged; captures logged with the creature id; lassos obtainable only with coins, so the random catch stays a free outcome.
+
 ## 23 November 2026: a catch joins the team while there is room (branch fix/studio-first-run)
 
 Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Grants.luau` (`recordOwned`, `capture`, `finishGem`), `src/shared/GiantCapture.luau`, `src/shared/Coach.luau`, `src/client/BattleView/BattleView.luau`, read against `BattleService`, `BattleFlow`, `SerialGrants`, `Team` and the profile checks.
