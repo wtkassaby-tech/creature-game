@@ -89,18 +89,30 @@ do
 
 	-- At the cap the XP keeps growing and the level stays put.
 	local level, xp = 15, 0
-	local totalGiven = 0
 	for _ = 1, 50 do
 		local step = Xp.applyXp(level, xp, 700, 15)
 		level, xp = step.level, step.xp
-		totalGiven += 700
 	end
 	check("at the cap the level holds", level == 15)
-	check("at the cap no XP is lost", xp == totalGiven, `{xp} banked`)
+	local bankMax = Xp.xpToNext(15) + Xp.xpToNext(16)
+	check(
+		"the bank stops at BANK_MAX_LEVELS levels above the cap",
+		ProgressionConfig.BANK_MAX_LEVELS == 2 and xp == bankMax,
+		`{xp} banked`
+	)
+	local small = Xp.applyXp(15, 0, 100, 15)
+	check("a small bank below the limit loses nothing", small.xp == 100 and small.level == 15)
+	local spent = Xp.applyXp(level, xp, 0, 25)
+	check("a full bank spends exactly two levels", spent.level == 17 and spent.xp == 0)
+	local rest = Xp.applyXp(14, 0, Xp.xpToNext(14) + bankMax + 999, 15)
+	check(
+		"levelling up to the cap still banks, and drops the excess",
+		rest.level == 15 and rest.xp == bankMax
+	)
 
 	-- Lifting the cap spends the bank at once.
 	local lifted = Xp.applyXp(level, xp, 0, 25)
-	local expectedTotal = Xp.totalXpForLevel(15) + totalGiven
+	local expectedTotal = Xp.totalXpForLevel(15) + xp
 	check(
 		"a lifted cap spends banked XP on levels",
 		lifted.level > 15 and lifted.levelsGained == lifted.level - 15
@@ -284,55 +296,48 @@ do
 		to5 = clock
 	end
 	check(
-		"a starter that wins reaches level 5 in 6 to 8 minutes",
-		to5 >= 6 and to5 <= 8,
+		"a starter that wins reaches level 5 in 2 to 5 minutes",
+		to5 >= 2 and to5 <= 5,
 		`{string.format("%.1f", to5)} min`
 	)
 
-	-- Greenwood: 60 minutes of play, levels noted at 45 and 60.
-	local g: State = { level = 1, xp = 0, minutes = 0 }
-	local marks = { 15, 30, 45, 60 }
-	local at = playBiome(g, 0, 60, 60, false, marks)
-	print("  Greenwood level by minute:")
-	for _, m in marks do
-		print(`    {m} min: level {at[m]}`)
+	-- Each launch biome, battling without a break from the level the last badge allowed up to
+	-- the new cap. Levelling should take a real share of a biome (so levels mean something) but
+	-- well under half of it: the rest of the hour is walking, taming, the story and breeding.
+	local plans = {
+		{ name = "Greenwood", badges = 0, start = 1, biomeMinutes = 60 },
+		{ name = "Dust Canyon", badges = 1, start = 15, biomeMinutes = 85 },
+		{ name = "Tide Flats", badges = 2, start = 25, biomeMinutes = 110 },
+	}
+	local last = 0
+	for _, plan in plans do
+		local state: State = { level = plan.start, xp = 0, minutes = 0 }
+		playBiome(state, plan.badges, plan.biomeMinutes, 600, true, nil)
+		local cap = Xp.levelCap(plan.badges)
+		print(
+			`  {plan.name}: cap {cap} reached after {string.format("%.0f", state.minutes)} min of battling (started at level {plan.start})`
+		)
+		check(
+			`{plan.name}: the cap takes 12 to 45 minutes of battling`,
+			state.minutes >= 12 and state.minutes <= 45,
+			`{string.format("%.0f", state.minutes)} min`
+		)
+		check(
+			`{plan.name}: no quicker than the biome before it (to the minute)`,
+			state.minutes >= last - 1,
+			`{string.format("%.0f", state.minutes)} min after {string.format("%.0f", last)}`
+		)
+		last = state.minutes
 	end
-	check(
-		"level 12 to 15 at the gate after 45 minutes",
-		at[45] >= 12 and at[45] <= 15,
-		`level {at[45]}`
-	)
-	check(
-		"level 12 to 15 at the gate after 60 minutes",
-		at[60] >= 12 and at[60] <= 15,
-		`level {at[60]}`
-	)
-	local bankedAtGate = Xp.totalXpForLevel(g.level) + g.xp
 
-	-- Dust Canyon: first badge held, cap 25, starting where Greenwood ended.
-	local d: State = { level = g.level, xp = g.xp, minutes = 0 }
-	playBiome(d, 1, 85, 400, true, nil)
+	-- A player who keeps battling at the cap banks the XP; the next badge lets it out.
+	local keen: State = { level = 1, xp = 0, minutes = 0 }
+	playBiome(keen, 0, 60, 60, false, nil)
+	local lifted = Xp.applyXp(keen.level, keen.xp, 0, Xp.levelCap(1))
 	print(
-		`  Dust Canyon: cap 25 reached after {string.format("%.0f", d.minutes)} min (started at level {g.level})`
+		`  An hour of nothing but battles in Greenwood: level {keen.level}, then level {lifted.level} the moment the first badge is won`
 	)
-	check(
-		"cap 25 takes 75 to 90 minutes of Dust Canyon",
-		d.minutes >= 75 and d.minutes <= 90,
-		`{string.format("%.0f", d.minutes)} min`
-	)
-
-	-- Tide Flats: second badge held, cap 35, starting at level 25.
-	local t: State = { level = 25, xp = 0, minutes = 0 }
-	playBiome(t, 2, 110, 600, true, nil)
-	print(
-		`  Tide Flats: cap 35 reached after {string.format("%.0f", t.minutes)} min (started at level 25)`
-	)
-	check(
-		"cap 35 takes 100 to 120 minutes of Tide Flats",
-		t.minutes >= 100 and t.minutes <= 120,
-		`{string.format("%.0f", t.minutes)} min`
-	)
-	print(`  (total XP at the first gate: {bankedAtGate})`)
+	check("banked XP never lifts a creature past the new cap", lifted.level <= Xp.levelCap(1))
 end
 
 print(`\n{passed} passed, {failed} failed`)

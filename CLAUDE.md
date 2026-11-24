@@ -28,7 +28,7 @@ The owner (Ayrton) reviews plans, plays builds and approves gates. You do the bu
 3. **Creatures change hands only through trading**, never through a battle result. Nothing is ever staked on a match.
 4. **Roblox policy rules** (brief section 11; re-check the live docs before launch, they changed several times in 2026):
    - Coins are never sold for Robux.
-   - Lassos, bait and breeding are paid with earned coins only, so catching and breeding stay free random outcomes.
+   - Breeding is paid with earned coins and Breeding Candy only, so breeding stays a free random outcome. Lassos, bait and other consumables may be bought with coins or with Gems, and a Robux lasso pass may raise the catch chance (Ayrton, 23 November 2026: a higher catch chance means more catches, not better odds of a particular creature). Any paid effect on a chance shows the live chance on every throw, and is offered only where `PolicyService` allows paid random items (`ArePaidRandomItemsRestricted` false); elsewhere players get the earnable path. See `docs/plans/16_MONETISATION.md`.
    - Anything random bought with Robux, or with a currency Robux can buy, shows every outcome and its odds (summing to 100%) before purchase. Check `PolicyService:GetPolicyInfoForPlayerAsync()` and honour `ArePaidRandomItemsRestricted` and `IsPaidItemTradingAllowed`.
    - No coin bets or staked matches (removed by Ayrton on 16 November 2026; see `docs/DECISIONS.md`). PvP rewards are created by the game: casual coin rewards with a daily cap, and ranked-season prizes.
 5. **All networking goes through Blink.** Every message is defined in `src/net/*.blink`. No raw RemoteEvents. Every server handler validates and rate-limits.
@@ -46,7 +46,7 @@ The owner (Ayrton) reviews plans, plays builds and approves gates. You do the bu
 3. Write the code and unit tests together.
 4. Run `lune run check` (format, lint, strict types, tests, build). Fix every failure. A task is not done until it passes.
 5. Run it in Studio through the Studio MCP: playtest, simulate input on a phone-sized view, read the console, fix errors. (The Studio MCP needs Studio on Ayrton's computer; a cloud session cannot reach it.)
-6. For any visual change, take a `screen_capture` and check it against the brief's art direction (low-poly, chunky, flat colours; section 12).
+6. For any visual change, take a `screen_capture` and check it against the art direction: clay bodies with cartoon eyes, matte except eyes, glass and water (decided 24 November 2026, `docs/DECISIONS.md`; replaces brief section 12).
 7. Commit with a clear message. One working feature per commit.
 8. Update `docs/PROGRESS.md` with what changed and what Ayrton should playtest, and `docs/DECISIONS.md` for any [Default] you changed.
 
@@ -58,8 +58,10 @@ For saving, purchases, captures, breeding, serials, trading and PvP rewards: bef
 src/
   shared/      pure rules, no Roblox services: Types, Rng, Stats, Breeding, AssemblyMath, Battle, TypeChart, ...
   config/      every balance number: BreedConfig, BattleConfig, ...
-  content/     data only: Species.luau and Moves.luau (registries), species/ (one file per species),
-               then biomes, giants, tamers, quests, story, items
+  content/     data only: Species.luau, Biomes.luau and the other registries, each beside its data folder:
+               species_data/ (one file per species), biome_data/, giant_data/, tamer_data/, quest_data/,
+               story_data/. A data folder never shares its registry's name: Windows ignores case, so
+               species/ beside Species.luau breaks requires there
   net/         Blink definitions and generated modules
   server/      one folder per service: Breeding/, then Data/, Creatures/, Battle/, Capture/, World/, Quests/,
                Economy/, Purchases/, LiveConfig/, Analytics/ (Circuit/ and Trading/ after launch)
@@ -100,7 +102,7 @@ Rojo maps: `src/shared`, `src/config`, `src/content` and `src/net` -> `Replicate
 
 ## Assets
 
-The asset rule is [Open] in the brief (section 15). Until Ayrton decides: generate art (AI tools or built in code) to the part specification in brief section 12. Ask before inserting any Creator Store or marketplace asset; if one is approved, check its licence, strip or read every script in it, and record its id, creator and licence.
+Any source is allowed (Ayrton, 22 November 2026: "No restrictions at all, use whatever is needed"): AI tools, art built in code, the Creator Store, the marketplace or packs. What stays, because it protects the game: no real brands, IP or recognisable characters from other games; every script inside an outside asset is removed, or read line by line first (free models often hide backdoors such as `require(id)`, `loadstring` or `getfenv`); the licence allows use in a commercial game; and every outside asset is recorded in `docs/ASSETS.md` with its id, creator and licence. Ask before spending money on anything.
 
 ## Roblox docs for agents
 
@@ -113,7 +115,7 @@ The asset rule is [Open] in the brief (section 15). Until Ayrton decides: genera
 
 - Trust client data or let the client grant itself anything.
 - Write to DataStores outside ProfileStore (global serial counters and leaderboards use their own documented stores, server-side only, updated atomically).
-- Sell coins, stat boosts, rarity, serial numbers, cosmic wraps or anything with a random result.
+- Sell coins, stat boosts, Breeding Candy or cosmic wraps, or any random result whose odds are not shown. Paid limited releases (numbered or tradable) follow `docs/plans/16_MONETISATION.md`: tradable only where `IsPaidItemTradingAllowed` is true, and only once trading exists.
 - Let a creature or item change hands through a battle result, or put anything at stake on a match.
 - Skip `lune run check`, or commit with failing tests.
 - Change a [Locked] item in the brief without asking Ayrton.

@@ -1,8 +1,8 @@
 --!strict
 -- Shared record types for creatures and species. Data only, no logic.
 --
--- Typing note: fixed sets of keys (slots, stats, rarities, body plans) are written as records
--- (BySlot, StatBlock, ByRarity, ByPlan), not as `{ [Slot]: T }` maps. The strict checker accepts
+-- Typing note: fixed sets of keys (slots, stats, rarities, body plans, elements) are written as
+-- records (BySlot, StatBlock, ByRarity, ByPlan, ByElement), not as `{ [Slot]: T }` maps. The strict checker accepts
 -- `record[slot]` and `record.Legs` on records, but rejects both on maps keyed by a union of names.
 -- Lists of names are declared with an annotation: `local SLOTS: { Slot } = { ... }`.
 
@@ -26,6 +26,25 @@ export type BySlot<T> = { Head: T, Torso: T, FrontLimbs: T, Legs: T, Tail: T }
 export type ByRarity<T> = { Common: T, Uncommon: T, Gem: T, Ruby: T, Diamond: T, Cosmic: T }
 export type ByPlan<T> = { Quad: T, Biped: T, Winged: T, Serpent: T }
 export type StatBlock = { Hp: number, Attack: number, Defence: number, Speed: number }
+export type ByElement<T> = {
+	Leaf: T,
+	Sand: T,
+	Water: T,
+	Toxic: T,
+	Frost: T,
+	Crystal: T,
+	Fire: T,
+	Storm: T,
+	Arcane: T,
+	Cosmic: T,
+}
+
+-- Breeding Candy is typed (DECISIONS.md, 20 November 2026): one balance per element, earned by
+-- catching and releasing creatures of that type, plus Prism Candy (working name), earned from
+-- milestones and daily rewards, which counts as any type.
+export type CandyWallet = { typed: ByElement<number>, prism: number }
+-- Candy of one type that a breed needs (a same-type pair is one entry with both parents' amounts).
+export type CandyNeed = { element: Element, amount: number }
 
 -- What a creature stores for one body slot. `quality` is the only inherited number.
 export type Part = {
@@ -56,6 +75,14 @@ export type Creature = {
 	isGiant: boolean,
 	bound: boolean, -- true if it can never be traded (giants, cosmic creatures)
 	serial: number?, -- its number among its kind; only giants and wild-caught gem creatures have one
+	-- The share of its health it has lost and not yet had healed, 0 to 1 (1 = fainted). Damage
+	-- lasts after a battle until a tonic or the healer mends it. Missing means unhurt, so
+	-- records saved before this field existed need no migration.
+	hurt: number?,
+	-- Set if it was caught with paid help: "Pass" (the Lasso Pass raised the roll) or "GemLasso" (the
+	-- lasso thrown was bought with Gems; a GemLasso creature releases for no coins or materials). Set in the same step as the catch and never cleared. Missing means not, so
+	-- no migration is needed. (Paid items are never sold with Robux for creatures themselves.)
+	paidAssist: ("Pass" | "GemLasso")?,
 }
 
 -- A move a part brings, and the creature level at which it unlocks (1 = known from the start).
@@ -83,6 +110,10 @@ export type SpeciesDef = {
 	torsoLength: number, -- studs
 	socketRadius: BySlot<number>, -- radius of each torso socket (Torso itself is 0)
 	parts: BySlot<PartDef>,
+	-- True for the creature form of a giant: never met in the wild or given as a gift, only
+	-- captured from its giant. Its parts are costed like any other species', so a child bred
+	-- from it stays inside the stat budget.
+	giantForm: boolean?,
 }
 
 return {}

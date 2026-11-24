@@ -95,7 +95,9 @@ if budget > 1.15 x PLAN_BUDGET[body plan] then scale every stat down to fit
 
 **Decided by Ayrton (16 November 2026):** there is no limit on how many times a creature can breed. Every breed uses up **Breeding Candy** (working name), which is earned only by playing. A powerful creature stays worth owning for ever, and the supply of new creatures is capped by play time, not by a counter on the parent.
 
-| Rarer parent | Candy per breed | Coin cost multiplier | Cooldown after each breed (later breeds use the last value) | Hatch time |
+**Decided by Ayrton (20 November 2026): candy is typed**, like evolution candy in creature-collecting games. There is one balance per type (the ten elements). Catching a creature earns candy of its type (its torso's element) and releasing one earns a little; each parent in a breed needs candy of its own type, so breeding Sand creatures means catching Sand creatures. Milestone and daily rewards pay **Prism Candy** (working name), which counts as any type, so a player is never stuck for a type their biome lacks. Typed candy is spent first, then Prism covers any shortfall.
+
+| Parent's rarity | Candy of its own type, per parent | Coin cost multiplier (rarer parent) | Cooldown after each breed (later breeds use the last value) | Hatch time |
 | --- | --- | --- | --- | --- |
 | Common | 1 | 1 | 30 min, 1 h, 2 h, 4 h, 8 h | 30 min |
 | Uncommon | 2 | 1.5 | same | 45 min |
@@ -106,29 +108,36 @@ if budget > 1.15 x PLAN_BUDGET[body plan] then scale every stat down to fit
 ```
 coins = BASE x biomeTier(later-biome parent) x rarityMult(rarer parent)
       x average of COUNT_MULT[breeds already done] for the two parents   -- 1, 1.25, 1.5, 2, 2.5, then stays at 2.5
-candy = CANDY_COST[rarer parent]
+candy = CANDY_COST[parent A's rarity] of A's type + CANDY_COST[parent B's rarity] of B's type
+        -- a same-type pair pays both from one balance; typed candy first, then Prism
 ```
 
-**Where candy comes from** (starting values, all in config):
+Examples: a common Leaf with a common Water needs 1 Leaf and 1 Water; two common Leafs need 2 Leaf; a gem-tier Sand with a common Leaf needs 5 Sand and 1 Leaf; a pure gem-tier pair needs 10 of its type.
 
-| Source | Candy | Notes |
+**Where candy comes from** (starting values, all in config; full tables in `ECONOMY_MODEL.md` section 2):
+
+| Source | Candy | Limit |
 | --- | --- | --- |
-| Daily tasks (win 3 battles, tame 1 creature, and so on) | 3 a day | The steady income for a 20-minute player |
-| First clear of a giant | 5 | Once per giant |
-| Giant rematch | 1, up to 2 a day | Rewards preparing and fighting, as the consumables decision intends |
-| Gate battle and badge | 5 | Once per biome |
-| Quest lines | 2-4 each | Once |
-| Ranked season rewards | By rank | Created by the game |
-| The mentor's first lesson | Enough for the first breed | So breeding happens in the first session |
+| Catching a creature | 1 of its type (Uncommon 2, gem tier 6, Ruby 12, Diamond 24) | Per type per day: 3 in full, then half each time, never below a tenth, nothing from the 40th |
+| Releasing a creature | 1 of its type every second release (gem tier 3, Ruby 6, Diamond 12) | Per type per day, falling off the same way (x0.4); always less than the catch and the cheapest breed |
+| Daily tasks (win 3 battles, tame 1 creature, and so on) | 6 Prism a day | Daily, from the first badge |
+| First clear of a giant | 5 Prism | Once per giant |
+| Giant rematch | 1 Prism, up to 2 a day | Rewards preparing and fighting, as the consumables decision intends |
+| Gate battle and badge | 5 Prism | Once per biome |
+| Quest lines | 2-4 Prism each | Once |
+| Ranked season rewards | By rank, in Prism | Created by the game |
+| The mentor's first lesson | 2 Prism | Enough for the first breed in the first session |
 
-**What that means for supply:** a regular player earns about 5 candies a day, a heavy player about 8.
+**What that means for supply** (30-day simulation, `tests/economy.test.luau`): after the story a regular player earns about 6 Prism and 8 typed candy a day (5 of them in their best type), a heavy player 8 Prism and 19 typed. An hour of catch-and-release farming earns no more than 1.4 times a normal hour.
 
-| Child wanted | Candies on average (pure pair) | Days for a regular player |
+| Child wanted | Candies on average (pure pair) | Days for a regular player (single-candy model) |
 | --- | --- | --- |
-| Common or Uncommon | 1-2 | Several a day |
-| First gem tier (40% chance) | 12 | 2-3 |
-| Ruby (40%) | 30 | 6 |
-| Diamond (30%) | 100 | 20 |
+| Common or Uncommon | 2-4 | Several a day |
+| First gem tier (40% chance) | 25 | 1.8 (1.7) |
+| Ruby (40%) | 60 | 4.4 (4.1) |
+| Diamond (30%) | 200 | 10.9 (10.2) |
+
+Casual players take about a quarter longer than before and heavy players up to a tenth less, because typed candy comes from catching, which grows with play time. A player whose starter is Sand (the only Sand species in Greenwood, found only on Route B) still breeds Sand creatures in the first two days: 3 breeds for a casual player and 6 for a regular one, mostly on Prism.
 
 - **Candy rules that keep this honest:** candy cannot be traded or gifted, and is never sold for Robux or Gems. If it could be bought, breeding would stop rewarding play, and paying for candy would be paying toward a random result. Daily sources are capped per account, so extra accounts gain little. Flag for Ayrton: confirm candy is never sold.
 - **Coins still apply** ([Locked]: breeding is never free, and the cost is multiplied by rarity). Candy is the supply gate; coins are the sink.
@@ -136,7 +145,7 @@ candy = CANDY_COST[rarer parent]
 - **Pens** still cap eggs in progress: 1 free, a second from the mentor's lesson at about minute 10, up to 4 in total with Gems, hard cap 4.
 - **BASE** is 400 coins, about 4 minutes of biome-1 income, so a casual player can breed about twice a day. The steeper cost curve first proposed left casual players unable to breed until day 4. Never discounted.
 - **Creatures leave the game** through release for materials (brief Default). Two more sinks are proposed and need Ayrton's yes as new systems: Radiant fusion (four of one species fuse into one with a cosmetic glow) and move imprint (consume a donor to teach one of its moves).
-- **To tune from the first playtest:** candies earned and spent per player per day, and how many gem-tier creatures exist per active player. If rares pile up, raise the candy prices; the earn rates stay generous.
+- **To tune from the first playtest:** candies earned and spent per player per day, by type and Prism, catches a day by type, and how many gem-tier creatures exist per active player. If rares pile up, raise the gem-tier candy prices or lower the catch falloff; common breeding should stay easy.
 
 ---
 

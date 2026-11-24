@@ -27,7 +27,7 @@ Date: 16 November 2026. Owner: Ayrton. Builder: Claude Code.
 | Battle rules: type chart, damage, turn order, Speed band, Tempo | Tested code | `src/shared/Battle.luau`, `TypeChart.luau` |
 | Lasso timing, XP and level caps, the saved-data shape and migrations | Tested code | `src/shared/Lasso.luau`, `Xp.luau`, `Profile.luau` |
 | Giant fights, opponent behaviour, the economy with a 30-day simulation | Tested code | `src/shared/GiantBattle.luau`, `BattleAi.luau`, `Economy.luau` |
-| The Greenwood roster: eight species, balanced by tournament | Tested data | `src/content/species/`, `content/GREENWOOD_ROSTER.md` |
+| The Greenwood roster: eight species, balanced by tournament | Tested data | `src/content/species_data/`, `content/GREENWOOD_ROSTER.md` |
 | Part specification, art test procedure, approval packs 1 and 2, first exploit review | Written; the art test and approvals wait on Ayrton | `PART_SPEC.md`, `ART_TEST.md`, `plans/`, `REVIEWS.md` |
 | Project structure, quality gate, CI workflow | Done; strict type analysis passes | This folder; `lune/check.luau` |
 | Server breed flow, client creature assembler | Written, not yet run in Studio | `src/server/Breeding`, `src/client/Assembler` |

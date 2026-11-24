@@ -1,0 +1,198 @@
+--!strict
+-- Pure helpers over the world's data: pick a wild creature for a route, list the quests a player
+-- can take, and find the next story beat. No Roblox calls; randomness comes from a seed.
+
+local BreedConfig = require("../config/BreedConfig")
+local Breeding = require("./Breeding")
+local Rng = require("./Rng")
+local Species = require("../content/Species")
+local Types = require("./Types")
+local WorldTypes = require("./WorldTypes")
+
+-- `area` limits the draw to one stretch of the route; `spot` draws from a rustle spot instead of
+-- the open table. With neither, the whole open table of the route is used.
+-- `rarity` overrides the drawn row's tier (bait can bring out a gem-tier creature).
+-- `tier` limits the draw to the rows whose own tier is exactly this (a sighting draws only the
+-- spot's Uncommon rows).
+export type PickOptions = {
+	area: string?,
+	spot: string?,
+	rarity: Types.Rarity?,
+	tier: Types.Rarity?,
+}
+export type WildPick = {
+	creature: Types.Creature,
+	entry: WorldTypes.SpawnEntry,
+	rareColour: boolean,
+}
+export type Flags = { [string]: boolean }
+
+local World = {}
+
+local REWARD_KINDS: { WorldTypes.RewardKind } = {
+	"Coins",
+	"PrismCandy",
+	"Item",
+	"Material",
+	"Creature",
+	"Egg",
+	"Pen",
+	"Starter",
+	"Badge",
+}
+World.REWARD_KINDS = REWARD_KINDS
+
+-- The rows a draw can use: a rustle spot's rows when `spot` is set, otherwise the open rows
+-- (those with no spot), narrowed to `area` when given.
+function World.candidates(route: WorldTypes.Route, options: PickOptions?): { WorldTypes.SpawnEntry }
+	local area = if options then options.area else nil
+	local spot = if options then options.spot else nil
+	local tier = if options then options.tier else nil
+	local rows: { WorldTypes.SpawnEntry } = {}
+	for _, entry in route.spawns do
+		local include: boolean
+		if spot ~= nil then
+			include = entry.spot == spot
+		else
+			include = entry.spot == nil and (area == nil or entry.area == area)
+		end
+		if include and tier ~= nil then
+			include = (entry.rarity or Species[entry.species].baseRarity) == tier
+		end
+		if include then
+			table.insert(rows, entry)
+		end
+	end
+	return rows
+end
+
+-- Choose a wild creature: a row by weight, a level in its range, a colour (a rare one with the
+-- row's small chance), then build it with Breeding.wild. The same seed gives the same creature.
+function World.pickWild(
+	route: WorldTypes.Route,
+	seed: number,
+	options: PickOptions?,
+	id: string?
+): WildPick
+	local rows = World.candidates(route, options)
+	assert(#rows > 0, `no spawn rows on {route.id} for these options`)
+	local rng = Rng.new(seed)
+	local total = 0
+	for _, entry in rows do
+		total += entry.weight
+	end
+	local roll = Rng.next(rng) * total
+	local chosen = rows[#rows]
+	for _, entry in rows do
+		if roll < entry.weight then
+			chosen = entry
+			break
+		end
+		roll -= entry.weight
+	end
+	local level = Rng.int(rng, chosen.minLevel, chosen.maxLevel)
+	local rare = Rng.chance(rng, chosen.rareColourChance)
+	local colour: string
+	if rare then
+		colour = Rng.pick(rng, BreedConfig.MUTATION_COLOURS)
+	else
+		colour = Rng.pick(rng, chosen.colours)
+	end
+	-- A tier asked for by the caller (bait) can raise the row's tier, never lower it.
+	local rarity: Types.Rarity = chosen.rarity or Species[chosen.species].baseRarity
+	local asked: Types.Rarity? = if options then options.rarity else nil
+	if
+		asked
+		and (table.find(BreedConfig.RARITY_ORDER, asked) or 0)
+			> (table.find(BreedConfig.RARITY_ORDER, rarity) or 0)
+	then
+		rarity = asked
+	end
+	local creature = Breeding.wild(chosen.species, id or `wild_{seed}`, level, rarity, colour, rng)
+	return { creature = creature, entry = chosen, rareColour = rare }
+end
+
+-- The quests a player can take now: not done, every required quest done, every required story flag set.
+function World.availableQuests(
+	quests: { WorldTypes.Quest },
+	done: { [string]: boolean },
+	flags: Flags
+): { WorldTypes.Quest }
+	local list: { WorldTypes.Quest } = {}
+	for _, quest in quests do
+		local open = not done[quest.id]
+		for _, id in quest.requires do
+			if not done[id] then
+				open = false
+			end
+		end
+		for _, flag in quest.requiresFlags do
+			if not flags[flag] then
+				open = false
+			end
+		end
+		if open then
+			table.insert(list, quest)
+		end
+	end
+	return list
+end
+
+-- The first unfinished beat, in order, whose trigger flags are all set; nil when none is ready.
+function World.nextBeat(chapter: WorldTypes.Chapter, flags: Flags): WorldTypes.Beat?
+	for _, beat in chapter.beats do
+		if not flags[beat.id] then
+			local ready = true
+			for _, flag in beat.trigger.requires do
+				if not flags[flag] then
+					ready = false
+				end
+			end
+			if ready then
+				return beat
+			end
+		end
+	end
+	return nil
+end
+
+-- True once a beat that opens this feature ("breeding", "shop", ...) has finished. A feature no
+-- beat mentions is never locked.
+function World.isUnlocked(chapters: { WorldTypes.Chapter }, flags: Flags, feature: string): boolean
+	local mentioned = false
+	for _, chapter in chapters do
+		for _, beat in chapter.beats do
+			if table.find(beat.unlocks, feature) then
+				mentioned = true
+				if flags[beat.id] then
+					return true
+				end
+			end
+		end
+	end
+	return not mentioned
+end
+
+-- The hold that closes this point to a player, or nil. `hub` is where the sheet's origin is in
+-- the world; `open` says whether the story has opened a feature for this player.
+function World.holdAt(
+	holds: { WorldTypes.Hold }?,
+	hub: { x: number, z: number },
+	open: (feature: string) -> boolean,
+	at: { x: number, z: number }
+): WorldTypes.Hold?
+	if not holds then
+		return nil
+	end
+	local x, z = at.x - hub.x, at.z - hub.z
+	for _, hold in holds do
+		local x0, x1 = math.min(hold.from.x, hold.to.x), math.max(hold.from.x, hold.to.x)
+		local z0, z1 = math.min(hold.from.z, hold.to.z), math.max(hold.from.z, hold.to.z)
+		if x >= x0 and x <= x1 and z >= z0 and z <= z1 and not open(hold.feature) then
+			return hold
+		end
+	end
+	return nil
+end
+
+return World

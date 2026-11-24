@@ -1,6 +1,6 @@
 --!strict
 -- Giant fight numbers (research/market/07_BATTLE_AND_PVP.md recommendation 5; all Defaults).
--- A giant's own data (src/content/giants) may override the enrage numbers; these are the fallbacks.
+-- A giant's own data (src/content/giant_data) may override the enrage numbers; these are the fallbacks.
 
 local GiantConfig = {}
 

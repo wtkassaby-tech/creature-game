@@ -5,21 +5,9 @@
 local Types = require("./Types")
 
 type Element = Types.Element
+type ByElement<T> = Types.ByElement<T> -- defined once, in Types
 
 local TypeChart = {}
-
-export type ByElement<T> = {
-	Leaf: T,
-	Sand: T,
-	Water: T,
-	Toxic: T,
-	Frost: T,
-	Crystal: T,
-	Fire: T,
-	Storm: T,
-	Arcane: T,
-	Cosmic: T,
-}
 
 local ELEMENTS: { Element } =
 	{ "Leaf", "Sand", "Water", "Toxic", "Frost", "Crystal", "Fire", "Storm", "Arcane", "Cosmic" }

@@ -19,7 +19,8 @@ end
 function Stats.fit(creature: Types.Creature): number
 	local legSpecies = Species[creature.parts.Legs.species]
 	local torsoSpecies = Species[creature.parts.Torso.species]
-	local bodyWeight = torsoSpecies.weight * creature.size
+	local bodyWeight = torsoSpecies.weight
+		* math.clamp(creature.size, BreedConfig.SIZE_MIN, BreedConfig.SIZE_MAX)
 	local raw = math.sqrt(legSpecies.weight / bodyWeight)
 	return math.clamp(raw, BreedConfig.FIT_MIN, BreedConfig.FIT_MAX)
 end
@@ -50,7 +51,9 @@ function Stats.compute(creature: Types.Creature, levelOverride: number?): StatBl
 				if slot == "Legs" and stat == "Speed" then
 					value *= fit
 				elseif slot == "Torso" then
-					value *= creature.size -- a bigger body has more Hp and Defence
+					-- A bigger body has more Hp and Defence, within the ordinary size range: a
+					-- captured giant looks bigger still, but fights as the largest ordinary size.
+					value *= math.clamp(creature.size, BreedConfig.SIZE_MIN, BreedConfig.SIZE_MAX)
 				end
 				base[stat] += value
 				totals[stat] += value * quality

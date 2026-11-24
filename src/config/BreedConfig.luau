@@ -50,7 +50,7 @@ BreedConfig.PART_CHANCE = 0.5
 BreedConfig.CHARM_CHANCE = 0.8
 
 -- Offspring level = this share of the parents' average (brief: 50 and 45 give about 20).
-BreedConfig.LEVEL_SHARE = 0.4
+BreedConfig.LEVEL_SHARE = 0.75
 
 -- Stat scaling.
 BreedConfig.LEVEL_SCALE_PER_LEVEL = 0.05
@@ -80,25 +80,46 @@ BreedConfig.RARITY_INHERIT = {
 	Cosmic: InheritOdds?,
 }
 
--- Breeding Candy (working name): every breed uses up candies, earned only through play
--- (giants, gate battles, quests, daily tasks, ranked seasons). Never sold for Robux or Gems.
--- There is no limit on how many times a creature can breed (Ayrton, 16 November 2026):
--- candy income is what caps supply. The price follows the rarer parent.
+-- Breeding Candy (working name): every breed uses up candies, earned only through play.
+-- Never sold for Robux or Gems. There is no limit on how many times a creature can breed
+-- (Ayrton, 16 November 2026): candy income is what caps supply.
+-- Candy is typed (Ayrton, 20 November 2026): each parent uses CANDY_COST[its own rarity] of its
+-- own type (its torso's element), so a breed of two different types needs two kinds of candy.
+-- Typed candy comes from catching and releasing; Prism Candy covers any shortfall
+-- (EconomyConfig, Economy.candyPayment). Tuned by tests/economy.test.luau (docs/ECONOMY_MODEL.md).
 BreedConfig.CANDY_COST =
 	{ Common = 1, Uncommon = 2, Gem = 5, Ruby = 12, Diamond = 30, Cosmic = 0 } :: Types.ByRarity<number>
 
 -- Cooldown (seconds) after each breed. Breeds beyond the list use the last entry.
 local MIN, HOUR = 60, 3600
 BreedConfig.COOLDOWN = {
-	Common = { 30 * MIN, 1 * HOUR, 2 * HOUR, 4 * HOUR, 8 * HOUR },
+	Common = { 15 * MIN, 1 * HOUR, 2 * HOUR, 4 * HOUR, 8 * HOUR },
 	Uncommon = { 30 * MIN, 1 * HOUR, 2 * HOUR, 4 * HOUR, 8 * HOUR },
 	Gem = { 12 * HOUR, 24 * HOUR },
 	Ruby = { 24 * HOUR, 48 * HOUR },
 	Diamond = { 48 * HOUR, 72 * HOUR },
 	Cosmic = {},
 } :: Types.ByRarity<{ number }>
+-- Wild-caught creatures of these tiers get a serial number among their kind ("Amber Duneskit
+-- No. 12"). Bred ones do not: a serial marks a find, not a product.
+BreedConfig.SERIAL_RARITIES = {
+	Common = false,
+	Uncommon = false,
+	Gem = true,
+	Ruby = true,
+	Diamond = true,
+	Cosmic = false,
+} :: Types.ByRarity<boolean>
+
+-- A captured giant can breed, but each giant parent needs this much Giant Candy of its own kind
+-- in place of ordinary candy (about five days of daily rematches for one breed).
+BreedConfig.GIANT_CANDY_COST = 10
+
+-- The mentor's egg hatches quickly, so the first hatch lands in the first session.
+BreedConfig.GIFT_EGG_SECONDS = 3 * MIN
+
 BreedConfig.HATCH_SECONDS = {
-	Common = 30 * MIN,
+	Common = 15 * MIN,
 	Uncommon = 45 * MIN,
 	Gem = 4 * HOUR,
 	Ruby = 8 * HOUR,

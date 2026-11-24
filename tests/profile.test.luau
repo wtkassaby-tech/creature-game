@@ -43,7 +43,8 @@ local function sample(): Profile.Profile
 	profile.Creatures[b.id] = b
 	profile.Team = { "a", "b" }
 	profile.Coins = 2000
-	profile.Candy = 4
+	profile.Candy.typed.Leaf = 4
+	profile.Candy.prism = 2
 	profile.Items.BasicLasso = 3
 	local bred = Breeding.breed(a, b, rng, { childId = "egg1", now = 1000 })
 	table.insert(profile.Eggs, { child = bred.child, hatchAt = bred.hatchAt, seed = 42 })
@@ -151,6 +152,250 @@ do
 end
 
 ------------------------------------------------------------------------------------------------
+print("\n== Migration 1 to 2: finds (approval pack 7) ==")
+do
+	check(
+		"the schema is at version 3 and keeps the finds migration",
+		Profile.CURRENT_VERSION == 3 and Profile.MIGRATIONS[1] ~= nil
+	)
+
+	-- A version-1 save as it was before finds: the current sample with the new fields taken away.
+	local function version1(): any
+		local old: any = sample()
+		old.SchemaVersion = 1
+		old.Finds = nil
+		old.Daily.finds = nil
+		return old
+	end
+	local old = version1()
+	local migrated, why = Profile.migrate(old)
+	check("a version 1 save is upgraded", migrated ~= nil, why)
+	local upgraded: any = migrated
+	check(
+		"it gains the two new fields, empty, and the new version",
+		upgraded ~= nil
+			and upgraded.SchemaVersion == Profile.CURRENT_VERSION
+			and typeof(upgraded.Finds) == "table"
+			and next(upgraded.Finds.once) == nil
+			and typeof(upgraded.Daily.finds) == "table"
+			and next(upgraded.Daily.finds) == nil
+	)
+	check(
+		"nothing else changes: coins, candy, creatures, team, eggs and daily counts are as they were",
+		upgraded ~= nil
+			and upgraded.Coins == 2000
+			and upgraded.Candy.prism == 2
+			and upgraded.Candy.typed.Leaf == 4
+			and upgraded.Items.BasicLasso == 3
+			and #upgraded.Eggs == 1
+			and #upgraded.Team == 2
+			and upgraded.Creatures.a ~= nil
+			and upgraded.Daily.wildWins ~= nil
+			and upgraded.Daily.catches.Leaf == 0
+			and upgraded.Pens == Profile.template().Pens
+	)
+	check(
+		"the upgraded save is sound",
+		upgraded ~= nil and #Profile.validate(upgraded :: Profile.Profile) == 0
+	)
+	check(
+		"the original is untouched (the migration ran on a copy)",
+		old.SchemaVersion == 1 and old.Finds == nil and old.Daily.finds == nil
+	)
+
+	-- A save that somehow has part of it already: nothing is overwritten.
+	local half = version1()
+	half.Finds = { once = { gw_cairn = true } }
+	local keep: any = Profile.migrate(half)
+	check(
+		"a find already claimed survives the upgrade",
+		keep ~= nil and keep.Finds.once.gw_cairn == true
+	)
+	local noOnce = version1()
+	noOnce.Finds = {}
+	local fixed: any = Profile.migrate(noOnce)
+	check(
+		"a Finds record with no list gets one",
+		fixed ~= nil and typeof(fixed.Finds.once) == "table"
+	)
+
+	-- A save too broken to migrate is refused, never let in on blank data.
+	local broken = version1()
+	broken.Daily = 7
+	local refused = Profile.migrate(broken)
+	check(
+		"a save whose Daily is nonsense is never half-migrated",
+		(refused == nil and broken.SchemaVersion == 1)
+			or (refused ~= nil and #Profile.validate(refused) > 0)
+	)
+	local blank = Profile.template()
+	check(
+		"a new player starts with nothing found",
+		next(blank.Finds.once) == nil and next(blank.Daily.finds) == nil
+	)
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== Migration 2 to 3: purchases (plan 16) ==")
+do
+	check(
+		"the schema is at version 3",
+		Profile.CURRENT_VERSION == 3 and Profile.MIGRATIONS[2] ~= nil
+	)
+
+	-- A version-2 save as it was before: Purchases had only passes and receiptIds.
+	local function version2(): any
+		local old: any = sample()
+		old.SchemaVersion = 2
+		old.Purchases = { passes = { BiggerStable = true }, receiptIds = { "r1", "r2" } }
+		return old
+	end
+	local old = version2()
+	local migrated, why = Profile.migrate(old)
+	check("a version 2 save is upgraded", migrated ~= nil, why)
+	local upgraded: any = migrated
+	check(
+		"it gains the two new maps, empty, and keeps what was bought",
+		upgraded ~= nil
+			and upgraded.SchemaVersion == 3
+			and next(upgraded.Purchases.once) == nil
+			and next(upgraded.Purchases.perks) == nil
+			and upgraded.Purchases.passes.BiggerStable == true
+			and #upgraded.Purchases.receiptIds == 2
+			and upgraded.Coins == 2000
+	)
+	check(
+		"the upgraded save is sound",
+		upgraded ~= nil and #Profile.validate(upgraded :: Profile.Profile) == 0
+	)
+	check(
+		"the original is untouched",
+		old.SchemaVersion == 2 and old.Purchases.once == nil and old.Purchases.perks == nil
+	)
+
+	local half = version2()
+	half.Purchases.once = { StarterPack = true }
+	local keep: any = Profile.migrate(half)
+	check(
+		"a one-time mark already there survives and the missing map is added",
+		keep ~= nil
+			and keep.Purchases.once.StarterPack == true
+			and typeof(keep.Purchases.perks) == "table"
+	)
+
+	local gone = version2()
+	gone.Purchases = nil
+	local fresh: any = Profile.migrate(gone)
+	check(
+		"a save with no Purchases record gets an empty one",
+		fresh ~= nil
+			and typeof(fresh.Purchases.once) == "table"
+			and #fresh.Purchases.receiptIds == 0
+	)
+
+	local blank = Profile.template()
+	check(
+		"a new player has bought nothing",
+		next(blank.Purchases.once) == nil
+			and next(blank.Purchases.perks) == nil
+			and next(blank.Purchases.passes) == nil
+	)
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== Purchases in a save are checked ==")
+do
+	local p = sample()
+	p.Purchases.passes.QuickHatch = true
+	p.Purchases.once.StarterPack = true
+	p.Purchases.perks.StarterCosmetic = true
+	check("known passes and marks are allowed", #Profile.validate(p) == 0)
+
+	p = sample()
+	p.Purchases.passes.MadeUp = true
+	check("an unknown pass is reported", has(Profile.validate(p), "unknown or has a bad mark"))
+
+	p = sample();
+	(p.Purchases.passes :: any).QuickHatch = false
+	check("a pass mark that is not true is reported", has(Profile.validate(p), "bad mark"))
+
+	p = sample();
+	(p.Purchases :: any).once = nil
+	check("a missing record is unreadable", has(Profile.validate(p), "unreadable"))
+
+	p = sample()
+	p.Gems = 10 ^ 12
+	check("Gems past the limit are reported", has(Profile.validate(p), "above the limit"))
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== PlayStats in a save is checked (bug hunt: data 2) ==")
+do
+	local p = sample();
+	(p :: any).PlayStats = true
+	check("a bad PlayStats is reported", has(Profile.validate(p), "PlayStats"))
+	p = sample()
+	check("a sound PlayStats is not", not has(Profile.validate(p), "PlayStats"))
+end
+
+------------------------------------------------------------------------------------------------
+print("\n== Finds in a save are checked ==")
+do
+	local p = sample()
+	p.Finds.once.gw_cairn = true
+	p.Finds.once.gw_journal = true
+	p.Daily.finds.gw_gather_fern = 1
+	p.Daily.finds["~gathered"] = 14
+	check("claimed finds and today's counts are allowed", #Profile.validate(p) == 0)
+
+	p = sample();
+	(p.Finds.once :: any).gw_cairn = false
+	check("a claimed mark that is not true", has(Profile.validate(p), "bad claimed mark"))
+
+	p = sample()
+	p.Finds.once.made_up_find = true
+	check("an unknown find id is reported", has(Profile.validate(p), "not a known one-time find"))
+
+	p = sample()
+	p.Finds.once.gw_gather_fern = true
+	check(
+		"a renewable spot is never a one-time flag",
+		has(Profile.validate(p), "not a known one-time find")
+	)
+
+	p = sample()
+	p.Daily.finds.gw_gather_fern = 2
+	check("a daily count over the spot's limit", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds.gw_gather_fern = -1
+	check("a negative daily count", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds.gw_gather_fern = 0.5
+	check("a fractional daily count", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds["~gathered"] = 31
+	check("more gathered than the daily ceiling", has(Profile.validate(p), "bad count"))
+
+	p = sample()
+	p.Daily.finds.gw_cairn = 1
+	check(
+		"a daily count for a one-time find",
+		has(Profile.validate(p), "not a known renewable find")
+	)
+
+	p = sample();
+	(p :: any).Finds = nil
+	check("missing finds are reported as unreadable", has(Profile.validate(p), "unreadable"))
+
+	p = sample()
+	p.Finds.once.gw_cairn = true
+	check("finds can be stored", (Profile.isStorable(p)))
+end
+
+------------------------------------------------------------------------------------------------
 print("\n== Purchases are granted once ==")
 do
 	local profile = Profile.template()
@@ -179,8 +424,31 @@ do
 	check("negative coins", has(Profile.validate(p), "Coins"))
 
 	p = sample()
-	p.Candy = 1.5
-	check("a fractional candy balance", has(Profile.validate(p), "Candy"))
+	p.Candy.typed.Sand = 1.5
+	check("a fractional typed candy balance", has(Profile.validate(p), "Candy.typed.Sand"))
+
+	p = sample()
+	p.Candy.prism = -1
+	check("a negative Prism Candy balance", has(Profile.validate(p), "Candy.prism"))
+
+	p = sample()
+	local typedAny: any = p.Candy.typed
+	typedAny.Wood = 3
+	check("candy of a type that does not exist", has(Profile.validate(p), "unknown type"))
+
+	p = sample()
+	typedAny = p.Candy.typed
+	typedAny.Frost = nil
+	check("a typed candy balance that is missing", has(Profile.validate(p), "Candy.typed.Frost"))
+
+	p = sample()
+	local profileAny: any = p
+	profileAny.Candy = 4
+	check("candy saved as a single number (the old shape)", has(Profile.validate(p), "Candy"))
+
+	p = sample()
+	p.Daily.catches.Water = -2
+	check("a bad daily catch count", has(Profile.validate(p), "Daily.catches.Water"))
 
 	p = sample()
 	table.insert(p.Team, "ghost")

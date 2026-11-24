@@ -37,6 +37,7 @@ export type AttemptInput = {
 	isGiant: boolean,
 	slowMode: boolean,
 	roundTripMs: number,
+	firstCatch: boolean?, -- the player has never caught anything (the server's own record)
 }
 
 export type Verdict = "Hit" | "Miss" | "Invalid"
@@ -45,6 +46,7 @@ export type Judgement = {
 	verdict: Verdict,
 	zoneHits: { boolean }, -- empty when invalid
 	errorsMs: { number }, -- timing error from each zone's centre; empty when invalid
+	chances: { number }, -- each zone's catch chance from where its tap landed; empty when invalid
 	reason: string?, -- set when invalid
 }
 
@@ -105,6 +107,16 @@ function Lasso.createAttempt(input: AttemptInput): Pattern
 		Lasso.zoneWidth(input.rarity, input.lassoDifficulty, input.healthFraction, input.tier)
 	if input.isGiant then
 		width = math.max(width * LassoConfig.GIANT_WIDTH, LassoConfig.MIN_WIDTH)
+	end
+	if
+		input.firstCatch
+		and not input.isGiant
+		and LassoConfig.FIRST_CATCH_RARITIES[input.rarity]
+	then
+		width = math.min(
+			math.max(width * LassoConfig.FIRST_CATCH_WIDTH, LassoConfig.FIRST_CATCH_MIN_WIDTH),
+			LassoConfig.MAX_WIDTH
+		)
 	end
 	local assist = Lasso.assistScale(input.roundTripMs)
 	-- Slow mode and the assist stack, but only down to a floor, so the two cannot be combined
@@ -191,8 +203,16 @@ function Lasso.nextCentreTimeMs(pattern: Pattern, zoneIndex: number, afterMs: nu
 	return best
 end
 
+-- False for a tap claimed before its loop has started sweeping. Such a tap says nothing about
+-- timing (the player is still on the loop before, e.g. a double tap), so the server drops it
+-- instead of letting it take the zone's place and make the whole throw Invalid. Dropping opens no
+-- retry: the real tap for that zone is still expected, and a throw is judged once.
+function Lasso.sweepStarted(startMs: number, claimedMs: number): boolean
+	return not (claimedMs == claimedMs and claimedMs < startMs)
+end
+
 local function invalid(reason: string): Judgement
-	return { verdict = "Invalid", zoneHits = {}, errorsMs = {}, reason = reason }
+	return { verdict = "Invalid", zoneHits = {}, errorsMs = {}, chances = {}, reason = reason }
 end
 
 local function isFiniteNumber(value: any): boolean
@@ -201,7 +221,11 @@ end
 
 -- The round trip to trust for a player, from the server's own readings during the battle.
 -- The smallest reading is used: a delayed reply can raise a reading but nothing can lower one.
-function Lasso.trustedRoundTripMs(readingsMs: { number }): number
+-- A delayed reply raising it is itself a way to cheat (a slower marker, a wider claim window), so
+-- `enginePingMs` (the engine's own measurement for the player) caps it, plus a small margin. With
+-- too few readings the engine's figure is used on its own, so an honest slow connection gets a
+-- fitting allowance from the first throw; with neither, the generous default.
+function Lasso.trustedRoundTripMs(readingsMs: { number }, enginePingMs: number?): number
 	local smallest = math.huge
 	local good = 0
 	for _, reading in readingsMs do
@@ -210,8 +234,15 @@ function Lasso.trustedRoundTripMs(readingsMs: { number }): number
 			smallest = math.min(smallest, reading)
 		end
 	end
+	local engine: number? = nil
+	if enginePingMs ~= nil and isFiniteNumber(enginePingMs) and enginePingMs >= 0 then
+		engine = enginePingMs + LassoConfig.ROUND_TRIP_ENGINE_MARGIN_MS
+	end
 	if good < LassoConfig.ROUND_TRIP_MIN_SAMPLES then
-		return LassoConfig.ROUND_TRIP_DEFAULT_MS
+		return engine or LassoConfig.ROUND_TRIP_DEFAULT_MS
+	end
+	if engine ~= nil then
+		return math.min(smallest, engine)
 	end
 	return smallest
 end
@@ -235,7 +266,12 @@ function Lasso.judge(
 	if not isFiniteNumber(roundTripMs) or roundTripMs < 0 then
 		return invalid("bad round trip")
 	end
-	local allowance = math.min(roundTripMs, LassoConfig.ROUND_TRIP_CAP_MS)
+	local capped = math.min(roundTripMs, LassoConfig.ROUND_TRIP_CAP_MS)
+	local allowance = capped + LassoConfig.CLAIM_EARLY_MARGIN_MS
+	-- A slowed sweep needs taps that really travelled slowly (see ASSIST_MIN_LAG_SHARE).
+	local leastLag = if pattern.connectionAssist
+		then capped * LassoConfig.ASSIST_MIN_LAG_SHARE
+		else -math.huge
 	for index = 1, count do
 		local claimed, serverNow = claimedMs[index], serverElapsedMs[index]
 		if not isFiniteNumber(claimed) or not isFiniteNumber(serverNow) then
@@ -250,19 +286,82 @@ function Lasso.judge(
 		if claimed > serverNow + LassoConfig.CLAIM_MARGIN_MS then
 			return invalid("claim too late for the server's clock")
 		end
+		if serverNow - claimed < leastLag then
+			return invalid("a slowed sweep tapped with too little lag")
+		end
 	end
 
 	local hits: { boolean } = {}
 	local errors: { number } = {}
+	local chances: { number } = {}
 	local allHit = true
 	for index = 1, count do
 		local zone = pattern.zones[index]
-		local hit = Lasso.isInZone(zone, Lasso.markerPosition(pattern, index, claimedMs[index]))
+		local position = Lasso.markerPosition(pattern, index, claimedMs[index])
+		local hit = Lasso.isInZone(zone, position)
 		table.insert(hits, hit)
 		table.insert(errors, Lasso.timingErrorMs(pattern, index, claimedMs[index]))
+		table.insert(chances, Lasso.tapChance(zone, position))
 		allHit = allHit and hit
 	end
-	return { verdict = if allHit then "Hit" else "Miss", zoneHits = hits, errorsMs = errors }
+	return {
+		verdict = if allHit then "Hit" else "Miss",
+		zoneHits = hits,
+		errorsMs = errors,
+		chances = chances,
+	}
+end
+
+-- One tap's catch chance (wild throws only), from where the marker was on the arc when the tap
+-- was judged. Straight lines: CENTRE at the zone centre to EDGE at its edge, then OUTSIDE_NEAR
+-- just past the edge down to OUTSIDE_FLOOR at OUTSIDE_FALL_ARC beyond it. The position is the
+-- server's own reading of the claimed time, which Lasso.judge has already checked against the
+-- server's clock; an invalid claim never reaches here and counts 0.
+function Lasso.tapChance(zone: Zone, position: number): number
+	if position ~= position then
+		return 0
+	end
+	local half = math.max(zone.width / 2, 1e-9)
+	local distance = math.abs(position - zone.centre)
+	if distance <= half then
+		local share = distance / half
+		return LassoConfig.CHANCE_CENTRE
+			+ (LassoConfig.CHANCE_EDGE - LassoConfig.CHANCE_CENTRE) * share
+	end
+	-- The fall-off is measured in zone widths, so a narrow zone (a healthy or rare creature, a
+	-- plain lasso) forgives little outside it and weakening a creature still matters; capped
+	-- both ways in arc units (review of 23 November 2026).
+	local fall = clamp(
+		zone.width * LassoConfig.CHANCE_OUTSIDE_FALL_WIDTHS,
+		LassoConfig.CHANCE_OUTSIDE_FALL_MIN_ARC,
+		LassoConfig.CHANCE_OUTSIDE_FALL_ARC
+	)
+	local share = clamp((distance - half) / fall, 0, 1)
+	return LassoConfig.CHANCE_OUTSIDE_NEAR
+		+ (LassoConfig.CHANCE_OUTSIDE_FLOOR - LassoConfig.CHANCE_OUTSIDE_NEAR) * share
+end
+
+-- The whole throw's catch chance: the zones' chances multiplied, times the rarity factor,
+-- clamped to 0..1. No chances (an invalid throw) is 0.
+function Lasso.catchChance(chances: { number }, rarity: Types.Rarity): number
+	if #chances == 0 then
+		return 0
+	end
+	local chance = LassoConfig.RARITY_CHANCE[rarity]
+	for _, each in chances do
+		chance *= clamp(each, 0, 1)
+	end
+	return clamp(chance, 0, 1)
+end
+
+-- The best a throw of this pattern could do: every tap dead centre. Shown to the player before
+-- the throw ("up to N%"); the real chance comes from where the taps land.
+function Lasso.bestChance(zoneCount: number, rarity: Types.Rarity): number
+	local chances: { number } = {}
+	for _ = 1, zoneCount do
+		table.insert(chances, LassoConfig.CHANCE_CENTRE)
+	end
+	return Lasso.catchChance(chances, rarity)
 end
 
 -- True when the recent errors look scripted: enough throws, and most of them within a few

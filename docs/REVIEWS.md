@@ -2,6 +2,286 @@
 
 Findings from reviewers that did not write the code or the plan, as the project rules require for anything touching saving, purchases, captures, breeding, serials, trading or PvP rewards.
 
+## 23 November 2026: bug-hunt fixes to capture, saving, eggs, purchase switches and story holds (branch fix/studio-first-run)
+
+Reviewer: a read-only exploit review that did not write the fixes. Reviewed: `Lasso.luau`, `LassoConfig.luau`, `RoundTrip.luau`, `CaptureService.luau`, `GiantService.luau`, `Capture.luau`, `GiantCapture.luau`, `Grants.luau`, `DataService.luau`, `Profile.luau`, `StateSync.luau`, `Main.server.luau`, `BreedingService.luau`, `SerialGrants.luau`, `PurchaseService.luau`, `LiveConfigService.luau`, `WorldService.luau`, `BattleFlow.luau`, `BattleService.luau`, `FindService.luau`. **Found sound:** no duplication, double spend, double refund, double judgement or repeated serial. The giant-capture refund cannot be farmed (the net result is zero and the failure path cannot be reached while an offer is open). The trailing coalesced save cannot write stale data after release. One grant per PurchaseId still holds. Purchase flags are display only; every purchase path re-checks the switch and PolicyService on the server. `Player:GetNetworkPing` was confirmed in the Roblox docs as a round trip in seconds, so the engine cap leaves honest slow connections their allowance (the reviewer's finding 2 rested on it possibly being one way).
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | A lag switch held through the throw, then switched off, kept the slowed marker with quick taps | Medium | Each tap of a slowed sweep must lag at least half the capped round trip (`ASSIST_MIN_LAG_SHARE`), or the throw is Invalid. Tests added |
+| 2 | The engine-ping cap might shrink honest players' allowance if the figure were one way | Medium, unconfirmed | Not a bug: the docs say round trip. The allowance is engine ping + 40 + 120 ms against an honest tap's round trip + about 50 to 70 ms. Watch the `LassoInvalid` rate on live servers |
+| 3 | A modified client can solve the timing game, because the device knows the pattern | Medium for giants, known limit | Open, for Ayrton: act on `looksScripted` (at least hold a flagged account's giant grant for review) and measure errors against zone width |
+| 4 | A giant waiting for its number did not hold a stable place, so it could take the place a wild throw was counting on | Low | `Grants.room` counts waiting giants; `finishGiant` takes its own held place (`room < 0`). Tests added |
+| 5 | Finds and giant starts did not check the story's holds | Low | A find inside a hold, or searched from one, is Shut; StartGiant refuses with the hold's line |
+| 6 | `DataService.start`'s stop function also stopped ending sessions for leaving players | Low | Only joins are stopped |
+| 7 | The PlayStats repair ran after the save check and let NaN or infinity through, which would shut a player out | Low | Repaired before the check; a non-finite number counts as damaged |
+| 8 | A throw from `StartSessionAsync` left the player in the game unloaded | Low | Caught; logged and the player removed with a rejoin message |
+| 9 | The live-switch comment said the first read never fires a change | Low | Comment corrected; the defaults (purchases on) apply until the first read |
+
+Also open from the bug hunt: the player's position comes from client physics (a speed or teleport check risks false positives on respawns and server moves); every hold, battle start and find re-checks the position, which limits what a teleport can reach.
+
+## 23 November 2026: purchase foundations (plan 16 steps 1 to 3) and the approved breeding numbers (branch fix/studio-first-run)
+
+Reviewer: two independent exploit reviews, read-only, that did not write the code (a full review, then a re-review of the fixes). Reviewed: `src/server/Purchases/PurchaseService.luau`, `src/shared/Purchases.luau`, `Gems.luau`, `PassEffects.luau`, `Capture.luau`, `Lasso.luau`, `Grants.luau`, `Breeding.luau`, `Profile.luau` (schema 2 to 3), `src/config/PurchaseConfig.luau`, `EconomyConfig.luau`, `BreedConfig.luau`, `LiveConfig.luau`, `src/net/Net.blink`, the Capture, Inventory, Breeding and Data services, and the tests. **Receipts are sound:** each PurchaseId is granted once, written in the same step as the grant, and PurchaseGranted is returned only after the save holds it; two servers are covered by the session lock. The breeding numbers (level share 0.75, faster first eggs) open no exploit.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | Gems bought lassos and Bait with no PolicyService check and no odds shown | High | Gem lassos are refused unless `ArePaidRandomItemsRestricted` is exactly false; Bait is not sold for Gems until a screen shows its outcomes and odds |
+| 2 | The Lasso Pass's flat bonus raised fleeing, serial-numbered catches far more than common ones, against Ayrton's reason for it | Medium | The pass boosts only Common and Uncommon (`LASSO_PASS_RARITIES`), never gem tiers or giants |
+| 3 | A repeated Starter Pack was a cheaper-Gems loop | Medium | A repeat grants the 99-Robux bundle's 100 Gems and nothing once-only |
+| 4 | Nothing marked creatures caught with paid help (matters once trading exists) | Medium | `paidAssist` ("Pass" or "GemLasso") on the creature, set with the catch, inherited by breeding; Gem lassos kept under their own item keys |
+| 5 | Catching with Gem lassos and releasing turned Robux into coins | Medium | A Gem-lasso catch releases for no coins and no materials |
+| 6 | The live catch chance was not shown on the throw | Medium | The lasso panel shows "Catch chance: up to N%" (and when the pass is included); the result line shows the chance rolled; a live switch turns every paid boost off if the display is off |
+| 7 | The chance shown could differ from the chance rolled | Low | The boost is decided once when the throw begins |
+| 8 | Finishing eggs charged Gems with a full stable | Low | Refused before charging, counting eggs already finished |
+| 9 | The shop showed pass owners the wrong expansion price | Low | Fixed in ShopView |
+| 10 | The Field Satchel pass did nothing | Low | Removed from sale until it has an effect |
+| 11 | A refunded or revoked pass kept working; a suspended pass could not be re-bought | Low | Suspended on join when Roblox says it is not owned (room and pens kept); re-buying resumes it |
+| 12 | Policy answers after a player left were kept; Blink limits on pass keys unchecked | Low | Fixed; limits enforced in validate |
+
+Still to do before any product goes live: real product ids after publishing, the shop and Gem UI, a Bait odds screen, and the Creator Hub pass description saying the Lasso Pass has no effect where paid random items are restricted.
+
+## 23 November 2026: the first catch made easier, and early catches counted (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/config/LassoConfig.luau` (FIRST_CATCH_*), `src/shared/Lasso.luau`, `src/shared/Capture.luau`, `src/shared/StoryTriggers.luau` (creditTame), `src/server/Story/StoryService.luau`, `tests/firstcatch.test.luau`, with CaptureService, BattleFlow, Grants, Snapshot and the story data. **No exploit found:** no client value is trusted, every new story flag is written only by server code after a server-judged catch, the wide zone never applies to giants or rarer creatures, nothing is duplicated or moved between accounts, and nothing paid is touched.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | At a chapter boundary, a catch in the old biome credited the next chapter's tame beat (a Greenwood catch after Chapter 1 would finish "A catch in the canyon") | Low | The Tame event now carries the creature's biome, and a catch credits only the chapter of its own biome (`StoryTriggers.creditTame`). Tested at the real boundary |
+| 2 | The Chapter 1 / Chapter 2 test passed without testing the boundary | Low | Added the boundary case after `sealed_path` (a Greenwood catch does not count; a canyon catch does) |
+| 3 | Saves from before the change get one helped catch | Info | `Capture.hasCaught` also counts a finished `third_creature` beat, which only a server-judged catch can finish |
+| 4 | The first-catch flag shared the `tamed:` prefix with beat credits | Info | Renamed to `caught:first` |
+| 5 | The story credit is written after the catch, not in the same change | Info | Nothing of value is lost if it is missed; left as is |
+
+## 23 November 2026: finds and rewards, approval pack 7 (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Finds.luau`, `FindIds.luau`, `FindTrail.luau`, `src/server/Finds/FindService.luau`, `src/client/World/FindsView.luau`, the content and config, `Profile.luau` (schema 1 to 2, migration, soundness checks), `Grants.luau`, `Net.blink`, `WorldService.luau` (sightings) and the tests.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The character's position comes from the player's device, so an exploiter can teleport to a cache, wait out the 5-second trail and search: time and reach, never extra rewards (caps and one-time flags hold) | Medium | Accepted, as the plan expected; the far-refusal alarm stays. Revisit if logs show it |
+| 2 | A journal set was flagged before its Prism was paid; a refused payment would lose the Prism for good | Low | The Prism is worked out before anything changes; if it cannot be paid the whole claim is refused |
+| 3 | A respawn moved the character without resetting the trail, so honest searches were refused as a "jump" for about 5 seconds | Low | The trail resets on every respawn |
+| 4 | Gaps in logging: searches dropped while not loaded or busy; sightings without a seed; the day roll reached from more places pays daily tasks without a log line | Low | Dropped searches are now logged; sightings log the creature id, species and rarity (spawns keep no seed); the day-roll logging gap existed before and is listed for the daily-tasks owner |
+
+Found sound: no find can be claimed twice (check and change in one step, flags saved with the items, session lock); daily caps only move forward; only the find id is read from the device; rate limits before any read; sightings only spawn at the normal gem chance and catching is unchanged; the migration runs on a copy, twice safely, and refuses newer saves; no find pays coins, creatures or Gems; nothing granted is tradeable; no Robux product touches finds.
+
+## 23 November 2026: the wild lasso as skill plus chance (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Lasso.luau` (`tapChance`, `catchChance`), `src/shared/Capture.luau` (`finish` rolls before `Grants.capture`), `src/server/Capture/CaptureService.luau`, `src/config/LassoConfig.luau`, and the tests.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The chance outside the green fell off over a fixed quarter of the arc, so health, rarity and lasso tier only narrowed the in-zone band: a full-health Common tapped 50 ms off still gave about 40% | Medium (balance) | The fall-off is now two zone widths (between 0.02 and 0.25 of the arc); a test pins the full-health case to the 0.05 floor |
+| 2 | Holding back pong replies raises the trusted round trip, which slows the marker (to 0.4x at most) and so raises each tap's chance a little | Low (existed before) | The round trip is now logged on every throw, so an account that always plays at the assist floor shows in the logs; tuning `ASSIST_MIN_SPEED` is left for playtests |
+| 3 | Misses and flees were logged as one event with no outcome | Low (logging) | `LassoMissed` now carries the outcome; a roll under the chance that still missed shows the grant was refused (a full stable) |
+
+Found sound: no client value reaches the chance except tap timing already checked against the server clock (NaN, infinity, negative, missing, extra or out-of-order claims all make the throw invalid, chance 0, no roll); a throw cannot be judged twice; a fresh server-side seed per throw, never sent to the client; the Waiting, NoRoom and Refused grant paths; flee counting; giant capture unchanged; captures logged with the creature id; lassos obtainable only with coins, so the random catch stays a free outcome.
+
+## 23 November 2026: a catch joins the team while there is room (branch fix/studio-first-run)
+
+Reviewer: an independent exploit reviewer, read-only, that did not write the change. Reviewed: `src/shared/Grants.luau` (`recordOwned`, `capture`, `finishGem`), `src/shared/GiantCapture.luau`, `src/shared/Coach.luau`, `src/client/BattleView/BattleView.luau`, read against `BattleService`, `BattleFlow`, `SerialGrants`, `Team` and the profile checks.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | A gem or giant whose serial number arrives during a later battle joins the team then; if that battle is lost, the healthy newcomer meant the beaten team skipped the wake at the healer | Low | `BattleFlow.wakeAtHealerIfBeaten` now looks only at the creatures that fought in the battle |
+| 2 | The catch card could say "Joined your team!" for a gem-tier catch, which joins only once its number arrives | Low (words only) | A numbered catch gets the neutral "A new friend!" line, with a test |
+| 3 | `recordOwned` does not check whether a creature may battle yet (a creature from a biome not yet reached) | Note | No path catches such a creature today; left as is |
+
+Found sound: the team can never pass its size for the player's badges, never holds a creature twice or one not in the stable; a battle's team is fixed when it starts, so a catch never joins a battle in progress; release, retries of the serial steps and the profile checks are unaffected; no client value reaches the server.
+
+## 22 November 2026: the lasso's early-claim slack (first Studio run, branch fix/studio-first-run)
+
+Reviewer: a separate read-only exploit reviewer that did not write the change. Reviewed: `CLAIM_EARLY_MARGIN_MS` (120) added to the early allowance in `Lasso.judge`, the fuller `LassoInvalid` log line, and the lag-window tests. Verdict: safe to merge, no must-fix.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The slack gives a cheat nothing new: the device is sent the whole sweep, so it can already claim the perfect time. No free retry: taps are taken in order, once, and Invalid still counts as a miss | Sound | Nothing needed |
+| 2 | Above the 400 ms cap an honest tap on a slow connection is still Invalid (a 600 ms round trip arrives outside a 520 ms allowance), costing a lasso or a giant attempt | Medium, was already there | Not changed: listed for Ayrton in `docs/DECISIONS.md` (Still open) |
+| 3 | The trusted reading is the smallest of the last eight and is kept across battles, so a phone moving from Wi-Fi to mobile data is judged against its old reading for a while | Low | Not changed: same entry |
+| 4 | The `LassoInvalid` line logs only the first zone's times; the giant path logs none | Low, log only | Not changed yet |
+
+## 21 November 2026: poison, the off-switches, analytics, the "biome reached" rule (commits 0c892db to a47513d)
+
+Reviewer: a separate read-only agent. It did not run the tests. No must-fix findings.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | If Roblox hiccuped at the moment a switch was flipped, that server kept the old value until it restarted | Should fix | A failed refresh is tried again, with the same waits as the first fetch, until it works |
+| 2 | Only the analytics call itself was protected: a strange log line could have thrown into the game logic that logged it | Should fix | The whole of the feed's work is protected; a problem is a warning in the log and nothing more |
+| 3 | No switch covered releasing a creature, which pays coins, candy and materials | Should fix | Added `release_open`. Battles, catching, quests, hatching and healing have no switch on purpose (it would stop the game); `LiveConfig.luau` says so. A giant fight already under way is played to its end |
+| 4 | A creature that fainted while poisoned came back still poisoned if revived, and in the battle that cannot be lost it "held on" turn after turn | Note | Fainting now ends the poison, with a test |
+| 5 | The "biome reached" rule was only checked on the team screen, not where a creature joins the team or a battle by itself | Note | Also checked when a gift joins the team and when the server builds the battle team. Tests: no route holds a species from a later biome, and no robot player is ever handed a creature it cannot yet use |
+| 6 | If a turn ever had more events than the message holds, the rest were dropped silently | Note | It now warns in the log. It cannot happen under the rules as written (16 at most, room for 24) |
+| 7 | One player spamming buy or release can use up the server's analytics budget for a minute | Note | Accepted: it costs some analytics, nothing in the game |
+
+Found sound: poison cannot be caused or dodged except by an ordinary choice of move; it never ticks on a fainted or benched creature, never twice, and is never saved; rewards and experience do not read it; moves without an effect behave exactly as before; the switches only believe a real true or false and cannot turn on anything that is not built; a switched-off path refuses before anything is spent; analytics names all come from the game's own data, never from the device, and no personal data is sent.
+
+## 21 November 2026: the battle that cannot be lost (commit 597d303)
+
+Reviewer: a separate read-only agent. It did not run the tests.
+
+| # | Finding | Severity | What was done |
+| --- | --- | --- | --- |
+| 1 | The Tide Flats champion (being written at the same time) carried the old "try again at once" setting, which now means "cannot be lost" | Must fix | Set to false in the Tide Flats content. A test now fails if any story battle other than the rival's first one cannot be lost |
+| 2 | If both last creatures fell on the same turn, the player held on and then had to play one more turn against an opponent that had already fallen | Should fix | A double knockout in this battle is now a win at once, with a test |
+| 3 | The "holds on" event arrives after a "faints" event for the same creature | Note | Checked: the battle screen sets the creature's health back to 1 and keeps it in play |
+| 4 | The team is mended after this battle, so a player who walks in hurt is healed once | Note | Accepted: it can happen once per account, at the very start of the game |
+
+Found sound: the setting comes only from content data, never from the device; wild battles, local tamers and giants never have it; the battle cannot be replayed once won, and pays experience only; nothing grows with the length of the battle, which is capped at 60 turns; leaving part way gives no reward and no mending; running is refused.
+
+## 21 November 2026: bait and crafting (commit 966744a)
+
+Reviewer: a separate read-only agent. No must-fix findings: a bait cannot be used without owning one, used twice, or used where it should not work; the device cannot influence the gem chance; crafting cannot go below zero, make anything without a recipe, or be turned back into coins.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A player can see what a bait brought out and walk away from anything not gem-tier, so with no limit, coins alone set how many gem-tier creatures appear (99 baits in under a minute) | Should fix | Baits are limited to 5 uses a day (`BAIT_USES_PER_DAY`), counted by the server's date. Test added |
+| 2 | Nothing checked that every rustle spot has creatures in it; an empty one would take a player's bait money for nothing | Should fix | A test checks every rustle spot in every biome |
+| 3 | A bait's gem roll replaced the row's own tier, so it could lower a rarer row | Note | It can only raise the tier |
+
+## 21 November 2026: more than one biome, gem serials, travel, stable room (commits 0e291e8 to dbe2c8a)
+
+Reviewer: a separate read-only agent. Found sound: travel between towns; wild creatures, rustle spots and long grass gated by biome; shop prices; gem catches cannot be duplicated and their candy is paid once; story battles cannot be replayed or fought out of order.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A giant win was paid by the biome the player was standing in when the fight ended, so walking into a later biome mid-fight paid that biome's bigger reward for a cheap horn | Must fix | The fight's biome is fixed when it starts, and the reward follows it |
+| 2 | Giants and tamers of a biome the player had not earned could be fought (the grey-box gate does not block walking): first-clear coins, a later giant's rewards and a capture attempt, with no badge | Must fix | Both are refused until the player holds the badge for that biome |
+| 3 | Gem catches waiting for a serial number did not count against stable room, so they could pile up without limit while the serial store was slow | Should fix | A waiting gem holds a place in the stable. Tests added |
+| 4 | A failing serial store was retried about every five seconds for each waiting entry, drawing on the same budget as player saves; a damaged counter was retried for ever | Should fix | Failed fetches back off (30 seconds, doubling to 10 minutes); a damaged counter gives no numbers until the server restarts |
+| 5 | The save check called two creatures with the same number a repeat even when they were different tiers | Should fix | Numbers are compared within their own kind. Tests added |
+| 6 | A gem creature in the waiting list was not checked like one in the stable | Note | It is now. Test added |
+| 7 | The stable's starting size is named in two configs | Note | A test holds them equal. A saved count of expansions is needed before stable room can be bought any other way (noted in approval pack 5) |
+| 8 | Duplicate ids across tamers, story battles, giants or places would be silently overwritten | Note | Tests check all of them are unique, and that no two buildings share a name |
+
+Not separately reviewed: the Dust Canyon content (data only; its rewards come from the economy's config and its own test checks them).
+
+## 21 November 2026: daily tasks (commits 9f49d29, e471c7d)
+
+Reviewer: a separate read-only agent. No must-fix findings: a task cannot be paid twice or before it is finished; nothing that did not happen is counted; the daily caps match the economy's (3 easy and 3 harder payouts); the move of the battle wiring into `BattleFlow` dropped nothing.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | "Win 5 tamer rematches" could be done by beating one weak tamer five times in a row | Should fix | Only the first rematch of each tamer in a day counts. Test added |
+| 2 | A task finished late in the day and not claimed before the server's midnight was lost, and the screen's view of tasks changed saved data as a side effect | Should fix | Finished tasks are paid automatically when the day ends; the view is read-only. Tests added |
+| 3 | The win that earns the first badge does not count toward that day's tasks | Note | Harmless; left as it is |
+| 4 | Catching a giant does not count as "tame a creature" | Note | Left as it is |
+
+## 21 November 2026: giant capture, serial numbers, Giant Candy (commit 51481a4)
+
+Reviewer: a separate read-only agent. Found sound: no way to capture the same giant twice, forge a hit, reuse an attempt or get more than one throw per win; a rejoin during the serial wait is safe; the capture throw cannot be mixed up with a battle throw or lock a player out; Giant Candy comes only from wins and is taken in the same step as the breed; breeding from a giant is not a cheap way to make gem-tier creatures (one breed takes about five days and ten horns).
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A waiting capture that could never finish (already marked captured, or the giant's creature form removed) would fetch and throw away a serial number every five seconds | Should fix | A number is fetched only for a capture that really needs one; stale waiting entries are cleared; the save check reports a giant that is both captured and waiting. Tests added |
+| 2 | The stable could fill during the wait for a number, wasting it, and a player could do this on purpose to push the counter up | Should fix | The fetched number is written onto the saved waiting capture and reused: one number per capture, however long it waits for room. Tests added |
+| 3 | A counter value that was not a number was treated as zero, which would give numbers out a second time | Should fix | Only a missing counter starts at 1; anything else is left alone, raises an alarm and gives no number |
+| 4 | The captured giant's bigger size also raised its Hp and Defence beyond what any other creature can reach, and pushed nearly all its children to the largest size | Should fix | Size counts for stats and for breeding only within the ordinary range: the giant looks bigger but fights as the largest ordinary size. Test added |
+| 5 | A new giant fight could be started while a capture attempt was still on offer | Note | Refused while an attempt is on offer or in the air |
+| 6 | The check for scripted tapping is never run | Note | The capture throw now logs how far each tap was from its centre. Running the audit over each player's throws is still to build (listed in `PROGRESS.md`) |
+| 7 | The save check missed a giant with no serial number | Note | Reported now |
+
+## 21 November 2026: lasting damage, healing, long grass, team choice (commit ec0a7a0)
+
+Reviewer: a separate read-only agent. No must-fix findings. Found sound: health values stay valid; damage is written back every turn, so leaving never heals; nothing but the healer, a tonic or waking at the healer resets health; team changes are locked during every kind of battle; the story gates cannot be bypassed.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Waking at the healer was a cheap trip home and a full heal: put one nearly fainted creature on the team, lose on purpose, and the whole stable was mended | Should fix | Waking at the healer mends only the team that fought. A team with nobody able to fight is refused while the player owns a creature that can. Whether waking at the healer should also cost coins is a question for Ayrton. Tests added |
+| 2 | A grass battle that could not start (a fainted team) left the creature standing in the world, so walking in grass with a fainted team revealed creature after creature | Should fix | Grass does nothing unless wild battles are open and someone on the team can fight; a grass battle that fails to start removes its creature |
+| 3 | After a draw the knocked-out wild creature stayed in the world and could not be fought | Should fix | A wild creature with no health left is gone. Test added |
+| 4 | The first look after a battle compared against the position from before it, so standing still could count as walking | Should fix | The walking check starts fresh after any time out of the world |
+| 5 | Running gives a free moment to use tonics before re-engaging a hurt wild creature | Note | Intended: it is the "weaken it, then catch it" play, and missed throws and fleeing are still counted |
+| 6 | A giant turn that errored skipped the faint check | Note | It runs there too |
+| 7 | Grass ignored the story's "wild battles" gate; the healer ignores its gate | Note | Grass is gated. The healer is left open on purpose: free healing is harmless and a new player may need it after the first battle |
+| 8 | A server-started battle relied on its caller to rule out a giant fight | Note | The battle service checks it itself |
+| 9 | Waking at the healer uses the current biome's healer | Note | Marked in the code for when more biomes exist |
+
+## 21 November 2026: giant fights (commit f094181)
+
+Reviewer: a separate read-only agent. Found sound: a fight cannot pay twice; the horn is used up only after every check and never refunded; battles of different kinds cannot overlap; every choice is checked and items are capped at five; creature locks cover giant fights.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Giant Horns bought cheaply in Greenwood could be saved up and used on later giants, whose rematches pay far more than those horns cost (about +3,650 coins a fight in biome 3) | Must fix (before later giants ship) | Horns are graded by the biome they were priced for: a horn wakes its own biome's giant or an earlier one, never a later one. Tests added, including "a rematch pays less than any horn that can start it, in every biome" |
+| 2 | No way to give up a fight; an error mid-turn could leave the player stuck in it | Should fix | A give-up message ends the fight (the horn stays spent); a turn that errors ends the fight |
+| 3 | The turn was sent to the device before the fight was closed and paid | Note | The fight is closed and paid first |
+| 4 | Nothing in the story gated starting a giant fight | Note | The giant stirs only once the story has shown it to the player |
+| 5 | The fight log showed creature ids, not names | Note | It shows species names |
+
+Found by a new test before the review: a Greenwood giant rematch paid 910 coins for a 900-coin horn. A rematch is now capped at 85% of its biome's horn price.
+
+Not separately reviewed: choosing the team (`src/shared/Team.luau`, tested) and the story gates on breeding and the shop. Neither grants anything; both only refuse requests.
+
+## 21 November 2026: quests, the shop, items in battle (commits 3520b21, b6d0d45)
+
+Reviewer: a separate read-only agent. No must-fix findings: a quest cannot pay twice or be handed in without its objective; counts and item ids at the shop are checked; an item is used up only when it was really used; a Rally Root cannot un-lose a battle.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Prices used the shop's biome, so a player far into the game could walk back to the first town and buy Giant Horns and Bond Charms at the first-biome price (a coin loop once giant rematches pay) | Should fix | Prices follow how far the player has got, wherever they shop. Test added |
+| 2 | The optional giant quest could be taken but never finished, because nothing records a beaten giant yet | Note | The quest cannot be taken until giant fights are on the server (`QuestProgress.GIANTS_OPEN`) |
+| 3 | A quest with a starter reward could never be handed in | Note | A test now checks no quest has one |
+| 4 | Saved quest progress was never checked, and a damaged value could stop the story moving on after a battle | Note | `Profile.validate` checks quests; counting skips damaged values and can no longer stop what follows. Tests added |
+| 5 | Items have no per-battle limit and no battle-kind check; a stock of tonics can outlast a tamer on the turn limit | Note | Items are refused in friendly (player against player) battles. A per-battle cap is a design question, listed for Ayrton |
+| 6 | Gifts can take a player over the 999 carry limit | Note | Harmless; left as it is |
+| 7 | Two request kinds shared one rate limit, and a dropped purchase got no reply | Note | Each kind has its own limit; a purchase always gets an answer |
+| 8 | Prices were never rounded down | Note | Rounded down, and a test checks every price in every biome is a whole number |
+
+## 21 November 2026: the world, tamers, the rival, story triggers (commit e39b0f5)
+
+Reviewer: a separate read-only agent. Scope: `Encounters`, `Layout`, `Trainers`, `StoryTriggers`, `Rewards.trainedWin`, the world and story services, the rewritten `Main.server.luau`, and the battle and capture service changes. No must-fix findings. The open item from 20 November ("misses must follow the wild creature, not the battle") is closed.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | Starting a battle had no rate limit | Should fix | Limited like every other request |
+| 2 | Rejoining reset rustle-spot rests and refill waits (rustle spots are the only source of uncommon species) | Should fix | The timers are kept in server memory for ten minutes after a player leaves and given back when they return. They still reset on a different server; saving them would need a schema change, so that waits until it is shown to matter |
+| 3 | Walking out of range and back rerolled a stretch at once (unlimited rerolls for rare colours) | Should fix | A cleared stretch waits before it refills, like a beaten one. Test added |
+| 4 | A creature could reach its flee count and stay in the world if the battle ended as a loss on the same turn | Should fix | A creature at its flee count is gone however the battle ended. Test added |
+| 5 | An error while starting a battle left the wild creature marked as busy, or a battle half started | Note | The start is wrapped; any failure hands the creature back |
+| 6 | Tamer rematches give XP every time (coins stop after the paid rematch) | Note | Intended: wild battles also give XP without limit, XP falls off as the player out-levels a fixed-level tamer, and the badge level cap bounds it. Logged in `DECISIONS.md` |
+| 7 | A fallen character still passed position checks | Note | A character with no health has no position |
+| 8 | A refused rustle reveals the rest timer | Note | Harmless; left as it is |
+| 9 | If a story battle's beat could not finish, the battle could be replayed for XP | Note | A story battle once won is closed for good; the story catches up from the recorded win; a failure is logged loudly. Test added |
+
+## 21 November 2026: battle rewards, story gifts, releasing (commit 4e4f438)
+
+Reviewer: a separate read-only agent. Scope: `src/shared/Rewards.luau`, `src/shared/StoryProgress.luau`, the handlers in `src/server/Main.server.luau`, and the new messages. No must-fix findings: no battle pays twice, no client value reaches a payout, no story gift pays twice.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A content mistake in a gift (a bad rarity, or egg parents that cannot breed) would error after the beat's flag was set, leaving the beat half paid for good | Should fix | Every gift is built and checked before anything changes. Test added |
+| 2 | One damaged save could stop the hatch loop for the whole server | Should fix | Each player's hatch runs on its own, and a failure is logged |
+| 3 | A starter that had to wait for room never joined the team; waiting gifts were only handed over on join | Note | A gift that arrives to an empty team joins it; waiting gifts are handed over after releases and hatches too. Test added |
+| 4 | The mentor's egg ignored pen space | Note | Pens are paid first; with no free pen the egg waits in the saved list and takes the next free pen. Test added |
+| 5 | Wild coins used the species' home biome, not where it was fought | Note | Rewards take the battle's biome; the world service must pass the route's biome (Greenwood only until then) |
+| 6 | An error part way through rewards could leave a battle half paid | Note | Every share is worked out first, then everything is paid together |
+| 7 | Hatched children and story gifts were not recorded in the Index | Note | Every creature that joins the stable is recorded |
+
+## 20 November 2026: data service, creature grants, lasso capture (commit 8d1983c)
+
+Reviewer: a separate read-only agent that did not write the code. Scope: `src/server/Data/DataService.luau`, `src/shared/Grants.luau`, `src/shared/Capture.luau`, the new Pass action and the ProfileStore 1.0.3 calls.
+
+| # | Finding | Severity | Fix |
+| --- | --- | --- | --- |
+| 1 | A throw could still be judged after the player ran: a hit caught a creature they had run from; a miss crashed the handler and never counted toward fleeing | Must fix | `Capture.finish` refuses once the battle has ended; no assert. The capture service also blocks every battle action while a throw is in the air. Test added |
+| 2 | The daily reset fired on any change of day, so hopping between servers whose clocks disagree near midnight reset the candy falloff | Should fix | The day only moves forwards. Test added |
+| 3 | A giant could be released, losing it for good (it can never be caught again) | Should fix | Releasing a giant is refused. Test added |
+| 4 | A caught creature was saved as the battle's own table, so a shared spawn record could reach two profiles | Should fix | The capture saves a deep copy. Test added |
+| 5 | An unreadable save was written back in its filled-in form, not as found | Should fix | The original is restored before the session ends |
+| 6 | A giant with a full stable uses up a serial on every retry; the comment said it waits | Note | Comment corrected; the giant serial service (not written yet) must check room first or keep the serial on the waiting entry |
+| 7 | A save that can never be stored was only logged, so every save would fail silently | Note | Refused like an unreadable save |
+
+Caller rules the reviewer set for the capture service, and where each is met:
+
+- One open throw per player, and no battle action while it is open: `CaptureService` (`playing`, and `BattleService.setBusyCheck`).
+- The round trip, seed and start time come only from the server: `RoundTrip` (random-nonce pings, smallest reading) and `CaptureService`.
+- One message per tap, stamped on arrival: `LassoTap`.
+- The daily roll before every capture: done in `CaptureService`. The release service (not written yet) must do the same.
+- Misses must follow the wild creature, not the battle: **open for the world service**. Today each Studio test battle makes a fresh creature, so it cannot be fought twice; real spawns must despawn after a battle or carry their miss count.
+- Fresh unique ids for every grant: GUIDs in `Main.server.luau`.
+
 ## 16 November 2026: saving design, creature grants, breeding server flow, lasso judging
 
 Reviewer: an independent Opus exploit reviewer, read-only. Reviewed before approval and before any of it is wired up: `docs/plans/01_SAVING.md`, `docs/plans/02_CREATURE_GRANTS.md`, `src/shared/Profile.luau`, `src/server/Breeding/BreedingService.luau`, `src/shared/Lasso.luau`.

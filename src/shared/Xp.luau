@@ -85,7 +85,8 @@ function Xp.teamShares(defeated: Defeated, team: { TeamMember }): { number }
 end
 
 -- Adds XP to a creature. Levels rise while XP covers the next step and the level is under the cap.
--- At the cap the XP keeps building; nothing is dropped. Pass the new cap later to spend it.
+-- At the cap the XP keeps building, up to BANK_MAX_LEVELS levels' worth above the cap; XP beyond
+-- that is dropped. Pass the new cap later to spend the bank.
 function Xp.applyXp(level: number, xp: number, gained: number, cap: number): Applied
 	local current = math.floor(level)
 	local pool = xp + math.max(0, gained)
@@ -98,6 +99,13 @@ function Xp.applyXp(level: number, xp: number, gained: number, cap: number): App
 		end
 		pool -= need
 		current += 1
+	end
+	if current >= limit then
+		local bankMax = 0
+		for i = 0, ProgressionConfig.BANK_MAX_LEVELS - 1 do
+			bankMax += Xp.xpToNext(current + i)
+		end
+		pool = math.min(pool, bankMax)
 	end
 	return { level = current, xp = pool, levelsGained = current - startLevel }
 end

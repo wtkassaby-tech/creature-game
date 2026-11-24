@@ -2,6 +2,488 @@
 
 What changed, and what Ayrton should do or look at next. Newest first.
 
+## 23 November 2026 (a clearer first fifteen minutes, battle fixes, each town its own look)
+
+**In one line:** after a review of the whole game, agents audited the first fifteen minutes and fixed what they found, hedges no longer lie across terrace edges, every named speaker has a face, battles stand on the ground and keep their camera, and Dust Canyon and Tide Flats got their own stairs, lamps and spires. `lune run check` passes; what was seen in Studio is marked.
+
+| What | Now |
+| --- | --- |
+| **Hints name their target** | The TO DO page says "Beat your rival in Thistledown", "Beat Pip Alder on Clover Lane", "Walk into Clover Meadow", "Talk to Marlow Tuppence at Tuppence's Shop". The mentor now sends you to Marlow. A test checks every Chapter 1 to 3 hint names a real place or person. Seen in Studio (the rival hint) |
+| **Tamers speak in battle** | Their opening words hold the battle box for a moment, and their parting words show before the result card ("Rival: No fair, yours beats mine!"). Seen in Studio (the parting line) |
+| **A look at the old tree** | When the mentor says "See that huge tree in the haze?", the camera turns to the tree for those lines, then back. Not yet seen in Studio |
+| **River Road waits** | Until Marlow's first quest, a player who walks onto River Road is sent back to the arch with a line saying why. Wild battles wait for the lasso lesson. Seen in Studio |
+| **Marlow** | His lines no longer repeat the quest offer, and the tap that starts his story no longer opens the shop on top of it |
+| **Hedges and rocks** | No wall piece lies across a terrace edge, stair or ramp (199 pieces fixed across four biomes); a test checks it. Seen in Studio on two routes |
+| **Faces** | Champions, keepers and route tamers show the face of the person standing in the world |
+| **Battles** | A wild creature no longer stands on a treetop (seen in the orchard); the camera stays behind your creature even if something resets it |
+| **Each town its own look** | Red sandstone stairs and adobe lamp pillars in Kilnrest; barnacled sea-stone stairs and driftwood lamp posts with a ship's lantern in Saltwick (Greenwood's mossy steps and vine lamps looked out of place). The canyon's rock spires wear cream cap rocks instead of dark ones that read as chocolate cakes. Seen in Studio |
+
+**Not checked:** the lasso catch scene on screen. Studio pauses drawing while my tools look, so the scene cannot be watched from here; please look at it when you play. The tree camera. A few long fill pieces (dunes off Tide Flats' edges, some canyon cliff pieces) still lie across two heights, outside the walkable area.
+
+**Waiting for Ayrton (these touch catching, so nothing is built until a yes):**
+1. **A catch made before the egg counts for nothing.** The story only asks for a catch after the egg, so a player who catches early (the signs and coach push them to) is told "tame a creature" with a full team. Either move the first catch earlier (plan 07, package 6), or let the story count a catch already made.
+2. **The story's first catch can fail.** At full health the green is very narrow; a miss costs a rope and gives the creature a free turn. Suggest a softer first story catch (for example a wider green, or a floor on the odds, for that one catch).
+
+**To playtest:** a new game: follow the TO DO page only and see if you ever get lost; watch the tree look on Clover Lane; throw the lasso and judge the scene.
+
+## 23 November 2026 (terraces, finds, far scenery, the Mire's look, a quality pass)
+
+**In one line:** the terraces got painted stairs, ramps and earth banks; Dust Canyon and Tide Flats were rebuilt on Greenwood's pattern; far scenery (the Crown, highlands, islands) and finds and rewards are in; a player-height audit led to a quality pass; the Mire has its own map and look but stays closed at launch. Most of it was seen in Studio; the notes below say what was not.
+
+| What | Now |
+| --- | --- |
+| **Terraces** | Painted stone steps, earth ramps and earth-bank faces (three new models). The flights sit over the walking ground. Seen: cream steps with moss climbing onto the clover terrace |
+| **Light and sound between biomes** (plan 13) | Light, the sky and the colour grade ease toward the zone you are in, and ambient sound follows it. Presets for Greenwood, Dust Canyon, Tide Flats and Starfall. Seen: walking from Greenwood into Dust Canyon, the sun lowers and the light warms with no seam |
+| **Dust Canyon and Tide Flats rebuilt** (plan 12) | Tiers, painted steps and ramps, one-way ledges home, narrow winding routes, pockets and dead ends. Every place, tamer, story trigger and gate stays where it was |
+| **Far scenery** (plan 13) | The Crown as a ring of painted snowy peaks, the northern peaks, the volcano's plume, wooded highland hills, islands and sea stacks. Forty cheap pieces, kept off walkable ground by a test |
+| **Finds and rewards** (plan 14, approved by Ayrton) | One-time caches, daily gathering after the first badge, a daily sighting at search spots, cairns and keepsakes. Journal sets pay 2 Prism, once. Save data moves to schema 2 with a migration. The server checks each claim and logs it; an independent review found no way to claim twice or move value between accounts (`docs/REVIEWS.md`). Not yet played |
+| **Gull Cove** (plan 13) | A sea arch off Tide Flats' beach, a cliff-foot walk to a cove with pools, stacks and a bench. Its finds are live, so Tide Flats' journal set can be completed |
+| **Starfall Crater** | Seen across Dust Canyon's broken bridge, out of reach until the Arcane chapter, with its own light zone |
+| **Lighter models for phones** | Low-detail versions of the hedge bush, canyon boulder, sea rock, cliff wall, earth bank, sand dune and marram tuft. Launch views measured at 0.2 to 1.1 million triangles on screen, down from 3.3 to 4.9 million |
+| **Ambient sound** | Beds for Dust Canyon (birds, still air), Tide Flats (gulls, waves on rocks) and the Mire (frogs, insects), from the Pro Sound Effects library; logged in `docs/ASSETS.md` |
+| **Edit-mode copy of the world** | `WorldPreview` is built into the edit workspace so you can fly over the map in Studio. The game deletes it at start and builds the real world |
+| **The Mire** (plan 15) | Sedgeholm on duckboards round the Bell Cypress; two routes (the Duckboard Trail and the Cypress Road), the Sunken Bell branch and the Heron Causeway. Its own region and climate. Reed huts on stilts, mangroves and cypresses over mossy mounds, murky ground, cattails and lily pads. Six new models (reed hut, mangrove, cypress, bell tower, lily pads, cattails). Still closed at launch |
+| **Quality pass** | From player-height audits in Studio: the Crown's cloud halo read as flying saucers over the towns, so it is gone and the peaks are lower and further off; clay is matte, with far less shine; Dust Canyon, Tide Flats and Starfall are less bright and the sand is warmer; tamers no longer stand inside hedges (edges keep 7 studs clear of tamers, people, doors and stalls); plazas get paving, a centre motif and flower beds, and lawns get a seeded scatter of flowers, clover and pebbles; the battle camera hides scenery round both creatures; "You are already in a battle" no longer flashes during a fight |
+
+**Note on the older entry below:** its line "Dust Canyon and Tide Flats still have the old flat structure; only Greenwood's ambient sound has a sound id" is out of date. Both biomes are rebuilt (this entry) and all three biomes now have ambient sound.
+
+**Not checked or not done:** the catch scene on screen; frame rate on a real phone (the triangle counts were measured, the frame rate was not); the Mire's wetter ground and reed edge; Gull Cove's sighting (still pending, as it would change encounter counts); hedge pieces across terrace edges; the battle camera beside a hedge (fixed, not yet seen); the new finds in play.
+
+**Waiting for Ayrton:** nothing in these commits waits on a yes. The Mire stays closed at launch, as set.
+
+**To playtest:** walk from Greenwood into Dust Canyon and watch the light change; climb a terrace by its stairs; try a find (a cache, a cairn, a search spot) and check a journal set pays 2 Prism once; fly over the map with `WorldPreview` in edit mode; walk a route in Dust Canyon or Tide Flats and look for hedges standing in the way of tamers.
+
+## 23 November 2026 (studio polish, hidden creatures, catch odds, a structured world)
+
+**In one line:** after Ayrton played, the game got studio-style effects and motion, wild creatures now hide in grass, the catch is a scene with real odds, Greenwood is rebuilt with terraces, stairs and one-way ledges, and the whole eleven-biome world is planned as one journey. `lune run check` passes; every piece below was run in Studio unless it says otherwise.
+
+| What | Now |
+| --- | --- |
+| **Effects and motion** (plan 11) | A move effect per type, STRONG hits with a camera shake and flash, faint, switch, catch and level-up effects; chimney smoke (positions measured from above), kiln embers, lamp lights, pollen, dust and sea spray; buttons squash, a cream wipe into battles, fades for travel and the healer, sliding panels |
+| **Hidden creatures** | Wild creatures hide in grass patches as a swaying clump; walking in gives a "!" and a battle. The server checks your position; species and level are no longer sent before a battle |
+| **The catch** | A scene: the rope arcs out, the loop cinches, one to three tugs, then gold sparkles or a slip. Odds instead of all-or-nothing (0.95 at the centre of the green to 0.75 at its edge, 0.45 just outside down to 0.05); an independent review found no exploit (docs/REVIEWS.md) |
+| **Greenwood rebuilt** (plan 12) | Walled routes (forest, rock and dune fill), blocking water, a capped camera; terraces with painted stone steps, earth ramps and earth-bank faces, one-way ledges home, an S-shaped Route A and a switchback Route B; grass patches beside the paths, never across them (a test proves a grass-free walk between every place) |
+| **The world** (plan 13) | Eleven biomes on one journey spiralling in to the Crown, a different crossing between each pair, twelve side areas, shortcuts home; `docs/plans/13_world_map.svg`. Light and ambient sound now blend between Greenwood, Dust Canyon and Tide Flats as you walk |
+
+**Not checked or not done:** the catch scene itself has not been seen on screen (test throws missed and the screenshot tool is too slow); the grass hidden round a battle in grass; phone frame rate with the new terraces and effects; a few hedge pieces lie across a terrace edge near the stairs; Dust Canyon and Tide Flats still have the old flat structure; only Greenwood's ambient sound has a sound id; no sky changes yet.
+
+**Waiting for Ayrton:** the finds-and-rewards plan (plan 14, being written) before anything is built; names for the later towns.
+
+**To playtest:** walk Route A up the stairs to the terrace and hop the ledge home; find a creature in the grass; throw the lasso a few times and see if the odds feel fair.
+
+## 23 November 2026 (a catch joins your team)
+
+**In one line:** a caught creature now joins your team while it has a free place (three to start, more with badges); once the team is full, catches wait in Creatures as before. Played in Studio from a new save: Sloshcalf picked, the rival won in three turns with STRONG moves from the first turn, the lasso lesson's Gorsling made two, a wild Sloshcalf caught made three ("Joined your team!"), and a Spadesnout caught after that went to Creatures ("Waiting in Creatures..."). `lune run check` passes; an independent review found no exploit and two small issues, both fixed (`docs/REVIEWS.md`).
+
+**Found while playing:** Studio had an old copy of the first-battle story lines and Greenwood's tamers (the rival still had Mossmitt against a Sloshcalf). Every source file was compared and the three stale ones replaced; nothing else differed.
+
+**Also fixed after playing:** the end-of-battle card said "Level 6!" without saying whose level it was; it now says "Mossmitt reached level 6!" (seen in Studio). Tide Flats' open sea and the other flats are trimmed to the biome's ground, so nothing hangs past its edge; from the air the beach now runs into the sea and the horizon with no seam (seen in Studio).
+
+**To playtest:** catch two creatures early on and check both are on your team for the next battle.
+
+## 23 November 2026 (Dust Canyon and Tide Flats designed)
+
+**In one line:** the two other launch biomes are now drawn on purpose like Greenwood, from written plans, with twenty-six new painted town models. Run in Studio with no errors; `lune run check` passes.
+
+| Biome | What it is now |
+| --- | --- |
+| **Dust Canyon (Kilnrest)** | A potters' town in a red canyon bowl, walled by sandstone cliffs. You come in from Greenwood through a slot in the rock (the Westcut) under an adobe arch reading "Kilnrest". A terracotta square and well, Rook's Trading Post under a striped awning, the Cradle Kiln as a glowing bottle kiln, adobe and kiln-dome houses, a wind tower lookout. Route A (Dry Wash Trail) winds north through a pebble wash and tumbleweed flats into a cliff-walled arroyo ending at a broken rope bridge. Route B (Mesa Road) climbs east along the rim, through a garden of rock spires, to the Stair Gate. The Redstack, a great two-tier mesa, stands behind Mesalith's arena and shows over the canyon rim. |
+| **Tide Flats (Saltwick)** | A salt-and-rope fishing town round a harbour, entered over the dunes under a driftwood arch hung with net and floats. A plank quay with rowing boats, the chandlery with a teal awning, stilt houses, tarred net lofts, the Lamp Tower on the harbour wall, sea walls. Route A runs south along the beach, rock pools and a sunken plank path through kelp; Route B crosses a roped sandbar and a boardwalk over mud, past a shipwreck and a sea cave, to the Breakwater Gate. The Old Light, a red-and-white lighthouse, stands over Carrackon's cove of grey sea cliffs. |
+
+**Fixed while looking:** the town name on each painted arch now sits on the arch's own board; where two town streets of different colours met, the ground flickered in a pinwheel (each street now sits a hair above the one before); search spots look like their stretch (dry grass in the canyon) instead of Greenwood's reeds on mud.
+
+**Not checked:** walking either new town at a player's height end to end; the phone-sized view and frame rate there (about 650 grass pieces and 1,400 studs of rope rail in Tide Flats); the plank decks underfoot; whether each story trigger fires at its spot; Tide Flats' open sea ran past the edge of its ground (fixed the same day).
+
+**For Ayrton:** the healer and waystation reuse Greenwood's buildings in every town so they are easy to recognise (say if each town should have its own); all new place names are placeholders.
+
+## 23 November 2026 (a designed Greenwood, and a gentler first fifteen minutes)
+
+**In one line:** Ayrton: "I feel like you havent planned and structured the map correctly", and "prioritize the aesthetic appeal... maximise player enjoyment". Greenwood is now drawn on purpose from a written map plan, the first fifteen minutes were rebuilt from a written plan, and five research reports sit behind both. Run in Studio: no errors; the opening, the starter pick, the first battle and the new town were all seen there. `lune run check` passes.
+
+**Research first** (`docs/research/games/07` to `09`): what makes this kind of game look appealing, what players praise and complain about (they love charming creatures and playing with friends; they complain most about grind and slow battles), and names.
+
+| Changed | How | Where |
+| --- | --- | --- |
+| **Greenwood is a designed map** | A map sheet gives every building, lane, tamer, grass patch and sign a place on purpose. Thistledown is a hedged town round a small plaza: the mentor's cottage faces you as you arrive, the shop and healer share the south-west corner by the pond, the Nesting House has its paddock, the Ring is in the south-east. One street runs west to east through two arches. Route A (Clover Lane) leaves over a footbridge; River Road runs to a gatehouse hamlet. The ancient tree stands over the woods and can be seen from far off. The other biomes still use the old generated layout | `docs/plans/08_GREENWOOD_MAP.md`, `src/content/map_data/`, `src/shared/Layout.luau`, `src/server/World/` |
+| **Routes are corridors** | Hedges on both sides, long grass as dark patches you can see, tamers standing beside the lane, signposts at every fork, lamps, a brook with stepping stones, a picnic hollow and a mossy knoll | `src/server/World/Corridors.luau`, `Lanes.luau`, `Grass.luau`, `Signs.luau`, `Water.luau`, `Landmarks.luau` |
+| **An opening** | A new player sees a cream band, "Welcome to THISTLEDOWN", over the town, then the mentor speaks, and only then the pick | `src/client/Story/TitleCard.luau`, `StoryView.luau` |
+| **The starter pick** | Three cards on the type's colour: the creature, its name, a type tag and one line of character ("Carries a tiny pond on its back. Please do not tip it."). Tapping selects; "Pick this one?" confirms; "Not yet" goes back. The world dims behind it | `src/client/Story/StarterPick.luau`, `src/content/SpeciesBlurbs.luau` |
+| **The first battle is a fair win** | The rival's first creature is far younger (level 1 or 2) and the fight ends in four or five turns whichever friend you chose. Before, the Sand starter's fight ran sixty turns and two starters only won because the fight cannot be lost | `src/content/tamer_data/Greenwood.luau`, `tests/firstminutes.test.luau` |
+| **A coach in the first battles** | The text box says what to do next ("Pick FIGHT, then a move.", "Win it over first. When its health is low, choose LASSO."), and LASSO pulses when a catch is likely | `src/shared/Coach.luau`, `BattleView.luau`, `LassoView.luau` |
+| **A catch is a moment** | After a catch the result panel shows a "New friend" card: picture, name, level, type, its line, and where it went | `ResultPanel.luau` |
+| **Result panel** | The title sits on a striped ribbon, gold for a win | `ResultPanel.luau` |
+| **The tracker** | Up to four lines: the next story step, the egg's countdown, quests, and "Greenwood friends N of 8" | `src/shared/Tracker.luau` |
+| **Greenwood friends** | The Creatures screen opens with a strip of eight: a dark silhouette with "?" until you own that species. The Creatures button pulses when an egg has hatched or a creature is waiting | `CreaturesView.luau`, `Portrait.luau` |
+| **A "Day one" card** | After the first quest opens: what you have, what is next, and "Something stirs in the old tree." | `StoryView.luau` |
+| **Story lines** | Chapter 1 rewritten to be shorter and warmer | `src/content/story_data/Chapter1.luau` |
+| **Less grind** | The level curve is gentler (see `docs/DECISIONS.md`). Robot players now need about 30 wild battles for badge 1, 20 for badge 2 and 40 to 50 for badge 3; it was 32, 40 and 58 to 67 | `src/config/ProgressionConfig.luau` |
+| **A fairer second champion** | Isolde Karrow's Cairnback no longer carries a move that beats the very creatures you bring to answer it | `src/content/tamer_data/DustCanyon.luau` |
+| **More models** | The Greenwood giant, the eight Dust Canyon creatures, six Tide Flats creatures, six more people and twelve map pieces (waystation, gatehouse, ancient tree, birch, grass tuft, reeds, fence, signpost, footbridge, notice board, bench, stall) | `src/content/CreatureModels.luau`, `PropModels.luau`, `docs/ASSETS.md` |
+| **Creatures stand on the ground** | A wild creature could appear on a roof or a treetop. It now looks through anything that is not ground | `src/client/World/WorldView.luau` |
+
+**Second pass, the same day (seen in Studio):**
+- **Painted town arches.** A shingled, ivy-wrapped arch stands at each end of the street, with the route's name written on its hanging board.
+- **Orchard Row.** South of the plaza: three homes (thatched, mossy, blue slate), an orchard of apple trees with ladders, washing lines, barrels, an apple cart by the street, two more villagers, and a fourth home by the east arch. A test now checks that nothing solid is built on a town lane.
+- **The ancient tree** is a golden oak with a round, rooted trunk, and **Hollowbough itself sleeps in the lair** (it was a brown block).
+- **A catch, played through on the new map:** the coach says "It is tired now. Time to throw!", LASSO pulses, and the "New friend" card shows the creature, its type, its line and where it went. With one kind of lasso the throw starts at once (it used to open a large empty list); with several, the list is only as tall as its rows. The card's picture and words now grow with the screen.
+- **The Creatures strip works:** dark silhouettes with "?" for species not yet met, the painted creature once owned.
+- **The starter pick can no longer appear a second time** once a friend has been chosen.
+- **Where a catch goes:** the card now says "Waiting in Creatures. Open it to add your new friend to the team." The server puts a catch on the team only when the team is empty; see the question below.
+
+**Third pass, the same day (seen in Studio):**
+- **The Creatures screen is cards, not rows.** A team row of large cards (picture on its type's colour, name, level, type tag, health bar) with dashed empty slots; the stable as a grid of smaller cards below; tap a card and a panel on the right shows it large with its line of character and its actions (To team or Off team, Tonic, Breed, Release). Pens and candy are small chips in the header. Everything the old screen did is still there (`src/client/Creatures/`, eight small modules).
+- **Dialogue shows who is speaking:** a name tab on the top edge of the box and, for the mentor, the rival, the shopkeeper and signs, their face in a frame (`src/client/Story/SpeakerFace.luau`). Other speakers have the tab only, until each has a face of their own.
+- **The lasso throw is a rope:** a tan rope with a green stretch and a ring that slides along it and swells over the green. Each tap leaves a mark where it fell. It sits along the bottom of the screen so both creatures stay in view.
+- **Hedges are rows of tall flowering bushes** standing shoulder to shoulder (they were green boxes with bushes on top), using a fifth fewer models.
+- **A wall of tall trees stands behind the gatehouse,** so the next land cannot be seen until the road opens.
+- **Names in the world are small cream plates** that shrink with distance and are not drawn from far off (they were white letters floating at one size, piling up on screen).
+- **Every species has a painted model now:** the last two Tide Flats creatures, all eight Mire creatures, and the giants Mesalith, Carrackon and Sloughback.
+- **Phone-sized check (874 by 402):** the opening, the starter pick, a battle and the Creatures screen all fit and read well.
+- **The first battle is now a clear win that teaches types.** The rival picked his creature for looks and it loses to yours: your moves show STRONG from the first turn and the fight is won in three turns with health to spare. By the gate he has learned and leads with the one that beats yours (tests only; not yet played in Studio).
+- **The tracker is a small "TO DO" page** that grows with its lines.
+
+**Still wrong:**
+- Dust Canyon, Tide Flats and the Mire still use the old generated layout. The first two are designed (`docs/plans/09_DUST_CANYON_MAP.md`, `10_TIDE_FLATS_MAP.md`) and being built.
+- Only four speakers have faces.
+- Moatkeep's model reads as a sandcastle more than a creature, and Fenwhisk carries a flag for a tail. Both may want another try.
+
+**Not checked:** the "Day one" card; the catch card, the lasso and the Creatures screen at phone size (the Creatures screen has not been seen with a full team or a full stable); walking times; frame rate with about 800 hedge bushes and 300 trees.
+
+**Waiting for Ayrton (nothing is built until a yes):**
+1. **Move the first catch earlier** (plan 07, package 6): tame a creature before the first tamer, not after. It changes the story order.
+2. **Nicknames** for creatures: needs a save change and Roblox's text filter.
+3. **A "pick one of two" gift** from the mentor, and the Hollow Log's spawn table.
+4. **Painted models against the brief's art rule.** The brief locks "low-poly, flat colours". You said you like the painted clay models, so I am treating that rule as replaced. Say if that is wrong.
+5. ~~A caught creature should join the team when there is room.~~ Done 23 November (yes from Ayrton).
+6. **A name.** My pick is **Patchlings** for the creatures and **"Patchlings: Thistledown"** for the game; runner-up **Quiltlings**. Neither has been cleared legally (`docs/research/games/09_NAMES.md`).
+
+**To playtest:** start a new game on the new map. Does the town feel like a place? Is it clear where to go? Does the first battle feel won?
+
+## 23 November 2026 (overnight: a nostalgic, homely look with real models)
+
+**In one line:** Ayrton, before going to sleep: the town "looks like it was made using 2002 software, the gui is bland and the creatures dont have any sort of recognisable feel... it needs to have some great nostalgic feel, a homely feel". Overnight the screens became those of an old handheld creature game, the creatures became real painted models, and the town became a storybook village. Checked in Studio; the full check passes.
+
+**About Project Pokemon's source:** no legitimate open-source release was found, and it could not be used anyway: its creatures and art are Nintendo's (Pokemon Brick Bronze was removed from Roblox in 2018 for this), and our own rule is original content only. Its layout ideas are followed; nothing of it is copied.
+
+| Changed | How | Where |
+| --- | --- | --- |
+| **Screens like an old handheld game** | Warm cream boxes with a thick ink border, ink text, a pixel typeface for names, titles and buttons | `src/client/UI/Kit.luau` |
+| **The classic battle menu** | A text box ("What will Sloshcalf do?") beside FIGHT / LASSO / ITEMS / SWITCH / RUN; FIGHT swaps both for the four moves, with BACK | `BattleView.luau` |
+| **Dialogue types itself out** | A letter at a time with a soft tick; pressing NEXT mid-line shows the rest | `StoryView.luau` |
+| **A face beside every name** | Each creature stands on its starter card and beside its name in the Creatures list | `src/client/Creatures/Portrait.luau` |
+| **Real creature models** | The eight Greenwood creatures are painted models with a clay-toy look, made with Roblox Studio's own model generator from the Look written in each species file. They load by asset id; the sphere sketches remain as the fallback | `src/content/CreatureModels.luau`, `ToyBody.luau` |
+| **A storybook village** | A thatched cottage, a red-roofed shop with an awning, a healer's house, two kinds of tree, a bush, a lamp post, a well, and four villagers (mentor, rival, shopkeeper, tamer), made the same way. The square is a village green with a round plaza | `src/content/PropModels.luau`, `src/server/World/Dressing.luau` |
+| **Birdsong** | A quiet loop from Roblox's licensed sound library, quieter during battles | `src/client/Audio/Ambience.luau` |
+
+Every outside or generated asset is in `docs/ASSETS.md`.
+
+**For Ayrton to know:**
+- The creature and town models were generated in your Studio, so they are assets on your Roblox account (192240344). The game loads them by id.
+- **No music yet.** I searched Roblox's free audio but cannot listen to a track, and will not put music I have not heard into a children's game. Tracks need choosing by ear.
+- All tamers share one villager model, and all keepers share the shopkeeper's. More villagers are an easy next step.
+- Creatures outside Greenwood still use the plain sphere bodies.
+- Gorsling's model came out more frog-like than the "whip-thin hedge runner" its Look describes. It is charming; it may want another try.
+
+**Not checked:** the other three biomes with the new scenery; the phone-sized view with the new screens; frame rate on a real phone (each painted tree is far heavier than a plain one; the scatter was thinned to allow for it); the lasso, shop and giant screens in the new look (they are built from the same kit, but were not opened).
+
+**To playtest:** start a new game. Do the starter cards, the town and a first battle feel nostalgic and homely now? Which creature models do you like, and which should be redone?
+
+## 23 November 2026 (soul: creatures with faces, a town with life)
+
+**In one line:** Ayrton on the restaged battle: "really blocky and soulless, we need soul here". The creatures now have their own bodies and faces and are alive while they stand there, and the town has light, cottages, people and greenery. Checked in Studio; the full check passes. All of it is built in code from rounded shapes: nothing bought or uploaded.
+
+| Added | Where |
+| --- | --- |
+| **Creatures you can see.** Mossmitt, Sloshcalf, Spadesnout, Gorsling and Stumpwarden each have their own body, drawn from the "Look" written in their species file (Mossmitt's moss mitts and clover tuft, Sloshcalf's pond bubble and lily-pad ears, Spadesnout's trowel snout and claws). Every other species gets a plain body for its body plan in its type's colour | `src/client/Creatures/ToySketches.luau` |
+| **They are alive.** Each one breathes, sways and blinks, out of step with the others. Eyes have a glint | `src/client/Creatures/ToyBody.luau` |
+| **In battles and in the world.** The battle scene uses them (lunge, flash, shake, sink). Wild creatures on the routes are these bodies too, not white balls; rarity is now the colour of the name over them | `BattleStage.luau`, `WorldView.luau` |
+| **Bystanders step aside.** A person or signpost standing where the battle is staged is hidden for its length, on that player's screen only | `BattleStage.luau` |
+| **Light.** Warm afternoon sun, a soft haze, drifting clouds, a little more colour | `src/server/World/Dressing.luau` |
+| **A town.** Cottages with pitched roofs (a colour for each kind of building), doors, windows and window boxes; lamp posts and flower beds round the square; people with heads, hair and coloured shirts | `Dressing.luau`, `TestMap.luau` |
+| **Greenery.** Trees, bushes, rocks and flowers along every route and round every town, different in each biome, always the same for the same biome. Scenery never blocks a path | `Dressing.luau` |
+| Name signs: keepers known only by an id no longer wear it; the rival's sign says "Rival" | `TestMap.luau` |
+
+**Still stand-ins:** these bodies are toys made of spheres, not the final part meshes; breeding does not yet mix their parts on screen. The world is still the test map underneath.
+
+**Not checked:** routes and the other three biomes with the new scenery (only the first town was looked at); the phone-sized view; frame rate on a real phone (about 400 more parts per biome).
+
+**To playtest:** walk the town and Route A, fight a wild creature and the rival. Does it have the feeling you want now? Which creature do you like most and least?
+
+## 23 November 2026 (the battle restaged in the classic style)
+
+**In one line:** Ayrton saw the first arcade restyle and said it "looks really AI generated", and to follow Project Pokemon's style. The battle is now a scene in the world, staged the way that game stages it, and every screen has a plainer, flatter look. Checked in Studio; the full check passes.
+
+**What was taken from Project Pokemon** (its battle screens were looked at directly): the two creatures stand on round pads in the world; the camera sits behind the player's own creature with the opponent further off; the health plates are slim, dark and see-through; there is very little else on the screen. These are layout ideas. Nothing of Pokemon's is copied: no creature, name, icon or picture.
+
+| Changed | Where |
+| --- | --- |
+| The battle is a scene: pads, the two creatures, the camera behind yours, the tamer standing to one side. Name signs in the world hide while it shows | `BattleView/BattleStage.luau` (new) |
+| The attacker darts forward; the creature that is hit flashes white and shakes; a fainted creature sinks and fades; the damage floats up from the creature | `BattleStage.luau`, `BattleFx.luau` |
+| Slim health plates beside each creature: name, level, type chip, HP bar and numbers, tempo meter | `BattleView.luau` |
+| No panel behind the buttons, so the scene stays in view | `BattleView.luau` |
+| Every screen: flat dark panels, flat buttons, one bold typeface (Gotham), no outlines, shading or button lips | `UI/Kit.luau` |
+| A smaller result panel | `ResultPanel.luau` |
+
+Kept from the first try: move buttons in their type's colour with STRONG or WEAK, the pale trail on a dropping health bar, the sounds, the speed switch and tap to hurry, the counting result.
+
+**Stand-ins:** the creatures in the scene are round placeholder bodies in their type's colour. Real models (`Assembler.build`) take their place when the part meshes exist.
+
+**Not checked after the last two small changes** (panels made a little more solid, the result panel made smaller): they pass the full check but were not looked at again in Studio. The phone-sized view was not re-run for the new battle layout.
+
+**To playtest:** fight the rival. Does it look and feel closer to what you want? Which parts still look generated?
+
+## 22 November 2026 (two fundamentals taken to finished quality)
+
+**In one line:** the shared look of every screen and the feel of a battle turn are now built properly, in the "toy arcade" direction from the research. Checked in Studio at desktop and phone size; the full check passes. Creatures are still not drawn, so the two battle cards stand in for them.
+
+**1. The look of every screen** (`src/client/UI/Kit.luau`, one file, so every screen changed at once)
+- Panels and buttons have a dark outline and soft top-to-bottom shading.
+- Buttons have a darker lip along the bottom that sinks when pressed and springs back, and a click sound. The lip is the same height on a small button and a big one.
+- Big text has a dark outline so it reads over the world.
+- Bars leave a pale trail for a moment when they drop, so the size of a hit can be seen.
+- One colour per type (`Kit.ELEMENT_COLOURS`), used on move buttons, type chips and the starter pick.
+
+**2. The battle turn** (`src/client/BattleView/`)
+- **Move buttons** are in the colour of the move's type and say STRONG or WEAK against the creature in front of you (`MoveButton.luau`). Players learn the type chart from the buttons.
+- **Creature cards** show name and level, a chip in the type's colour, and health numbers on the bar.
+- **A hit** flashes and shakes the card that was hit, floats the damage up from it, and plays a different sound for a strong, normal or weak hit. A strong hit also shows a big STRONG HIT! (`BattleFx.luau`).
+- **Speed:** a switch for fast battles, and a tap anywhere hurries the turn being shown. Slow battles are the commonest complaint about games of this kind.
+- **The result** is a VICTORY!, CAUGHT! or DEFEATED panel where coins and XP count up and level-ups pop in one at a time (`ResultPanel.luau`).
+- Sounds are eight stand-ins that ship inside Roblox (`src/client/Audio/Sfx.luau`, logged in `docs/ASSETS.md`).
+
+Everything shown is the server's own result, played back. Nothing here changes a rule, a number or what is saved.
+
+**Not done, on purpose:** the over-the-shoulder battle camera and anything that needs creature models; the lasso screen; the speed switch is not remembered between visits (remembering it touches saving).
+
+**To playtest:** fight the rival and a few wild creatures. Does a hit feel like a hit? Is normal speed too slow, or fast too fast? Do the type colours and STRONG / WEAK help? Try it on a phone.
+
+## 22 November 2026 (the longer Studio run and a phone-sized check)
+
+**In one line:** chapter 1 was played through to the Acorn Badge in Studio, then the shop, crafting, breeding, daily tasks, the giant (fight and capture) and the road into Dust Canyon. All of it works; the server logged no errors in about 60 battles. Eight screen fixes came out of it, half of them for phones. The full check passes.
+
+**How it was played:** by hand through the story's first beats, then with a test script that sends the same messages the screens send (pick the strongest move, heal at the healer), so the server judged everything as it would for a player. Reaching the gate took 39 battles and about 21 minutes of play time; the first try at the gate (team at 12 to 14) was lost narrowly, the second (14 to 15) was won.
+
+| Worked as designed | Notes |
+| --- | --- |
+| Story beats 1 to 13, the Acorn Badge, the sealed road, chapter 2's first two beats | "The tree that walks" fires a few steps past the meadow's signpost, not at it |
+| Shop: buy, refuse when far away, make a tonic from 3 Fernfluff | |
+| Breeding: cost and odds shown, "Not enough coins" refusal, a real breed, the mentor's egg hatching | Prism covered a 1 Leaf candy shortfall, as designed |
+| Daily tasks appear with the badge; "Breed once" moved to 1/1 | |
+| Giant: refused when far away, horn spent, lost once, won once, capture offer, Braided throw, "Hollowbough No. 1", serial logged | |
+| Dust Canyon: creatures appear with the badge; a level 14 wild battle won | |
+
+| Found | Fix | Where |
+| --- | --- | --- |
+| The Creatures list was torn down and rebuilt every second while an egg was in a pen, so a tap could land on a button that had just been replaced | The egg timers now update only the top lines | `CreaturesView.luau` |
+| Daily tasks sat under the creatures, not at the top | Rows are given an explicit order | `CreaturesView.luau` |
+| "Not enough coins" was half hidden behind the Creatures panel | Notices have their own layer above every screen | `CreaturesView.luau` |
+| The shop stayed open over a battle (it sits above the battle screens) | The shop closes when a battle or giant fight starts | `ShopView.luau` |
+| Shop text showed notes meant for us ("BreedConfig.CHARM_CHANCE", "Trivially cheap, so catching is never blocked") and "CanyonGrit" | Four descriptions rewritten for players; materials shown with a space | `EconomyConfig.luau`, `ShopView.luau` |
+| On a phone-sized screen the "You won" box had a 30 px Continue button, and a long reward list ran over it | Taller box, text that shrinks to fit, a 48 px button | `BattleView.luau` |
+| A world prompt ("Battle Rival") was drawn right over the Continue button, and E could start things behind an open screen | Prompts hide while any screen is open | `Main.client.luau` |
+| Buttons under finger size on a phone: dialogue Next (34 px), Creatures (36), Close (32 to 34), the row buttons (36), Clear (30) | All 40 px or more | `StoryView.luau`, `CreaturesView.luau`, `ShopView.luau` |
+
+**Phone-sized check (874 x 401, an iPhone 17 Pro's size):** starter pick, dialogue, tracker, battle, the result box, Creatures and Shop all fit with no cut-off text. Not covered: real finger taps (the Studio tool could not tap reliably in touch mode, so the check was driven by mouse at phone size); play on a real phone.
+
+**Could not be tested here:**
+- The off-switches (`shop_open` and the others): Roblox's ConfigService does not load in an unpublished place, so `SetTestingValue` has nothing to act on. The game stays open, as designed. Test after the first publish.
+- Tide Flats and beyond (needs the Cairn Badge: all of chapter 2).
+- Saving (Studio uses the in-memory mock).
+
+**For Ayrton to judge (nothing changed; listed in `docs/DECISIONS.md` under Still open):**
+- The giant is very tight for a team at the cap: lost with 75 of its 1,150 health left using no items, won with 2 health left on the last creature using all 5 items.
+- XP keeps building at the level cap and is paid out at once when the badge lifts it (15 to 19 in one battle).
+- The mentor's "Welcome! Pick the one that feels right" shows after the pick, because the pick screen covers it.
+- Talking to Tuppence opens her story lines over the open shop.
+- The breed strip says "candy: 2 Leaf" and does not say Prism covers a shortfall.
+- A giant fight does not stop the player walking away (a normal battle does).
+
+**Later the same day, four of those six were fixed** (Ayrton: "Keep going"), checked in Studio, and the full check passes:
+- The mentor's welcome line is now on the pick screen itself, not said after the pick (`StoryView.luau`).
+- The shop waits behind Tuppence's story lines and shows when the last one is read (`ShopView.luau`).
+- The breed strip says how much of the candy will be paid in Prism (`CreaturesView.luau`).
+- A giant fight stops the player walking away, through one shared lock (`src/client/UI/MovementLock.luau`, used by the battle screen too).
+
+Left alone on purpose: the giant's difficulty (Ayrton decided on 22 November that giants stay strict) and XP building up at the level cap (it is the written rule in `src/shared/Xp.luau`, with tests: nothing is lost at the cap).
+
+**Research:** three agents studied successful games of this kind. Their reports are in `docs/research/games/` (structure, art style, menus), with a one-page summary in `00_REPORT.md`. Nothing in them is decided.
+
+**To playtest:** as below, with the newest fixes. On a phone, check that every button is easy to hit.
+
+## 22 November 2026 (the first run in Roblox Studio)
+
+**In one line:** the game has now run in Studio for the first time. Steps 1 to 12 of `docs/STUDIO_FIRST_RUN.md` all work after seven fixes; the full check passes. It is still the grey-box test build (boxes for buildings, balls for creatures): no art yet.
+
+**How it was run:** the Rojo plugin is not installed in Studio, so the project was built to `build/creature-game.rbxlx` (`rojo build default.project.json -o build/creature-game.rbxlx`) and opened as its own Studio window. Fixes were pushed into that window script by script. To get live sync instead, install the plugin (`rojo plugin install`, restart Studio, press Connect).
+
+| Found in the run | Fix | Where |
+| --- | --- | --- |
+| **No creature could be caught.** Every lasso tap was thrown out as "too early for the server clock": taps arrived 63 to 66 ms behind a 48 ms lag reading | 120 ms of slack on the early side of the lag window. Independently reviewed: safe (see `docs/REVIEWS.md`) | `src/shared/Lasso.luau`, `src/config/LassoConfig.luau` |
+| Winning the first rival battle sent the player to the healer as if they had lost (both creatures fell on the last turn) | The healer check runs after a win is paid and mended, not before | `src/server/Battle/BattleFlow.luau` |
+| The Creatures screen opened empty | Opening and filling it are one step | `src/client/Creatures/CreaturesView.luau` |
+| The player could walk away mid-battle; a long-grass battle followed them into town | Movement is off while the battle screen is open | `src/client/BattleView/BattleView.luau` |
+| Story dialogue sat on top of the moves and the "You won!" panel; the tracker sat under the foe's card | Both wait until the battle screen closes | `src/client/Story/StoryView.luau` |
+| Waking at the healer put the player on the healer's head | Lands six studs to the town side | `src/server/World/WorldService.luau` |
+| The win panel said "+0 coins" for the rival and never showed XP | Shows coins only when paid, and the XP gained | `src/client/BattleView/BattleView.luau` |
+
+Also: the grey test panel now starts closed behind a small "Test" button (it covered a third of the screen), and has an "Auto tap" button that taps the lasso for you, for testing catches.
+
+**Checked and fine:** the tree Rojo builds; the Blink messages on both sides; the starter pick; story beats and gifts; wild, long-grass and tamer battles; switching in after a faint; the healer; losing and waking in town; the two prompts at a rustle spot do not overlap; the mock save starts fresh each Play.
+
+**Not checked yet:** a phone-sized screen; the shop, breeding, the giant, daily tasks and the later biomes (section 4 of the guide, about 50 minutes of play); the off-switches (they log "SwitchesUnreachable" in an unpublished place, as expected, and the game stays open).
+
+**For Ayrton:** play it in the Studio window named `creature-game.rbxlx`. One thing to decide is in `docs/DECISIONS.md` under Still open (the lasso window for slow connections).
+
+## 21 November 2026 (the Mire roster, poison, live switches)
+
+**In one line:** the fourth biome's eight creatures now exist as data, with the first poisoning moves; nothing in the three launch biomes changes. The full check passes. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Mire roster: eight species (six Toxic, two Water), 23 moves, four of them poisoning | Balanced and tested (190 roster checks, 22 known gaps noted). Data only: no biome spawns them yet | `src/content/species_data/`, `docs/content/MIRE_ROSTER.md` |
+| Poison in the battle rules: a twelfth of health a turn for four turns; Toxic creatures are immune | Tested (23), reviewed | `src/shared/Battle.luau` |
+| Thirteenth independent review (poison, switches, analytics) | Done: no must-fix; six smaller fixes made | `docs/REVIEWS.md` |
+| A new live off-switch for releasing creatures | Tested | `src/config/LiveConfig.luau` |
+
+**What to know:**
+
+1. Inside the Mire, poison barely moves the balance, because most Mire creatures are immune. Against the creatures a player brings from the launch biomes it is strong. Whether to soften it is in `docs/DECISIONS.md` under Still open.
+2. Mixing all four biomes one-on-one is less balanced than three (the best bred creature wins 81 to 85% of fights, against a target of 70%). The cause is the type chart, and it is recorded as a known gap, not hidden.
+3. One Mire species was renamed (to Keelsnap) because its first name was too close to a creature in another game. All names remain placeholders.
+
+**The Mire's world** is also written (22 November): the village of Sedgeholm, two routes, five tamers with teams of four, the rival, champion Honora Vell at the gate, the giant Sloughback, a quest line and chapter 4. Twelve robot players finish all four biomes when it is opened in a test. It is **closed in the live game** by one number, `OPEN_BIOMES` in `src/config/ReleaseConfig.luau` (3 at launch), and a test checks nothing from it leaks into the open biomes. Opening it needs its map and art in the place first. Details: `docs/content/MIRE_WORLD.md`.
+
+## 21 November 2026 (Tide Flats, and robots that play the whole game)
+
+**In one line:** all three launch biomes can now be played end to end on the server, and twelve robot players prove it on every check: each one plays from the starter pick to the third badge through the real rules. 1,910 checks pass. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Tide Flats: the town of Saltwick, two routes, five tamers, Captain Marr mid-biome, the rival at the gate, the giant Carrackon and its creature form, a bait quest line, chapter 3 | Tested (356). Data only | `src/content/`, `docs/content/TIDE_FLATS_WORLD.md` |
+| Robot players: twelve play the whole story with different luck; all must finish, inside the pacing targets | New test | `tests/playthrough.test.luau` |
+| The rival's first battle truly cannot be lost: the player's last creature holds on with 1 health | Tested, reviewed | `src/shared/BattleSession.luau` |
+| Levelling about three times quicker; gates one level easier | Changed after the robots' findings | `src/config/ProgressionConfig.luau`, `docs/DECISIONS.md` |
+| Twelfth independent exploit review (the unlosable battle) | Done: one must-fix, fixed | `docs/REVIEWS.md` |
+| Analytics: the first-session funnel, coins and candy in and out, counts of catches, hatches and lost battles | Written and tested as rules; only sends from a published game | `src/shared/AnalyticsMap.luau`, `src/server/Analytics/` |
+| Live off-switches for the shop, breeding, giants and daily claims | Written and tested as rules; not yet run in Studio | `src/config/LiveConfig.luau`, `src/server/LiveConfig/` |
+| The "biome reached" rule for teams | Tested | `src/shared/Team.luau` |
+
+**What the robots found** (each was a real problem, now fixed):
+
+1. Two of the three starters lost the "cannot be lost" first battle every time.
+2. Three biomes took about 14 hours of battling, against a plan of 4 to 5 hours in all. Now about two and a half hours of battling.
+3. Most robots could never pass the Dust Canyon gate, even at full level with tonics. Now every robot passes every gate within three tries, and about half of story battles are still lost first time.
+4. With lasting damage, a player who always leads with the same creature walks to the healer after almost every wild battle. Rotating the healthiest creature to the front fixes it, and the mentor now says so when the player first steps onto Route A.
+
+**To try in Studio:** play Greenwood from the start and note the time when you win the Acorn Badge (the plan says within an hour), and whether the rival at the gate feels fair. Then say whether levelling feels too quick, too slow or right.
+
+**Still to build on the logic side:** purchases (after pack 5); trading and the Circuit (after launch, per the plan).
+
+## 21 November 2026 (Dust Canyon and the multi-biome world)
+
+**In one line:** two biomes can now be played end to end on the server: Greenwood, then Dust Canyon, with its own town, routes, tamers, giant, quests and story chapter. 1463 checks pass. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| The world across biomes: layout, gating by badge, shops and healers in every town, Waystation travel | Tested, reviewed | `src/shared/Layout.luau`, `src/server/World/` |
+| Dust Canyon: town, two routes, five tamers, gate champion, rival appearance, giant Mesalith and its creature form, quest line, chapter 2 | Tested (345). Data only | `src/content/`, `docs/content/DUST_CANYON_WORLD.md` |
+| Gem-tier wild creatures with serial numbers | Tested, reviewed | `src/shared/Grants.luau`, `src/server/Serials/` |
+| Stable room for coins; the lasso timing audit | Tested, reviewed | `src/shared/Shop.luau`, `src/server/Capture/` |
+| Tenth independent exploit review | Done: two must-fix (rewards and fights in a biome not yet earned), fixed | `docs/REVIEWS.md` |
+| Approval pack 5: purchases | **Waiting for Ayrton** | `docs/plans/05_PURCHASES.md` |
+
+**To try in Studio:** earn the Acorn Badge, walk east past the Greenwood gate along the sealed road to Kilnrest, and check that Dust Canyon's creatures only appear once you hold the badge. Talk to a Waystation keeper to jump back to Thistledown.
+
+**Still to build on the logic side:** Tide Flats (roster, world, bait); purchases (after pack 5); trading and the Circuit (after launch, per the plan).
+
+## 21 November 2026 (giant capture)
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Hollowbough as a creature of its own, with two signature moves | Tested | `src/content/species_data/Hollowbough.luau` |
+| One capture throw after a giant win; the serial number steps; once per player | Tested (51), reviewed | `src/shared/GiantCapture.luau`, `src/server/Giants/`, `src/server/Serials/` |
+| Giant Candy and breeding from a captured giant | Tested, reviewed | `src/shared/Breeding.luau`, `src/shared/Rewards.luau` |
+| Daily tasks: three easy, three harder, from the first badge | Tested (22), reviewed | `src/shared/DailyProgress.luau`, `src/server/Daily/` |
+| Eighth independent exploit review (giant capture) | Done: no must-fix; four should-fix, all fixed | `docs/REVIEWS.md` |
+
+1068 checks pass. **To try in Studio:** buy a Giant Horn and a Braided Lasso, walk to the lair past the stall on Route B, wake Hollowbough and win. A panel offers one throw: three loops. On a hit, "Hollowbough No. 1 is yours!" should appear and it should be on the creatures screen.
+
+**Still to build on the logic side:** running the scripted-tapping audit over each player's lasso throws; the Dust Canyon and Tide Flats worlds (routes, tamers, giants, quests, story); purchases (approval pack still to write).
+
+## 21 November 2026 (after Ayrton's answers): lasting damage, the healer, long grass
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Damage lasts between battles; the free healer; waking at the healer when the team faints; tonics between fights | Tested (28), reviewed | `src/shared/Health.luau`, `src/shared/BattleSession.luau` |
+| Long grass in every stretch of route (battles you did not choose), beside the creatures you can see | Tested, reviewed | `src/shared/Encounters.luau`, `src/server/World/` |
+| Seventh independent exploit review | Done: no must-fix; four should-fix, all fixed | `docs/REVIEWS.md` |
+
+**To try in Studio:** walk through a "Long grass" patch beside a route and a battle should start by itself. Get hurt, then check the creatures screen shows the lost health and a Tonic button; talk to the healer at Brightwater House to mend everyone; lose a battle with your whole team and you should wake at the healer.
+
+## 21 November 2026 (latest): giants, the shop, real screens
+
+**In one line:** Greenwood can be played from the first minute to the badge, with wild creatures, tamers, the rival, quests, the shop, breeding and the giant fight, on real (first-cut) screens. 958 checks pass. **None of it has run in Roblox Studio yet.**
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Giant fights: horn, turns, items, rewards, giving up; the giant quest | Tested (31), reviewed | `src/shared/GiantSession.luau`, `src/server/Giants/` |
+| Choosing the team; story gates on breeding and the shop | Tested (12) | `src/shared/Team.luau`, `src/shared/World.luau` |
+| Screens: battle, lasso, giant fight, shop, creatures (team, breeding with cost and odds, eggs, release), a coin and candy bar | Type-checked. **Not yet seen in Studio**: expect layout fixes | `src/client/` |
+| Sixth independent exploit review (giants) | Done: one must-fix (saved-up cheap horns), fixed | `docs/REVIEWS.md` |
+| Approval pack 4: what a captured giant is | **Waiting for Ayrton** | `docs/plans/04_GIANT_CAPTURE.md` |
+
+**First thing to do in Studio** (with Claude Code and the Studio MCP on the laptop): `rokit install`, `wally install`, `lune run check`, then press Play and walk the list under "What Ayrton can playtest" below. Expect the first run to turn up errors that only Roblox can show (anything about parts, prompts, screens and data stores); the rules underneath are tested.
+
+## 21 November 2026 (later): a world to walk in, tamers, the rival, quests
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Map layout generated from the biome data, and a grey-box Greenwood built from it | Tested; the map itself not yet seen in Studio | `src/shared/Layout.luau`, `src/server/World/TestMap.luau` |
+| Each player's own wild creatures on the routes, rustle spots, position checks | Tested (32), reviewed | `src/shared/Encounters.luau`, `src/server/World/WorldService.luau` |
+| Tamers and the rival's two story battles, with rewards | Tested (27), reviewed | `src/shared/Trainers.luau`, `src/shared/Rewards.luau` |
+| Story triggers confirmed by the server (place, win, catch, talk) | Tested, reviewed | `src/shared/StoryTriggers.luau`, `src/server/Story/` |
+| Quests: take, count, hand in; Greenwood's five quests | Tested (26), reviewed | `src/shared/QuestProgress.luau`, `src/server/Quests/` |
+| Gift paying shared by the story and quests | Tested | `src/shared/Gifts.luau` |
+| The shop (lassos, tonics and the rest, for coins) and items in battle | Tested (24), reviewed | `src/shared/Shop.luau`, `src/server/Inventory/` |
+| The battle screen and the lasso screen (health bars, moves with their damage, lasso, items, switch, run) | Type-checked. **Not yet seen in Studio**: expect layout fixes | `src/client/BattleView/`, `src/client/Lasso/LassoView.luau`, `src/client/UI/Kit.luau` |
+| Fourth and fifth independent exploit reviews (the world; quests, shop, items) | Done: no must-fix; every should-fix fixed | `docs/REVIEWS.md` |
+
+**What Ayrton can playtest in Studio now:** press Play. A grey-box Greenwood is built: the town square, Route A to the west, Route B to the east. Walk west along the path: wild creatures (coloured balls with name tags) stand by it; walk up to one and press the prompt to battle. The whole of chapter 1 can be played in order: beat the rival in the square, walk onto Route A, beat Pip, reach the clover meadow, talk to the mentor, catch a creature, talk to the shopkeeper (who also gives the first quest), reach the gate, beat the rival there, walk on past the gate. Battles now open their own screen (moves, lasso, items, switch, run); the grey test panel on the left stays as a log and a fallback.
+
+## 21 November 2026: rewards, the story, releasing, and a Studio test panel
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Battle rewards: coins with the daily falloff, the biome's material, XP shared across the team | Tested (15), reviewed | `src/shared/Rewards.luau` |
+| Story beats: the starter pick and every chapter 1 gift (lassos, creatures, the mentor's egg, pens, Prism, the badge), paid once and whole | Tested (25), reviewed | `src/shared/StoryProgress.luau` |
+| Releasing a creature | Wired, reviewed | `src/server/Main.server.luau` |
+| The player's state sent to the device (coins, candy, creatures, eggs, story) | Tested (7) | `src/shared/Snapshot.luau`, `src/server/State/` |
+| Device side: answers pings, keeps the state, plays the lasso sweep | Type-checked | `src/client/` |
+| Studio-only test panel: wild battle, moves, run, lasso with a live bar (Space to tap), next story beat, a log | Type-checked. Grey boxes on purpose | `src/client/Debug/TestPanel.luau` |
+| Third independent exploit review | Done: 2 should-fix and 5 notes, all fixed | `docs/REVIEWS.md` |
+
+**What Ayrton can playtest in Studio now:** press Play. You get Mossmitt as your starter through the real story path. The panel on the left shows your coins, lassos and creatures. Press "Wild battle", fight with "Move 1" to "Move 4", or press "Throw Basic" and tap Space when the white marker is inside the green zone. Check that a catch adds a creature and candy, a win pays coins, and "Next beat" walks through chapter 1 (lassos, the mentor's egg, which hatches in 3 minutes).
+
+## 20 November 2026: saving, catching and breeding on the server
+
+**In one line:** the server side of saving, catching and breeding is written, type-checked, tested where it is pure, and reviewed. It has not run in Studio yet.
+
+| Piece | State | Where |
+| --- | --- | --- |
+| Saving: one locked profile per player (ProfileStore), a test store until launch, upgrades on a copy, broken saves refused untouched | Written, reviewed | `src/server/Data/DataService.luau`, `src/config/ProfileConfig.luau` |
+| Creature grants: one-time gifts, a waiting list when the stable is full, two-step giant captures, release payouts | Tested (37), reviewed | `src/shared/Grants.luau` |
+| Typed candy (Ayrton's Pokémon-style idea): catching and releasing pay candy of the creature's type; each parent in a breed pays its own type | Tested | `src/shared/Economy.luau`, `docs/DECISIONS.md` |
+| Lasso throw rules: lasso spent first, judged on the server's clock, impossible taps count as misses, rare creatures flee | Tested (23), reviewed | `src/shared/Capture.luau` |
+| Network messages for catching, ping and breeding | Compiled | `src/net/Net.blink` |
+| Capture service, round-trip meter, breed requests, hatching, server start-up | Written, type-checked | `src/server/Capture/`, `src/server/Main.server.luau` |
+| Second independent exploit review | Done: 1 must-fix and 4 should-fix, all fixed | `docs/REVIEWS.md` |
+
+743 checks pass.
+
+**What Ayrton can playtest once Studio is set up:** join in Studio (you get a test Mossmitt), start a wild battle (Studio gives a Greenwood creature), throw a Basic lasso, tap the zones. Then check: a good throw catches and pays candy; a bad one spends your turn; leaving and rejoining keeps the creature. There is no on-screen battle or lasso yet, so for now this is driven from the command bar.
+
+**Next:** the release and starter-pick services, battle rewards, then the client screens for battle and lasso.
+
 ## 16 November 2026: from plan to a working project
 
 **In one line:** the game's rules now exist as tested code in a real project structure. Nothing has been built in Roblox Studio yet, and the next steps need Ayrton's laptop.
@@ -14,12 +496,12 @@ What changed, and what Ayrton should do or look at next. Newest first.
 | Breeding rules | Tested (31 checks) | `src/shared/Breeding.luau`, `Stats.luau` |
 | Battle rules and the type chart | Tested (10) | `src/shared/Battle.luau`, `TypeChart.luau` |
 | Opponent behaviour: wild, tamer, rival | Tested (10) | `src/shared/BattleAi.luau` |
-| Giant fights and the first giant, Hollowbough | Tested; tuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giants/` |
+| Giant fights and the first giant, Hollowbough | Tested; tuned against the real species | `src/shared/GiantBattle.luau`, `src/content/giant_data/` |
 | Lasso catching | Tested (51) | `src/shared/Lasso.luau` |
 | XP, levels and level caps | Tested (43) | `src/shared/Xp.luau` |
 | Saved data: shape, safe upgrades, checks | Tested (54). Nothing saves yet | `src/shared/Profile.luau` |
 | Economy: every price and reward, with a 30-day simulation | Tested (38) | `src/shared/Economy.luau`, `docs/ECONOMY_MODEL.md` |
-| Greenwood roster: eight species, 24 moves, balanced | Tested (28) | `src/content/species/`, `docs/content/GREENWOOD_ROSTER.md` |
+| Greenwood roster: eight species, 24 moves, balanced | Tested (28) | `src/content/species_data/`, `docs/content/GREENWOOD_ROSTER.md` |
 | Part specification, art test procedure, Studio part validator | Written. **Not yet run in Studio** | `docs/PART_SPEC.md`, `docs/ART_TEST.md`, `tools/studio/ValidateParts.luau` |
 | Server breed flow, creature assembler | Written and type-checked. **Not yet run in Studio** | `src/server/Breeding/`, `src/client/Assembler/` |
 | Approval packs 1 and 2 | Waiting for Ayrton | `docs/plans/` |

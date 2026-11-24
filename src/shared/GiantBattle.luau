@@ -6,7 +6,7 @@
 -- its patterns are fixed lists, so a second attempt is a better plan and not a re-roll.
 -- Damage uses the game's formula and type chart (Battle.previewDamage, TypeChart) with the small
 -- PvE variance from the seed, so a fight replays from its seed and the player's action list.
--- Everything about a giant is data (see src/content/giants); this file has no giant-specific code.
+-- Everything about a giant is data (see src/content/giant_data); this file has no giant-specific code.
 
 local Battle = require("./Battle")
 local BattleConfig = require("../config/BattleConfig")
@@ -44,6 +44,16 @@ export type Phase = {
 
 export type Enrage = { startTurn: number, step: number }
 
+-- What the giant is once a player has captured it: an ordinary-sized creature of its own
+-- species (flagged `giantForm`), strong through its rarity, that fights like any other.
+export type GiantForm = {
+	species: string,
+	rarity: Types.Rarity,
+	level: number,
+	colour: string,
+	size: number, -- it looks bigger than other creatures; giants are exempt from the size range
+}
+
 export type GiantDef = {
 	id: string,
 	name: string,
@@ -53,6 +63,7 @@ export type GiantDef = {
 	attacks: { [string]: GiantAttack },
 	phases: { Phase },
 	enrage: Enrage?, -- falls back to GiantConfig when missing
+	form: GiantForm?, -- nil for a giant that cannot be captured
 }
 
 -- An item is a named effect the caller passes in; the item list and prices live elsewhere.
@@ -331,7 +342,7 @@ local function playerActs(state: State, action: Action)
 	local me = state.team[state.active]
 	if action.kind == "Switch" then
 		state.active = action.to
-		note(state, `{state.team[action.to].creature.id} takes the front`)
+		note(state, `{state.team[action.to].creature.parts.Torso.species} takes the front`)
 	elseif action.kind == "Item" then
 		local target = state.team[action.target]
 		state.itemsUsed += 1
@@ -341,14 +352,14 @@ local function playerActs(state: State, action: Action)
 		else
 			target.hp = math.max(1, math.floor(target.stats.Hp * action.effect.share))
 		end
-		note(state, `{action.name} on {target.creature.id}`)
+		note(state, `{action.name} on {target.creature.parts.Torso.species}`)
 	else
 		local damage = math.max(
 			1,
 			math.floor(Battle.previewDamage(me, state.boss, action.move) * variance(state))
 		)
 		state.boss.hp = math.max(0, state.boss.hp - damage)
-		note(state, `{me.creature.id} uses {action.move} for {damage}`)
+		note(state, `{me.creature.parts.Torso.species} uses {action.move} for {damage}`)
 		-- A weak-point hit while the big attack is charged interrupts it.
 		local charged = state.charged
 		local element: Types.Element = Moves[action.move].element
@@ -368,7 +379,7 @@ local function hit(state: State, target: Fighter, attackId: string, share: numbe
 	target.hp = math.max(0, target.hp - damage)
 	note(
 		state,
-		`{state.giant.name}'s {state.giant.attacks[attackId].name} hits {target.creature.id} for {damage}`
+		`{state.giant.name}'s {state.giant.attacks[attackId].name} hits {target.creature.parts.Torso.species} for {damage}`
 	)
 end
 
@@ -451,7 +462,7 @@ function GiantBattle.step(state: State, requested: Action)
 	giantActs(state)
 	for index, fighter in state.team do
 		if standing[index] and fighter.hp == 0 then
-			note(state, `{fighter.creature.id} faints`)
+			note(state, `{fighter.creature.parts.Torso.species} faints`)
 		end
 	end
 	if state.team[state.active].hp == 0 then

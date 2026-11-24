@@ -1,6 +1,6 @@
 # Approval pack 2: how creatures come into existence
 
-Date: 16 November 2026. For: Ayrton. Status: **waiting for approval**. Nothing in this pack is built yet, except the lasso timing rules, which only judge a tap and grant nothing. Revised the same day after an independent exploit review; its findings are in `docs/REVIEWS.md`.
+Date: 16 November 2026. For: Ayrton. Status: **approved by Ayrton on 20 November 2026**, with Claude's recommended answers (see `DECISIONS.md`). Nothing in this pack is built yet, except the lasso timing rules, which only judge a tap and grant nothing. Revised the same day after an independent exploit review; its findings are in `docs/REVIEWS.md`.
 
 Every creature has value, so every way one can appear is listed here with its limits. The Greenwood slice (milestone 3) builds the first of these in memory only; from milestone 4 the same rules write to the saved record. Breeding has its own pack (3).
 

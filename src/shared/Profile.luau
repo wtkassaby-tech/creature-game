@@ -10,8 +10,12 @@
 -- so a change to one is made beside the other.
 
 local BreedConfig = require("../config/BreedConfig")
+local Economy = require("./Economy")
+local FindIds = require("./FindIds")
 local ProfileConfig = require("../config/ProfileConfig")
+local PurchaseConfig = require("../config/PurchaseConfig")
 local Species = require("../content/Species")
+local TypeChart = require("./TypeChart")
 local Types = require("./Types")
 
 export type Egg = { child: Types.Creature, hatchAt: number, seed: number }
@@ -30,11 +34,30 @@ export type Daily = {
 	wildWins: { [string]: number }, -- species name -> wins today, for the diminishing coin rule
 	tasksDone: { [string]: number },
 	claimed: { [string]: boolean },
+	-- Catches and releases already counted today, per type, for the typed candy falloff
+	-- (Economy.catchCandy, Economy.releaseCandy). Saved, so leaving and rejoining cannot reset it.
+	catches: Types.ByElement<number>,
+	releases: Types.ByElement<number>,
+	-- Renewable finds used today (approval pack 7): gathering spots and sighting spots by find id,
+	-- plus the materials gathered today under FindsConfig.GATHERED_KEY. Cleared by Grants.rollDay
+	-- with the other counters, by the server's date only.
+	finds: { [string]: number },
+}
+
+-- One-time finds already claimed (approval pack 7): caches opened, notes read, cairns built and
+-- journal sets paid, by find id. A key is only ever added, never removed or reset, and it is set in
+-- the same step that grants the items. Find ids are permanent (tests/finds.test.luau pins them).
+export type Finds = {
+	once: { [string]: boolean },
 }
 
 -- Something the player has earned but not yet received: a one-time gift waiting for room in the
 -- stable, or a captured giant waiting for its serial number. Saved, so it survives leaving.
-export type PendingGrant = { source: string, ref: string }
+-- A captured giant's entry also keeps its serial number once fetched (`serial`), so the number
+-- is asked for once and never wasted if the giant then has to wait for room.
+-- A wild gem-tier catch waits the same way, and its entry holds the creature itself until then.
+export type PendingGrant =
+	{ source: string, ref: string, serial: number?, creature: Types.Creature? }
 
 export type Settings = {
 	battleSpeed: number,
@@ -43,11 +66,27 @@ export type Settings = {
 	reducedMotion: boolean,
 }
 
+-- What the player has bought with Robux (plan 16). `passes[id] = true` means the pass is owned AND
+-- its one-time effect (stable room, a pen) has been applied to this record, so applying it twice
+-- is impossible. `once` marks one-time products (the Starter Pack); `perks` marks cosmetic flags
+-- granted with them. Keys are only ever added. `receiptIds` is the last few developer-product
+-- PurchaseIds (ProfileConfig.RECEIPTS_REMEMBERED), written in the same step as the grant.
+export type Purchases = {
+	passes: { [string]: boolean },
+	receiptIds: { string },
+	once: { [string]: boolean },
+	perks: { [string]: boolean },
+}
+
 export type Profile = {
 	SchemaVersion: number,
 	Coins: number,
 	Gems: number,
-	Candy: number,
+	-- Typed Breeding Candy, one balance per element, plus Prism Candy that counts as any type.
+	-- This shape replaced a single number on 20 November 2026, before any save had shipped, so
+	-- the template changed directly and no migration was needed (playtest saves are wiped at the
+	-- soft launch). Any change from here on needs a migration.
+	Candy: Types.CandyWallet,
 	Creatures: { [string]: Types.Creature }, -- keyed by creature id
 	Team: { string }, -- creature ids, in battle order
 	Eggs: { Egg },
@@ -59,9 +98,10 @@ export type Profile = {
 	Quests: { active: { [string]: number }, done: { [string]: boolean } },
 	Daily: Daily,
 	Index: { seen: { [string]: boolean }, owned: { [string]: boolean } },
-	Purchases: { passes: { [string]: boolean }, receiptIds: { string } },
+	Purchases: Purchases,
 	Settings: Settings,
 	PlayStats: { firstJoin: number, playSeconds: number, sessions: number },
+	Finds: Finds,
 }
 
 -- A migration upgrades saved data from version N to N + 1, in place.
@@ -71,10 +111,39 @@ local Profile = {}
 
 Profile.CURRENT_VERSION = ProfileConfig.SCHEMA_VERSION
 
--- MIGRATIONS[n] upgrades a save from version n to n + 1. Version 1 is the first, so this is empty.
+-- MIGRATIONS[n] upgrades a save from version n to n + 1.
 -- Every entry added here ships with a test in tests/profile.test.luau.
 local MIGRATIONS: { [number]: Migration } = {}
 Profile.MIGRATIONS = MIGRATIONS
+
+-- Version 1 to 2 (approval pack 7, finds): the claimed one-time finds and today's renewable ones.
+-- Nothing is back-filled: every existing player starts with no finds claimed. Adds only the two
+-- fields and touches nothing else; runs on a copy like every migration.
+MIGRATIONS[1] = function(data: any)
+	if typeof(data.Finds) ~= "table" then
+		data.Finds = { once = {} }
+	elseif typeof(data.Finds.once) ~= "table" then
+		data.Finds.once = {}
+	end
+	if typeof(data.Daily) == "table" and typeof(data.Daily.finds) ~= "table" then
+		data.Daily.finds = {}
+	end
+end
+
+-- Version 2 to 3 (plan 16, purchases): the one-time products bought and the cosmetic perks.
+-- Nothing is back-filled: no existing player has bought anything yet. Adds only the two maps.
+MIGRATIONS[2] = function(data: any)
+	if typeof(data.Purchases) ~= "table" then
+		data.Purchases = { passes = {}, receiptIds = {}, once = {}, perks = {} }
+		return
+	end
+	if typeof(data.Purchases.once) ~= "table" then
+		data.Purchases.once = {}
+	end
+	if typeof(data.Purchases.perks) ~= "table" then
+		data.Purchases.perks = {}
+	end
+end
 
 -- A brand-new player's data. Returns a fresh table every call, so two players never share one.
 function Profile.template(): Profile
@@ -82,7 +151,7 @@ function Profile.template(): Profile
 		SchemaVersion = Profile.CURRENT_VERSION,
 		Coins = ProfileConfig.STARTING_COINS,
 		Gems = 0,
-		Candy = 0,
+		Candy = Economy.emptyWallet(),
 		Creatures = {},
 		Team = {},
 		Eggs = {},
@@ -99,9 +168,18 @@ function Profile.template(): Profile
 			giantsCaptured = {},
 		},
 		Quests = { active = {}, done = {} },
-		Daily = { day = 0, wildWins = {}, tasksDone = {}, claimed = {} },
+		Daily = {
+			day = 0,
+			wildWins = {},
+			tasksDone = {},
+			claimed = {},
+			catches = Economy.zeroByElement(),
+			releases = Economy.zeroByElement(),
+			finds = {},
+		},
+		Finds = { once = {} },
 		Index = { seen = {}, owned = {} },
-		Purchases = { passes = {}, receiptIds = {} },
+		Purchases = { passes = {}, receiptIds = {}, once = {}, perks = {} },
 		Settings = {
 			battleSpeed = ProfileConfig.DEFAULT_BATTLE_SPEED,
 			lassoSlowMode = false,
@@ -273,6 +351,27 @@ local function checkCreature(id: string, creature: Types.Creature, problems: { s
 	if (creature.isGiant or creature.rarity == "Cosmic") and not creature.bound then
 		table.insert(problems, `creature {id} is a giant or cosmic creature but is not bound`)
 	end
+	if
+		creature.hurt ~= nil
+		and (
+			typeof(creature.hurt) ~= "number"
+			or creature.hurt ~= creature.hurt
+			or creature.hurt < 0
+			or creature.hurt > 1
+		)
+	then
+		table.insert(problems, `creature {id} has bad health`)
+	end
+	if
+		creature.paidAssist ~= nil
+		and creature.paidAssist ~= "Pass"
+		and creature.paidAssist ~= "GemLasso"
+	then
+		table.insert(problems, `creature {id} has a bad paid-assist mark`)
+	end
+	if creature.isGiant and creature.serial == nil then
+		table.insert(problems, `creature {id} is a giant with no serial number`)
+	end
 	if creature.serial ~= nil and (not isWholeNumber(creature.serial) or creature.serial < 1) then
 		table.insert(problems, `creature {id} has a bad serial number`)
 	end
@@ -326,7 +425,39 @@ local function validateUnsafe(profile: Profile): { string }
 	end
 	checkBalance("Coins", profile.Coins)
 	checkBalance("Gems", profile.Gems)
-	checkBalance("Candy", profile.Candy)
+	-- DataService adds to PlayStats.sessions at load (and repairs a bad record there).
+	local stats = profile.PlayStats
+	if
+		typeof(stats) ~= "table"
+		or not isWholeNumber(stats.firstJoin)
+		or not isWholeNumber(stats.sessions)
+		or typeof(stats.playSeconds) ~= "number"
+	then
+		table.insert(problems, "PlayStats is not a record of numbers")
+	end
+	-- One whole count of zero or more for every element, and nothing else in the record.
+	local function checkByElement(name: string, record: Types.ByElement<number>)
+		if typeof(record) ~= "table" then
+			table.insert(problems, `{name} is missing`)
+			return
+		end
+		for _, element: Types.Element in TypeChart.ELEMENTS do
+			checkBalance(`{name}.{element}`, record[element])
+		end
+		for key in record :: any do
+			if typeof(key) ~= "string" or not table.find(TypeChart.ELEMENTS, key :: any) then
+				table.insert(problems, `{name} has an unknown type ({tostring(key)})`)
+			end
+		end
+	end
+	if typeof(profile.Candy) ~= "table" then
+		table.insert(problems, "Candy is not a candy record")
+	else
+		checkByElement("Candy.typed", profile.Candy.typed)
+		checkBalance("Candy.prism", profile.Candy.prism)
+	end
+	checkByElement("Daily.catches", profile.Daily.catches)
+	checkByElement("Daily.releases", profile.Daily.releases)
 
 	local owned = 0
 	for id, creature in profile.Creatures do
@@ -380,7 +511,9 @@ local function validateUnsafe(profile: Profile): { string }
 	local serials: { [string]: boolean } = {}
 	for id, creature in profile.Creatures do
 		if creature.serial ~= nil then
-			local key = `{creature.parts.Torso.species}#{creature.serial}`
+			-- Numbers count within a kind: each giant, and each tier of each species.
+			local kind = if creature.isGiant then "Giant" else creature.rarity
+			local key = `{kind}:{creature.parts.Torso.species}#{creature.serial}`
 			if serials[key] then
 				table.insert(problems, `creature {id} repeats serial {key}`)
 			end
@@ -391,7 +524,70 @@ local function validateUnsafe(profile: Profile): { string }
 	for index, pending in profile.Pending do
 		if typeof(pending.source) ~= "string" or typeof(pending.ref) ~= "string" then
 			table.insert(problems, `pending grant {index} is malformed`)
+		elseif
+			pending.serial ~= nil and (not isWholeNumber(pending.serial) or pending.serial < 1)
+		then
+			table.insert(problems, `pending grant {index} has a bad serial number`)
+		elseif
+			pending.source == "Gem"
+			and (typeof(pending.creature) ~= "table" or pending.creature.id ~= pending.ref)
+		then
+			table.insert(problems, `pending grant {index} is a gem catch with no creature`)
+		elseif pending.source == "Gem" and pending.creature then
+			-- A creature waiting for its number is checked like any creature in the stable.
+			checkCreature(pending.ref, pending.creature, problems)
+		elseif pending.source == "Giant" and profile.Story.giantsCaptured[pending.ref] then
+			table.insert(
+				problems,
+				`giant {pending.ref} is both captured and waiting to be captured`
+			)
 		end
+	end
+
+	-- Purchases: a pass key is a known pass and true; one-time and perk marks are true. An unknown
+	-- key is reported, never deleted (a later release may know it).
+	local bought = profile.Purchases
+	if
+		typeof(bought) ~= "table"
+		or typeof(bought.passes) ~= "table"
+		or typeof(bought.once) ~= "table"
+		or typeof(bought.perks) ~= "table"
+	then
+		table.insert(problems, "unreadable: purchases are missing")
+	else
+		-- The device is told these as lists of at most BLINK_MAX_MARKS names of 1 to BLINK_MAX_KEY
+		-- characters (PlayerState in Net.blink), so a record outside that is reported.
+		local function checkMarks(
+			name: string,
+			marks: { [string]: boolean },
+			known: boolean
+		): number
+			local count = 0
+			for id, mark in marks do
+				count += 1
+				if mark ~= true then
+					table.insert(problems, `{name} {tostring(id)} has a bad mark`)
+				end
+				if typeof(id) ~= "string" or #id < 1 or #id > PurchaseConfig.BLINK_MAX_KEY then
+					table.insert(problems, `{name} key {tostring(id)} is not 1 to 24 characters`)
+				elseif known and not PurchaseConfig.PASSES[id :: any] then
+					table.insert(problems, `pass {id} is unknown or has a bad mark`)
+				end
+			end
+			return count
+		end
+		local passCount = checkMarks("pass", bought.passes, true)
+		local markCount = checkMarks("one-time purchase", bought.once, false)
+			+ checkMarks("perk", bought.perks, false)
+		if
+			passCount > PurchaseConfig.BLINK_MAX_MARKS
+			or markCount > PurchaseConfig.BLINK_MAX_MARKS
+		then
+			table.insert(problems, "more passes or perks than the device can be told")
+		end
+	end
+	if profile.Gems > PurchaseConfig.MAX_GEMS then
+		table.insert(problems, "Gems are above the limit")
 	end
 
 	local receipts = profile.Purchases.receiptIds
@@ -407,6 +603,52 @@ local function validateUnsafe(profile: Profile): { string }
 	for item, count in profile.Items do
 		if not isWholeNumber(count) or count < 0 then
 			table.insert(problems, `item {item} has a bad count`)
+		end
+	end
+
+	if
+		typeof(profile.Quests) ~= "table"
+		or typeof(profile.Quests.active) ~= "table"
+		or typeof(profile.Quests.done) ~= "table"
+	then
+		table.insert(problems, "unreadable: quests are missing")
+	else
+		for quest, progress in profile.Quests.active do
+			if not isWholeNumber(progress) or progress < 0 then
+				table.insert(problems, `quest {quest} has bad progress`)
+			end
+		end
+		for quest, done in profile.Quests.done do
+			if done ~= true then
+				table.insert(problems, `quest {quest} has a bad done mark`)
+			end
+		end
+	end
+
+	-- Finds: a claimed key is true and names a known one-time find or journal set; today's counts
+	-- are whole numbers up to that spot's daily limit. An unknown id is reported, never deleted.
+	if typeof(profile.Finds) ~= "table" or typeof(profile.Finds.once) ~= "table" then
+		table.insert(problems, "unreadable: finds are missing")
+	else
+		for id, claimed in profile.Finds.once do
+			if claimed ~= true then
+				table.insert(problems, `find {id} has a bad claimed mark`)
+			end
+			if typeof(id) ~= "string" or not FindIds.isOnceId(id) then
+				table.insert(problems, `find {tostring(id)} is not a known one-time find`)
+			end
+		end
+	end
+	if typeof(profile.Daily.finds) ~= "table" then
+		table.insert(problems, "unreadable: today's finds are missing")
+	else
+		for key, used in profile.Daily.finds do
+			local limit = if typeof(key) == "string" then FindIds.dailyLimit(key) else nil
+			if limit == nil then
+				table.insert(problems, `daily find {tostring(key)} is not a known renewable find`)
+			elseif not isWholeNumber(used) or used < 0 or used > limit then
+				table.insert(problems, `daily find {key} has a bad count`)
+			end
 		end
 	end
 

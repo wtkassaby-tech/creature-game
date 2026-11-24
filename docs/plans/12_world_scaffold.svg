@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1010" viewBox="0 0 1400 1010">
+<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/></pattern>
+<radialGradient id="tear" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#e0b0ff"/><stop offset="100%" stop-color="#5b2a8a" stop-opacity="0"/></radialGradient></defs>
+<rect width="1400" height="1010" fill="#f6efd9"/>
+<rect x="20" y="20" width="1360" height="860" rx="40" fill="#cfe0b0" stroke="#8aa860" stroke-width="3"/>
+<path d="M 20 860 L 20 880 Q 20 900 60 900 L 1340 900 Q 1380 900 1380 860 L 1380 760 Q 1200 820 1060 880 Q 880 930 700 905 Q 560 890 420 905 L 20 905 Z" fill="#8ccbe0"/>
+<text x="1220" y="880" font-size="13" text-anchor="middle" fill="#2f6f8a" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >the sea</text>
+<path d="M210 760 L545 800 L880 800 L1190 650 L1205 330 L925 175 L600 150 L270 200 L175 480 L470 470 L800 470" fill="none" stroke="#c9a96a" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M210 760 L545 800 L880 800 L1190 650 L1205 330 L925 175 L600 150 L270 200 L175 480 L470 470 L800 470" fill="none" stroke="#efd9a4" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M210 760 L545 800 L880 800 L1190 650 L1205 330 L925 175 L600 150 L270 200 L175 480 L470 470 L800 470" fill="none" stroke="#a88a50" stroke-width="2" stroke-dasharray="10 12" stroke-linejoin="round"/>
+<ellipse cx="210" cy="760" rx="165" ry="115" fill="#9ccf6e" stroke="#4f8a34" stroke-width="5" />
+<circle cx="73" cy="675" r="17" fill="#4f8a34" stroke="#ffffff" stroke-width="3"/>
+<text x="73" y="681" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >1</text>
+<text x="210" y="712" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >GREENWOOD</text>
+<text x="210" y="732" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Leaf · meadows & old wood</text>
+<rect x="199" y="749" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="228" y="790" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: Thistledown</text>
+<polygon points="300,799 289,819 311,819" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="300" y="835" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: Hollowbough</text>
+<text x="210" y="818" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: battles, the lasso, the rival</text>
+<rect x="255" y="633" width="100" height="20" rx="10" fill="#4f8a34"/>
+<text x="305" y="648" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >LAUNCH</text>
+<rect x="364" y="767" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 377 780)"/>
+<text x="377" y="785" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="545" cy="800" rx="160" ry="100" fill="#e7b47c" stroke="#a86a3a" stroke-width="5" />
+<circle cx="413" cy="730" r="17" fill="#a86a3a" stroke="#ffffff" stroke-width="3"/>
+<text x="413" y="736" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >2</text>
+<text x="545" y="752" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >DUST CANYON</text>
+<text x="545" y="772" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Sand · red mesas & a gully</text>
+<rect x="534" y="789" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="563" y="830" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: Kilnrest</text>
+<polygon points="633,833 622,853 644,853" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="633" y="869" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: Mesalith</text>
+<text x="545" y="858" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: the first rarity tier</text>
+<rect x="585" y="688" width="100" height="20" rx="10" fill="#4f8a34"/>
+<text x="635" y="703" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >LAUNCH</text>
+<rect x="699" y="787" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 712 800)"/>
+<text x="712" y="805" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="880" cy="800" rx="160" ry="100" fill="#f1e2b4" stroke="#3e9bbf" stroke-width="5" />
+<circle cx="748" cy="730" r="17" fill="#3e9bbf" stroke="#ffffff" stroke-width="3"/>
+<text x="748" y="736" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >3</text>
+<text x="880" y="752" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >TIDE FLATS</text>
+<text x="880" y="772" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Water · harbour, dunes, rock pools</text>
+<rect x="869" y="789" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="898" y="830" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: Saltwick</text>
+<polygon points="968,833 957,853 979,853" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="968" y="869" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: Carrackon</text>
+<text x="880" y="858" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: bait spawns</text>
+<rect x="920" y="688" width="100" height="20" rx="10" fill="#4f8a34"/>
+<text x="970" y="703" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >LAUNCH</text>
+<rect x="1022" y="712" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 1035 725)"/>
+<text x="1035" y="730" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="1190" cy="650" rx="150" ry="120" fill="#8fa86a" stroke="#5d4e7a" stroke-width="5" />
+<circle cx="1068" cy="560" r="17" fill="#5d4e7a" stroke="#ffffff" stroke-width="3"/>
+<text x="1068" y="566" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >4</text>
+<text x="1190" y="602" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >MIRE</text>
+<text x="1190" y="622" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Toxic · swamp & mangroves</text>
+<rect x="1179" y="639" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="1208" y="680" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: Sedgeholm</text>
+<polygon points="1272,692 1261,712 1283,712" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="1272" y="728" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: Sloughback</text>
+<text x="1190" y="708" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: poison & status, 4v4</text>
+<rect x="1220" y="518" width="100" height="20" rx="10" fill="#c08a2a"/>
+<text x="1270" y="533" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >DATA WRITTEN</text>
+<rect x="1184" y="477" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 1197 490)"/>
+<text x="1197" y="495" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="1205" cy="330" rx="145" ry="125" fill="#dcecf3" stroke="#6fa4c4" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="1205" cy="330" rx="145" ry="125" fill="url(#hatch)"/>
+<circle cx="1088" cy="235" r="17" fill="#6fa4c4" stroke="#ffffff" stroke-width="3"/>
+<text x="1088" y="241" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >5</text>
+<text x="1205" y="282" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >FROSTLINE</text>
+<text x="1205" y="302" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Frost · tundra & ice caves</text>
+<rect x="1194" y="319" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="1223" y="360" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="1284,374 1273,394 1295,394" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="1284" y="410" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: ?</text>
+<text x="1205" y="388" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: freeze / slow</text>
+<rect x="1230" y="193" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="1280" y="208" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<rect x="1052" y="239" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 1065 252)"/>
+<text x="1065" y="257" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="925" cy="175" rx="150" ry="95" fill="#d9c3ec" stroke="#8a5cb8" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="925" cy="175" rx="150" ry="95" fill="url(#hatch)"/>
+<circle cx="803" cy="110" r="17" fill="#8a5cb8" stroke="#ffffff" stroke-width="3"/>
+<text x="803" y="116" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >6</text>
+<text x="925" y="127" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >CRYSTAL DEEP</text>
+<text x="925" y="147" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Crystal · glowing caverns (underground)</text>
+<rect x="914" y="164" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="943" y="205" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="1007,205 996,225 1018,225" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="1007" y="241" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: ?</text>
+<text x="925" y="233" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: Ruby tier</text>
+<rect x="955" y="68" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="1005" y="83" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<rect x="749" y="149" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 762 162)"/>
+<text x="762" y="167" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="600" cy="150" rx="150" ry="100" fill="#e89a6a" stroke="#a8452a" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="600" cy="150" rx="150" ry="100" fill="url(#hatch)"/>
+<circle cx="478" cy="80" r="17" fill="#a8452a" stroke="#ffffff" stroke-width="3"/>
+<text x="478" y="86" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >7</text>
+<text x="600" y="102" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >EMBERFALL</text>
+<text x="600" y="122" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Fire · volcano</text>
+<rect x="589" y="139" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="618" y="180" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="682,183 671,203 693,203" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="682" y="219" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: ?</text>
+<text x="600" y="208" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: burn, 5v5</text>
+<rect x="630" y="38" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="680" y="53" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<rect x="422" y="162" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 435 175)"/>
+<text x="435" y="180" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="270" cy="200" rx="150" ry="110" fill="#cfd8e8" stroke="#5a6d96" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="270" cy="200" rx="150" ry="110" fill="url(#hatch)"/>
+<circle cx="148" cy="120" r="17" fill="#5a6d96" stroke="#ffffff" stroke-width="3"/>
+<text x="148" y="126" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >8</text>
+<text x="270" y="152" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >STORMREACH</text>
+<text x="270" y="172" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Storm · sky peaks</text>
+<rect x="259" y="189" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="288" y="230" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="352,237 341,257 363,257" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="352" y="273" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: ?</text>
+<text x="270" y="258" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: first sight of the tear</text>
+<rect x="300" y="78" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="350" y="93" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<rect x="209" y="327" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 222 340)"/>
+<text x="222" y="345" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="175" cy="480" rx="125" ry="105" fill="#b79ad6" stroke="#5b3d8a" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="175" cy="480" rx="125" ry="105" fill="url(#hatch)"/>
+<circle cx="78" cy="405" r="17" fill="#5b3d8a" stroke="#ffffff" stroke-width="3"/>
+<text x="78" y="411" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >9</text>
+<text x="175" y="432" font-size="19" text-anchor="middle" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >ARCANE BIOME</text>
+<text x="175" y="452" font-size="12" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Arcane · purple caves, wizards (nostalgia)</text>
+<rect x="164" y="469" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="193" y="510" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="243,515 232,535 254,535" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="243" y="551" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: ?</text>
+<text x="175" y="538" font-size="11" text-anchor="middle" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: the truth about the mentor</text>
+<rect x="180" y="363" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="230" y="378" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<rect x="309" y="462" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 322 475)"/>
+<text x="322" y="480" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="470" cy="470" rx="145" ry="105" fill="#3a3566" stroke="#a89be0" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="470" cy="470" rx="145" ry="105" fill="url(#hatch)"/>
+<circle cx="353" cy="395" r="17" fill="#a89be0" stroke="#ffffff" stroke-width="3"/>
+<text x="353" y="401" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >10</text>
+<text x="470" y="422" font-size="19" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >ABYSS</text>
+<text x="470" y="442" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Cosmic · galactic & mythic</text>
+<rect x="459" y="459" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="488" y="500" font-size="12" text-anchor="start" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="549,505 538,525 560,525" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="549" y="541" font-size="11" text-anchor="middle" fill="#f6efd9" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: ?</text>
+<text x="470" y="528" font-size="11" text-anchor="middle" fill="#f6efd9" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: Diamond tier, last rival battle</text>
+<rect x="495" y="353" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="545" y="368" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<rect x="622" y="457" width="26" height="26" rx="3" fill="#7a5a40" stroke="#f6efd9" stroke-width="3" transform="rotate(45 635 470)"/>
+<text x="635" y="475" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >G</text>
+<ellipse cx="800" cy="470" rx="160" ry="115" fill="#7a6a58" stroke="#e0c070" stroke-width="5" stroke-dasharray="14 8"/>
+<ellipse cx="800" cy="470" rx="160" ry="115" fill="url(#hatch)"/>
+<circle cx="668" cy="385" r="17" fill="#e0c070" stroke="#ffffff" stroke-width="3"/>
+<text x="668" y="391" font-size="16" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >11</text>
+<text x="800" y="422" font-size="19" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >THE HOLLOW</text>
+<text x="800" y="442" font-size="12" text-anchor="middle" fill="#f6efd9" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Mixed · ancient ruins, the cosmic tear</text>
+<rect x="789" y="459" width="22" height="22" rx="4" fill="#f6efd9" stroke="#3b2f24" stroke-width="3"/>
+<text x="818" y="500" font-size="12" text-anchor="start" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >town: ?</text>
+<polygon points="888,509 877,529 899,529" fill="#c8553d" stroke="#ffffff" stroke-width="2"/>
+<text x="888" y="545" font-size="11" text-anchor="middle" fill="#f6efd9" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant: the entity</text>
+<text x="800" y="528" font-size="11" text-anchor="middle" fill="#f6efd9" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" font-style="italic">new: the entity, 6v6</text>
+<rect x="840" y="343" width="100" height="20" rx="10" fill="#8a8a8a"/>
+<text x="890" y="358" font-size="11" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >PLANNED</text>
+<circle cx="730" cy="500" r="34" fill="url(#tear)"/>
+<text x="730" y="545" font-size="11" text-anchor="middle" fill="#f6efd9" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >the tear</text>
+<circle cx="184" cy="760" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="519" cy="800" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="854" cy="800" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="1164" cy="650" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="1179" cy="330" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="899" cy="175" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="574" cy="150" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="244" cy="200" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="149" cy="480" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="444" cy="470" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<circle cx="774" cy="470" r="6" fill="#7a5cb8" stroke="#ffffff" stroke-width="2"/>
+<text x="210" y="905" font-size="14" text-anchor="middle" fill="#2f6f8a" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >START</text>
+<path d="M210 880 L210 875" stroke="#2f6f8a"/>
+<text x="30" y="948" font-size="17" text-anchor="start" fill="#3b2f24" font-weight="bold" font-family="Trebuchet MS, Verdana, sans-serif" >The whole journey (brief section 8): eleven biomes on one guided path that spirals in to The Hollow.</text>
+<rect x="30" y="971" width="22" height="14" rx="7" fill="#4f8a34"/>
+<text x="60" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >built (launch)</text>
+<rect x="170" y="971" width="22" height="14" rx="7" fill="#c08a2a"/>
+<text x="200" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >data written, map not designed</text>
+<rect x="410" y="971" width="22" height="14" rx="7" fill="#8a8a8a"/>
+<text x="440" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >planned (dashed)</text>
+<rect x="574" y="971" width="14" height="14" rx="3" fill="#f6efd9" stroke="#3b2f24" stroke-width="2"/>
+<text x="600" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >hub town</text>
+<polygon points="685,970 677,984 693,984" fill="#c8553d"/>
+<text x="710" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >giant's lair (off the path)</text>
+<rect x="903" y="971" width="14" height="14" fill="#7a5a40" transform="rotate(45 910 978)"/>
+<text x="930" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >gate battle + badge</text>
+<circle cx="1090" cy="978" r="6" fill="#7a5cb8"/>
+<text x="1110" y="983" font-size="12" text-anchor="start" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >teleport building (links towns)</text>
+<text x="1370" y="948" font-size="12" text-anchor="end" fill="#3b2f24" font-weight="normal" font-family="Trebuchet MS, Verdana, sans-serif" >Unnamed towns and giants are open questions in the brief.</text>
+</svg>

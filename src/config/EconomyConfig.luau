@@ -5,8 +5,12 @@
 --
 -- Three currencies:
 --   Coins: earned only, never sold, never traded. Pay for lassos, consumables, bait, breeding.
---   Breeding Candy: earned only, never sold, never traded. Needed for every breed (BreedConfig.CANDY_COST).
---   Gems: bought with Robux; buy time and capacity only. Not modelled here.
+--   Breeding Candy: earned only, never sold, never traded. Typed (one balance per element): each
+--     parent in a breed uses BreedConfig.CANDY_COST of its own type. Catching and releasing pay
+--     typed candy; milestone and daily rewards pay Prism Candy (working name), which counts as any type.
+--   Gems: bought with Robux (src/config/PurchaseConfig) or earned in small amounts. They buy time,
+--     capacity and, from 23 November 2026, consumables (GEM_ITEM_IDS below). Never coins, candy,
+--     Breeding Candy, rarity, serials or stats.
 --
 -- Anchor: a common biome-1 breed costs BreedConfig.COST_BASE (400) coins, which should be about
 -- four minutes of biome-1 income (the simulation measures 4.5 to 4.9 minutes of all Greenwood play).
@@ -15,7 +19,8 @@
 
 local Types = require("../shared/Types")
 
-export type Currency = "Coins" | "Candy"
+-- "Candy" is typed candy (one balance per element); "Prism" is Prism Candy, which counts as any type.
+export type Currency = "Coins" | "Candy" | "Prism"
 export type BattleKind = "Wild" | "Tamer" | "Gate" | "Giant"
 export type ItemId =
 	"Basic"
@@ -27,8 +32,9 @@ export type ItemId =
 	| "GiantCall"
 	| "Bait"
 	| "BondCharm"
+	| "Cure"
 export type LassoTier = "Basic" | "Braided" | "Gilded"
-export type MaterialId = "Fernfluff" | "CanyonGrit" | "BrineShell"
+export type MaterialId = "Fernfluff" | "CanyonGrit" | "BrineShell" | "Reedpith"
 export type CandySource =
 	"MentorLesson"
 	| "DailyTask"
@@ -39,6 +45,7 @@ export type CandySource =
 	| "GateFirstClear"
 	| "QuestLine"
 	| "RankedSeason"
+	| "JournalSet"
 -- How a flow is limited. Every source of coins or candy must have one of the first five.
 --   Diminishing: pays less each repeat within a day, then nothing.
 --   Daily / Weekly: a fixed number of paid claims per day or week.
@@ -58,10 +65,14 @@ export type ItemDef = {
 }
 export type Recipe = { material: MaterialId, count: number, coins: number }
 export type CandyDef = {
-	perClaim: number, -- candy per claim (QuestLine uses QUEST_LINE_CANDY by biome instead)
+	perClaim: number, -- Prism Candy per claim (QuestLine uses QUEST_LINE_CANDY by biome instead)
 	cap: number, -- paid claims per window (day, week, or ever for Once)
 	limit: Limit,
 }
+-- A daily falloff on typed candy, counted per type: the first `full` claims of a type each day pay
+-- in full, each later claim is worth `rate` times the one before, never below `floor` of full,
+-- and from `stop` claims onwards that type pays nothing until the next day.
+export type CandyFalloff = { full: number, rate: number, floor: number, stop: number }
 export type FirstAndRematch = {
 	firstClear: number, -- coins at biome 1, level floor
 	rematch: number, -- coins per paid rematch at biome 1, level floor
@@ -112,7 +123,7 @@ EconomyConfig.DIMINISH_FLOOR = 0.15
 EconomyConfig.DIMINISH_STOP = 50
 
 EconomyConfig.TRAINED = {
-	Tamer = { firstClear = 160, rematch = 50, rematchesPaidPerDay = 1 },
+	Tamer = { firstClear = 300, rematch = 50, rematchesPaidPerDay = 1 },
 	Gate = { firstClear = 500, rematch = 150, rematchesPaidPerDay = 1 },
 	-- A giant rematch pays less than a GiantCall costs: rematches are a coin sink that earns candy.
 	Giant = { firstClear = 800, rematch = 700, rematchesPaidPerDay = 2 },
@@ -120,6 +131,17 @@ EconomyConfig.TRAINED = {
 
 -- Giant fights: one GiantCall to enter, at most this many field items brought in.
 EconomyConfig.GIANT_FIELD_ITEM_CAP = 5
+-- The share of open-route wild encounters, from Dust Canyon on, that are a gem-tier ("Amber")
+-- individual of a local species. The economy simulation is balanced at this number: a gem catch
+-- pays 6 candy and seeds gem breeding, so it must stay rare. (The brief's table says "about 5%"
+-- for the first gem tier; that is a question for the owner, listed in DECISIONS.)
+EconomyConfig.GEM_WILD_SHARE = 0.006
+
+-- Giant Candy: needed to breed from a captured giant, and earned only by beating that giant
+-- (first clear and rematches alike). It cannot be bought, traded or replaced by Prism Candy.
+EconomyConfig.GIANT_CANDY = { perWin = 1, capPerDay = 2 } :: { perWin: number, capPerDay: number }
+-- A giant rematch never pays more than this share of its Giant Horn's price in that biome.
+EconomyConfig.GIANT_REMATCH_MAX_HORN_SHARE = 0.85
 
 ------------------------------------------------------------------------------------------------
 -- Quests, daily tasks, weekly challenge, PvP (coins)
@@ -153,7 +175,7 @@ EconomyConfig.ITEMS = {
 		price = 15,
 		scalesWithBiome = false,
 		fieldItem = false,
-		note = "Trivially cheap, so catching is never blocked",
+		note = "The everyday rope: cheap enough to always carry",
 	},
 	Braided = {
 		name = "Braided Lasso",
@@ -192,10 +214,10 @@ EconomyConfig.ITEMS = {
 	},
 	GiantCall = {
 		name = "Giant Horn",
-		price = 1100,
+		price = 730,
 		scalesWithBiome = true,
 		-- Greenwood's horn is cheaper, so a new player's first giant is never far off.
-		firstBiomePrice = 900,
+		firstBiomePrice = 600,
 		fieldItem = false,
 		note = "Needed to start a giant fight; used up win or lose",
 	},
@@ -204,14 +226,21 @@ EconomyConfig.ITEMS = {
 		price = 400,
 		scalesWithBiome = false,
 		fieldItem = false,
-		note = "Summons a rare spawn; sold from Tide Flats (biome 3) on",
+		note = "Draws out a rare creature at a rustle spot",
 	},
 	BondCharm = {
 		name = "Bond Charm",
 		price = 400,
 		scalesWithBiome = true,
 		fieldItem = false,
-		note = "Tilts one breed's part choice toward the first parent (BreedConfig.CHARM_CHANCE); used up",
+		note = "Tilts one breed toward the first parent's parts; used up",
+	},
+	Cure = {
+		name = "Clearwater Drops",
+		price = 60,
+		scalesWithBiome = false,
+		fieldItem = false, -- giants never poison, so it has no place in a giant fight
+		note = "Cures one creature's poison in a battle",
 	},
 } :: {
 	Basic: ItemDef,
@@ -223,6 +252,7 @@ EconomyConfig.ITEMS = {
 	GiantCall: ItemDef,
 	Bait: ItemDef,
 	BondCharm: ItemDef,
+	Cure: ItemDef,
 }
 
 local ITEM_IDS: { ItemId } = {
@@ -235,11 +265,20 @@ local ITEM_IDS: { ItemId } = {
 	"GiantCall",
 	"Bait",
 	"BondCharm",
+	"Cure",
 }
 EconomyConfig.ITEM_IDS = ITEM_IDS
 local LASSO_TIERS: { LassoTier } = { "Basic", "Braided", "Gilded" }
 EconomyConfig.LASSO_TIERS = LASSO_TIERS
 EconomyConfig.BAIT_MIN_BIOME = 3
+EconomyConfig.CURE_MIN_BIOME = 4 -- poison arrives with the Mire
+-- Bait is used at a rustle spot (from Tide Flats on) and always brings a creature out; this is
+-- the chance that it is a gem-tier one. The economy simulation is balanced at this number.
+EconomyConfig.BAIT_GEM_CHANCE = 0.35
+-- Baits a player may use in a day. A player can see what a bait brought out and walk away from
+-- anything that is not gem-tier, so without a limit coins alone would set how many gem-tier
+-- creatures appear. The simulation's heaviest player uses 3 a day.
+EconomyConfig.BAIT_USES_PER_DAY = 5
 
 -- The cheapest lasso that can catch each rarity (a gem creature's zone is too small for a rope).
 -- Used for the release rule: a release always pays less than this lasso costs.
@@ -259,7 +298,7 @@ EconomyConfig.LASSO_MIN_TIER = {
 -- Crafted items cannot be sold back, so materials never turn into coins.
 ------------------------------------------------------------------------------------------------
 
-local MATERIAL_BY_BIOME: { MaterialId } = { "Fernfluff", "CanyonGrit", "BrineShell" }
+local MATERIAL_BY_BIOME: { MaterialId } = { "Fernfluff", "CanyonGrit", "BrineShell", "Reedpith" }
 EconomyConfig.MATERIAL_BY_BIOME = MATERIAL_BY_BIOME
 EconomyConfig.MATERIAL_DROP_CHANCE = 0.35 -- per wild win, times that win's diminishing factor
 
@@ -267,7 +306,8 @@ EconomyConfig.RECIPES = {
 	Tonic = { material = "Fernfluff", count = 3, coins = 0 },
 	GreatTonic = { material = "CanyonGrit", count = 3, coins = 20 },
 	Bait = { material = "BrineShell", count = 8, coins = 80 },
-} :: { Tonic: Recipe, GreatTonic: Recipe, Bait: Recipe }
+	Cure = { material = "Reedpith", count = 3, coins = 10 },
+} :: { Tonic: Recipe, GreatTonic: Recipe, Bait: Recipe, Cure: Recipe }
 
 ------------------------------------------------------------------------------------------------
 -- Releasing a creature: a few coins, plus materials for gem tiers. Never more than
@@ -295,10 +335,42 @@ EconomyConfig.RELEASE_MAX_SHARE = 0.75
 EconomyConfig.RELEASE_MIN_COINS = 1
 
 ------------------------------------------------------------------------------------------------
--- Breeding Candy sources (BreedConfig.CANDY_COST sets what each breed uses).
+-- Breeding Candy (BreedConfig.CANDY_COST sets what each parent uses, of its own type).
 -- Candy is earned only: never sold for Robux or Gems, never traded or gifted.
+--
+-- Typed candy: catching a creature pays candy of its type (its torso's element); releasing one
+-- pays less. Both fall off after a daily number per type, so catch-and-release cannot flood
+-- supply. Economy.catchCandy and Economy.releaseCandy apply the falloff.
 ------------------------------------------------------------------------------------------------
 
+-- Typed candy for a catch, by the creature's rarity, before the falloff. Fractions are paid as
+-- they add up across the day's claims of that type (0.5 pays one candy every second claim).
+EconomyConfig.CATCH_CANDY = {
+	Common = 1,
+	Uncommon = 2,
+	Gem = 6,
+	Ruby = 12,
+	Diamond = 24,
+	Cosmic = 24,
+} :: Types.ByRarity<number>
+-- Typed candy for a release. Always less than the catch pays and less than the cheapest breed
+-- that can make a creature of that rarity (tested), so releasing never turns a profit in candy.
+EconomyConfig.RELEASE_CANDY = {
+	Common = 0.5,
+	Uncommon = 0.5,
+	Gem = 3,
+	Ruby = 6,
+	Diamond = 12,
+	Cosmic = 12,
+} :: Types.ByRarity<number>
+-- Three catches and three releases of each type a day pay in full, which covers normal play
+-- (a regular player catches about five creatures a day, across several types). Farming one type
+-- runs into the falloff fast: a whole day of common catches of one type pays at most 7 candy.
+EconomyConfig.CATCH_FALLOFF = { full = 3, rate = 0.5, floor = 0.1, stop = 40 } :: CandyFalloff
+EconomyConfig.RELEASE_FALLOFF = { full = 3, rate = 0.4, floor = 0.1, stop = 40 } :: CandyFalloff
+
+-- Prism Candy sources: milestones and daily rewards. Prism counts as any type, so a player is
+-- never stuck for a type their biome lacks.
 EconomyConfig.CANDY = {
 	-- Once per account: the mentor's lesson pays for the first breed (and a second to try again).
 	MentorLesson = { perClaim = 2, cap = 1, limit = "Once" },
@@ -317,6 +389,9 @@ EconomyConfig.CANDY = {
 	QuestLine = { perClaim = 0, cap = 1, limit = "Once" },
 	-- Ranked season prizes by final league, once per season (PvP arrives later).
 	RankedSeason = { perClaim = 10, cap = 1, limit = "Once" },
+	-- A finished journal set (approval pack 7, plan 14): every note of one biome read. Once per
+	-- set, so 6 Prism in all across the launch biomes. Paid by src/shared/Finds.
+	JournalSet = { perClaim = 2, cap = 1, limit = "Once" },
 } :: {
 	MentorLesson: CandyDef,
 	DailyTask: CandyDef,
@@ -327,6 +402,7 @@ EconomyConfig.CANDY = {
 	GateFirstClear: CandyDef,
 	QuestLine: CandyDef,
 	RankedSeason: CandyDef,
+	JournalSet: CandyDef,
 }
 local CANDY_SOURCES: { CandySource } = {
 	"MentorLesson",
@@ -338,11 +414,44 @@ local CANDY_SOURCES: { CandySource } = {
 	"GateFirstClear",
 	"QuestLine",
 	"RankedSeason",
+	"JournalSet",
 }
 EconomyConfig.CANDY_SOURCES = CANDY_SOURCES
--- Candy per quest line by biome (later biomes use the last entry).
+-- Prism Candy per quest line by biome (later biomes use the last entry).
 local QUEST_LINE_CANDY: { number } = { 2, 3, 4 }
 EconomyConfig.QUEST_LINE_CANDY = QUEST_LINE_CANDY
+
+------------------------------------------------------------------------------------------------
+-- Gem prices (owner decision, 23 November 2026: consumables may be bought with Gems as well as
+-- coins). [Default]: a Gem is worth COINS_PER_GEM coins when a consumable is priced, rounded up,
+-- never under GEM_MIN_PRICE. Sold for Gems: lassos, tonics, Rally Root and Clearwater Drops.
+-- Never sold for Gems: Giant Horn (the giant retry limit stays coin-only) and Bond Charm (breeding
+-- stays coins and Breeding Candy). Breeding Candy is not an item and is never sold.
+------------------------------------------------------------------------------------------------
+
+EconomyConfig.COINS_PER_GEM = 10
+EconomyConfig.GEM_MIN_PRICE = 1
+-- Tide Bait is NOT sold for Gems yet: it brings out a random creature (a gem-tier one with
+-- BAIT_GEM_CHANCE), so a Gem sale needs a screen that shows every outcome and its odds, summing to
+-- 100%, before purchase. TODO(lead): build that screen, then add "Bait" here.
+-- Gem lassos are sold only where PolicyService says paid random items are not restricted, are
+-- kept under their own item key (Gems.GEM_LASSO_SUFFIX) and mark what they catch as paid-assisted.
+local GEM_ITEM_IDS: { ItemId } =
+	{ "Basic", "Braided", "Gilded", "Tonic", "GreatTonic", "Revive", "Cure" }
+EconomyConfig.GEM_ITEM_IDS = GEM_ITEM_IDS
+local GEM_PRICES: { [string]: number } = {}
+for _, id: ItemId in GEM_ITEM_IDS do
+	GEM_PRICES[id] = math.max(
+		EconomyConfig.GEM_MIN_PRICE,
+		math.ceil(EconomyConfig.ITEMS[id].price / EconomyConfig.COINS_PER_GEM)
+	)
+end
+EconomyConfig.GEM_PRICES = GEM_PRICES
+
+-- Finishing an egg now: one Gem for each EGG_FINISH_SECONDS_PER_GEM seconds left, at least
+-- EGG_FINISH_MIN_GEMS.
+EconomyConfig.EGG_FINISH_SECONDS_PER_GEM = 180
+EconomyConfig.EGG_FINISH_MIN_GEMS = 5
 
 ------------------------------------------------------------------------------------------------
 -- Stable and pens
@@ -410,20 +519,28 @@ EconomyConfig.FLOWS = {
 		note = "DECOR_COINS, cosmetic stable decorations",
 	},
 	TradeFee = { currency = "Coins", limit = "Sink", note = "Trading arrives later" },
-	-- Candy sources (each is limited per CANDY above)
-	CandyMentor = { currency = "Candy", limit = "Once", note = "MentorLesson" },
-	CandyDaily = { currency = "Candy", limit = "Daily", note = "DailyTask and DailyHardTask" },
-	CandyGiantRematch = { currency = "Candy", limit = "Daily", note = "GiantRematch" },
-	CandyWeekly = { currency = "Candy", limit = "Weekly", note = "WeeklyChallenge" },
-	CandyFirstClear = {
+	-- Typed candy sources (per type per day, CATCH_FALLOFF and RELEASE_FALLOFF)
+	CandyCatch = { currency = "Candy", limit = "Diminishing", note = "CATCH_CANDY, per type" },
+	CandyRelease = {
 		currency = "Candy",
+		limit = "Diminishing",
+		note = "RELEASE_CANDY, per type; below the catch and the cheapest breed",
+	},
+	-- Prism Candy sources (each is limited per CANDY above)
+	CandyMentor = { currency = "Prism", limit = "Once", note = "MentorLesson" },
+	CandyDaily = { currency = "Prism", limit = "Daily", note = "DailyTask and DailyHardTask" },
+	CandyGiantRematch = { currency = "Prism", limit = "Daily", note = "GiantRematch" },
+	CandyWeekly = { currency = "Prism", limit = "Weekly", note = "WeeklyChallenge" },
+	CandyFirstClear = {
+		currency = "Prism",
 		limit = "Once",
 		note = "GiantFirstClear and GateFirstClear",
 	},
-	CandyQuest = { currency = "Candy", limit = "Once", note = "QuestLine" },
-	CandyRanked = { currency = "Candy", limit = "Once", note = "RankedSeason, once per season" },
-	-- Candy sink
-	BreedCandy = { currency = "Candy", limit = "Sink", note = "BreedConfig.CANDY_COST" },
+	CandyQuest = { currency = "Prism", limit = "Once", note = "QuestLine" },
+	CandyRanked = { currency = "Prism", limit = "Once", note = "RankedSeason, once per season" },
+	CandyJournal = { currency = "Prism", limit = "Once", note = "JournalSet, once per biome" },
+	-- Candy sink: one type at a time, typed candy first, then Prism for any shortfall
+	BreedCandy = { currency = "Candy", limit = "Sink", note = "BreedConfig.CANDY_COST, per parent" },
 } :: { [string]: Flow }
 
 return EconomyConfig

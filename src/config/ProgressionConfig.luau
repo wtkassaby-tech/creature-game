@@ -16,15 +16,32 @@ export type KindMultipliers = {
 local ProgressionConfig = {}
 
 -- Level curve: XP to go from level L to L + 1 is floor(CURVE_BASE x L ^ CURVE_EXPONENT).
--- A low base keeps the first levels quick (a new player sees a level-up within two or three
--- fights); an exponent above 1 steepens the curve smoothly, with no jumps.
-ProgressionConfig.CURVE_BASE = 14
-ProgressionConfig.CURVE_EXPONENT = 1.6
+-- A wild win at the same level pays REWARD_FLAT + REWARD_PER_LEVEL x L, so with an exponent just
+-- above 1 the number of wild battles a level takes stays almost flat: about 2 at level 10, under
+-- 3 at level 30 and just over 3 at level 100. Levels are held back by the badge cap, not by the
+-- grind: the robot players in tests/playthrough.test need about 30 to 50 wild battles a badge on
+-- top of the story's own battles. (The first curve, 14 and 1.6, needed 90, 140 and 290. The
+-- second, 10 and 1.2, sat at 58 to 67 for the third badge, right on the limit of 60, and grind is
+-- the complaint players of this kind of game make most: docs/research/games/08.)
+ProgressionConfig.CURVE_BASE = 10
+ProgressionConfig.CURVE_EXPONENT = 1.15
 ProgressionConfig.MAX_LEVEL = 100
 
 -- Level cap: CAP_BASE with no badge, then CAP_STEP more for each badge held.
 ProgressionConfig.CAP_BASE = 15
 ProgressionConfig.CAP_STEP = 10
+
+-- The strongest creature in a badge battle is this many levels under the player's level cap,
+-- and the rest of that team within GATE_TEAM_SPREAD levels below it. A team trained to the cap
+-- then has a small edge: at one level under the cap, the robot players in tests/playthrough.test
+-- could not beat the Dust Canyon gate in eight runs out of twelve.
+ProgressionConfig.GATE_TOP_UNDER_CAP = 2
+ProgressionConfig.GATE_TEAM_SPREAD = 3
+
+-- XP a creature can hold beyond its level cap, counted in levels: the bank holds the XP for this
+-- many levels above the cap, and anything more is dropped. Without it a full biome of training
+-- turned into three to five levels on the first win in the next biome.
+ProgressionConfig.BANK_MAX_LEVELS = 2
 
 -- XP paid for one defeated creature, before the share and gap rules below:
 --   (REWARD_FLAT + REWARD_PER_LEVEL x defeatedLevel) x kind x rarity
@@ -35,7 +52,7 @@ ProgressionConfig.REWARD_PER_LEVEL = 6
 -- rival are tuned slightly above a tamer; a giant is one creature that pays like a long fight.
 local KIND_MULTIPLIER: KindMultipliers = {
 	Wild = 1,
-	Tamer = 1.25,
+	Tamer = 2,
 	Rival = 1.5,
 	Gate = 1.5,
 	Giant = 8,

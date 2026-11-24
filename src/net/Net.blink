@@ -1,0 +1,786 @@
+option ServerOutput = "generated/Server.luau"
+option ClientOutput = "generated/Client.luau"
+option Typescript = false
+option Casing = Pascal
+
+-- Every message between a player's device and the server lives in this one schema.
+-- The device only ever sends what the player chose; the server answers with results.
+-- Call = SingleAsync everywhere: one listener, and the handler may yield safely.
+
+enum BattleKind = { Wild, Tamer, Rival, Friendly }
+enum ActionKind = { Move, Switch, Run }
+enum EventKind = { Move, FollowUp, Switch, Faint, Item, Endure, Poisoned, Poison, Cured }
+enum BodyPlan = { Quad, Biped, Winged, Serpent }
+enum Element = { Leaf, Sand, Water, Toxic, Frost, Crystal, Fire, Storm, Arcane, Cosmic }
+enum Rarity = { Common, Uncommon, Gem, Ruby, Diamond, Cosmic }
+
+-- What the screen needs to draw one creature in a battle and show its bars.
+struct BattleCreature {
+	Id: string(1..40),
+	BodyPlan: BodyPlan,
+	Head: string(1..24),
+	Torso: string(1..24),
+	FrontLimbs: string(1..24),
+	Legs: string(1..24),
+	Tail: string(1..24),
+	Colour: string(1..24),
+	Size: f32,
+	Rarity: Rarity,
+	Element: Element,
+	Level: u8,
+	MaxHp: u16,
+	Hp: u16,
+	-- The player's own creatures list their moves; an opponent's list is empty until seen.
+	Moves: string(1..24)[0..4],
+}
+
+-- One thing that happened in a turn, in the order it happened.
+struct BattleEvent {
+	Side: u8(1..2),
+	Kind: EventKind,
+	Move: string(1..24)?,
+	Damage: u16,
+	TargetHp: u16,
+	Slot: u8(0..6),
+}
+
+-- Device -> server: start a battle against something in the world. The server checks the
+-- target exists, is close enough and is free; the device never names a creature or a level.
+event StartBattle {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Kind: BattleKind,
+		-- A wild creature's id from WildSpawns; 0 for a tamer or the rival.
+		TargetId: u32,
+		-- A tamer's id or a story battle's id; absent for a wild creature.
+		TargetName: string(1..40)?,
+	},
+}
+
+-- Server -> device: the battle has begun.
+event BattleStarted {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Kind: BattleKind,
+		Yours: BattleCreature[1..6],
+		Theirs: BattleCreature[1..6],
+		-- The tamer's id or the story battle's id the server resolved; absent for a wild creature.
+		-- The device only reads the tamer's words for it; it decides nothing.
+		Foe: string(1..40)?,
+		-- Exact damage each of your active creature's moves would do now (no dice in ranked).
+		Previews: u16[0..4],
+	},
+}
+
+-- Device -> server: the one choice for this turn. Index is the move number (1..4) or the
+-- team position to switch to (1..6). Turn must match the server's turn or it is ignored.
+event BattleAction {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Kind: ActionKind,
+		Index: u8(0..6),
+	},
+}
+
+-- Server -> device: everything that happened in the turn, and the state to show afterwards.
+event BattleTurn {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Events: BattleEvent[0..24],
+		YourActive: u8(1..6),
+		TheirActive: u8(1..6),
+		-- Tempo meters, 0..100.
+		YourTempo: u8(0..100),
+		TheirTempo: u8(0..100),
+		Previews: u16[0..4],
+		Finished: boolean,
+		-- 0 while the battle goes on or for a draw; 1 if you won; 2 if you lost.
+		Outcome: u8(0..2),
+	},
+}
+
+-- Server -> device: a request was refused, with a short reason the screen can show.
+event BattleRefused {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Reason: string(1..80),
+	},
+}
+
+-- Catching (approval pack 2 section 3). The device asks to throw; the server checks, takes the
+-- lasso and sends the sweep; the device sends one tap per zone; the server judges on its own
+-- clock and answers with the result and the turn that followed.
+
+enum LassoTier = { Basic, Braided, Gilded }
+enum ThrowOutcome = { Caught, Missed, Fled }
+
+-- Server -> device, and back: the server's own round-trip measurement. The nonce is random,
+-- so a reply cannot be sent before the ping arrives; a slow reply only makes the reading worse.
+event Ping {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Nonce: u32 },
+}
+event Pong {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Nonce: u32 },
+}
+
+-- Device -> server: throw this lasso in this battle's current turn.
+event ThrowLasso {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Tier: LassoTier,
+	},
+}
+
+struct LassoZone {
+	Centre: f32,
+	Width: f32,
+	Speed: f32,
+	StartPhase: f32,
+	StartMs: u16,
+}
+
+-- Server -> device: the sweep to play. Times are from when the device receives it.
+event LassoPattern {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		ThrowId: u32,
+		Zones: LassoZone[1..6],
+		SlowMode: boolean,
+		ConnectionAssist: boolean,
+		-- The best catch chance this sweep allows, in percent, with the Lasso Pass counted when it
+		-- applies; absent for a giant (never shown). The throw screen shows it as "Catch chance: up to N%".
+		Chance: u8(0..100)?,
+		-- True when the Lasso Pass is in that number.
+		Boosted: boolean?,
+	},
+}
+
+-- Device -> server: one tap, for zone `Zone`, at `ClaimMs` since the sweep began on the device.
+-- The server stamps its own arrival time on every tap; the claim is only believed inside the
+-- lag window.
+event LassoTap {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		ThrowId: u32,
+		Zone: u8(1..6),
+		ClaimMs: f32,
+	},
+}
+
+-- Server -> device: how the throw went. A BattleTurn with the turn that followed is sent next.
+event LassoResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		ThrowId: u32,
+		Outcome: ThrowOutcome,
+		ZonesHit: u8(0..6),
+		Candy: u16,
+		Element: Element?,
+		-- The chance this throw was rolled against, in percent (wild throws only).
+		Chance: u8(0..100)?,
+	},
+}
+
+-- Breeding (approval pack 3). The device names two of its creatures, and optionally a Bond Charm
+-- slot and the parent it favours; the server checks and decides everything else.
+enum Slot = { Head, Torso, FrontLimbs, Legs, Tail }
+enum Parent = { A, B }
+
+event RequestBreed {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		ParentA: string(1..40),
+		ParentB: string(1..40),
+		CharmSlot: Slot?,
+		CharmFavour: Parent?,
+	},
+}
+
+-- Server -> device: the breed's result. HatchAt is the server's Unix time when the egg hatches.
+event BreedResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Ok: boolean,
+		Reason: string(0..80),
+		HatchAt: f64,
+	},
+}
+
+-- Server -> device: eggs that hatched into the stable, by creature id.
+event Hatched {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Ids: string(1..40)[1..8] },
+}
+
+-- Server -> device: what a won battle paid, after its last BattleTurn.
+struct MemberReward {
+	Id: string(1..40),
+	Gained: u32,
+	Level: u8,
+	LevelsGained: u8,
+	XpBefore: u32,
+	XpAfter: u32,
+	NewMoves: string(1..24)[0..8],
+}
+event BattleRewards {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Coins: u32,
+		Material: string(0..24),
+		Members: MemberReward[0..6],
+	},
+}
+
+-- Story (approval pack 2: one-time gifts). The device says which beat it reached and, for the
+-- first beat, which starter it picked; the server checks the beat is next and its trigger is met.
+event CompleteBeat {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BeatId: string(1..40),
+		Choice: string(1..24)?,
+	},
+}
+
+struct GiftView {
+	Kind: string(1..16),
+	Detail: string(0..40),
+	Waiting: boolean,
+}
+
+event BeatCompleted {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BeatId: string(1..40),
+		Gifts: GiftView[0..12],
+		Unlocks: string(1..40)[0..8],
+	},
+}
+
+-- Releasing a creature back to the wild (approval pack 2): pays a few coins, maybe a material,
+-- and typed candy, always less than catching it. Giants and a team's last creature cannot go.
+event ReleaseCreature {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Id: string(1..40) },
+}
+event ReleaseResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Id: string(1..40),
+		Ok: boolean,
+		Reason: string(0..80),
+		Coins: u32,
+		Candy: f32,
+		Element: Element?,
+	},
+}
+
+-- Server -> device: the player's saved state, for the screens. Sent once data loads and again
+-- after anything changes it (at most a few times a second). Display only: the device never
+-- sends any of it back. An egg's child is kept secret until it hatches.
+struct PartView {
+	Species: string(1..24),
+	Quality: u8,
+}
+struct CreatureView {
+	Id: string(1..40),
+	BodyPlan: BodyPlan,
+	Head: PartView,
+	Torso: PartView,
+	FrontLimbs: PartView,
+	Legs: PartView,
+	Tail: PartView,
+	Colour: string(1..24),
+	CarriedColour: string(1..24),
+	Size: f32,
+	Rarity: Rarity,
+	Level: u8,
+	Xp: u32,
+	Generation: u16,
+	BreedCount: u16,
+	BreedReadyAt: f64,
+	OriginBiome: u8,
+	IsGiant: boolean,
+	Bound: boolean,
+	Serial: u32?,
+	-- The share of its health it has lost and not had healed, 0 to 1 (1 = fainted).
+	Hurt: f32,
+}
+struct EggView {
+	HatchAt: f64,
+}
+struct CandyView {
+	Leaf: f32,
+	Sand: f32,
+	Water: f32,
+	Toxic: f32,
+	Frost: f32,
+	Crystal: f32,
+	Fire: f32,
+	Storm: f32,
+	Arcane: f32,
+	Cosmic: f32,
+	Prism: f32,
+}
+struct DailyView {
+	Id: string(1..24),
+	Hard: boolean,
+	Progress: u16,
+	Count: u16,
+	Claimed: boolean,
+}
+event PlayerState {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Coins: u32,
+		Gems: u32,
+		Candy: CandyView,
+		Items: map { [string(1..40)]: u16 },
+		Creatures: CreatureView[0..400],
+		Team: string(1..40)[0..6],
+		Eggs: EggView[0..4],
+		Pens: u8,
+		StableCapacity: u16,
+		Badges: u8,
+		BiomeReached: u8,
+		Starter: string(0..24),
+		Flags: string(1..40)[0..200],
+		-- Quests taken (id -> progress so far) and quests handed in.
+		QuestsActive: map { [string(1..40)]: u16 },
+		QuestsDone: string(1..40)[0..200],
+		-- Today's daily tasks (empty until the first badge).
+		Daily: DailyView[0..12],
+		Waiting: u8,
+		-- Finds (plan 14), display only: one-time finds claimed (caches, notes, cairns, journal
+		-- sets) and renewable spots used today (gathering and sighting spots).
+		Finds: string(1..40)[0..400],
+		FindsToday: string(1..40)[0..64],
+		-- Purchases (plan 16), display only: passes owned, one-time and cosmetic marks, stable room
+		-- that came from purchases, and whether the stable opens anywhere (Field Satchel).
+		Passes: string(1..24)[0..16],
+		Perks: string(1..24)[0..16],
+		StableBonus: u16,
+		StableAnywhere: boolean,
+	},
+}
+
+-- The world. Each player has their own wild creatures: the server tells the device where they
+-- are (hidden in the long grass, so only a place and a rarity tell), and the device asks to
+-- battle one by its id when the player walks up to it. The server checks the id is in that
+-- player's list and that their character is standing next to it.
+struct WildView {
+	Id: u32,
+	X: f32,
+	Z: f32,
+	-- Only the rarity is told, as a tell in the grass; never the species or level.
+	Rarity: Rarity,
+	-- True for one a rustle spot or bait brought out (it steps out at once).
+	Spot: boolean,
+}
+event WildSpawns {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Spawns: WildView[0..32] },
+}
+
+-- Device -> server: the player stepped into a rustle spot.
+event Rustle {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { SpotId: string(1..40) },
+}
+
+-- Finds in side areas and dead ends (plan 14). The device names the find it is holding a prompt
+-- on: a cache, a gathering spot, a note or a cairn. The server checks everything else (the id,
+-- the biome and badge, where the character is, how long it has been there, the limits and the
+-- carry room) and the answer comes back as SearchResult. Sightings use Rustle.
+event Search {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { FindId: string(1..40) },
+}
+
+enum FindOutcome = { Found, Gathered, Read, Built, AlreadyFound, Resting, TooFar, Shut, Full }
+struct FindGain {
+	Item: string(1..40),
+	Count: u16,
+}
+
+-- Server -> device: how a search went and what it gave.
+event SearchResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		FindId: string(1..40),
+		Outcome: FindOutcome,
+		Gains: FindGain[0..8],
+		Prism: u8,
+		-- This note finished the biome's journal set.
+		SetDone: boolean,
+	},
+}
+
+-- Quests. The device names a quest; the server checks it is open to the player and that their
+-- character is standing at the quest giver's place. Progress is counted only from things the
+-- server itself judged.
+event AcceptQuest {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { QuestId: string(1..40) },
+}
+event HandInQuest {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { QuestId: string(1..40) },
+}
+-- Server -> device: a quest was taken, moved on, or handed in (with what it paid).
+enum QuestChange = { Taken, Progress, Ready, Done }
+event QuestUpdate {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		QuestId: string(1..40),
+		Change: QuestChange,
+		Progress: u16,
+		Needed: u16,
+		Gifts: GiftView[0..12],
+	},
+}
+
+-- Items. Using a tonic or a Rally Root in a battle spends the turn. Buying happens at a shop:
+-- the server checks the player is standing there, the price and the coins.
+enum FieldItem = { Tonic, GreatTonic, Revive }
+-- In a battle against the game, Clearwater Drops (Cure) can also be used: they cure poison.
+enum BattleItem = { Tonic, GreatTonic, Revive, Cure }
+event UseItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Item: BattleItem,
+		Target: u8(1..6),
+	},
+}
+event BuyItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Count: u8(1..99),
+	},
+}
+event BuyResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Ok: boolean,
+		Reason: string(0..80),
+		Count: u8,
+		Coins: u32,
+	},
+}
+
+-- Giant fights. The player stands in the giant's lair and uses a Giant Horn (used up win or
+-- lose). Each turn the giant shows what it will do next; the device sends one choice.
+enum GiantActionKind = { Move, Switch, Item }
+enum IntentKind = { Attack, WindUp, Release }
+
+struct GiantIntent {
+	Text: string(0..160),
+	Kind: IntentKind,
+	HitsTeam: boolean,
+	Enraged: boolean,
+	-- For a big attack: the types that stop or halve it.
+	WeakTypes: Element[0..10],
+}
+
+-- The state of the fight after a turn (or at the start, with Turn 0).
+struct GiantView {
+	BattleId: u32,
+	Turn: u16,
+	Lines: string(0..160)[0..24],
+	BossHp: u32,
+	BossMaxHp: u32,
+	TeamHp: u16[1..6],
+	Active: u8(1..6),
+	Intent: GiantIntent,
+	Phase: string(0..40),
+	ItemsLeft: u8,
+	Previews: u16[0..4],
+	Finished: boolean,
+	Won: boolean,
+}
+
+event StartGiant {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { GiantId: string(1..40) },
+}
+event GiantStarted {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Name: string(1..40),
+		Level: u8,
+		Element: Element,
+		Yours: BattleCreature[1..6],
+		View: GiantView,
+	},
+}
+-- Index is a move number (1..4), a team position to switch to, or the team position an item is
+-- used on. Turn must match the server's turn or the choice is refused.
+event GiantAction {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Turn: u16,
+		Kind: GiantActionKind,
+		Index: u8(1..6),
+		Item: FieldItem?,
+	},
+}
+event GiantTurn {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: GiantView,
+}
+
+-- Device -> server: the whole new team, as creature ids in battle order. Refused during a battle.
+event SetTeam {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Ids: string(1..40)[1..6] },
+}
+-- Server -> device: a short notice for the screen (a refusal outside battle, a confirmation).
+event Notice {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Text: string(1..120) },
+}
+
+-- Device -> server: give up the giant fight. The horn stays spent; nothing is paid.
+event LeaveGiant {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { BattleId: u32 },
+}
+
+-- Healing outside a battle. Damage lasts between battles: the healer in town mends every
+-- creature for free (the server checks the player is standing there), and a tonic or a Rally
+-- Root can be used on one creature anywhere outside a battle.
+event HealAtHealer {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: boolean,
+}
+event TreatCreature {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: FieldItem,
+		CreatureId: string(1..40),
+	},
+}
+
+-- Capturing a giant. After a win the server may offer one lasso attempt; the device picks a
+-- lasso and the sweep is played like any throw (LassoPattern, LassoTap, LassoResult). A hit
+-- is finished by the server once the giant's serial number has been fetched.
+event GiantCaptureOffer {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		GiantId: string(1..40),
+		Name: string(1..40),
+		MinTier: LassoTier,
+		Seconds: u8,
+	},
+}
+event ThrowGiantLasso {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		BattleId: u32,
+		Tier: LassoTier,
+	},
+}
+
+-- Device -> server: claim a finished daily task. The server checks it is finished and unpaid.
+event ClaimDailyTask {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { TaskId: string(1..24) },
+}
+
+-- Device -> server: travel from one town's Waystation to another's. The server checks the
+-- player is standing at a Waystation, is not in a battle, and has reached the town they want.
+event Travel {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { BiomeNumber: u8(1..11) },
+}
+
+-- Device -> server: buy the next stable expansion with coins, at a shop. The answer comes as a
+-- Notice and the new state.
+event ExpandStable {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: boolean,
+}
+
+-- Device -> server: use a Tide Bait at a rustle spot (from Tide Flats on). The server checks
+-- the player holds one and is standing at the spot, and takes it only if a creature comes out.
+event UseBait {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { SpotId: string(1..40) },
+}
+-- Device -> server: make one item from materials (a tonic, a deep tonic, a bait).
+event CraftItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Item: string(1..24) },
+}
+
+-- Purchases and Gems (plan 16). The device only ever names a thing (an item id, a product key)
+-- and a count; the server decides the price, whether it is allowed and what is granted.
+
+-- Device -> server: ask to see Roblox's purchase prompt for a pass or Gem product, by its key in
+-- PurchaseConfig ("BiggerStable", "Gems99", "StarterPack"...). The server checks the switch, that
+-- the thing is for sale and not already owned, and then opens the prompt itself. Nothing is
+-- granted by this message: only Roblox's own receipt or pass check grants anything.
+event PromptPurchase {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { Id: string(1..24) },
+}
+
+-- Device -> server: buy a consumable with Gems at a shop. The price is the server's.
+event BuyGemItem {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Count: u8(1..99),
+	},
+}
+event GemBuyResult {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Item: string(1..24),
+		Ok: boolean,
+		Reason: string(0..80),
+		Count: u8,
+		Gems: u32,
+	},
+}
+
+-- Device -> server: finish an egg now for Gems. The egg is named by its hatch time (from the
+-- state), so a list that shifted cannot charge for the wrong egg. The cost is
+-- Gems.eggFinishCost on the server; the device may work out the same number to show it.
+event FinishEgg {
+	From: Client,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct { HatchAt: u32 },
+}
+
+-- Server -> device: what the shop may show this player. Sent when the data loads and whenever
+-- the answer changes. Open is false while the live switch is off, so hide every Robux button.
+-- PaidRandomRestricted comes from PolicyService (true until it answers): while true, hide the
+-- Lasso Pass. TradingAllowed is IsPaidItemTradingAllowed. LassoBoost is true when the pass is
+-- owned and active.
+event PurchaseFlags {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: struct {
+		Open: boolean,
+		PaidRandomRestricted: boolean,
+		TradingAllowed: boolean,
+		LassoBoost: boolean,
+	},
+}

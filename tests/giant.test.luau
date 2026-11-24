@@ -328,7 +328,7 @@ do
 			end
 			allMatch = allMatch and intent.hitsTeam == (attack.target == "Team")
 		end
-		allMatch = allMatch and state.charged == nil == (intent.kind ~= "WindUp")
+		allMatch = allMatch and (state.charged == nil) == (intent.kind ~= "WindUp")
 	end
 	check("every turn the damage and the targets match the announced intent", allMatch)
 	check(

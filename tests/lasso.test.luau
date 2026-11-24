@@ -187,14 +187,23 @@ do
 		"a claim a little ahead (inside the margin) is accepted",
 		judgeAt(now + LassoConfig.CLAIM_MARGIN_MS - 1, 80) ~= "Invalid"
 	)
-	check("a claim too early is invalid, not a miss", judgeAt(now - 81, 80) == "Invalid")
+	local early = LassoConfig.CLAIM_EARLY_MARGIN_MS
+	check(
+		"a claim a frame or two slower than the smallest reading is accepted",
+		judgeAt(now - 66, 48) ~= "Invalid" -- the first Studio run's numbers
+	)
+	check(
+		"a claim too early is invalid, not a miss",
+		judgeAt(now - 80 - early - 1, 80) == "Invalid"
+			and judgeAt(now - 80 - early, 80) ~= "Invalid"
+	)
 	check(
 		"a claim too late is invalid, not a miss",
 		judgeAt(now + LassoConfig.CLAIM_MARGIN_MS + 1, 80) == "Invalid"
 	)
 	check(
-		"the round trip is capped: a claim 500 ms behind is invalid even at 900 ms ping",
-		judgeAt(now - 500, 900) == "Invalid"
+		"the round trip is capped: a claim past the cap and the slack is invalid even at 900 ms ping",
+		judgeAt(now - LassoConfig.ROUND_TRIP_CAP_MS - early - 1, 900) == "Invalid"
 			and judgeAt(now - LassoConfig.ROUND_TRIP_CAP_MS, 900) ~= "Invalid"
 	)
 	check(
@@ -224,6 +233,20 @@ do
 		string.format("%.3f", laggy.zones[1].speed / normal.zones[1].speed)
 	)
 	check("the assist leaves the zone width alone", laggy.zones[1].width == normal.zones[1].width)
+	-- A lag switch turned off after the throw: the sweep was slowed, but the taps arrive quickly.
+	local least = LassoConfig.ROUND_TRIP_CAP_MS * LassoConfig.ASSIST_MIN_LAG_SHARE
+	check(
+		"a slowed sweep with quick taps is invalid",
+		Lasso.judge(laggy, { 2000 - least + 1 }, { 2000 }).verdict == "Invalid"
+	)
+	check(
+		"a slowed sweep with taps that really lag is judged",
+		Lasso.judge(laggy, { 2000 - 450 }, { 2000 }).verdict ~= "Invalid"
+	)
+	check(
+		"quick taps are fine when the sweep was not slowed",
+		Lasso.judge(normal, { 2000 }, { 2000 }).verdict ~= "Invalid"
+	)
 	local crawl = Lasso.createAttempt(input({ slowMode = true, roundTripMs = 2000 }))
 	check(
 		"slow mode and the assist together never go below the floor",
@@ -234,8 +257,30 @@ do
 		Lasso.trustedRoundTripMs({ 310, 95, 400, 120 }) == 95
 	)
 	check(
-		"with too few readings a default is used, however large they are",
+		"with too few readings (and no engine ping) the default is used, however large they are",
 		Lasso.trustedRoundTripMs({ 900, 900 }) == LassoConfig.ROUND_TRIP_DEFAULT_MS
+	)
+	local margin = LassoConfig.ROUND_TRIP_ENGINE_MARGIN_MS
+	check(
+		"held-back replies cannot raise it above the engine's own ping (bug hunt: net 1)",
+		Lasso.trustedRoundTripMs({ 1000, 1000, 1000, 1000 }, 60) == 60 + margin
+	)
+	check(
+		"an honest reading below the engine figure is kept",
+		Lasso.trustedRoundTripMs({ 50, 90, 80 }, 300) == 50
+	)
+	check(
+		"with too few readings an honest slow connection gets its own ping (capture 2)",
+		Lasso.trustedRoundTripMs({}, 300) == 300 + margin
+	)
+	check(
+		"with neither, the generous default (the cap, so no slowing)",
+		Lasso.trustedRoundTripMs({}, nil) == LassoConfig.ROUND_TRIP_CAP_MS
+			and Lasso.assistScale(Lasso.trustedRoundTripMs({}, nil)) == 1
+	)
+	check(
+		"a made-up engine figure is ignored",
+		Lasso.trustedRoundTripMs({ 70, 80, 90 }, 0 / 0) == 70
 	)
 	local slow = Lasso.createAttempt(input({ slowMode = true }))
 	local fast = Lasso.createAttempt(input())
@@ -311,6 +356,156 @@ do
 	)
 	check("a weakened common creature is caught most of the time", weak > 0.8)
 	check("a full-health creature is caught rarely", full < 0.2)
+end
+
+print("\n== Catch chance ==")
+do
+	local zone: Lasso.Zone = { centre = 0.5, width = 0.2, speed = 1, startPhase = 0, startMs = 0 }
+	local function near(a: number, b: number): boolean
+		return math.abs(a - b) < 1e-9
+	end
+	check(
+		"the centre of the green is 0.95",
+		near(Lasso.tapChance(zone, 0.5), LassoConfig.CHANCE_CENTRE)
+	)
+	check(
+		"the edge of the green is 0.75",
+		near(Lasso.tapChance(zone, 0.6), LassoConfig.CHANCE_EDGE)
+	)
+	check("halfway out in the green is 0.85", near(Lasso.tapChance(zone, 0.55), 0.85))
+	check(
+		"just outside the green is about 0.45",
+		math.abs(Lasso.tapChance(zone, 0.6 + 1e-6) - LassoConfig.CHANCE_OUTSIDE_NEAR) < 1e-3
+	)
+	check(
+		"a quarter of the arc beyond the edge is the 0.05 floor",
+		near(Lasso.tapChance(zone, 0.85), LassoConfig.CHANCE_OUTSIDE_FLOOR)
+	)
+	check(
+		"and it stays at the floor further out",
+		near(Lasso.tapChance(zone, 1.0), LassoConfig.CHANCE_OUTSIDE_FLOOR)
+	)
+	check("a NaN position is 0", Lasso.tapChance(zone, 0 / 0) == 0)
+	-- A full-health Common's zone is about 0.015 wide: a tap 50 ms off (0.045 of the arc) must
+	-- be at the floor, so weakening a creature first still matters (review, 23 November 2026).
+	local healthy: Lasso.Zone =
+		{ centre = 0.5, width = 0.015, speed = 1, startPhase = 0, startMs = 0 }
+	check(
+		"a narrow zone forgives little: 0.045 off a full-health zone is the floor",
+		near(Lasso.tapChance(healthy, 0.545), LassoConfig.CHANCE_OUTSIDE_FLOOR)
+	)
+	check(
+		"and just outside a narrow zone still gives a chance",
+		Lasso.tapChance(healthy, 0.5076) > 0.4
+	)
+	local falling = true
+	local previous = 2
+	for step = 0, 100 do
+		local chance = Lasso.tapChance(zone, 0.5 + step / 100 * 0.5)
+		falling = falling and chance <= previous + 1e-12
+		previous = chance
+	end
+	check("the chance never rises as the tap moves away from the centre", falling)
+
+	check(
+		"an invalid throw has no chance",
+		Lasso.catchChance({}, "Common") == 0
+			and Lasso.judge(Lasso.createAttempt(input()), { 1 }, { 9999 }).chances[1] == nil
+	)
+	check(
+		"rarity multiplies the zones' chances",
+		near(Lasso.catchChance({ 0.9, 0.8 }, "Ruby"), 0.9 * 0.8 * LassoConfig.RARITY_CHANCE.Ruby)
+	)
+	check(
+		"a rarer creature is never easier",
+		Lasso.catchChance({ 0.9 }, "Cosmic") < Lasso.catchChance({ 0.9 }, "Gem")
+			and Lasso.catchChance({ 0.9 }, "Gem") < Lasso.catchChance({ 0.9 }, "Common")
+	)
+	check("no chance reaches 1", Lasso.catchChance({ LassoConfig.CHANCE_CENTRE }, "Common") < 1)
+end
+
+print("\n== Simulated throws at set offsets ==")
+do
+	local THROWS = 6000
+	local TOLERANCE = 0.025 -- about 4 standard deviations at 6000 throws
+	-- Throws at a set distance in milliseconds from the zone's centre crossing, judged the way
+	-- the server does, then rolled against the chance with a seeded Rng.
+	local function simulate(offsetMs: number, rarity: Types.Rarity): (number, number)
+		local rng = Rng.new(5150 + math.floor(offsetMs) + #rarity)
+		local caught, expected = 0, 0
+		for trial = 1, THROWS do
+			local pattern = Lasso.createAttempt(
+				input({ seed = trial * 17, rarity = rarity, healthFraction = 0.2 })
+			)
+			local claims: { number } = {}
+			for i, zone in pattern.zones do
+				table.insert(
+					claims,
+					math.max(
+						zone.startMs,
+						Lasso.nextCentreTimeMs(pattern, i, zone.startMs + 600) + offsetMs
+					)
+				)
+			end
+			local judgement = Lasso.judge(pattern, claims, claims)
+			local chance = Lasso.catchChance(judgement.chances, rarity)
+			expected += chance
+			if Rng.next(rng) < chance then
+				caught += 1
+			end
+		end
+		return caught / THROWS, expected / THROWS
+	end
+	local centreRate, centreExpected = simulate(0, "Common")
+	local edgeRate, edgeExpected = simulate(150, "Common")
+	local outRate, outExpected = simulate(700, "Common")
+	local rubyRate, rubyExpected = simulate(0, "Ruby")
+	print(
+		string.format(
+			"  Common: centre %.1f%% (formula %.1f%%), 150 ms off %.1f%% (%.1f%%), 700 ms off %.1f%% (%.1f%%); Ruby centre %.1f%% (%.1f%%)",
+			centreRate * 100,
+			centreExpected * 100,
+			edgeRate * 100,
+			edgeExpected * 100,
+			outRate * 100,
+			outExpected * 100,
+			rubyRate * 100,
+			rubyExpected * 100
+		)
+	)
+	check(
+		"a centred throw lands near the formula",
+		math.abs(centreRate - centreExpected) < TOLERANCE
+	)
+	check(
+		"an off-centre throw lands near the formula",
+		math.abs(edgeRate - edgeExpected) < TOLERANCE
+	)
+	check("a far-out throw lands near the formula", math.abs(outRate - outExpected) < TOLERANCE)
+	check(
+		"a ruby centred throw lands near the formula",
+		math.abs(rubyRate - rubyExpected) < TOLERANCE
+	)
+	check(
+		"a centred throw catches more than an off-centre one, and that more than a far-out one",
+		centreRate > edgeRate and edgeRate > outRate
+	)
+	check("no centred throw is guaranteed", centreRate < 1 and centreExpected < 0.96)
+	check("a far-out throw is not a guaranteed miss", outRate > 0)
+end
+
+print("\n== A tap before its loop sweeps is dropped (bug hunt: capture 1) ==")
+do
+	check("a tap before the loop starts does not count", not Lasso.sweepStarted(3000, 700))
+	check(
+		"a tap at or after the start counts",
+		Lasso.sweepStarted(3000, 3000) and Lasso.sweepStarted(3000, 3500)
+	)
+	check("the first loop starts at zero", Lasso.sweepStarted(0, 0))
+	check(
+		"a bad number is left to the judge (it is Invalid there)",
+		Lasso.sweepStarted(3000, 0 / 0)
+	)
 end
 
 print(`\n{passed} passed, {failed} failed`)

@@ -18,7 +18,7 @@ export type BreedResult = {
 	child: Creature,
 	hatchAt: number,
 	cost: number,
-	candy: number,
+	candy: { Types.CandyNeed }, -- what Breeding.candyCost asked for, by type
 	parentA: { breedCount: number, breedReadyAt: number },
 	parentB: { breedCount: number, breedReadyAt: number },
 }
@@ -72,9 +72,6 @@ function Breeding.canBreed(a: Creature, b: Creature, now: number): (boolean, str
 	end
 	if a.bodyPlan ~= b.bodyPlan then
 		return false, "Parents must share a body plan"
-	end
-	if a.isGiant or b.isGiant then
-		return false, "Giants cannot breed"
 	end
 	if a.rarity == "Cosmic" or b.rarity == "Cosmic" then
 		return false, "Cosmic creatures cannot breed"
@@ -130,9 +127,82 @@ function Breeding.cost(a: Creature, b: Creature): number
 	)
 end
 
--- Breeding Candy for this breed: set by the rarer parent.
-function Breeding.candyCost(a: Creature, b: Creature): number
-	return BreedConfig.CANDY_COST[rarerOf(a, b)]
+-- A creature's type: the element of its torso's species (the torso sets the type).
+function Breeding.element(creature: Creature): Types.Element
+	return Species[creature.parts.Torso.species].element
+end
+
+-- Breeding Candy for this breed, by type: each parent needs CANDY_COST[its own rarity] of its
+-- own type. A same-type pair is one entry with both amounts added; otherwise parent A's type
+-- comes first. Entries with nothing to pay are left out. How the balance pays it (typed candy
+-- first, then Prism) is Economy.candyPayment.
+function Breeding.candyCost(a: Creature, b: Creature): { Types.CandyNeed }
+	local needs: { Types.CandyNeed } = {}
+	for _, parent in { a, b } do
+		-- A captured giant pays in its own Giant Candy instead (Breeding.giantCandyCost).
+		local amount: number = if parent.isGiant then 0 else BreedConfig.CANDY_COST[parent.rarity]
+		local element: Types.Element = Breeding.element(parent)
+		local merged = false
+		for _, need in needs do
+			if need.element == element then
+				need.amount += amount
+				merged = true
+			end
+		end
+		if not merged and amount > 0 then
+			local need: Types.CandyNeed = { element = element, amount = amount }
+			table.insert(needs, need)
+		end
+	end
+	return needs
+end
+
+export type GiantCandyNeed = { species: string, amount: number }
+
+-- Giant Candy for this breed: each captured-giant parent needs GIANT_CANDY_COST of its own
+-- kind (two of the same giant need twice as much). Empty for a breed with no giant in it.
+function Breeding.giantCandyCost(a: Creature, b: Creature): { GiantCandyNeed }
+	local needs: { GiantCandyNeed } = {}
+	for _, parent in { a, b } do
+		if parent.isGiant then
+			local species = parent.parts.Torso.species
+			local merged = false
+			for _, need in needs do
+				if need.species == species then
+					need.amount += BreedConfig.GIANT_CANDY_COST
+					merged = true
+				end
+			end
+			if not merged then
+				table.insert(needs, { species = species, amount = BreedConfig.GIANT_CANDY_COST })
+			end
+		end
+	end
+	return needs
+end
+
+-- True if the player's items hold every Giant Candy this breed needs. `keyFor` gives the item
+-- key for a giant's species (Economy.giantCandyKey).
+function Breeding.hasGiantCandy(
+	items: { [string]: number },
+	needs: { GiantCandyNeed },
+	keyFor: (species: string) -> string
+): boolean
+	for _, need in needs do
+		if (items[keyFor(need.species)] or 0) < need.amount then
+			return false
+		end
+	end
+	return true
+end
+
+-- Total candy of every type a breed needs (for summaries; paying uses the list).
+function Breeding.candyTotal(needs: { Types.CandyNeed }): number
+	local total = 0
+	for _, need in needs do
+		total += need.amount
+	end
+	return total
 end
 
 -- Chance of each rarity for the child. The values sum to 1.
@@ -251,8 +321,15 @@ function Breeding.breed(a: Creature, b: Creature, rng: Rng.Rng, options: BreedOp
 	end
 
 	local jitter = (Rng.next(rng) * 2 - 1) * BreedConfig.SIZE_JITTER
-	local size =
-		math.clamp((a.size + b.size) / 2 + jitter, BreedConfig.SIZE_MIN, BreedConfig.SIZE_MAX)
+	-- A giant parent counts as the largest ordinary size, so its children are not all huge.
+	local function ordinary(parent: Creature): number
+		return math.clamp(parent.size, BreedConfig.SIZE_MIN, BreedConfig.SIZE_MAX)
+	end
+	local size = math.clamp(
+		(ordinary(a) + ordinary(b)) / 2 + jitter,
+		BreedConfig.SIZE_MIN,
+		BreedConfig.SIZE_MAX
+	)
 	local rarity: Types.Rarity = rollRarity(a, b, rng)
 
 	local child: Creature = {
@@ -273,6 +350,12 @@ function Breeding.breed(a: Creature, b: Creature, rng: Rng.Rng, options: BreedOp
 		-- A child of a creature that can never be traded can never be traded either,
 		-- so breeding cannot be used to move a bound creature's value into a tradable one.
 		bound = a.bound or b.bound,
+		-- Paid help is inherited the same way, so breeding cannot launder a Gem-lasso catch into a
+		-- creature that releases for coins. "GemLasso" outranks "Pass".
+		paidAssist = if a.paidAssist == "GemLasso" or b.paidAssist == "GemLasso"
+			then "GemLasso"
+			elseif a.paidAssist == "Pass" or b.paidAssist == "Pass" then "Pass"
+			else nil,
 	}
 
 	local function after(parent: Creature)
@@ -304,7 +387,7 @@ export type Preview = {
 	rarityOdds: RarityOdds,
 	level: number,
 	cost: number,
-	candy: number,
+	candy: { Types.CandyNeed }, -- candy by type, as Breeding.candyCost
 }
 
 -- What the breeder screen shows before the player pays. Enumerates all 32 part combinations

@@ -13,9 +13,13 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Breeding = require(ReplicatedStorage.shared.Breeding)
+local Economy = require(ReplicatedStorage.shared.Economy)
+local Grants = require(ReplicatedStorage.shared.Grants)
+local PassEffects = require(ReplicatedStorage.shared.PassEffects)
 local Profile = require(ReplicatedStorage.shared.Profile)
 local Rng = require(ReplicatedStorage.shared.Rng)
 local Types = require(ReplicatedStorage.shared.Types)
+local LiveConfigService = require(script.Parent.Parent.LiveConfig.LiveConfigService)
 
 -- Supplied by the data service: the loaded profile, or nil if it is not loaded on this server
 -- right now (never a stale copy: once a session ends this must return nil at once).
@@ -25,6 +29,8 @@ export type GetData = (player: Player) -> Profile.Profile?
 -- creature locked for good.
 export type IsLocked = (player: Player, creatureId: string) -> boolean
 export type Log = (event: string, fields: { [string]: any }) -> ()
+-- Supplied by the story: true once the player has reached the beat that opens breeding.
+export type IsOpen = (data: Profile.Profile) -> boolean
 
 local MIN_SECONDS_BETWEEN_REQUESTS = 1
 local CHARM_ITEM = "BondCharm"
@@ -36,6 +42,7 @@ export type BreedingService = typeof(setmetatable(
 	{} :: {
 		getData: GetData,
 		isLocked: IsLocked,
+		isOpen: IsOpen,
 		log: Log,
 		lastRequest: { [Player]: number },
 		random: Random,
@@ -43,22 +50,20 @@ export type BreedingService = typeof(setmetatable(
 	BreedingService
 ))
 
-function BreedingService.new(getData: GetData, isLocked: IsLocked, log: Log): BreedingService
+function BreedingService.new(
+	getData: GetData,
+	isLocked: IsLocked,
+	isOpen: IsOpen,
+	log: Log
+): BreedingService
 	return setmetatable({
 		getData = getData,
 		isLocked = isLocked,
+		isOpen = isOpen,
 		log = log,
 		lastRequest = {},
 		random = Random.new(),
 	}, BreedingService)
-end
-
-local function countCreatures(data: Profile.Profile): number
-	local count = 0
-	for _ in data.Creatures do
-		count += 1
-	end
-	return count
 end
 
 -- Handles a breed request. Returns true and the egg's hatch time, or false and a reason for
@@ -90,6 +95,12 @@ function BreedingService.requestBreed(
 	if not data then
 		return false, "Data not loaded"
 	end
+	if not LiveConfigService.isOn("breeding_open") then
+		return false, LiveConfigService.closedText()
+	end
+	if not self.isOpen(data) then
+		return false, "Breeding is not open to you yet"
+	end
 	local a, b = data.Creatures[idA], data.Creatures[idB]
 	if not a or not b then
 		return false, "You do not own those creatures"
@@ -109,9 +120,19 @@ function BreedingService.requestBreed(
 	if data.Coins < cost then
 		return false, "Not enough coins"
 	end
-	local candy = Breeding.candyCost(a, b)
-	if data.Candy < candy then
+	-- Each parent needs candy of its own type; typed candy is used first, then Prism.
+	local payment = Economy.candyPayment(data.Candy, Breeding.candyCost(a, b))
+	if not payment then
 		return false, "Not enough Breeding Candy"
+	end
+	local candyAfter = Economy.payCandy(data.Candy, payment)
+	if not candyAfter then
+		return false, "Not enough Breeding Candy"
+	end
+	-- A captured giant needs its own Giant Candy, which nothing else can stand in for.
+	local giantNeeds = Breeding.giantCandyCost(a, b)
+	if not Breeding.hasGiantCandy(data.Items, giantNeeds, Economy.giantCandyKey) then
+		return false, "Not enough Giant Candy: beat the giant again to earn more"
 	end
 	-- A charm only counts if the player owns one; it is used up below with everything else.
 	if charm and (data.Items[CHARM_ITEM] or 0) < 1 then
@@ -129,13 +150,18 @@ function BreedingService.requestBreed(
 
 	-- 4. Apply every change together. Nothing above this line has changed the player's data.
 	data.Coins -= result.cost
-	data.Candy -= result.candy
+	data.Candy = candyAfter -- worked out above from this same balance, with no pause since
+	for _, need in giantNeeds do
+		data.Items[Economy.giantCandyKey(need.species)] -= need.amount
+	end
 	if charm then
 		data.Items[CHARM_ITEM] -= 1
 	end
 	a.breedCount, a.breedReadyAt = result.parentA.breedCount, result.parentA.breedReadyAt
 	b.breedCount, b.breedReadyAt = result.parentB.breedCount, result.parentB.breedReadyAt
-	table.insert(data.Eggs, { child = result.child, hatchAt = result.hatchAt, seed = seed })
+	-- Quick Hatch shortens the timer only; the child was decided above and is not touched.
+	local hatchAt = PassEffects.hatchAt(data, time, result.hatchAt)
+	table.insert(data.Eggs, { child = result.child, hatchAt = hatchAt, seed = seed })
 
 	-- 5. Log it so any creature can be traced and any breed replayed.
 	self.log("Breed", {
@@ -146,9 +172,14 @@ function BreedingService.requestBreed(
 		seed = seed,
 		cost = result.cost,
 		candy = result.candy,
+		candyTyped = payment.typed,
+		candyPrism = payment.prism,
+		giantCandy = giantNeeds,
 		charm = charm ~= nil,
+		hatchAt = hatchAt,
+		quickHatch = hatchAt ~= result.hatchAt,
 	})
-	return true, result.hatchAt
+	return true, hatchAt
 end
 
 -- Moves finished eggs into the stable while there is room. An egg whose time is up but which
@@ -160,13 +191,15 @@ function BreedingService.collectHatched(self: BreedingService, player: Player): 
 		return hatched
 	end
 	local now = os.time()
-	local room = data.StableCapacity - countCreatures(data)
+	-- Grants.room also counts the places held by gem catches waiting for their serial number.
+	local room = Grants.room(data)
 	local index = 1
 	while index <= #data.Eggs and room > 0 do
 		local egg = data.Eggs[index]
 		if now >= egg.hatchAt then
 			table.remove(data.Eggs, index)
 			data.Creatures[egg.child.id] = egg.child
+			Grants.recordOwned(data, egg.child)
 			table.insert(hatched, egg.child)
 			room -= 1
 			self.log("Hatch", { player = player.UserId, child = egg.child.id })

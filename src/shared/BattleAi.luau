@@ -1,7 +1,7 @@
 --!strict
 -- Who chooses what for the side the game controls, as pure functions of the battle state.
 -- Three tiers: Wild (simple), Tamer (medium), Rival (one step ahead). Deterministic given the state
--- and any Rng passed in, so a battle replays. Battle.luau is untouched; these only build Actions.
+-- and any Rng passed in, so a battle replays. These only build Actions; the rules are in Battle.luau.
 
 local AiConfig = require("../config/AiConfig")
 local Battle = require("./Battle")
@@ -42,11 +42,12 @@ end
 
 -- Shared helpers ----------------------------------------------------------------------------
 
--- Best (highest preview damage) move of `me` against `foe`; ties go to the earlier move.
+-- Best move of `me` against `foe` (its damage now plus what its poison would do); ties go to
+-- the earlier move.
 local function bestMove(me: Battle.Fighter, foe: Battle.Fighter): (string, number)
 	local best, bestDamage = me.moves[1], -1
 	for _, name in me.moves do
-		local damage = Battle.previewDamage(me, foe, name)
+		local damage = Battle.moveValue(me, foe, name)
 		if damage > bestDamage then
 			best, bestDamage = name, damage
 		end

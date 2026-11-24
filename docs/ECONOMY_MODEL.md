@@ -1,20 +1,21 @@
 # Economy model: coins and Breeding Candy
 
-Date: 16 November 2026. Status: starting values, every one a [Default] to tune from the first playtest.
+Date: 16 November 2026; candy rebuilt as typed candy on 20 November 2026 (`DECISIONS.md`). Status: starting values, every one a [Default] to tune from the first playtest.
 
 - Numbers: `src/config/EconomyConfig.luau`. Rules over them: `src/shared/Economy.luau`.
-- Proof: `tests/economy.test.luau` (invariants, a 30-day simulation of three player types on fixed seeds, and the target bands as assertions). It runs in about one second. Set `RUN_LONG_EXPLORATION = true` at the top for 200 seeds per player type and the sensitivity table (about 13 seconds).
-- Breeding prices, cooldowns and hatch times are read from `src/config/BreedConfig.luau` and were not changed.
+- Proof: `tests/economy.test.luau` (invariants, a 30-day simulation of three player types on fixed seeds, a Sand-starter check, a catch-and-release farming hour, and the target bands as assertions). It runs in about one and a half seconds. Set `RUN_LONG_EXPLORATION = true` at the top for 200 seeds per player type and the sensitivity table (about 20 seconds).
+- Breeding coin prices, cooldowns and hatch times are read from `src/config/BreedConfig.luau` and were not changed. `CANDY_COST` keeps its values (1, 2, 5, 12, 30) but is now paid by each parent in its own type.
 
 ## 1. The three currencies
 
 | Currency | Earned from | Spent on | Rules |
 | --- | --- | --- | --- |
 | Coins | Battles, quests, daily and weekly tasks, releases, casual PvP (later) | Lassos, healing, Giant Horns, bait, Bond Charms, breeding, stable space, decorations | Earned only. Never sold, never traded |
-| Breeding Candy | Mentor's lesson, daily tasks, giant rematches, first clears, quest lines, weekly challenge, ranked seasons (later) | Every breed (1, 2, 5, 12 or 30 by the rarer parent) | Earned only. Never sold for Robux or Gems, never traded or gifted |
+| Breeding Candy, typed (one balance per element) | Catching a creature (its type), releasing one (less) | Every breed: each parent uses 1, 2, 5, 12 or 30 by its own rarity, of its own type | Earned only. Never sold for Robux or Gems, never traded or gifted |
+| Prism Candy (working name; counts as any type) | Mentor's lesson, daily tasks, giant rematches, first clears, quest lines, weekly challenge, ranked seasons (later) | Any shortfall in a breed's typed candy | Same as typed candy |
 | Gems | Robux | Time (hatch speed-ups) and capacity (pens, stable) | Not modelled here: they buy no coins, candy or random result |
 
-Candy is the gate on how many creatures are made; coins are the sink that keeps balances in check. The model is tuned so that, for regular and heavy players, candy, pens and cooldowns run out before coins do.
+Candy is the gate on how many gem-tier creatures are made; coins are the sink that keeps balances in check. With typed candy, common breeding is paced by coins, pens and cooldowns, and candy bites where it should: a gem-tier pair needs a lot of one type, and that type comes from catching it or from scarce Prism.
 
 ## 2. Starting values
 
@@ -67,11 +68,33 @@ Repeatable income rises faster than the breed tier on purpose. With income scale
 
 Up to five field items (Tonics, Deep Tonics, Rally Roots) can be brought into a giant fight. Crafted items cannot be sold back, so materials never become coins. The town healer stays free.
 
-**Breeding Candy**
+**Breeding Candy: what a breed uses** (`BreedConfig.CANDY_COST`, per parent, in that parent's type: its torso's element)
 
-| Source | Candy | Limit |
+| Parent's rarity | Common | Uncommon | Gem tier | Ruby | Diamond |
+| --- | --- | --- | --- | --- | --- |
+| Candy of its own type | 1 | 2 | 5 | 12 | 30 |
+
+A breed of two types needs both kinds (a common Sand with a common Leaf needs 1 Sand and 1 Leaf); a same-type pair pays both from one balance (two common Leafs need 2 Leaf). Typed candy is spent first and Prism covers any shortfall (`Economy.candyPayment`). A pure gem pair now needs 10 a breed, Ruby 24 and Diamond 30 + 30 = 60, twice the single-candy prices; supply from catching makes up the difference (section 4, table G).
+
+**Typed candy: catching and releasing** (per type, per day)
+
+| Rarity | Catch | Release |
 | --- | --- | --- |
-| Mentor's lesson (about minute 10) | 2 | Once. It also gives the second breeding pen |
+| Common | 1 | 0.5 (one candy every second release) |
+| Uncommon | 2 | 0.5 |
+| Gem tier | 6 | 3 |
+| Ruby | 12 | 6 |
+| Diamond (and Cosmic) | 24 | 12 |
+
+- **Falloff, per type per day** (`CATCH_FALLOFF`, `RELEASE_FALLOFF`): the first 3 catches of a type pay in full, each later one half the one before (releases: 0.4), never below a tenth, and nothing from the 40th. Fractions add up across the day, so a tenth pays one candy every tenth catch: diminishing, not a wall. A whole day of common catches of one type pays at most 7 candy, releases at most 3.
+- **Releasing pays less than obtaining, in candy too:** a release pays less than the catch, and less than the cheapest breed that can make that rarity (Common 0.5 against 2, Gem 3 against 6, Diamond 12 against 31); over any number of claims in a day, releases never add up to more than catches (tested).
+- The counts are saved in the profile (`Daily.catches`, `Daily.releases`), reset by the server's date.
+
+**Prism Candy** (counts as any type)
+
+| Source | Prism | Limit |
+| --- | --- | --- |
+| Mentor's lesson (about minute 10) | 2 | Once. It also gives the second breeding pen, and pays for the first breed |
 | Easy daily tasks | 1 each, 3 a day | Daily, from the first badge |
 | Hard daily tasks | 1 each, 3 a day | Daily, from the first badge |
 | Giant rematch win | 1 | Two a day |
@@ -81,25 +104,30 @@ Up to five field items (Tonics, Deep Tonics, Rally Roots) can be brought into a 
 | Quest line | 2 / 3 / 4 by biome | Once per line |
 | Ranked season | 10 (placeholder) | Once per season, when PvP ships |
 
+Story and quest rewards use the reward kind `PrismCandy` (`WorldTypes`).
+
 **Stable and pens**: 30 free stable slots; coin expansions of 10 slots at 3,000, 6,000, 12,000, 24,000 and 48,000 (Gem expansions stack on top). Pens: one free, the second from the mentor's lesson, up to 4 with Gems. Twelve cosmetic stable decorations from 5,000 to 280,000 coins are the veterans' prestige sink.
 
 ## 3. Rules that keep every faucet bounded
 
-- **No faucet without a cap or a diminishing rule.** Every named source in the ledger (`EconomyConfig.FLOWS`) is marked Diminishing, Daily, Weekly, Once or BelowCost, and the test fails if one is not, or if any candy source pays past its cap.
+- **No faucet without a cap or a diminishing rule.** Every named source in the ledger (`EconomyConfig.FLOWS`) is marked Diminishing, Daily, Weekly, Once or BelowCost, and the test fails if one is not, if any Prism source pays past its cap, or if typed candy ever rises within a day or pays at its stop.
+- **Typed candy falls off per type per day** (section 2), so catch-and-release cannot flood supply: an hour of it earns about as much candy as an hour of normal play (section 4, table I).
 - **Wild wins diminish per kind per day** and stop at the 50th win of a kind. A player stuck before a giant still has several fresh kinds to fight; the first version (5 full wins, then x0.75) left a heavy player who failed a giant on day 1 earning almost nothing for 40 minutes, so it was widened.
 - **Releasing always pays less than obtaining.** A release pays at most 75% of the cheapest lasso that can catch that rarity, counting any materials at their crafting value; `Economy.releasePayout` enforces this, so it holds for every rarity and every biome to 11 (tested). Catching and releasing is always worse than just winning the battle. It also pays far less than any breed (400 coins or more).
-- **The ledger never goes below zero.** `Economy.apply` refuses an unknown flow, an amount that is not a positive whole number, or a spend larger than the balance, and returns the balances unchanged. 20,000 random moves never went negative, and no transaction in the simulation was refused.
+- **The ledger never goes below zero.** `Economy.apply` refuses an unknown flow, a typed candy flow without a type, an amount that is not a positive whole number, or a spend larger than the balance (for typed candy: that type plus Prism), and returns the balances unchanged. 20,000 random moves across every type never went negative, and no transaction in the simulation was refused.
 - **Giant rematches are a coin sink.** The Horn always costs more than the rematch pays; the reward for preparing is candy.
 
 ## 4. The simulation
 
-Three player types play one session a day for 30 days through Greenwood, Dust Canyon and Tide Flats, then the post-game. A day is a sequence of timed activities: story wild battles and tamers in order, two quest lines per biome, giant attempts (buying a Horn and topping up the field items first, saving for it from halfway through the biome's tamers), the gate, then after the story giant rematches, tamer rematches, bait, the weekly challenge and wild battles in whichever biome still pays best. Lasso throws can miss and creatures flee after three misses. Healing is a Tonic or a walk to the free healer. Breeding runs whenever coins (above a small reserve), candy, a free pen and parent cooldowns allow, across four common pairs plus a gem pair once a gem creature is owned; children sometimes replace a parent, some are released, and a full stable is either expanded with coins or emptied of five commons. Players buy stable space and decorations only once they hold more than three days of income. Every coin and candy movement goes through `Economy.apply`.
+Three player types play one session a day for 30 days through Greenwood, Dust Canyon and Tide Flats, then the post-game. A day is a sequence of timed activities: story wild battles and tamers in order, two quest lines per biome, giant attempts (buying a Horn and topping up the field items first, saving for it from halfway through the biome's tamers), the gate, then after the story giant rematches, tamer rematches, bait, the weekly challenge and wild battles in whichever biome still pays best. Lasso throws can miss and creatures flee after three misses. Healing is a Tonic or a walk to the free healer. Every coin and candy movement goes through `Economy.apply`.
 
-| Player | Minutes a day | Lasso attempts (story, after) | Giant first-try win chance | Rematches a day | Bond Charm on | Bait a day |
-| --- | --- | --- | --- | --- | --- | --- |
-| Casual | 20 | 40%, 10% | 45% | 0 | none | 0 |
-| Regular | 45 | 40%, 12% | 55% | 1 | 15% of breeds | 1 |
-| Heavy | 120 | 40%, 15% | 65% | 2 | 40% of breeds | 3 |
+**Types and candy in the simulation.** Each kind of wild creature has a type: Greenwood follows its roster (four Leaf kinds, one Water, one Sand; Sand only on Route B, the second half of the story), Dust Canyon the roster being designed (four Sand, one Leaf, one Water), Tide Flats a guess (four Water, one Toxic, one Sand). Every catch pays typed candy with the falloff; during the story players keep their catches (a full stable still releases five, which pays candy), and after it they release a share at once (casual 30%, regular 50%, heavy 60%). The four common breeding pairs are random creatures of the current biome, so most breeds mix two types; the starter is one parent of the first pair. Breeding runs whenever coins (above a small reserve), candy, a free pen and parent cooldowns allow, across the four common pairs plus a gem pair once a gem creature is owned. While a gem pair exists the player holds back its next breed's candy (its own types first, then Prism) and its coins, and common pairs use what is left. Children sometimes replace a parent and take either parent's type; some are released, and a full stable is either expanded with coins or emptied of five commons. Players buy stable space and decorations only once they hold more than three days of income.
+
+| Player | Minutes a day | Lasso attempts (story, after) | Catches a day (week 1, after the story) | Released at once after the story | Giant first-try win chance | Rematches a day | Bond Charm on | Bait a day |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Casual | 20 | 40%, 10% | 3.3, 1.9 | 30% | 45% | 0 | none | 0 |
+| Regular | 45 | 40%, 12% | 6.6, 4.7 | 50% | 55% | 1 | 15% of breeds | 1 |
+| Heavy | 120 | 40%, 15% | 16.9, 16.1 | 60% | 65% | 2 | 40% of breeds | 3 |
 
 Each failed giant attempt adds 15% to the next one's chance (the patterns are fixed, so players learn them), and each field item adds 3%.
 
@@ -109,77 +137,102 @@ Each failed giant attempt adds 15% to the next one's chance (the patterns are fi
 
 | Player | First 2 hours | After Greenwood | Week 1 | Week 2 | Week 3 | Week 4 | After the story | Times unable to buy a lasso or Tonic |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Casual | 69% | 89% | 77% | 77% | 89% | 101% | 90% | 0 |
-| Regular | 59% | 90% | 77% | 88% | 87% | 97% | 92% | 0 |
-| Heavy | 58% | 87% | 79% | 84% | 87% | 96% | 89% | 0 |
+| Casual | 68% | 89% | 77% | 76% | 89% | 100% | 89% | 0 |
+| Regular | 59% | 90% | 75% | 87% | 88% | 96% | 92% | 0 |
+| Heavy | 57% | 87% | 78% | 84% | 88% | 97% | 89% | 0 |
+
+The single-candy model gave 69/59/58% in the first two hours; the coin results are otherwise within a point or two.
 
 **B. Progress and breeding**
 
 | Player | Biomes cleared on day | Greenwood coins a minute | Common Greenwood breed in minutes of income | Breeds a day, week 1 / later | Mean coins a breed | Share of breeds on a gem pair |
 | --- | --- | --- | --- | --- | --- | --- |
-| Casual | 3.4, 7.2, 12.0 | 84 | 4.8 | 1.9 / 2.0 | 2,985 | 19% |
-| Regular | 2.0, 3.5, 5.7 | 86 | 4.7 | 3.5 / 3.3 | 3,659 | 22% |
-| Heavy | 1.0, 2.0, 2.2 | 88 | 4.5 | 5.9 / 5.5 | 3,404 | 16% |
+| Casual | 3.3, 7.1, 11.8 | 85 | 4.7 | 1.9 / 1.8 | 3,090 | 21% |
+| Regular | 2.0, 3.4, 5.7 | 87 | 4.6 | 3.3 / 3.3 | 3,682 | 22% |
+| Heavy | 1.0, 2.0, 2.2 | 88 | 4.5 | 5.8 / 5.6 | 3,443 | 17% |
 
 **C. Candy**
 
-| Player | Candy a day, week 1 | Candy a day after the story | Unspent at day 30 | First breed |
-| --- | --- | --- | --- | --- |
-| Casual | 6.0 | 3.4 | 36 | minute 11, day 1, mentor's candy |
-| Regular | 10.2 | 5.9 | 19 | minute 11, day 1, mentor's candy |
-| Heavy | 13.7 | 8.1 | 3 | minute 11, day 1, mentor's candy |
+| Player | Candy a day, week 1 (of it Prism) | After the story: Prism + typed (the best type alone) | Candy an hour after the story | Unspent at day 30 (all types) | First breed |
+| --- | --- | --- | --- | --- | --- |
+| Casual | 9.5 (6.2) | 3.4 + 3.0 (2.0) | 18.9 | 59 | minute 11, day 1, mentor's Prism |
+| Regular | 17.0 (10.2) | 5.9 + 8.1 (5.1) | 18.6 | 111 | minute 11, day 1, mentor's Prism |
+| Heavy | 30.3 (13.8) | 8.1 + 19.4 (9.7) | 13.7 | 321 | minute 11, day 1, mentor's Prism |
 
-Where candy comes from over the month: daily tasks 57 to 62%, first clears 11 to 22%, quest lines 6 to 13%, giant rematches 0 to 16%, weekly challenge 4 to 8%, the mentor 1%. The week-1 figure is the one-time burst; it is nearly double the steady rate.
+Where candy comes from over the month: catches 34 to 54%, releases 6 to 12%, daily tasks 21 to 34%, first clears 4 to 13%, quest lines 2 to 8%, giant rematches 0 to 5%, weekly challenge 1 to 4%, the mentor 1% or less. Unspent candy is mostly types the player has no pair for; it does not buy gem tiers, because a gem pair needs one type (table G).
 
 **D. Coins on hand**
 
 | Player | End of week 1 / 2 / 3 / 4 | Income a day after the story | Days of income held: day 7, mean of days 8 to 30, day 30 | First gem-tier child |
 | --- | --- | --- | --- | --- |
-| Casual | 5,175 / 19,718 / 28,788 / 27,864 | 12,083 | 1.6, 2.3, 2.7 | day 19.9, in 62% of runs |
-| Regular | 20,567 / 44,304 / 69,723 / 76,678 | 28,055 | 1.6, 2.2, 2.7 | day 14.6, in 84% of runs |
-| Heavy | 66,532 / 126,882 / 176,414 / 189,921 | 54,638 | 1.5, 2.8, 3.8 | day 10.6, in 94% of runs |
+| Casual | 5,521 / 21,024 / 29,581 / 29,252 | 12,057 | 1.7, 2.4, 2.9 | day 20.2, in 61% of runs |
+| Regular | 22,742 / 47,591 / 71,952 / 79,312 | 28,102 | 1.7, 2.3, 2.8 | day 14.4, in 82% of runs |
+| Heavy | 69,959 / 131,689 / 178,558 / 191,479 | 54,652 | 1.6, 2.9, 3.8 | day 11.2, in 94% of runs |
 
 **E. Giants** (first attempt's preparation; a "session" is 20 minutes of that biome's income less lassos and healing)
 
 | Player | Greenwood | Dust Canyon | Tide Flats |
 | --- | --- | --- | --- |
-| Casual | 1,077 coins, 0.7 sessions, 1.6 attempts | 2,930, 0.8, 1.6 | 5,680, 0.5, 1.6 |
-| Regular | 1,227, 0.7, 1.4 | 3,064, 1.0, 1.4 | 5,814, 0.5, 1.4 |
-| Heavy | 1,284, 0.8, 1.2 | 3,084, 0.9, 1.2 | 5,832, 0.7, 1.2 |
+| Casual | 1,078 coins, 0.7 sessions, 1.5 attempts | 2,930, 0.8, 1.6 | 5,680, 0.5, 1.5 |
+| Regular | 1,227, 0.7, 1.3 | 3,064, 1.0, 1.4 | 5,811, 0.5, 1.4 |
+| Heavy | 1,284, 0.8, 1.2 | 3,084, 0.9, 1.2 | 5,827, 0.7, 1.2 |
 
-The longest wait anywhere, across 600 runs, between wanting a giant attempt and affording it was 21 minutes of ordinary play (wild battles that also level the team); the mean is 1.5 to 4 minutes.
+The longest wait anywhere, across 600 runs, between wanting a giant attempt and affording it was 20 minutes of ordinary play (wild battles that also level the team).
 
 **F. Where coins go**
 
 | Player | Breeding | Shop (lassos, healing, Horns, bait, charms) | Stable space | Decorations |
 | --- | --- | --- | --- | --- |
-| Casual | 71% | 9% | 13% | 8% |
-| Regular | 56% | 29% | 12% | 2% |
+| Casual | 69% | 8% | 13% | 9% |
+| Regular | 55% | 29% | 12% | 3% |
 | Heavy | 42% | 37% | 7% | 13% |
 
-**G. Days from owning a pure pair to a child of the same tier** (Tide Flats pair, every candy spent on it; median and 90th percentile; median coins)
+**G. Days from owning a pure pair to a child of the same tier** (Tide Flats pair of one type, every candy of that type and every Prism spent on it; the rate is Prism a day plus the player's best type a day after the story; median and 90th percentile; median coins)
 
-| Child | Candy each | Chance | Casual | Regular | Heavy |
+| Child | Candy a breed (was) | Chance | Casual (was) | Regular (was) | Heavy (was) |
 | --- | --- | --- | --- | --- | --- |
-| First gem tier ("Amber") | 5 | 40% | 3.0 d (p90 7.3), 11k coins | 1.7 d (4.7) | 1.2 d (4.2) |
-| Ruby | 12 | 40% | 7.0 d (17.5), 27k | 4.1 d (10.2) | 3.0 d (9.0) |
-| Diamond | 30 | 30% | 17.5 d (61.3), 68k | 10.2 d (35.5) | 7.5 d (26.0) |
+| First gem tier ("Amber") | 10 (5) | 40% | 3.7 d, p90 9.2 (3.0) | 1.8 d, p90 4.8 (1.7) | 1.2 d, p90 4.2 (1.2) |
+| Ruby | 24 (12) | 40% | 8.8 d, p90 22.1 (7.0) | 4.4 d, p90 10.9 (4.1) | 2.7 d, p90 8.7 (3.0) |
+| Diamond | 60 (30) | 30% | 22.1 d, p90 77.2 (17.5) | 10.9 d, p90 38.0 (10.2) | 6.8 d, p90 23.7 (7.5) |
 
-The coins are not the limit: a Diamond child's 68k is 5.6 days of a casual player's income and 1.2 days of a heavy player's. Candy and the long gem cooldowns are. A child cannot be rarer than its rarer parent, so a Ruby or Diamond child also needs a Ruby or Diamond parent from the wild, bait or a trade; how often those appear is a spawn decision outside this model.
+Candy needed per child on average is unchanged in shape: 25 per gem-tier child, 60 per Ruby, 200 per Diamond (double the old 12.5, 30 and 100, because both parents now pay). **For a regular player the days are 5 to 7% longer than before; for a casual player about 25% longer; for a heavy player 0 to 10% shorter.** Why: the price of a pure pair doubled, and typed candy roughly doubled the candy a player can put on one type, but that typed income comes from catching, which grows with play time. A casual player catches about two creatures a day after the story, spread over several types, so their gem pair runs mostly on Prism; a heavy player catches sixteen. Gem tiers therefore stay scarce, and move slightly toward players who play more. The coins are not the limit (a Diamond child's 68k is 5.6 days of a casual player's income and 1.2 days of a heavy player's): candy and the long gem cooldowns are. A child cannot be rarer than its rarer parent, so a Ruby or Diamond child also needs a Ruby or Diamond parent from the wild, bait or a trade.
+
+**H. A player whose starter is Sand** (first two days, 30 seeds; Greenwood has one Sand species, the starter itself, and it lives only on Route B)
+
+| Player | Breeds in two days | Breeds with a Sand parent | Times a Sand breed waited for candy | Sand candy earned | Prism earned |
+| --- | --- | --- | --- | --- | --- |
+| Casual, Sand starter | 3.9 | 3.0 | 0.8 | 0.9 | 5.9 |
+| Casual, Leaf starter (for comparison: Leaf parent) | 3.9 | 3.8 | 1.5 | 5.0 | 5.9 |
+| Regular, Sand starter | 7.1 | 6.1 | 0.9 | 3.6 | 20.7 |
+| Regular, Leaf starter | 7.3 | 6.0 | 0.8 | 4.4 | 21.3 |
+
+A Sand starter is not stuck: Prism (the mentor's 2, the first quest line and first clears) pays for the Sand side of early breeds, and from Route B a regular player catches Spadesnouts for Sand candy. A casual player has barely reached Route B by the end of day 2, so nearly all their Sand breeds run on Prism.
+
+**I. Catch-and-release farming** (20 seeds; every wild battle gets a lasso attempt and every catch is released at once, from a fresh day, counting the daily tasks it completes)
+
+| | Candy an hour | Against a normal hour after the story: casual 18.6, regular 18.6, heavy 13.7 |
+| --- | --- | --- |
+| Farming in Greenwood (37 catches an hour) | 18.5 | 1.00 x, 1.00 x, 1.35 x |
+| Farming in Tide Flats (37 catches an hour) | 19.2 | 1.03 x, 1.03 x, 1.40 x |
+
+The falloff holds farming to about one normal hour. The heavy player's normal hour is lower only because their two-hour day spreads the daily caps thinner.
 
 ### Against the targets
 
 | # | Target | Result |
 | --- | --- | --- |
-| 1 | Three player types over 30 days | Met (tables A to F) |
-| 2 | 60 to 70% removed in the first two hours | Casual 69%, regular 59%, heavy 58%. The test asserts 57 to 73% ("about"). The early sink is breeding, and it is capped by pens and 30-minute hatches, so this came only after the second pen moved to the mentor's lesson and daily tasks moved to the first badge |
+| 1 | Three player types over 30 days | Met (tables A to I) |
+| 2 | 60 to 70% removed in the first two hours | Casual 68%, regular 59%, heavy 57%. The test asserts 57 to 73% ("about"). Heavy sits at the floor, as it did before (58%) |
 | 2 | 80 to 95% after Greenwood for regular and heavy | 90% and 87% |
-| 2 | Never unable to buy a lasso and a Tonic | Zero times in 600 runs; two fresh Greenwood wins (120 coins) buy both (45) |
-| 3 | First common breed about four minutes of Greenwood income; casual about two breeds a day | 4.5 to 4.8 minutes (on the slow side of the 3 to 5 band); casual 1.9 to 2.0 a day |
-| 4 | Candy about 5 (regular) and 8 (heavy), mostly from tasks, giants and quests; early burst; first breed with the mentor's candy | 5.9 and 8.1; week 1 nearly double; first breed at minute 11 on day 1 in every test run |
-| 5 | Regular holds 2 to 7 days of income after week 1; nothing piles up without limit | Regular 2.2 days (mean of days 8 to 30; 1.6 on day 7 itself). In an earlier run heavy balances rose by about 40k a week; stable decorations (a new sink) and coin stable expansions flattened them to +13k in week 4 |
-| 6 | First on-level giant costs about one session's spare coins; no long lockout | 0.5 to 1.0 sessions; worst wait 21 minutes, mean under 4 |
-| 7 | Every faucet capped or diminishing; release below catch and breed | Asserted in the test |
+| 2 | Never unable to buy a lasso and a Tonic | Zero times in 600 runs |
+| 3 | First common breed about four minutes of Greenwood income; casual about two breeds a day | 4.5 to 4.7 minutes; casual 1.9 a day in week 1, 1.8 later |
+| 4 | Prism about 5 (regular) and 8 (heavy) a day, mostly from tasks, giants and quests; early burst; first breed with the mentor's Prism | 5.9 and 8.1; week 1 nearly double; first breed at minute 11 on day 1 in every test run, covered by the mentor's 2 Prism |
+| 4 | Typed candy keeps gem tiers scarce (regular near 1.7, 4.1, 10.2 days) | 1.8, 4.4, 10.9 days (table G). The test asserts two thirds to one and a half times the old figures |
+| 4 | A Sand starter is not stuck in Greenwood | 3.0 (casual) and 6.1 (regular) breeds with a Sand parent in the first two days (table H). The test asserts at least 1.5 and 3 |
+| 4 | Catch-and-release for an hour earns at most 1.5 x a normal hour | 1.00 to 1.40 x (table I) |
+| 5 | Regular holds 2 to 7 days of income after week 1; nothing piles up without limit | Regular 2.3 days (mean of days 8 to 30) |
+| 6 | First on-level giant costs about one session's spare coins; no long lockout | 0.5 to 1.0 sessions; worst wait 20 minutes |
+| 7 | Every faucet capped or diminishing; release below catch and breed in coins and candy | Asserted in the test |
 
 ## 5. What changed while tuning, and why
 
@@ -194,6 +247,13 @@ Each line is a [Default] for `DECISIONS.md`.
 7. **The diminishing rule was widened** (8 full wins, x0.85, floor 15%, stop at 50) after it starved a player stuck before a giant.
 8. **Bond Charm scales with the hub's biome** (400, 1,000, 2,000), so it stays a real choice for rich breeders.
 
+Typed candy (20 November 2026):
+
+9. **`CANDY_COST` kept its values (1, 2, 5, 12, 30) but is paid per parent, in its own type.** A pure pair's price doubled; a regular player's candy for one type (Prism plus their best type) roughly doubled too, so a regular player's gem-tier pace stayed within 7% of the single-candy model. A first try at 1, 1, 4, 9, 22 per parent (with a looser falloff) made a regular player's gem tiers 20 to 27% faster (1.4, 3.0, 7.5 days).
+10. **Catch 1, 2, 6, 12, 24 by rarity; release 0.5, 0.5, 3, 6, 12**, with fractions paid as they add up. One common catch pays for one common parent of its type. A release must pay less than the catch, so a common release pays one candy every second release.
+11. **Falloff of 3 full claims per type per day, then x0.5 (releases x0.4), floor a tenth, stop at 40.** The first try (4 full, x0.6) let an hour of catch-and-release earn 1.6 times a heavy player's normal hour; this one gives 1.4 times, and normal play (a regular player catches about five a day, across types) rarely reaches the falloff.
+12. **Milestone and daily sources pay Prism, unchanged in amount.** Prism is what lets a player breed a type their biome lacks (table H); the Sand starter in Greenwood relies on it for the first day or two.
+
 ## 6. Inputs that are guesses
 
 None of these is a balance number; they describe how people play, and live in the test (`ASSUME`, `PROFILES`), not in `src/config`.
@@ -204,6 +264,9 @@ None of these is a balance number; they describe how people play, and live in th
 - **How often players breed**: whenever they can, across four common pairs, keeping only a small reserve. Real players will breed less; that leaves candy unspent and coins piling, not the reverse.
 - **Giant win chances** (45 to 65% first try, +15% per failure, 80% on rematches) and gem spawn rates (0.6% of wild encounters from Dust Canyon, 35% of bait spawns).
 - **Sessions**: one a day of a fixed length; eggs hatch overnight. Optional spending starts at three days of income held.
+- **Types of wild kinds** (`ASSUME.KIND_ELEMENTS`): Greenwood from its roster, Dust Canyon from the roster in progress, Tide Flats a guess (mostly Water). Breeding pairs are random creatures of the biome, so most breeds mix two types; real players may pick pairs to match the candy they hold, which would breed a little more.
+- **Catch-and-release**: during the story players keep their catches; after it they release 30%, 50% or 60% at once. Releasing during the story too lowered the first-two-hours coin ratio by 2 to 4 points (fewer full stables, so fewer coin stable expansions) and pushed it under the 57% floor.
+- **Holding back for the gem pair**: once a gem pair exists the player keeps its next breed's candy and coins aside, and common pairs use the rest. If common pairs could use no Prism at all while a gem pair exists, regular and heavy players bred about 15% fewer commons after week 1; if nothing is held back, casual players spend the gem pair's Prism and coins on commons.
 
 ## 7. Which results are most sensitive
 
@@ -211,23 +274,47 @@ One guess changed at a time (40 seeds each):
 
 | Change | Regular, first 2 h | After Greenwood, regular / heavy | Regular days held | Regular candy unspent | Casual breeds a day |
 | --- | --- | --- | --- | --- | --- |
-| Baseline | 61% | 90% / 87% | 2.1 | 18 | 1.9 |
-| Battles 30% slower | 60% | 96% / 89% | 1.0 | 14 | 1.7 |
-| Battles 30% faster | 68% | 87% / 87% | 2.8 | 20 | 2.0 |
-| Lasso misses x1.5 | 60% | 90% / 87% | 2.1 | 19 | 1.9 |
-| Half of breeds skipped | 58% | 89% / 87% | 2.3 | 30 | 1.9 |
-| Gem spawns x3 | 61% | 90% / 87% | 2.2 | 15 | 1.8 |
-| Giants harder | 62% | 90% / 88% | 2.0 | 10 | 1.9 |
+| Baseline | 57% | 90% / 87% | 2.3 | 111 | 1.9 |
+| Battles 30% slower | 64% | 94% / 89% | 1.4 | 95 | 1.7 |
+| Battles 30% faster | 69% | 87% / 87% | 2.8 | 139 | 1.9 |
+| Lasso misses x1.5 | 58% | 89% / 87% | 2.3 | 74 | 1.9 |
+| Half of breeds skipped | 59% | 88% / 88% | 2.4 | 129 | 1.8 |
+| Gem spawns x3 | 58% | 89% / 88% | 2.3 | 189 | 1.8 |
+| Giants harder | 58% | 90% / 88% | 2.1 | 99 | 1.9 |
+
+(Re-run with typed candy on 20 November 2026; candy left counts every type and Prism.)
 
 - **Battle length is the input that matters.** Coins come per battle and costs come per breed, so slower battles squeeze regular players (96%, one day of coins held) and faster ones make everyone richer. Measure it first.
 - **How often players breed** moves candy, not coins: other sinks absorb the coins. Lasso misses barely matter because lassos are cheap. Gem spawn rates and giant difficulty move candy use, not the coin ratio.
 - **The first-two-hours ratio** depends mostly on pens and hatch time, not prices.
 
+## 7b. Finds in side areas (approval pack 7, rerun 23 November 2026)
+
+`tests/economy.test.luau` now has the finds in it (`ASSUME.FINDS`; set it false to get the numbers from before). Every find in `src/content/finds_data` is used, built or not, so the bands hold in the final state with Gull Cove open. The simulated players: each claims a share of a biome's one-time finds as they pass its story's halfway point (casual 50%, regular 85%, heavy all; 1 minute each); each day with a badge they visit gathering spots, current biome first (casual 2, regular 4, heavy all; 1.5 minutes, plus 1 for a Waystation hop back) and sightings (casual 0, regular 1, heavy all; a wild win with a lasso on 80%). Walking to a find uses the session but is left out of a biome's income per minute, so the breed-cost and giant-prep bands still measure battling.
+
+| Target (30 seeds) | Before | With finds |
+| --- | --- | --- |
+| Coins removed, first two hours (57 to 73%) | 70 / 64 / 59 | 70 / 65 / 60 |
+| Coins removed after Greenwood (80 to 95%) | 88 / 90 / 87 | 89 / 89 / 88 |
+| Coins removed after the story (casual / regular / heavy) | 88 / 91 / 89 | 88 / 90 / 89 |
+| Regular holds 2 to 7 days of income after week 1 | 2.3 | 2.1 |
+| Regular income a day after the story | 28,100 | 20,800 |
+| Farming hour against a normal hour (at most 1.5 x) | 1.00 to 1.40 | 1.07 to 1.36 |
+| Prism a day after the story, regular / heavy | 5.9 / 8.1 | 5.1 / 8.1 |
+
+What the rerun found, against the pack's estimates:
+
+- **The cost of finds is time, not payout.** A full daily round (6 gathering spots, 3 sightings) takes about 25 minutes and pays 293 coins of materials and 663 of wild wins, about 960 coins: under a quarter of the same minutes of battling (419 coins a minute for the heavy player). One-time finds are worth about 1,730 coins and 6 Prism, once. These match the pack (960 and 1,820).
+- **Time lost to finds is what moves the bands.** A regular player who takes 5 spots a day spends about 13 of 45 minutes on them and holds 1.8 to 2.0 days of income (at or below the 2 floor); at 4 spots it is 2.1. A regular player's income after the story falls by a quarter at 4 spots and one sighting, and they breed 2.0 times a day instead of 3.3. Players who do more of the round than the simulated regular will have less coin and candy from battling. Finds are a reason to walk, not an income, but this is the number to watch in the first playtest (item 3 of section 8).
+- **The heavy player's first two hours stay at 60%** (the floor is 57), so the pack's fallback (the picnic basket's Rally Root becomes a keepsake) was not needed. With one-time finds taking 2 minutes each it fell to 49%, because the extra minutes pushed the giant and the gate out of the first two hours: the walk to a one-time find on the way through is modelled at 1 minute.
+- **The pack counted 7 gathering spots; its tables list 6** (Greenwood 2, Dust Canyon 2, Tide Flats 2 with Gull Cove's midden). The most anyone can gather in a day is 12 materials, not 14.
+- **Sightings** take the normal gem chance (0.6% from Dust Canyon on, none in Greenwood, which has no gem rows): no change to the farming-hour ratio beyond 1.07 to 1.36.
+
 ## 8. Five numbers to watch in the first playtest
 
 1. **Minutes per wild battle, including finding the creature**, and wild battles per hour of play. Every coin result scales with it (section 7).
 2. **Coins removed as a share of coins created, per player per day**, split by source and sink and by hours played (first two hours, after Greenwood, after the story). Targets: 60 to 70%, then 80 to 95%.
-3. **Unspent Breeding Candy per player at day 7 and day 30.** Growing candy with falling coins means breeding is coin-starved (raise income); growing coins with no candy means candy is the gate as intended.
+3. **Unspent Breeding Candy per player at day 7 and day 30, split into Prism and each type, and catches a day by type.** Growing Prism with falling coins means breeding is coin-starved (raise income); Prism near zero with typed candy piling up in types the player never breeds is expected. Catches a day and the share released set typed income: if real players catch far more than the simulation's 2 to 16 a day, gem tiers come faster (table G), and the falloff or catch amounts need lowering.
 4. **Median and 90th-percentile coin balance by account age, in days of that player's income.** Target 2 to 7; a rising 90th percentile means the decorations need more items.
 5. **Giant attempts per first clear and minutes between a failed attempt and the next attempt.** Targets: about 1.2 to 1.6 attempts, under 20 minutes.
 
@@ -237,3 +324,5 @@ One guess changed at a time (40 seeds each):
 - Biome 4 onwards uses placeholder multipliers; re-run when the Mire is designed.
 - `LASSO_MIN_TIER` (a gem creature needs at least a Braided Lasso) is assumed for the release rule. If capture design lets a Rope Lasso catch everything, set every entry to `Basic`; release payouts then lower themselves.
 - Gem purchases (extra pens, hatch speed-ups) are left out. A player with four pens breeds more, spends more coins and runs out of candy sooner.
+- Tide Flats' types are a guess. If its roster spreads across more types than four Water kinds, players put less candy on one type and gem tiers come a little slower.
+- Nothing grants typed candy yet: the capture service (approval pack 2) must call `Economy.catchCandy` and `Economy.releaseCandy` with the saved daily counts, in the same step that adds or removes the creature.
