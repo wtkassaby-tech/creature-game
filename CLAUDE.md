@@ -46,7 +46,7 @@ The owner (Ayrton) reviews plans, plays builds and approves gates. You do the bu
 3. Write the code and unit tests together.
 4. Run `lune run check` (format, lint, strict types, tests, build). Fix every failure. A task is not done until it passes.
 5. Run it in Studio through the Studio MCP: playtest, simulate input on a phone-sized view, read the console, fix errors. (The Studio MCP needs Studio on Ayrton's computer; a cloud session cannot reach it.)
-6. For any visual change, take a `screen_capture` and check it against the brief's art direction (low-poly, chunky, flat colours; section 12).
+6. For any visual change, take a `screen_capture` and check it against the art direction: clay bodies with cartoon eyes, matte except eyes, glass and water (decided 24 November 2026, `docs/DECISIONS.md`; replaces brief section 12).
 7. Commit with a clear message. One working feature per commit.
 8. Update `docs/PROGRESS.md` with what changed and what Ayrton should playtest, and `docs/DECISIONS.md` for any [Default] you changed.
 

@@ -14,7 +14,13 @@ Status: [Default] under brief sections 4, 7 and 12. It builds on `docs/PART_SPEC
 5. COLOUR LINE (all plans, section 3)
 6. VIEW LINE (all plans)
 
-> STYLE LINE: cozy handmade clay toy creature, soft matte plasticine, chunky rounded proportions, big friendly eyes, original creature design, no clothing, no held objects, full body.
+> STYLE LINE: Claymation creature for a Pokémon-inspired Roblox game: matte hand-sculpted plasticine with thumbprint texture, chunky rounded shape, big glossy cartoon eyes with white highlights, expressive face.
+
+**The house style (Ayrton, 24 November 2026): clay bodies, cartoon eyes.** The body is matte, hand-sculpted claymation with real texture and personality: thumbprints, small tool marks, slightly imperfect hand-made forms, an expressive pose and face. Stop-motion clay is a proven look, so do not sand it smooth. The eyes are big glossy cartoon eyes with a white highlight; they carry the appeal. Only the eyes, glass and water shine: Meshy bakes shine into the texture, and baked shine looks painted on under Roblox's moving light.
+
+- **Texture lives in the surface, not the colour.** The sculpted texture is the same faint pattern all over, on every part, so a head from one parent and legs from another still look like one toy. Each colour area stays one solid colour (the COLOUR LINE), so tinting and the importer's mask still work.
+- **Eyes as their own part.** Ask Meshy's part segmentation to keep the eyes separate where it can, so the game can blink, squint and swap expressions.
+- **Meshy takes at most 800 characters.** The short prompt (style line first, then the species) is the one pasted into Meshy; the long six-block prompt is a reference.
 
 > VIEW LINE: plain white background, even soft lighting, the whole body in view, three-quarter view from the front left, standing still in a neutral pose.
 
@@ -147,7 +153,7 @@ Under the colour approach in section 3, a template's texture cannot also be see-
 
 ### 2.4 Worked example: Sloshcalf
 
-> cozy handmade clay toy creature, soft matte plasticine, chunky rounded proportions, big friendly eyes, original creature design, no clothing, no held objects, full body. **[Quad STANDARD BODY LINE]**. Head: a broad round calf head with soft worried eyebrows and a shy smile, floppy ears shaped like lily pads, two small round stone horns and a little leaf sprout on top. Body: smooth blue-teal clay with a cream belly; on the middle of its back a round glassy-looking water dome painted pale aqua with a white shine and two little orange fish, sitting well behind the neck and in front of the tail. Front legs and back legs: short sturdy legs with rounded webbed hoof-paddles. Tail: a short tail ending in a little reed-tuft fan with one water drop. **[SEPARATION LINE]**. **[COLOUR LINE]**. **[VIEW LINE]**.
+> handmade claymation creature, soft matte hand-sculpted plasticine with visible thumbprint texture and tiny tool marks, chunky rounded proportions, big glossy cartoon eyes with a bright white highlight, an expressive face full of personality, original creature design, no clothing, no held objects, full body. **[Quad STANDARD BODY LINE]**. Head: a broad round calf head with soft worried eyebrows and a shy smile, floppy ears shaped like lily pads, two small round stone horns and a little leaf sprout on top. Body: smooth blue-teal clay with a cream belly; on the middle of its back a round glassy-looking water dome painted pale aqua with a white shine and two little orange fish, sitting well behind the neck and in front of the tail. Front legs and back legs: short sturdy legs with rounded webbed hoof-paddles. Tail: a short tail ending in a little reed-tuft fan with one water drop. **[SEPARATION LINE]**. **[COLOUR LINE]**. **[VIEW LINE]**.
 
 Differences from the pilot prompt in `docs/art/MESHY_PILOT.md`: the pond is opaque and kept clear of the neck and tail; the sprout is stated as a head feature; the leg length and stance come from the body line, not "stubby".
 
@@ -216,7 +222,7 @@ If 1 or 2 fail, use the fallback and log it.
 - **Patterns** (the brief's separate pattern gene) are not in version 1. If they come: a pattern is a second texture per species whose alpha mask leaves the pattern untinted; it lives inside each part and fades out before every joint zone. Two or three patterns at most, because each one is a texture per species.
 - **Rare looks** in `docs/content/CREATURE_PERSONALITY.md` change details (Spadesnout's brass snout, Sloshcalf's orange pond), so they cannot be a tint. Each is an alternative texture for **the one part that owns the feature**, which is why section 2.2 matters: the rare look then travels with that part in breeding. How rare looks are earned is still Ayrton's call.
 
-> COLOUR LINE: simple flat colour blocks: one solid main colour over the whole creature, the same on the head, body, legs and tail; one lighter belly colour; small details such as eyes, mouth, horns, claws and hooves in clearly different colours; no gradients, no painted shadows or highlights, no stripes or spots running across the joints.
+> COLOUR LINE: simple flat colour blocks: one solid main colour over the whole creature, the same on the head, body, legs and tail; one lighter belly colour; small details such as eyes, mouth, horns, claws and hooves in clearly different colours; no gradients, no painted shadows, no shine except the eyes, glass and water, no stripes or spots running across the joints.
 
 The concept is still painted in the species' real colours. Ayrton judges the real look; the importer does the neutralising.
 

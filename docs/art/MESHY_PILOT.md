@@ -19,7 +19,7 @@ Date: 23 November 2026. For: Ayrton. Goal: find out whether Meshy can give us cr
    - Style: stylised / cartoon (not realistic).
    - **Topology: Smart Topology, low poly, about 3,000 triangles for the whole creature** (phones).
    - **Part segmentation: on.** (This is the key test.)
-   - Texture: on, with the clay colours from the picture. No metallic or glossy finish.
+   - Texture: on, with the clay colours from the picture. Matte clay body, no metallic or glossy finish (only the eyes are glossy cartoon eyes with white highlights).
    - Pose: neutral standing. Four-legged: back level, all four legs straight down, tail out behind (not curled over the back), head forward. Two-legged: upright, arms hanging at the sides, legs straight down.
 4. **Check before exporting:** it reads as the creature at a glance; the face is clear; no clothes or held objects; the parts look like head, body, legs, tail (and arms for Mossmitt), not random chunks.
 5. **Export as GLB** (with textures). Also export FBX if it is offered.
@@ -29,18 +29,20 @@ Date: 23 November 2026. For: Ayrton. Goal: find out whether Meshy can give us cr
 
 ## Prompts
 
-Use this style text at the start of every prompt:
+Art style (owner decision, 24 November 2026): clay bodies with cartoon eyes. Meshy's text box takes 800 characters at most, so each prompt below is a complete short prompt: the style line, then the creature. Paste it whole; do not add to it. Every length was counted by script (Unicode characters).
 
-> cozy handmade clay toy creature, soft matte plasticine, chunky rounded proportions, big friendly eyes, simple flat colours, original creature design, no clothing, no held objects, full body, plain white background, three-quarter view
+Style line (the start of every prompt):
 
-**Sloshcalf** (gentle worrier, Water):
-> a small four-legged calf creature with smooth blue-teal clay skin and a cream belly, a clear round water bubble on its back with a tiny pond and two little orange fish inside, short stubby legs, small round horns, soft worried eyebrows and a shy smile, a little leaf sprout on its head, a short tail with a water-drop tuft
+> Claymation creature for a Pokémon-inspired Roblox game: matte hand-sculpted plasticine with thumbprint texture, chunky rounded shape, big glossy cartoon eyes with white highlights, expressive face.
 
-**Spadesnout** (fiercely proud, Sand):
-> a four-legged digging creature with warm sandy-orange clay fur and a cream belly, a wide flat spade-shaped snout like a little shovel, strong front paws with blunt digging claws, a proud puffed-out chest, confident half-closed eyes and a smug grin, a short club tail with a pebble pattern, a smudge of mud on its nose
+**Sloshcalf** (gentle worrier, Water), short prompt, 781 characters:
+> Claymation creature for a Pokémon-inspired Roblox game: matte hand-sculpted plasticine with thumbprint texture, chunky rounded shape, big glossy cartoon eyes with white highlights, expressive face. Matte body; only eyes, glass and water shine. Four-legged: level loaf body, short stubby straight legs with gaps, round head on a short neck in a collar. A small calf with smooth blue-teal clay skin and a cream belly, soft worried eyebrows and a shy smile, small round horns, a little leaf sprout on its head. On its back a clear round water bubble painted glassy, holding a tiny pond and two little orange fish. Short tail with a water-drop tuft. Parts separate, plain at joints. No clothing, no held objects. Three-quarter front view, full body, white background. No text, no base.
 
-**Mossmitt** (cheerful show-off, Leaf):
-> a small two-legged creature with a round mossy green body and a warm brown face, oversized puffy mitten hands made of moss, a little clover on top of its head, a big beaming grin and bright eyes, short sturdy legs, a tiny moss tuft tail, standing like a proud little boxer
+**Spadesnout** (fiercely proud, Sand), short prompt, 794 characters:
+> Claymation creature for a Pokémon-inspired Roblox game: matte hand-sculpted plasticine with thumbprint texture, chunky rounded shape, big glossy cartoon eyes with white highlights, expressive face. Matte body; only eyes, glass and water shine. Four-legged: level loaf body, four short straight legs with gaps, round head on a short neck in a collar. A digging creature with warm sandy-orange clay fur and a cream belly, a wide flat spade-shaped snout like a little shovel with a smudge of mud on its nose, confident half-closed eyes and a smug grin, a proud puffed-out chest. Strong front paws with blunt digging claws. Short club tail with a pebble pattern. Parts separate, plain at joints. No clothing, no held objects. Three-quarter front view, full body, white background. No text, no base.
+
+**Mossmitt** (cheerful show-off, Leaf), short prompt, 745 characters:
+> Claymation creature for a Pokémon-inspired Roblox game: matte hand-sculpted plasticine with thumbprint texture, chunky rounded shape, big glossy cartoon eyes with white highlights, expressive face. Matte body; only eyes, glass and water shine. Two-legged: round pear body, big round head in a collar, short sturdy legs, small low tail. A small creature with a round mossy green body and a warm brown face, bright eyes, a big beaming grin, a little clover on top of its head. Oversized puffy mitten hands made of moss, held clear of the body, arms down. A tiny moss tuft tail. Stands like a proud little boxer. Parts separate, plain at joints. No clothing, no held objects. Three-quarter front view, full body, white background. No text, no base.
 
 ## What happens after
 
